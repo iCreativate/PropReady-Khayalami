@@ -220,7 +220,7 @@ export default function SellersQuizPage() {
             case 1:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Let's Get Started</h2>
+                        <h2 className="text-2xl font-bold text-charcoal mb-6">Let&apos;s Get Started</h2>
                         <p className="text-charcoal/60 mb-6 text-center">
                             We need some basic information to help you sell your property
                         </p>
@@ -668,7 +668,7 @@ export default function SellersQuizPage() {
                             <CheckCircle className="w-10 h-10 text-white" />
                         </div>
 
-                        <h2 className="text-3xl font-bold text-charcoal mb-4">You're All Set!</h2>
+                        <h2 className="text-3xl font-bold text-charcoal mb-4">You&apos;re All Set!</h2>
 
                         <p className="text-xl text-charcoal/70 mb-8">
                             Your account has been created. Access your dashboard to manage your property listing and connect with verified agents.
@@ -737,7 +737,7 @@ export default function SellersQuizPage() {
                     {/* Quiz Card */}
                     <div className="premium-card rounded-2xl p-8 md:p-12 min-h-[500px] flex flex-col">
                         <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2 text-center">
-                            Let's Get Your Property Ready to Sell!
+                            Let&apos;s Get Your Property Ready to Sell!
                         </h1>
 
                         <p className="text-charcoal/60 mb-8 text-center">

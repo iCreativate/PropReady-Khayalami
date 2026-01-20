@@ -284,7 +284,7 @@ export default function BondCalculatorPage() {
                             {/* Info Box */}
                             <div className="premium-card rounded-xl p-4 bg-blue-50 border border-blue-100">
                                 <p className="text-charcoal/70 text-sm leading-relaxed">
-                                    <strong className="text-charcoal">Note:</strong> This is an estimate. Actual rates may vary based on your credit profile and the bank's assessment.
+                                    <strong className="text-charcoal">Note:</strong> This is an estimate. Actual rates may vary based on your credit profile and the bank&apos;s assessment.
                                 </p>
                             </div>
                         </div>

@@ -309,7 +309,7 @@ export default function QuizPage() {
             case 1:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Let's Get Started</h2>
+                        <h2 className="text-2xl font-bold text-charcoal mb-6">Let&apos;s Get Started</h2>
                         <p className="text-charcoal/60 mb-6 text-center">
                             We need some basic information to personalize your experience
                         </p>
@@ -394,7 +394,7 @@ export default function QuizPage() {
 
                         <div className="premium-card rounded-xl p-6">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
-                                What's your total monthly household income (before tax)? <span className="text-red-600">*</span>
+                                What&apos;s your total monthly household income (before tax)? <span className="text-red-600">*</span>
                             </label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/50">R</span>
@@ -568,7 +568,7 @@ export default function QuizPage() {
                                 onChange={handleInputChange}
                                 className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
                             >
-                                <option value="">I'm not sure</option>
+                                <option value="">I&apos;m not sure</option>
                                 <option value="excellent">Excellent (650+)</option>
                                 <option value="good">Good (600-649)</option>
                                 <option value="average">Average (550-599)</option>
@@ -579,10 +579,10 @@ export default function QuizPage() {
                         <div className="premium-card rounded-xl p-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
                             <div className="flex items-center space-x-3 mb-2">
                                 <CheckCircle className="text-gold w-6 h-6" />
-                                <h3 className="text-charcoal font-bold text-lg">We'll do a soft check</h3>
+                                <h3 className="text-charcoal font-bold text-lg">We&apos;ll do a soft check</h3>
                             </div>
                             <p className="text-charcoal/70 leading-relaxed">
-                                Don't worry, this quiz won't affect your credit score. We just use this information to give you an accurate estimate.
+                                Don&apos;t worry, this quiz won&apos;t affect your credit score. We just use this information to give you an accurate estimate.
                             </p>
                         </div>
                     </div>
@@ -674,7 +674,7 @@ export default function QuizPage() {
                             <CheckCircle className="w-10 h-10 text-white" />
                         </div>
 
-                        <h2 className="text-3xl font-bold text-charcoal mb-4">You're All Set!</h2>
+                        <h2 className="text-3xl font-bold text-charcoal mb-4">You&apos;re All Set!</h2>
 
                         <p className="text-xl text-charcoal/70 mb-8">
                             We have everything we need to calculate your PropReady score and pre-qualification amount.
@@ -838,7 +838,7 @@ export default function QuizPage() {
                     {/* Quiz Card */}
                     <div className="premium-card rounded-2xl p-8 md:p-12 min-h-[500px] flex flex-col">
                         <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2 text-center">
-                            Let's Get You PropReady!
+                            Let&apos;s Get You PropReady!
                         </h1>
 
                         <p className="text-charcoal/60 mb-8 text-center">

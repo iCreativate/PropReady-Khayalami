@@ -118,7 +118,7 @@ export default function CommissionCalculator() {
                             <span className="font-bold text-gold text-2xl">{formatCurrency(netProceeds)}</span>
                         </div>
                         <p className="text-xs text-charcoal/50 mt-2">
-                            Amount you'll receive after agent commission (excluding other costs)
+                            Amount you&apos;ll receive after agent commission (excluding other costs)
                         </p>
                     </div>
                 </div>

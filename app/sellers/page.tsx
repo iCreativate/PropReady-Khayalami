@@ -163,7 +163,7 @@ export default function SellersHubPage() {
                                 </h3>
                                 <p className="text-charcoal/60 mb-6 leading-relaxed">
                                     Essential tips for preparing your home for sale, handling viewings,
-                                    negotiating offers, and maximizing your property's value.
+                                    negotiating offers, and maximizing your property&apos;s value.
                                 </p>
                                 <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
                                     <span>Start Learning</span>

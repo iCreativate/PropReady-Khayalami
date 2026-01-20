@@ -102,7 +102,7 @@ export default function PropertyQuizPage() {
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-2xl font-bold text-charcoal mb-6">Property Address</h2>
                         <p className="text-charcoal/60 mb-6 text-center">
-                            Let's start with your property location
+                            Let&apos;s start with your property location
                         </p>
 
                         <div className="premium-card rounded-xl p-6">

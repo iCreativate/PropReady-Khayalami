@@ -592,7 +592,7 @@ export default function MyAgentPage() {
                                 <p className="text-charcoal/70 leading-relaxed">
                                     Experienced real estate agent specializing in {showAgentDetails.specialties.join(', ')}. 
                                     With {showAgentDetails.experience} of experience and {showAgentDetails.totalSales} successful sales, 
-                                    I'm committed to helping you find your perfect property in {showAgentDetails.location}.
+                                    I&apos;m committed to helping you find your perfect property in {showAgentDetails.location}.
                                 </p>
                             </div>
 

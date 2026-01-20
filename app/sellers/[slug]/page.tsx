@@ -91,11 +91,11 @@ export default async function SellersLearningModulePage({
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
-                                    <span>Consider market conditions (buyer's or seller's market)</span>
+                                    <span>Consider market conditions (buyer&apos;s or seller&apos;s market)</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
-                                    <span>Factor in your property's unique features and condition</span>
+                                    <span>Factor in your property&apos;s unique features and condition</span>
                                 </li>
                             </ul>
 
@@ -188,7 +188,7 @@ export default async function SellersLearningModulePage({
                                 </div>
                             </div>
                             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                                <p className="text-sm text-charcoal/80"><strong>Tip:</strong> Don't automatically choose the agent with the highest valuation. Ask for evidence (comparable sales) to support their price. The agent who provides the best marketing plan and realistic valuation is often the better choice.</p>
+                                <p className="text-sm text-charcoal/80"><strong>Tip:</strong> Don&apos;t automatically choose the agent with the highest valuation. Ask for evidence (comparable sales) to support their price. The agent who provides the best marketing plan and realistic valuation is often the better choice.</p>
                             </div>
                         </div>
                     )
@@ -518,13 +518,13 @@ export default async function SellersLearningModulePage({
                                 <div className="space-y-4 text-sm">
                                     <div>
                                         <label className="font-semibold text-charcoal/70 block mb-2">Headline (50-60 characters)</label>
-                                        <p className="text-charcoal/50 italic">e.g., "Stunning 3-Bedroom Family Home in [Suburb]"</p>
+                                        <p className="text-charcoal/50 italic">e.g., &quot;Stunning 3-Bedroom Family Home in [Suburb]&quot;</p>
                                     </div>
 
                                     <div>
                                         <label className="font-semibold text-charcoal/70 block mb-2">Opening Statement</label>
                                         <p className="text-charcoal/50 italic mb-2">Start with the most compelling feature:</p>
-                                        <p className="text-charcoal/50">"This beautifully maintained [property type] offers [key feature] in the heart of [suburb]..."</p>
+                                        <p className="text-charcoal/50">&quot;This beautifully maintained [property type] offers [key feature] in the heart of [suburb]...&quot;</p>
                                     </div>
 
                                     <div>
@@ -548,7 +548,7 @@ export default async function SellersLearningModulePage({
 
                                     <div>
                                         <label className="font-semibold text-charcoal/70 block mb-2">Call to Action</label>
-                                        <p className="text-charcoal/50 italic">"Contact us today to arrange a viewing!"</p>
+                                        <p className="text-charcoal/50 italic">&quot;Contact us today to arrange a viewing!&quot;</p>
                                     </div>
                                 </div>
                             </div>
@@ -659,7 +659,7 @@ export default async function SellersLearningModulePage({
                             <div className="flex items-start gap-3 p-3 bg-charcoal/5 rounded-lg">
                                 <div className="w-6 h-6 rounded-full bg-gold text-white font-bold flex items-center justify-center flex-shrink-0 text-sm">3</div>
                                 <div className="flex-1">
-                                    <p className="font-semibold text-charcoal">Buyer's Bond Approved</p>
+                                    <p className="font-semibold text-charcoal">Buyer&apos;s Bond Approved</p>
                                     <p className="text-sm text-charcoal/60">Buyer secures financing (21-30 days)</p>
                                     <p className="text-xs text-charcoal/50 mt-1">Target: Day 30-60</p>
                                 </div>
@@ -719,7 +719,7 @@ export default async function SellersLearningModulePage({
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-semibold text-charcoal/70">Buyer's Financial Position</label>
+                                        <label className="text-sm font-semibold text-charcoal/70">Buyer&apos;s Financial Position</label>
                                         <ul className="text-xs text-charcoal/50 space-y-1 mt-1">
                                             <li>□ Pre-approved for bond</li>
                                             <li>□ Cash buyer</li>
@@ -1032,7 +1032,7 @@ export default async function SellersLearningModulePage({
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
-                                    <span>Check buyer's financial position (pre-approved is better)</span>
+                                    <span>Check buyer&apos;s financial position (pre-approved is better)</span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
@@ -1048,7 +1048,7 @@ export default async function SellersLearningModulePage({
                                 </li>
                             </ul>
 
-                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Negotiation Do's</h4>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Negotiation Do&apos;s</h4>
                             <ul className="space-y-2">
                                 <li className="flex items-start gap-2">
                                     <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
@@ -1084,7 +1084,7 @@ export default async function SellersLearningModulePage({
         'tips'
     ] as const;
 
-    const module = modules[slug];
+    const currentModule = modules[slug];
     const currentIndex = moduleOrder.indexOf(slug as (typeof moduleOrder)[number]);
     const nextSlug = currentIndex >= 0 && currentIndex < moduleOrder.length - 1 ? moduleOrder[currentIndex + 1] : null;
     const nextModule = nextSlug ? modules[nextSlug] : null;
@@ -1107,7 +1107,7 @@ export default async function SellersLearningModulePage({
         FileText,
         BarChart3,
         CheckCircle,
-    }[module.icon] || FileText;
+    }[currentModule.icon] || FileText;
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-white via-white to-charcoal/5">
@@ -1141,7 +1141,7 @@ export default async function SellersLearningModulePage({
                                     </div>
                                     <div>
                                         <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight mb-2">
-                                            {module.title}
+                                            {currentModule.title}
                                         </h1>
                                         <p className="text-white/90 text-sm md:text-base max-w-xl">
                                             A focused learning module to guide you step-by-step on your selling journey.
@@ -1154,11 +1154,11 @@ export default async function SellersLearningModulePage({
                         {/* Card body */}
                         <div className="px-6 md:px-10 py-8 md:py-10 bg-gradient-to-b from-white to-charcoal/5">
                             <div className="prose max-w-none text-charcoal/90">
-                                {module.content}
+                                {currentModule.content}
                             </div>
 
-                            {module.toolkit && (
-                                <LearningToolkit items={module.toolkit} />
+                            {currentModule.toolkit && (
+                                <LearningToolkit items={currentModule.toolkit} />
                             )}
 
                             {/* Footer actions */}
