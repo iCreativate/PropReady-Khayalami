@@ -95,9 +95,19 @@ export default function BondCalculatorPage() {
                         </div>
                     </div>
 
-                    <Link
-                        href="/"
-                        className="px-4 py-2 rounded-lg border border-white/30 text-white hover:bg-white/10 transition-all"
+                    <div className="flex items-center space-x-4">
+                        <MobileNav
+                            links={[
+                                { href: '/learn', label: 'Learning Center for Buyers' },
+                                { href: '/sellers', label: 'For Sellers', isButton: true },
+                                { href: '/search', label: 'Properties' },
+                                { href: '/calculator', label: 'Bond Calculator' },
+                                { href: '/dashboard', label: 'Dashboard' },
+                            ]}
+                        />
+                        <Link
+                            href="/"
+                            className="hidden sm:block px-4 py-2 rounded-lg border border-white/30 text-white hover:bg-white/10 transition-all"
                     >
                         Back to Home
                     </Link>
