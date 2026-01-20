@@ -92,36 +92,36 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                             className="group premium-card rounded-2xl border border-charcoal/10 overflow-hidden hover:border-gold/30 hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5"
                         >
                             <div
-                                className="p-6 cursor-pointer hover:bg-gradient-to-r hover:from-gold/5 hover:to-transparent transition-all duration-300"
+                                className="p-4 sm:p-6 cursor-pointer hover:bg-gradient-to-r hover:from-gold/5 hover:to-transparent transition-all duration-300"
                                 onClick={() => toggleExpand(item.id)}
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start space-x-4 flex-1 min-w-0">
-                                        <div className="w-14 h-14 bg-gradient-to-br from-gold/20 to-gold/10 rounded-xl flex items-center justify-center flex-shrink-0 text-gold border border-gold/20 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300">
+                                <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                                    <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0 w-full sm:w-auto">
+                                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-gold/20 to-gold/10 rounded-xl flex items-center justify-center flex-shrink-0 text-gold border border-gold/20 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300">
                                             {getTypeIcon(item.type)}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                                <h3 className="text-xl font-bold text-charcoal group-hover:text-gold transition-colors">{item.title}</h3>
-                                                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 text-gold text-xs font-semibold whitespace-nowrap">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
+                                                <h3 className="text-lg sm:text-xl font-bold text-charcoal group-hover:text-gold transition-colors break-words">{item.title}</h3>
+                                                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/20 text-gold text-xs font-semibold whitespace-nowrap self-start sm:self-auto">
                                                     {getTypeLabel(item.type)}
                                                 </span>
                                             </div>
-                                            <p className="text-charcoal/60 text-sm leading-relaxed">{item.description}</p>
+                                            <p className="text-charcoal/60 text-sm leading-relaxed break-words">{item.description}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto sm:ml-4 flex-shrink-0 justify-end sm:justify-start">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 openViewer(item);
                                             }}
-                                            className="px-5 py-2.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 text-sm flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105"
+                                            className="px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 text-sm flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 flex-1 sm:flex-initial justify-center"
                                         >
                                             <Eye className="w-4 h-4" />
-                                            <span className="hidden sm:inline">View</span>
+                                            <span>View</span>
                                         </button>
-                                        <div className="w-10 h-10 rounded-xl bg-charcoal/5 hover:bg-charcoal/10 transition-colors flex items-center justify-center">
+                                        <div className="w-10 h-10 rounded-xl bg-charcoal/5 hover:bg-charcoal/10 transition-colors flex items-center justify-center flex-shrink-0">
                                             {expandedItem === item.id ? (
                                                 <ChevronUp className="w-5 h-5 text-charcoal/60" />
                                             ) : (
@@ -158,35 +158,35 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                         </div>
 
                         <div 
-                            className="relative bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100"
+                            className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 mx-2 sm:mx-4"
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header with gradient */}
-                            <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
+                            <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-4 sm:px-8 py-4 sm:py-6 border-b border-gold/20">
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                                <div className="relative flex items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
+                                <div className="relative flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                                    <div className="flex-1 w-full">
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 flex-shrink-0">
                                                 {getTypeIcon(viewingItem.type)}
                                             </div>
-                                            <div>
-                                                <h2 className="text-3xl md:text-4xl font-bold text-white mb-2 leading-tight">
+                                            <div className="flex-1 min-w-0">
+                                                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 leading-tight break-words">
                                                     {viewingItem.title}
                                                 </h2>
-                                                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-sm font-semibold">
-                                                    <Sparkles className="w-3.5 h-3.5" />
+                                                <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs sm:text-sm font-semibold">
+                                                    <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                                     {getTypeLabel(viewingItem.type)}
                                                 </span>
                                             </div>
                                         </div>
-                                        <p className="text-white/90 text-base ml-[60px] max-w-2xl">
+                                        <p className="text-white/90 text-sm sm:text-base sm:ml-[52px] sm:max-w-2xl break-words">
                                             {viewingItem.description}
                                         </p>
                                     </div>
                                     <button
                                         onClick={closeViewer}
-                                        className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                        className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110 self-end sm:self-auto"
                                         aria-label="Close"
                                     >
                                         <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
@@ -195,8 +195,8 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                             </div>
 
                             {/* Content area with custom scrollbar */}
-                            <div className="flex-1 overflow-y-auto px-8 py-8 bg-gradient-to-b from-white to-charcoal/5">
-                                <div className="prose prose-lg max-w-none text-charcoal/90">
+                            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-8 bg-gradient-to-b from-white to-charcoal/5">
+                                <div className="prose prose-sm sm:prose-lg max-w-none text-charcoal/90">
                                     <style jsx global>{`
                                         .toolkit-content::-webkit-scrollbar {
                                             width: 8px;
@@ -219,14 +219,14 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                             </div>
 
                             {/* Footer with action button */}
-                            <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-2 text-charcoal/50 text-sm">
+                            <div className="px-4 sm:px-8 py-4 sm:py-6 bg-white border-t border-charcoal/10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
+                                <div className="flex items-center gap-2 text-charcoal/50 text-xs sm:text-sm">
                                     <FileText className="w-4 h-4" />
                                     <span>Toolkit Resource</span>
                                 </div>
                                 <button
                                     onClick={closeViewer}
-                                    className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                    className="px-6 sm:px-8 py-2.5 sm:py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
                                 >
                                     <span>Done</span>
                                     <X className="w-4 h-4" />

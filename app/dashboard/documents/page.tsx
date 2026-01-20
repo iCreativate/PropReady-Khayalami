@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, FileText, Download, Upload, CheckCircle, AlertCircle, Calendar, X, Building2, Star, Phone, ExternalLink, Trophy, Briefcase, Clipboard } from 'lucide-react';
+import MobileNav from '@/components/MobileNav';
 
 interface Document {
     id: string;
@@ -261,12 +262,23 @@ export default function DocumentsPage() {
                         </div>
                     </div>
 
-                    <Link
-                        href="/dashboard"
-                        className="flex items-center space-x-2 text-charcoal/90 hover:text-charcoal transition"
-                    >
-                        <span>Back to Dashboard</span>
-                    </Link>
+                    <div className="flex items-center space-x-4">
+                        <MobileNav
+                            links={[
+                                { href: '/search', label: 'Properties' },
+                                { href: '/learn', label: 'Learning Center for Buyers' },
+                                { href: '/sellers', label: 'For Sellers', isButton: true },
+                                { href: '/calculator', label: 'Bond Calculator' },
+                                { href: '/dashboard', label: 'Dashboard' },
+                            ]}
+                        />
+                        <Link
+                            href="/dashboard"
+                            className="hidden sm:flex items-center space-x-2 text-charcoal/90 hover:text-charcoal transition"
+                        >
+                            <span>Back to Dashboard</span>
+                        </Link>
+                    </div>
                 </nav>
             </header>
 

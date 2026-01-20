@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, FileText, Heart, Users, TrendingUp, Download, Calendar, ArrowLeft, Building2, Phone, ExternalLink, CheckCircle, X, MapPin, Clock } from 'lucide-react';
+import MobileNav from '@/components/MobileNav';
 
 interface Originator {
     name: string;
@@ -213,6 +214,15 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="flex items-center space-x-4">
+                        <MobileNav
+                            links={[
+                                { href: '/search', label: 'Properties' },
+                                { href: '/learn', label: 'Learning Center for Buyers' },
+                                { href: '/sellers', label: 'For Sellers', isButton: true },
+                                { href: '/calculator', label: 'Bond Calculator' },
+                                { href: '/dashboard', label: 'Dashboard' },
+                            ]}
+                        />
                         {currentUser && (
                             <div className="text-right">
                                 <p className="text-charcoal/70 text-sm">Welcome back</p>

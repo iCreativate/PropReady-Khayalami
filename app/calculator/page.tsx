@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Home, Calculator, TrendingUp, DollarSign, Calendar, Percent } from 'lucide-react';
+import MobileNav from '@/components/MobileNav';
 
 export default function BondCalculatorPage() {
     const [purchasePrice, setPurchasePrice] = useState<number>(0);
