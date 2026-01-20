@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import MobileNav from '@/components/MobileNav';
 
 interface Viewing {
     id: string;
