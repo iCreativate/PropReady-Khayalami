@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Menu, X, Home } from 'lucide-react';
 
@@ -87,7 +88,8 @@ export default function MobileNav({ links }: MobileNavProps) {
                             ))}
                         </nav>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );
