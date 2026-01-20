@@ -1100,14 +1100,15 @@ export default async function SellersLearningModulePage({
         );
     }
 
-    const IconComponent = {
+    const iconMap: Record<string, typeof FileText> = {
         DollarSign,
         Users,
         Target,
         FileText,
         BarChart3,
         CheckCircle,
-    }[currentModule.icon] || FileText;
+    };
+    const IconComponent = (currentModule.icon && iconMap[currentModule.icon]) || FileText;
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-white via-white to-charcoal/5">

@@ -412,26 +412,42 @@ export default function AgentsDashboardPage() {
     };
 
     useEffect(() => {
-        let filtered = activeTab === 'buyers' ? leads : sellers;
-
-        // Filter by search term
-        if (searchTerm) {
-            filtered = filtered.filter(item =>
-                item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.phone.includes(searchTerm)
-            );
-        }
-
-        // Filter by status
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(item => item.status === statusFilter);
-        }
-
         if (activeTab === 'buyers') {
-            setFilteredLeads(filtered as Lead[]);
+            let filtered: Lead[] = [...leads];
+
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(item =>
+                    item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.phone.includes(searchTerm)
+                );
+            }
+
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(item => item.status === statusFilter);
+            }
+
+            setFilteredLeads(filtered);
         } else {
-            setFilteredSellers(filtered as Seller[]);
+            let filtered: Seller[] = [...sellers];
+
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(item =>
+                    item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.phone.includes(searchTerm)
+                );
+            }
+
+            // Filter by status
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(item => item.status === statusFilter);
+            }
+
+            setFilteredSellers(filtered);
         }
     }, [searchTerm, statusFilter, leads, sellers, activeTab]);
 
@@ -540,12 +556,13 @@ export default function AgentsDashboardPage() {
             return;
         }
 
+        const { propertyId: _, ...viewingFormWithoutPropertyId } = viewingForm;
         const newViewing: ViewingAppointment = {
             id: selectedViewing?.id || `viewing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             propertyId: property?.id || viewingForm.propertyId,
             propertyTitle: property?.title || 'Unknown Property',
             propertyAddress: property?.address || 'Unknown Address',
-            ...viewingForm,
+            ...viewingFormWithoutPropertyId,
             date: viewingForm.date,
             time: viewingForm.time,
             status: selectedViewing?.status || 'scheduled',
