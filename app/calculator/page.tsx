@@ -108,9 +108,10 @@ export default function BondCalculatorPage() {
                         <Link
                             href="/"
                             className="hidden sm:block px-4 py-2 rounded-lg border border-white/30 text-white hover:bg-white/10 transition-all"
-                    >
-                        Back to Home
-                    </Link>
+                        >
+                            Back to Home
+                        </Link>
+                    </div>
                 </nav>
             </header>
 
