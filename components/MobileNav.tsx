@@ -46,10 +46,6 @@ export default function MobileNav({ links }: MobileNavProps) {
             {/* Hamburger Button */}
             <button
                 onClick={toggleMenu}
-                onTouchStart={(e) => {
-                    e.preventDefault();
-                    toggleMenu();
-                }}
                 className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg bg-charcoal/5 hover:bg-charcoal/10 active:bg-charcoal/20 transition-colors touch-manipulation z-50 relative"
                 aria-label="Toggle menu"
                 type="button"
@@ -66,11 +62,6 @@ export default function MobileNav({ links }: MobileNavProps) {
                 <div
                     className="fixed inset-0 z-[9999] md:hidden"
                     onClick={closeMenu}
-                    onTouchStart={(e) => {
-                        if (e.target === e.currentTarget) {
-                            closeMenu();
-                        }
-                    }}
                 >
                     {/* Backdrop */}
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
@@ -79,7 +70,6 @@ export default function MobileNav({ links }: MobileNavProps) {
                     <div
                         className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out"
                         onClick={(e) => e.stopPropagation()}
-                        onTouchStart={(e) => e.stopPropagation()}
                     >
                         {/* Header */}
                         <div className="sticky top-0 bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-6 py-5 border-b border-gold/20 flex items-center justify-between z-10">
@@ -91,10 +81,6 @@ export default function MobileNav({ links }: MobileNavProps) {
                             </div>
                             <button
                                 onClick={closeMenu}
-                                onTouchStart={(e) => {
-                                    e.preventDefault();
-                                    closeMenu();
-                                }}
                                 className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 active:bg-white/40 transition-colors flex items-center justify-center touch-manipulation"
                                 aria-label="Close menu"
                                 type="button"
