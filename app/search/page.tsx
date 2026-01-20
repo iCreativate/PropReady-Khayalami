@@ -1,0 +1,410 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, Home, Search, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
+
+type FilterType = 'all' | 'houses' | 'apartments' | 'townhouses' | 'under-1m';
+
+interface Property {
+    id: number;
+    type: string;
+    price: number;
+    bedrooms: number;
+    bathrooms: number;
+    size: number;
+    matchScore?: number;
+    isMatched?: boolean;
+}
+
+export default function SearchPage() {
+    const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+    const [quizResult, setQuizResult] = useState<{
+        preQualAmount: number;
+        score: number;
+    } | null>(null);
+
+    useEffect(() => {
+        // Load quiz result from localStorage
+        if (typeof window !== 'undefined') {
+            const storedQuizResult = localStorage.getItem('propReady_quizResult');
+            if (storedQuizResult) {
+                const result = JSON.parse(storedQuizResult);
+                setQuizResult({
+                    preQualAmount: result.preQualAmount || 0,
+                    score: result.score || 0
+                });
+            }
+        }
+    }, []);
+
+    // Mock properties data - expanded list
+    const allProperties: Property[] = [
+        { id: 1, type: 'Apartment', price: 850000, bedrooms: 2, bathrooms: 1, size: 80 },
+        { id: 2, type: 'Townhouse', price: 900000, bedrooms: 3, bathrooms: 2, size: 90 },
+        { id: 3, type: 'Apartment', price: 950000, bedrooms: 2, bathrooms: 2, size: 100 },
+        { id: 4, type: 'House', price: 1200000, bedrooms: 3, bathrooms: 2, size: 110 },
+        { id: 5, type: 'Townhouse', price: 1000000, bedrooms: 3, bathrooms: 2, size: 120 },
+        { id: 6, type: 'House', price: 1100000, bedrooms: 4, bathrooms: 3, size: 130 },
+        { id: 7, type: 'Apartment', price: 750000, bedrooms: 1, bathrooms: 1, size: 65 },
+        { id: 8, type: 'House', price: 1300000, bedrooms: 4, bathrooms: 3, size: 140 },
+        { id: 9, type: 'Townhouse', price: 1050000, bedrooms: 3, bathrooms: 2, size: 115 },
+        { id: 10, type: 'Apartment', price: 880000, bedrooms: 2, bathrooms: 1, size: 85 },
+        { id: 11, type: 'House', price: 1400000, bedrooms: 5, bathrooms: 4, size: 160 },
+        { id: 12, type: 'Townhouse', price: 920000, bedrooms: 3, bathrooms: 2, size: 95 },
+    ];
+
+    // Calculate match score for each property
+    const propertiesWithScores = useMemo(() => {
+        if (!quizResult || quizResult.preQualAmount === 0) {
+            return allProperties.map(prop => ({ ...prop, matchScore: 0, isMatched: false }));
+        }
+
+        const preQualAmount = quizResult.preQualAmount;
+        const propReadyScore = quizResult.score || 0;
+
+        return allProperties.map(property => {
+            // Calculate match score based on:
+            // 1. How close price is to prequal amount (60% weight)
+            // 2. PropReady Score (40% weight)
+            const priceDifference = Math.abs(property.price - preQualAmount);
+            const maxDifference = preQualAmount * 0.4; // 40% max difference for matching
+            const priceMatch = Math.max(0, 100 - (priceDifference / maxDifference) * 60);
+            const scoreMatch = propReadyScore * 0.4;
+            const matchScore = Math.round(priceMatch + scoreMatch);
+
+            // Property is "matched" if it's within 30% of prequal amount and score is reasonable
+            const isMatched = priceDifference <= preQualAmount * 0.3 && matchScore >= 60;
+
+            return {
+                ...property,
+                matchScore: Math.min(100, Math.max(0, matchScore)),
+                isMatched
+            };
+        });
+    }, [quizResult]);
+
+    // Filter and sort properties
+    const filteredProperties = useMemo(() => {
+        // First filter by active filter
+        let filtered = propertiesWithScores.filter(property => {
+            switch (activeFilter) {
+                case 'houses':
+                    return property.type === 'House';
+                case 'apartments':
+                    return property.type === 'Apartment';
+                case 'townhouses':
+                    return property.type === 'Townhouse';
+                case 'under-1m':
+                    return property.price < 1000000;
+                default:
+                    return true;
+            }
+        });
+
+        // Sort: matched properties first (by match score), then others
+        filtered.sort((a, b) => {
+            // If both are matched or both are not matched, sort by match score
+            if (a.isMatched === b.isMatched) {
+                return (b.matchScore || 0) - (a.matchScore || 0);
+            }
+            // Matched properties come first
+            return a.isMatched ? -1 : 1;
+        });
+
+        return filtered;
+    }, [propertiesWithScores, activeFilter]);
+
+    return (
+        <div className="min-h-screen bg-white">
+            {/* Header */}
+            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
+                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
+                    <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Back to Home</span>
+                    </Link>
+
+                    <div className="flex items-center space-x-2">
+                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
+                            <Home className="w-6 h-6 text-white" />
+                        </div>
+                        <span className="text-charcoal text-xl font-bold">PropReady</span>
+                    </div>
+
+                    <Link
+                        href="/dashboard"
+                        className="px-4 py-2 rounded-lg bg-gold text-white font-semibold hover:bg-gold-600 transition"
+                    >
+                        My Dashboard
+                    </Link>
+                </nav>
+            </header>
+
+            {/* Main Content */}
+            <main className="relative px-4 pt-24 pb-8">
+                <div className="container mx-auto max-w-7xl relative z-10">
+                    {/* Search Bar */}
+                    <div className="mb-8">
+                        <div className="glass-effect rounded-xl p-6">
+                            <div className="flex flex-col md:flex-row gap-4">
+                                <div className="flex-1 relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search by location, suburb, or property name..."
+                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    />
+                                </div>
+                                <button className="px-6 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal hover:bg-gold hover:text-white hover:border-gold transition-all font-semibold flex items-center space-x-2">
+                                    <SlidersHorizontal className="w-5 h-5" />
+                                    <span>Filters</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quick Filters */}
+                    <div className="mb-8 flex flex-wrap gap-3">
+                        <button 
+                            onClick={() => setActiveFilter('all')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-md transition-all ${
+                                activeFilter === 'all'
+                                    ? 'bg-gold text-white'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold shadow-sm'
+                            }`}
+                        >
+                            All Properties
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('houses')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
+                                activeFilter === 'houses'
+                                    ? 'bg-gold text-white border-2 border-gold'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
+                            }`}
+                        >
+                            Houses
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('apartments')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
+                                activeFilter === 'apartments'
+                                    ? 'bg-gold text-white border-2 border-gold'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
+                            }`}
+                        >
+                            Apartments
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('townhouses')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
+                                activeFilter === 'townhouses'
+                                    ? 'bg-gold text-white border-2 border-gold'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
+                            }`}
+                        >
+                            Townhouses
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('under-1m')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
+                                activeFilter === 'under-1m'
+                                    ? 'bg-gold text-white border-2 border-gold'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
+                            }`}
+                        >
+                            Under R1M
+                        </button>
+                    </div>
+
+                    {/* Results Count */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between">
+                            <p className="text-charcoal/90 text-lg">
+                                <span className="font-bold text-gold">{filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'}</span> found in iKhayalami
+                            </p>
+                            {quizResult && quizResult.preQualAmount > 0 && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20">
+                                    <TrendingUp className="w-4 h-4 text-gold" />
+                                    <span className="text-charcoal/70 text-sm font-medium">
+                                        Matched to your profile
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Property Grid */}
+                    {filteredProperties.length > 0 ? (
+                        <div className="space-y-8">
+                            {/* Matched Properties Section */}
+                            {quizResult && quizResult.preQualAmount > 0 && filteredProperties.some(p => p.isMatched) && (
+                                <div>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <TrendingUp className="w-5 h-5 text-gold" />
+                                        <h3 className="text-xl font-bold text-charcoal">Matched to Your Profile</h3>
+                                        <span className="px-2 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold">
+                                            Based on R {quizResult.preQualAmount.toLocaleString()} prequalification
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredProperties.filter(p => p.isMatched).map((property) => (
+                                            <div key={property.id} className="premium-card rounded-xl overflow-hidden cursor-pointer group border-2 border-gold/30 relative">
+                                                {/* Matched Badge */}
+                                                <div className="absolute top-3 right-3 z-10">
+                                                    <span className="px-2 py-1 rounded-full bg-gold text-white text-xs font-semibold shadow-md">
+                                                        Best Match
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Property Image Placeholder */}
+                                                <div className="h-48 bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center border-b border-charcoal/10">
+                                                    <Home className="w-16 h-16 text-gold/40" />
+                                                </div>
+
+                                                {/* Property Details */}
+                                                <div className="p-6">
+                                                    {/* Price */}
+                                                    <div className="mb-4">
+                                                        <span className="text-2xl font-bold text-gold">R {property.price.toLocaleString('en-ZA')}</span>
+                                                    </div>
+
+                                                    {/* Location */}
+                                                    <div className="flex items-center text-charcoal/50 mb-3 text-sm">
+                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                        <span>iKhayalami, Johannesburg</span>
+                                                    </div>
+
+                                                    {/* Property Type */}
+                                                    <p className="text-charcoal font-semibold mb-4 text-base">
+                                                        Modern {property.type}
+                                                    </p>
+
+                                                    {/* Features */}
+                                                    <div className="flex items-center space-x-4 text-charcoal/50 mb-4 text-sm">
+                                                        <div className="flex items-center space-x-1.5">
+                                                            <Bed className="w-4 h-4" />
+                                                            <span>{property.bedrooms}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1.5">
+                                                            <Bath className="w-4 h-4" />
+                                                            <span>{property.bathrooms}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1.5">
+                                                            <Square className="w-4 h-4" />
+                                                            <span>{property.size}m²</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Match Score & PropReady Score */}
+                                                    <div className="pt-4 border-t border-charcoal/10 space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-charcoal/50 text-xs font-medium">Match Score</span>
+                                                            <span className="px-3 py-1.5 rounded-full bg-gold/20 border border-gold/30 text-gold font-semibold text-sm">
+                                                                {property.matchScore}% Match
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-charcoal/50 text-xs font-medium">PropReady Score</span>
+                                                            <span className="px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold font-semibold text-sm">
+                                                                {85 + property.id}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* All Other Properties Section */}
+                            {filteredProperties.filter(p => !p.isMatched || !quizResult || quizResult.preQualAmount === 0).length > 0 && (
+                                <div>
+                                    {quizResult && quizResult.preQualAmount > 0 && filteredProperties.some(p => p.isMatched) && (
+                                        <h3 className="text-xl font-bold text-charcoal mb-4">Other Properties</h3>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredProperties.filter(p => !p.isMatched || !quizResult || quizResult.preQualAmount === 0).map((property) => (
+                                            <div key={property.id} className="premium-card rounded-xl overflow-hidden cursor-pointer group">
+                                                {/* Property Image Placeholder */}
+                                                <div className="h-48 bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center border-b border-charcoal/10">
+                                                    <Home className="w-16 h-16 text-gold/40" />
+                                                </div>
+
+                                                {/* Property Details */}
+                                                <div className="p-6">
+                                                    {/* Price */}
+                                                    <div className="mb-4">
+                                                        <span className="text-2xl font-bold text-gold">R {property.price.toLocaleString('en-ZA')}</span>
+                                                    </div>
+
+                                                    {/* Location */}
+                                                    <div className="flex items-center text-charcoal/50 mb-3 text-sm">
+                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                        <span>iKhayalami, Johannesburg</span>
+                                                    </div>
+
+                                                    {/* Property Type */}
+                                                    <p className="text-charcoal font-semibold mb-4 text-base">
+                                                        Modern {property.type}
+                                                    </p>
+
+                                                    {/* Features */}
+                                                    <div className="flex items-center space-x-4 text-charcoal/50 mb-4 text-sm">
+                                                        <div className="flex items-center space-x-1.5">
+                                                            <Bed className="w-4 h-4" />
+                                                            <span>{property.bedrooms}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1.5">
+                                                            <Bath className="w-4 h-4" />
+                                                            <span>{property.bathrooms}</span>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1.5">
+                                                            <Square className="w-4 h-4" />
+                                                            <span>{property.size}m²</span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* PropReady Score Badge */}
+                                                    <div className="pt-4 border-t border-charcoal/10">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-charcoal/50 text-xs font-medium">PropReady Score</span>
+                                                            <span className="px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold font-semibold text-sm">
+                                                                {85 + property.id}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="premium-card rounded-xl p-12 text-center">
+                            <Home className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
+                            <p className="text-charcoal/70 text-lg mb-2">No properties found</p>
+                            <p className="text-charcoal/50 text-sm">Try adjusting your filters</p>
+                        </div>
+                    )}
+
+                    {/* Load More */}
+                    <div className="mt-12 text-center">
+                        <button className="px-8 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal hover:bg-gold hover:text-white hover:border-gold transition-all font-semibold">
+                            Load More Properties
+                        </button>
+                    </div>
+                </div>
+
+                {/* Background Pattern */}
+                <div className="absolute inset-0 opacity-5 pointer-events-none">
+                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
+                </div>
+            </main>
+        </div>
+    );
+}
