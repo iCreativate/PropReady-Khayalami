@@ -109,14 +109,8 @@ export default function MobileNav({ links }: MobileNavProps) {
                                 <Link
                                     key={index}
                                     href={link.href}
-                                    onClick={closeMenu}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
+                                    onClick={(e) => {
                                         closeMenu();
-                                        // Small delay to allow state update before navigation
-                                        setTimeout(() => {
-                                            window.location.href = link.href;
-                                        }, 100);
                                     }}
                                     className={`block px-4 py-3 rounded-xl transition-all touch-manipulation ${
                                         link.isButton
