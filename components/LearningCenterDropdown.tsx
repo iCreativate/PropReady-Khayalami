@@ -7,6 +7,7 @@ import { ChevronDown, BookOpen } from 'lucide-react';
 export default function LearningCenterDropdown() {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -21,14 +22,31 @@ export default function LearningCenterDropdown() {
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
         };
     }, [isOpen]);
+
+    const handleMouseEnter = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        setIsOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        // Add a delay before closing to allow users to move mouse to dropdown
+        timeoutRef.current = setTimeout(() => {
+            setIsOpen(false);
+        }, 200);
+    };
 
     return (
         <div className="relative" ref={dropdownRef}>
             <button
-                onMouseEnter={() => setIsOpen(true)}
-                onMouseLeave={() => setIsOpen(false)}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex items-center gap-1 text-charcoal/90 hover:text-charcoal transition"
             >
@@ -38,8 +56,8 @@ export default function LearningCenterDropdown() {
 
             {isOpen && (
                 <div
-                    onMouseEnter={() => setIsOpen(true)}
-                    onMouseLeave={() => setIsOpen(false)}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                     className="absolute top-full left-0 mt-2 w-56 premium-card rounded-xl shadow-2xl border border-charcoal/10 overflow-hidden z-50"
                 >
                     <div className="p-2">
