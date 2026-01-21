@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import LearningToolkit from '@/components/LearningToolkit';
-import { ArrowLeft, BookOpen, Home, CheckCircle, Target, BarChart3, DollarSign, PiggyBank, Building2, TrendingUp } from 'lucide-react';
+import { ArrowLeft, BookOpen, Home, CheckCircle, Target, BarChart3, DollarSign, PiggyBank, Building2, TrendingUp, AlertTriangle } from 'lucide-react';
 
 export default async function InvestorsLearningModulePage({
     params,
@@ -562,6 +562,387 @@ export default async function InvestorsLearningModulePage({
                     )
                 }
             ]
+        },
+        'mistakes': {
+            title: 'Common Mistakes to Avoid',
+            icon: 'AlertTriangle',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Learning from the mistakes of others is one of the smartest ways to protect your investment.
+                        Many property investors make avoidable errors that cost them time, money, and opportunities.
+                        Here are the most common pitfalls and how to steer clear of them.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Insufficient Research & Due Diligence</h3>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">The Mistake</h4>
+                        <p className="mb-3 text-charcoal/70">
+                            Jumping into a purchase without thoroughly researching the property, area, market conditions,
+                            or property history. This leads to overpaying, buying in declining areas, or purchasing properties
+                            with hidden problems.
+                        </p>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">How to Avoid It</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Research the area&apos;s growth trends, crime statistics, and development plans</li>
+                            <li>Get a professional property inspection before purchase</li>
+                            <li>Check comparable sales in the area (CMA) to ensure fair pricing</li>
+                            <li>Review property history, including previous sales and any issues</li>
+                            <li>Verify rental rates in the area if buying for investment</li>
+                            <li>Check municipal rates, levies, and any outstanding debts on the property</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Emotional Decision-Making</h3>
+                    <p>
+                        Property investment should be a business decision, not an emotional one. Falling in love with a property
+                        or making decisions based on fear of missing out (FOMO) leads to poor financial outcomes.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Common Emotional Traps</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li><strong className="text-charcoal">FOMO:</strong> Buying because you&apos;re afraid prices will rise</li>
+                            <li><strong className="text-charcoal">Attachment:</strong> Overpaying because you &quot;love&quot; the property</li>
+                            <li><strong className="text-charcoal">Pride:</strong> Not walking away from a bad deal to save face</li>
+                            <li><strong className="text-charcoal">Impatience:</strong> Rushing into purchases without proper analysis</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Solution</h4>
+                        <p className="text-charcoal/70">
+                            Always use objective criteria: rental yield, cash flow, growth potential, and ROI. If a property
+                            doesn&apos;t meet your investment criteria, walk away—there will always be other opportunities.
+                        </p>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Underestimating Costs</h3>
+                    <p>
+                        Many investors only calculate the purchase price and monthly bond repayment, forgetting about all the
+                        other costs that come with property ownership.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Hidden Costs Often Overlooked</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li><strong className="text-charcoal">Transfer costs:</strong> 8-10% of purchase price (duty, transfer fees, bond registration)</li>
+                            <li><strong className="text-charcoal">Municipal rates & levies:</strong> Monthly costs that can be substantial</li>
+                            <li><strong className="text-charcoal">Insurance:</strong> Building and landlord insurance</li>
+                            <li><strong className="text-charcoal">Maintenance & repairs:</strong> Budget 1-2% of property value annually</li>
+                            <li><strong className="text-charcoal">Property management:</strong> 8-12% of rental income if using an agent</li>
+                            <li><strong className="text-charcoal">Vacancy periods:</strong> 1-2 months per year without rental income</li>
+                            <li><strong className="text-charcoal">Legal & accounting:</strong> Tax preparation, lease agreements, evictions if needed</li>
+                            <li><strong className="text-charcoal">Unexpected repairs:</strong> Major issues like roof leaks, plumbing, electrical</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Best Practice</h4>
+                        <p className="text-charcoal/70">
+                            Create a detailed budget spreadsheet before purchasing. Factor in all costs and ensure you have
+                            a buffer for unexpected expenses. Only proceed if the numbers work with all costs included.
+                        </p>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Poor Location Choice</h3>
+                    <p>
+                        The old adage &quot;location, location, location&quot; exists for a reason. A great property in a poor location
+                        will struggle to appreciate and attract quality tenants.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Location Red Flags</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>High crime rates or declining safety</li>
+                            <li>Poor infrastructure (roads, public transport, utilities)</li>
+                            <li>Limited access to schools, hospitals, shopping centers</li>
+                            <li>High vacancy rates in the area</li>
+                            <li>Declining property values or stagnant growth</li>
+                            <li>Over-supply of rental properties</li>
+                            <li>Planned developments that could negatively impact the area</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">What to Look For</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Growing population and employment opportunities</li>
+                            <li>Good schools, hospitals, and amenities nearby</li>
+                            <li>Low vacancy rates and high rental demand</li>
+                            <li>Upcoming infrastructure projects or developments</li>
+                            <li>Stable or increasing property values</li>
+                            <li>Safe neighborhoods with good security</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Over-Leveraging</h3>
+                    <p>
+                        Using too much debt to finance properties can be dangerous. While leverage can amplify returns,
+                        it also amplifies risk, especially when interest rates rise or rental income drops.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">The Risks</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Negative cash flow if rental doesn&apos;t cover all costs</li>
+                            <li>Vulnerability to interest rate increases</li>
+                            <li>Difficulty servicing debt if you lose your job or income drops</li>
+                            <li>Forced sales at bad times if you can&apos;t meet obligations</li>
+                            <li>Limited ability to handle unexpected expenses</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Safe Leverage Guidelines</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Ensure positive cash flow after all expenses</li>
+                            <li>Maintain a loan-to-value (LTV) ratio below 80% when possible</li>
+                            <li>Keep a cash reserve (6-12 months of expenses) for emergencies</li>
+                            <li>Don&apos;t rely on capital growth to make deals work—ensure cash flow is sustainable</li>
+                            <li>Stress test your portfolio: what happens if interest rates rise 2-3%?</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">6. Inadequate Tenant Screening</h3>
+                    <p>
+                        Bad tenants can cost you thousands in unpaid rent, property damage, and legal fees.
+                        Rushing tenant selection to fill a vacancy quickly is a costly mistake.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Screening Mistakes</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Not checking credit history or credit score</li>
+                            <li>Skipping employment verification</li>
+                            <li>Not contacting previous landlords for references</li>
+                            <li>Accepting tenants without proper lease agreements</li>
+                            <li>Not verifying identity and income</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Proper Screening Process</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Require completed application forms with all details</li>
+                            <li>Run credit checks (use reputable credit bureaus)</li>
+                            <li>Verify employment and income (payslips, bank statements)</li>
+                            <li>Contact at least 2 previous landlords</li>
+                            <li>Verify identity (ID copy) and check for any red flags</li>
+                            <li>Ensure monthly income is at least 3x the rental amount</li>
+                            <li>Use proper lease agreements that comply with South African rental laws</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">7. Neglecting Property Maintenance</h3>
+                    <p>
+                        Deferring maintenance to save money is a false economy. Small issues become expensive problems,
+                        and poorly maintained properties lose value and struggle to attract quality tenants.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Consequences of Neglect</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Small repairs become major, expensive fixes</li>
+                            <li>Property value decreases</li>
+                            <li>Difficulty attracting and retaining good tenants</li>
+                            <li>Higher vacancy rates</li>
+                            <li>Legal issues if property becomes uninhabitable</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Maintenance Best Practices</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Budget 1-2% of property value annually for maintenance</li>
+                            <li>Conduct regular property inspections (quarterly or bi-annually)</li>
+                            <li>Address issues immediately—don&apos;t let them escalate</li>
+                            <li>Keep records of all maintenance and repairs</li>
+                            <li>Build relationships with reliable contractors</li>
+                            <li>Plan for major expenses (roof, plumbing, electrical) every 10-15 years</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">8. Lack of Diversification</h3>
+                    <p>
+                        Putting all your investment capital into a single property or one area creates significant risk.
+                        If that property or area underperforms, your entire investment suffers.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Diversification Risks</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>All properties in one area (local economic downturn affects all)</li>
+                            <li>All properties of the same type (e.g., only apartments)</li>
+                            <li>All properties in the same price range</li>
+                            <li>No cash reserves or other asset classes</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">How to Diversify</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Spread properties across different suburbs or cities</li>
+                            <li>Mix property types (residential, commercial, different sizes)</li>
+                            <li>Vary price ranges and tenant demographics</li>
+                            <li>Maintain cash reserves for opportunities and emergencies</li>
+                            <li>Consider other asset classes alongside property</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">9. Ignoring Tax Implications</h3>
+                    <p>
+                        Property investment has significant tax implications. Not understanding or planning for taxes
+                        can eat into your returns and create legal problems.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Common Tax Mistakes</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Not declaring rental income to SARS</li>
+                            <li>Not claiming all allowable deductions (maintenance, rates, interest, etc.)</li>
+                            <li>Not understanding capital gains tax implications when selling</li>
+                            <li>Not using tax-efficient structures (trusts, companies) when appropriate</li>
+                            <li>Poor record-keeping leading to missed deductions or compliance issues</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Tax Planning Essentials</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Keep detailed records of all income and expenses</li>
+                            <li>Work with a tax professional who understands property investment</li>
+                            <li>Understand what expenses are deductible</li>
+                            <li>Plan for capital gains tax when selling</li>
+                            <li>Consider the tax implications of different ownership structures</li>
+                            <li>Stay compliant with SARS requirements</li>
+                        </ul>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">10. Unrealistic Expectations</h3>
+                    <p>
+                        Property investment is not a get-rich-quick scheme. Many investors enter with unrealistic
+                        expectations about returns, timelines, and effort required, leading to disappointment and poor decisions.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Unrealistic Expectations</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Expecting immediate high returns</li>
+                            <li>Believing property always appreciates quickly</li>
+                            <li>Thinking it&apos;s passive income with no work required</li>
+                            <li>Expecting properties to always be tenanted</li>
+                            <li>Underestimating the time and effort needed</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Realistic Property Investment</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Property investment is a long-term strategy (5-10+ years)</li>
+                            <li>Returns come from both rental income and capital growth over time</li>
+                            <li>It requires active management or paying for property management</li>
+                            <li>There will be vacancies, repairs, and challenges</li>
+                            <li>Success requires education, patience, and discipline</li>
+                            <li>Focus on building wealth gradually, not overnight</li>
+                        </ul>
+                    </div>
+
+                    <div className="premium-card p-6 rounded-xl mt-8 bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/30">
+                        <h4 className="text-xl font-bold text-gold mb-3">Key Takeaway</h4>
+                        <p className="text-charcoal/80 leading-relaxed">
+                            The most successful property investors are those who learn from mistakes—both their own and others&apos;.
+                            By avoiding these common pitfalls, you&apos;ll protect your capital, improve your returns, and build
+                            a sustainable property portfolio. Always do your research, run the numbers, and make decisions based
+                            on facts and analysis, not emotions.
+                        </p>
+                    </div>
+                </div>
+            ),
+            toolkit: [
+                {
+                    id: 'mistakes-checklist',
+                    title: 'Pre-Investment Checklist',
+                    description: 'Use this checklist to avoid common mistakes before purchasing',
+                    type: 'template' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Investment Property Due Diligence Checklist</h4>
+                            <div className="space-y-3">
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Property inspection completed</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Comparable sales researched (CMA)</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Area growth trends analyzed</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">All costs calculated (transfer, rates, maintenance)</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Cash flow analysis completed (positive after all costs)</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Rental rates verified in area</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Municipal rates and levies confirmed</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Property history checked (no hidden issues)</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Emergency fund available (6-12 months expenses)</span>
+                                    </label>
+                                </div>
+                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="flex items-center space-x-3 cursor-pointer">
+                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <span className="text-sm font-semibold text-charcoal">Tax implications understood</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                },
+                {
+                    id: 'cost-calculator',
+                    title: 'Total Cost Calculator',
+                    description: 'Calculate all costs to avoid underestimating expenses',
+                    type: 'template' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Property Investment Cost Breakdown</h4>
+                            <div className="space-y-3">
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Purchase Price</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Transfer Costs (8-10%)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Municipal Rates</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Levies (if applicable)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Insurance</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Annual Maintenance Budget (1-2% of value)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Property Management (8-12% of rental)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
+                                    <p className="text-sm font-semibold text-charcoal mb-1">Total Monthly Costs</p>
+                                    <p className="text-xl font-bold text-gold">R 0</p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+            ]
         }
     };
 
@@ -572,7 +953,8 @@ export default async function InvestorsLearningModulePage({
         'financing',
         'tax',
         'portfolio',
-        'market-analysis'
+        'market-analysis',
+        'mistakes'
     ] as const;
 
     const learningModule = modules[slug];

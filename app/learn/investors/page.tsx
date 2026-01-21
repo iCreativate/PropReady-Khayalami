@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Home, TrendingUp, DollarSign, Building2, BarChart3, Target, PiggyBank } from 'lucide-react';
+import { ArrowLeft, BookOpen, Home, TrendingUp, DollarSign, Building2, BarChart3, Target, PiggyBank, AlertTriangle } from 'lucide-react';
 
 export default function InvestorsLearnPage() {
     return (
@@ -157,6 +157,26 @@ export default function InvestorsLearnPage() {
                                     property values, and spot investment opportunities.
                                 </p>
                                 <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 7 */}
+                        <Link href="/learn/investors/mistakes" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
+                                    <AlertTriangle className="w-8 h-8 text-red-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-red-600 mb-4">
+                                    Common Mistakes to Avoid
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Learn from the mistakes of others. Discover the most common pitfalls
+                                    property investors face and how to avoid them to protect your investment.
+                                </p>
+                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
                                     <span>Start Learning</span>
                                     <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
                                 </div>
