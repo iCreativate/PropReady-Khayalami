@@ -7,27 +7,25 @@ export default function CommissionCalculator() {
     const [sellingPrice, setSellingPrice] = useState<string>('');
     const [commissionRate, setCommissionRate] = useState<string>('5');
 
-    // Format number with commas
-    const formatNumber = (num: number) => {
-        return new Intl.NumberFormat('en-ZA').format(num);
+    // Use comma-grouping explicitly (avoids locale NBSP grouping issues)
+    const formatNumberInput = (value: string) => {
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        if (!digitsOnly) return '';
+        return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     };
 
-    // Parse input value by removing commas
-    const parseInputValue = (value: string) => {
-        return value.replace(/,/g, '');
+    const parseNumberInput = (value: string) => {
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        return digitsOnly ? Number(digitsOnly) : 0;
     };
 
     // Handle selling price input change
     const handleSellingPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = parseInputValue(e.target.value);
-        // Only allow numbers
-        if (rawValue === '' || /^\d+$/.test(rawValue)) {
-            const numValue = rawValue === '' ? '' : formatNumber(parseFloat(rawValue));
-            setSellingPrice(numValue);
-        }
+        const formatted = formatNumberInput(e.target.value);
+        setSellingPrice(formatted);
     };
 
-    const price = parseFloat(parseInputValue(sellingPrice)) || 0;
+    const price = parseNumberInput(sellingPrice);
     const rate = parseFloat(commissionRate) || 0;
     
     const commissionAmount = (price * rate) / 100;
