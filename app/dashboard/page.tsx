@@ -95,6 +95,13 @@ export default function DashboardPage() {
         return 'Needs Improvement';
     };
 
+    // Parse number from comma-formatted string (e.g., "250,000" -> 250000)
+    const parseNumberFromString = (value: string): number => {
+        if (!value) return 0;
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        return digitsOnly ? Number(digitsOnly) : 0;
+    };
+
     const calculateMonthlyBudget = (preQualAmount: number) => {
         // Estimate monthly repayment based on pre-qual amount
         // Using typical 20-year loan at ~10% interest rate
@@ -340,8 +347,8 @@ export default function DashboardPage() {
                                 </div>
                                 <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
                                     <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Deposit Saved</p>
-                                    <p className="text-charcoal font-bold text-xl">
-                                        R {quizResult ? parseFloat(quizResult.depositSaved || '0').toLocaleString() : '0'}
+                                    <p className="text-charcoal font-bold text-xl text-right whitespace-nowrap">
+                                        R {quizResult ? parseNumberFromString(quizResult.depositSaved || '0').toLocaleString('en-ZA') : '0'}
                                     </p>
                                 </div>
                             </div>
