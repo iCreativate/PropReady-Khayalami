@@ -75,7 +75,7 @@ export default function BondCalculatorPage() {
 
                         <div className="hidden md:flex items-center space-x-6">
                             <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center for Buyers
+                                Learning Center | Buyers
                             </Link>
                             <Link
                                 href="/sellers"
@@ -98,7 +98,7 @@ export default function BondCalculatorPage() {
                     <div className="flex items-center space-x-4">
                         <MobileNav
                             links={[
-                                { href: '/learn', label: 'Learning Center for Buyers' },
+                                { href: '/learn', label: 'Learning Center | Buyers' },
                                 { href: '/sellers', label: 'For Sellers', isButton: true },
                                 { href: '/search', label: 'Properties' },
                                 { href: '/calculator', label: 'Bond Calculator' },

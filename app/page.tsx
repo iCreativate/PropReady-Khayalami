@@ -17,7 +17,7 @@ export default function HomePage() {
 
                     <div className="hidden md:flex items-center space-x-8">
                         <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                            Learning Center for Buyers
+                            Learning Center | Buyers
                         </Link>
                         <Link
                             href="/sellers"
@@ -44,7 +44,7 @@ export default function HomePage() {
 
                     <MobileNav
                         links={[
-                            { href: '/learn', label: 'Learning Center for Buyers' },
+                            { href: '/learn', label: 'Learning Center | Buyers' },
                             { href: '/sellers', label: 'For Sellers', isButton: true },
                             { href: '/search', label: 'Properties' },
                             { href: '/calculator', label: 'Bond Calculator' },

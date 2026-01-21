@@ -118,7 +118,7 @@ export default function MyAgentPage() {
                                 Properties
                             </Link>
                             <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center for Buyers
+                                Learning Center | Buyers
                             </Link>
                             <Link
                                 href="/sellers"

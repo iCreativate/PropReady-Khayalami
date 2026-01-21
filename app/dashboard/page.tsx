@@ -196,7 +196,7 @@ export default function DashboardPage() {
                                 Properties
                             </Link>
                             <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center for Buyers
+                                Learning Center | Buyers
                             </Link>
                             <Link
                                 href="/sellers"
@@ -217,7 +217,7 @@ export default function DashboardPage() {
                         <MobileNav
                             links={[
                                 { href: '/search', label: 'Properties' },
-                                { href: '/learn', label: 'Learning Center for Buyers' },
+                                { href: '/learn', label: 'Learning Center | Buyers' },
                                 { href: '/sellers', label: 'For Sellers', isButton: true },
                                 { href: '/calculator', label: 'Bond Calculator' },
                                 { href: '/dashboard', label: 'Dashboard' },

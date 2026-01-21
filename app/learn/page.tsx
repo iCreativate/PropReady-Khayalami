@@ -28,7 +28,7 @@ export default function LearnPage() {
                     <div className="text-center mb-16">
                         <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
                             <BookOpen className="w-5 h-5 text-gold" />
-                            <span className="text-gold font-semibold">Learning Center for Buyers</span>
+                            <span className="text-gold font-semibold">Learning Center | Buyers</span>
                         </div>
 
                         <h1 className="text-5xl md:text-6xl font-bold text-charcoal mb-6">

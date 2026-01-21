@@ -695,21 +695,21 @@ export default function QuizPage() {
                         <div className="premium-card rounded-xl p-6 text-left max-w-md mx-auto bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
                             <h3 className="text-charcoal font-bold mb-4 border-b border-charcoal/20 pb-2">Summary</h3>
                             <div className="space-y-2 text-charcoal/70">
-                                <div className="flex justify-between">
+                                <div className="flex items-start justify-between gap-4">
                                     <span>Name:</span>
-                                    <span className="font-semibold text-charcoal">{formData.fullName || '-'}</span>
+                                    <span className="font-semibold text-charcoal text-right break-words min-w-[40%]">{formData.fullName || '-'}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex items-start justify-between gap-4">
                                     <span>Monthly Income:</span>
-                                    <span className="font-semibold text-charcoal">R {formData.monthlyIncome || '0'}</span>
+                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {formData.monthlyIncome || '0'}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex items-start justify-between gap-4">
                                     <span>Deposit:</span>
-                                    <span className="font-semibold text-charcoal">R {formData.depositSaved || '0'}</span>
+                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {formData.depositSaved || '0'}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex items-start justify-between gap-4">
                                     <span>Employment:</span>
-                                    <span className="font-semibold text-charcoal capitalize">{formData.employmentStatus || '-'}</span>
+                                    <span className="font-semibold text-charcoal capitalize text-right break-words min-w-[40%]">{formData.employmentStatus || '-'}</span>
                                 </div>
                             </div>
                         </div>
