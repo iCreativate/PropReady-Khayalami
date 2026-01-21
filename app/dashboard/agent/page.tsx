@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, Users, Phone, Mail, MessageCircle, MapPin, Building2, CheckCircle, Star, Calendar, X } from 'lucide-react';
+import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 
 export default function MyAgentPage() {
     const router = useRouter();
@@ -83,9 +84,7 @@ export default function MyAgentPage() {
                             <Link href="/search" className="text-charcoal/90 hover:text-charcoal transition">
                                 Properties
                             </Link>
-                            <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center | Buyers
-                            </Link>
+                            <LearningCenterDropdown />
                             <Link
                                 href="/sellers"
                                 className="px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"

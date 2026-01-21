@@ -78,41 +78,6 @@ export default function AgentLoginPage() {
                             </p>
                         </div>
 
-                        {/* Demo Credentials Info */}
-                        <div className="mb-6 p-4 bg-gold/10 border border-gold/30 rounded-lg">
-                            <p className="text-charcoal font-semibold text-sm mb-3 flex items-center gap-2">
-                                <span className="text-gold">🔑</span>
-                                Demo Login Credentials
-                            </p>
-                            <div className="space-y-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ email: 'sarah.johnson@premierrealestate.co.za', password: 'demo123' })}
-                                    className="w-full text-left p-2 bg-white/50 hover:bg-white/70 rounded border border-gold/20 transition text-xs"
-                                >
-                                    <p className="font-semibold text-charcoal">Sarah Johnson</p>
-                                    <p className="text-charcoal/70">sarah.johnson@premierrealestate.co.za</p>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ email: 'michael.chen@eliteproperties.co.za', password: 'demo123' })}
-                                    className="w-full text-left p-2 bg-white/50 hover:bg-white/70 rounded border border-gold/20 transition text-xs"
-                                >
-                                    <p className="font-semibold text-charcoal">Michael Chen</p>
-                                    <p className="text-charcoal/70">michael.chen@eliteproperties.co.za</p>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ email: 'thabo.mthembu@urbanrealty.co.za', password: 'demo123' })}
-                                    className="w-full text-left p-2 bg-white/50 hover:bg-white/70 rounded border border-gold/20 transition text-xs"
-                                >
-                                    <p className="font-semibold text-charcoal">Thabo Mthembu</p>
-                                    <p className="text-charcoal/70">thabo.mthembu@urbanrealty.co.za</p>
-                                </button>
-                            </div>
-                            <p className="text-xs text-charcoal/60 mt-3 text-center">Password for all accounts: <strong>demo123</strong></p>
-                        </div>
-
                         {/* Login Form */}
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {error && (

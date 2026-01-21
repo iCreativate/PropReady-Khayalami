@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, FileText, Download, Upload, CheckCircle, AlertCircle, Calendar, X, Building2, Star, Phone, ExternalLink, Trophy, Briefcase, Clipboard } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 
 interface Document {
     id: string;
@@ -244,9 +245,7 @@ export default function DocumentsPage() {
                             <Link href="/search" className="text-charcoal/90 hover:text-charcoal transition">
                                 Properties
                             </Link>
-                            <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center | Buyers
-                            </Link>
+                            <LearningCenterDropdown />
                             <Link
                                 href="/sellers"
                                 className="px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
@@ -266,7 +265,8 @@ export default function DocumentsPage() {
                         <MobileNav
                             links={[
                                 { href: '/search', label: 'Properties' },
-                                { href: '/learn', label: 'Learning Center | Buyers' },
+                                { href: '/learn', label: 'Learning Center - Buyers' },
+                                { href: '/learn/investors', label: 'Learning Center - Investors' },
                                 { href: '/sellers', label: 'For Sellers', isButton: true },
                                 { href: '/calculator', label: 'Bond Calculator' },
                                 { href: '/dashboard', label: 'Dashboard' },

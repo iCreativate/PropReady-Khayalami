@@ -87,32 +87,47 @@ export default function TransferCostCalculator() {
         }).format(amount);
     };
 
+    // Use comma-grouping explicitly (avoids locale NBSP grouping issues)
+    const formatNumberInput = (value: string) => {
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        if (!digitsOnly) return '';
+        return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    };
+
+    const parseNumberInput = (value: string) => {
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        return digitsOnly ? Number(digitsOnly) : 0;
+    };
+
+    const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const formatted = formatNumberInput(e.target.value);
+        const numValue = parseNumberInput(formatted);
+        setPrice(numValue);
+    };
+
     return (
-        <div className="bg-white border border-charcoal/20 rounded-2xl p-6 md:p-8 mt-8 shadow-xl">
+        <div className="bg-white border border-charcoal/20 rounded-2xl p-4 sm:p-6 md:p-8 mt-8 shadow-xl">
             <div className="flex items-center space-x-3 mb-6">
-                <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center flex-shrink-0">
                     <Calculator className="w-6 h-6 text-charcoal" />
                 </div>
-                <h3 className="text-2xl font-bold text-charcoal">Cost Calculator</h3>
+                <h3 className="text-xl sm:text-2xl font-bold text-charcoal">Cost Calculator</h3>
             </div>
 
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
                 {/* Input Section */}
                 <div>
                     <label className="block text-sm font-medium text-charcoal/70 mb-2">
                         Purchase Price
                     </label>
                     <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/50">R</span>
+                        <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-charcoal/50 text-sm sm:text-base">R</span>
                         <input
                             type="text"
-                            value={price === 0 ? '' : new Intl.NumberFormat('en-ZA').format(price)}
-                            onChange={(e) => {
-                                // Remove non-digits and convert to number
-                                const val = Number(e.target.value.replace(/[^0-9]/g, ''));
-                                setPrice(val);
-                            }}
-                            className="w-full bg-white border border-charcoal/20 rounded-lg py-3 pl-10 pr-4 text-charcoal placeholder-charcoal/30 focus:outline-none focus:ring-2 focus:ring-gold transition text-lg font-semibold"
+                            inputMode="numeric"
+                            value={price === 0 ? '' : formatNumberInput(price.toString())}
+                            onChange={handlePriceChange}
+                            className="w-full bg-white border border-charcoal/20 rounded-lg py-2.5 sm:py-3 pl-8 sm:pl-10 pr-3 sm:pr-4 text-charcoal placeholder-charcoal/30 focus:outline-none focus:ring-2 focus:ring-gold transition text-base sm:text-lg font-semibold"
                             placeholder="e.g. 1,000,000"
                         />
                     </div>
@@ -128,31 +143,31 @@ export default function TransferCostCalculator() {
                 </div>
 
                 {/* Results Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white border border-charcoal/20 p-4 rounded-xl shadow-sm">
-                        <p className="text-charcoal/60 text-sm mb-1">Transfer Duty (Tax)</p>
-                        <p className={`text-xl font-bold ${transferDuty === 0 ? 'text-green-600' : 'text-charcoal'}`}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="bg-white border border-charcoal/20 p-3 sm:p-4 rounded-xl shadow-sm">
+                        <p className="text-charcoal/60 text-xs sm:text-sm mb-1">Transfer Duty (Tax)</p>
+                        <p className={`text-lg sm:text-xl font-bold ${transferDuty === 0 ? 'text-green-600' : 'text-charcoal'} break-words`}>
                             {transferDuty === 0 ? 'Exempt' : formatCurrency(transferDuty)}
                         </p>
                     </div>
 
-                    <div className="bg-white border border-charcoal/20 p-4 rounded-xl shadow-sm">
-                        <p className="text-charcoal/60 text-sm mb-1">Transfer Attorney Fees</p>
-                        <p className="text-xl font-bold text-charcoal">
+                    <div className="bg-white border border-charcoal/20 p-3 sm:p-4 rounded-xl shadow-sm">
+                        <p className="text-charcoal/60 text-xs sm:text-sm mb-1">Transfer Attorney Fees</p>
+                        <p className="text-lg sm:text-xl font-bold text-charcoal break-words">
                             ± {formatCurrency(transferFees)}
                         </p>
                     </div>
 
-                    <div className="bg-white border border-charcoal/20 p-4 rounded-xl shadow-sm">
-                        <p className="text-charcoal/60 text-sm mb-1">Bond Registration Costs</p>
-                        <p className="text-xl font-bold text-charcoal">
+                    <div className="bg-white border border-charcoal/20 p-3 sm:p-4 rounded-xl shadow-sm">
+                        <p className="text-charcoal/60 text-xs sm:text-sm mb-1">Bond Registration Costs</p>
+                        <p className="text-lg sm:text-xl font-bold text-charcoal break-words">
                             ± {formatCurrency(bondCosts)}
                         </p>
                     </div>
 
-                    <div className="bg-gold/20 border border-gold/30 p-4 rounded-xl shadow-sm">
-                        <p className="text-gold text-sm mb-1 font-semibold">Total Extra Cash Needed</p>
-                        <p className="text-2xl font-bold text-charcoal">
+                    <div className="bg-gold/20 border border-gold/30 p-3 sm:p-4 rounded-xl shadow-sm sm:col-span-2">
+                        <p className="text-gold text-xs sm:text-sm mb-1 font-semibold">Total Extra Cash Needed</p>
+                        <p className="text-xl sm:text-2xl font-bold text-charcoal break-words">
                             {formatCurrency(total)}
                         </p>
                     </div>
@@ -160,7 +175,7 @@ export default function TransferCostCalculator() {
 
                 <div className="flex items-start space-x-2 text-xs text-charcoal/60 bg-charcoal/5 border border-charcoal/10 p-3 rounded-lg">
                     <RefreshCw className="w-4 h-4 mt-0.5 flex-shrink-0 text-charcoal/60" />
-                    <p>
+                    <p className="text-xs sm:text-sm">
                         Estimates are based on 2026 tax tables and standard recommended attorney tariffs.
                         Actual attorney fees may vary by firm. Bond costs assume a 100% bond.
                     </p>

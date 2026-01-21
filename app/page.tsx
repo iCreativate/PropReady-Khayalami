@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Home, ShieldCheck, TrendingUp } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 
 export default function HomePage() {
     return (
@@ -16,9 +17,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="hidden md:flex items-center space-x-8">
-                        <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                            Learning Center | Buyers
-                        </Link>
+                        <LearningCenterDropdown />
                         <Link
                             href="/sellers"
                             className="px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
@@ -44,7 +43,8 @@ export default function HomePage() {
 
                     <MobileNav
                         links={[
-                            { href: '/learn', label: 'Learning Center | Buyers' },
+                            { href: '/learn', label: 'Learning Center - Buyers' },
+                            { href: '/learn/investors', label: 'Learning Center - Investors' },
                             { href: '/sellers', label: 'For Sellers', isButton: true },
                             { href: '/search', label: 'Properties' },
                             { href: '/calculator', label: 'Bond Calculator' },

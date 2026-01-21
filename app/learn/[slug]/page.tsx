@@ -1132,7 +1132,7 @@ export default async function LearningModulePage({
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center text-charcoal">
                     <h1 className="text-4xl font-bold mb-4">Module Not Found</h1>
-                    <Link href="/learn" className="text-gold hover:underline">Back to Learning Center | Buyers</Link>
+                    <Link href="/learn" className="text-gold hover:underline">Back to Learning Center - Buyers</Link>
                 </div>
             </div>
         );

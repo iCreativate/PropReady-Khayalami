@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 
 interface Viewing {
     id: string;
@@ -250,7 +251,8 @@ export default function ViewingsPage() {
                         <MobileNav
                             links={[
                                 { href: '/search', label: 'Properties' },
-                                { href: '/learn', label: 'Learning Center | Buyers' },
+                                { href: '/learn', label: 'Learning Center - Buyers' },
+                                { href: '/learn/investors', label: 'Learning Center - Investors' },
                                 { href: '/sellers', label: 'For Sellers', isButton: true },
                                 { href: '/calculator', label: 'Bond Calculator' },
                                 { href: '/dashboard', label: 'Dashboard' },

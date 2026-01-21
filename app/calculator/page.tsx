@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Home, Calculator, TrendingUp, DollarSign, Calendar, Percent } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
+import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 
 export default function BondCalculatorPage() {
     const [purchasePrice, setPurchasePrice] = useState<number>(0);
@@ -74,9 +75,7 @@ export default function BondCalculatorPage() {
                         </Link>
 
                         <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center | Buyers
-                            </Link>
+                            <LearningCenterDropdown />
                             <Link
                                 href="/sellers"
                                 className="px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
@@ -98,7 +97,8 @@ export default function BondCalculatorPage() {
                     <div className="flex items-center space-x-4">
                         <MobileNav
                             links={[
-                                { href: '/learn', label: 'Learning Center | Buyers' },
+                                { href: '/learn', label: 'Learning Center - Buyers' },
+                                { href: '/learn/investors', label: 'Learning Center - Investors' },
                                 { href: '/sellers', label: 'For Sellers', isButton: true },
                                 { href: '/search', label: 'Properties' },
                                 { href: '/calculator', label: 'Bond Calculator' },
