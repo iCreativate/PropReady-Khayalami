@@ -745,6 +745,30 @@ export default async function InvestorsLearningModulePage({
 
                     <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Underestimating Costs</h3>
                     <p>
+                        Many investors only calculate the purchase price and monthly bond repayment, forgetting about all the
+                        other costs that come with property ownership.
+                    </p>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-red-500/5 to-red-500/10 border border-red-500/20">
+                        <h4 className="text-xl font-bold text-red-600 mb-3">Hidden Costs Often Overlooked</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li><strong className="text-charcoal">Transfer costs:</strong> 8-10% of purchase price (duty, transfer fees, bond registration)</li>
+                            <li><strong className="text-charcoal">Municipal rates & levies:</strong> Monthly costs that can be substantial</li>
+                            <li><strong className="text-charcoal">Insurance:</strong> Building and landlord insurance</li>
+                            <li><strong className="text-charcoal">Maintenance & repairs:</strong> Budget 1-2% of property value annually</li>
+                            <li><strong className="text-charcoal">Property management:</strong> 8-12% of rental income if using an agent</li>
+                            <li><strong className="text-charcoal">Vacancy periods:</strong> 1-2 months per year without rental income</li>
+                            <li><strong className="text-charcoal">Legal & accounting:</strong> Tax preparation, lease agreements, evictions if needed</li>
+                            <li><strong className="text-charcoal">Unexpected repairs:</strong> Major issues like roof leaks, plumbing, electrical</li>
+                        </ul>
+                        <h4 className="text-xl font-bold text-gold mb-3 mt-4">Best Practice</h4>
+                        <p className="text-charcoal/70">
+                            Create a detailed budget spreadsheet before purchasing. Factor in all costs and ensure you have
+                            a buffer for unexpected expenses. Only proceed if the numbers work with all costs included.
+                        </p>
+                    </div>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Over-Leveraging</h3>
+                    <p>
                         Using too much debt to finance properties can be dangerous. While leverage can amplify returns,
                         it also amplifies risk, especially when interest rates rise or rental income drops.
                     </p>
@@ -767,6 +791,76 @@ export default async function InvestorsLearningModulePage({
                         </ul>
                     </div>
 
+                    <div className="premium-card p-6 rounded-xl mt-8 bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/30">
+                        <h4 className="text-xl font-bold text-gold mb-3">Key Takeaway</h4>
+                        <p className="text-charcoal/80 leading-relaxed">
+                            Financial discipline is the foundation of successful property investment. Always account for all costs,
+                            maintain positive cash flow, and use leverage wisely. A property that doesn&apos;t work financially
+                            on paper won&apos;t work in reality—no matter how attractive it seems.
+                        </p>
+                    </div>
+                </div>
+            ),
+            toolkit: [
+                {
+                    id: 'cost-calculator',
+                    title: 'Total Cost Calculator',
+                    description: 'Calculate all costs to avoid underestimating expenses',
+                    type: 'template' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Property Investment Cost Breakdown</h4>
+                            <div className="space-y-3">
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Purchase Price</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Transfer Costs (8-10%)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Municipal Rates</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Levies (if applicable)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Insurance</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Annual Maintenance Budget (1-2% of value)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
+                                    <label className="block text-sm font-semibold text-charcoal mb-1">Property Management (8-12% of rental)</label>
+                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                </div>
+                                <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
+                                    <p className="text-sm font-semibold text-charcoal mb-1">Total Monthly Costs</p>
+                                    <p className="text-xl font-bold text-gold">R 0</p>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
+            ]
+        },
+        'property-management-mistakes': {
+            title: 'Property Management Mistakes',
+            icon: 'AlertTriangle',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Once you own an investment property, effective management is crucial for success. Poor tenant selection
+                        and maintenance neglect are among the most common and costly mistakes investors make after purchase.
+                        Here&apos;s how to avoid these pitfalls.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Inadequate Tenant Screening</h3>
                     <p>
                         Bad tenants can cost you thousands in unpaid rent, property damage, and legal fees.
                         Rushing tenant selection to fill a vacancy quickly is a costly mistake.
