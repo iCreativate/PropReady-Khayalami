@@ -38,10 +38,11 @@ export default function QuizPage() {
 
     const totalSteps = 8;
 
+    // Use comma-grouping explicitly (avoids locale NBSP grouping issues on some mobile browsers)
     const formatNumberInput = (value: string) => {
         const digitsOnly = value.replace(/[^\d]/g, '');
         if (!digitsOnly) return '';
-        return new Intl.NumberFormat('en-ZA').format(Number(digitsOnly));
+        return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     };
 
     const parseNumberInput = (value: string) => {
