@@ -295,7 +295,7 @@ export default function DocumentsPage() {
                             <div className="relative flex items-start justify-between gap-6">
                                 <div>
                                     <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">My Documents</h1>
-                                    <p className="text-charcoal/80 text-base md:text-lg max-w-2xl">
+                                    <p className="text-white/95 text-base md:text-lg max-w-2xl drop-shadow-sm">
                                         Upload your FICA documents to get prequalified with BetterBond and other bond originators.
                                     </p>
                                 </div>
@@ -329,154 +329,8 @@ export default function DocumentsPage() {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* Left column: upload + documents */}
+                        {/* Left column: choose originator + upload */}
                         <div className="lg:col-span-7 space-y-6">
-                            {/* Upload Section */}
-                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl">
-                                <div className="px-6 py-5 bg-gradient-to-r from-gold/15 via-gold/10 to-transparent border-b border-charcoal/10">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div>
-                                            <h2 className="text-2xl font-extrabold text-charcoal flex items-center gap-3">
-                                                <Upload className="w-6 h-6 text-gold" />
-                                                Upload FICA Documents
-                                            </h2>
-                                            {selectedOriginator && (
-                                                <p className="text-charcoal/60 text-sm mt-2">
-                                                    Documents will be sent to{' '}
-                                                    <span className="font-semibold text-gold">
-                                                        {bondOriginators.find(o => o.id === selectedOriginator)?.name}
-                                                    </span>
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 bg-gradient-to-b from-white to-charcoal/5">
-                                    {!selectedOriginator && (
-                                        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-                                            <p className="text-yellow-700 text-sm flex items-center gap-2">
-                                                <AlertCircle className="w-4 h-4" />
-                                                Please select a bond originator first before uploading documents.
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {uploadError && (
-                                        <div className="mb-4 p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-xl">
-                                            <p className="text-red-600 text-sm flex items-center gap-2">
-                                                <AlertCircle className="w-4 h-4" />
-                                                {uploadError}
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    <div
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={handleDrop}
-                                        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                                            isDragging ? 'border-gold bg-gold/5' : 'border-charcoal/20 hover:border-gold/50'
-                                        }`}
-                                    >
-                                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/70 border border-charcoal/10 flex items-center justify-center">
-                                            <Upload className={`w-8 h-8 ${isDragging ? 'text-gold' : 'text-charcoal/50'}`} />
-                                        </div>
-                                        <p className="text-charcoal/70 mb-2">Drag and drop files here, or</p>
-                                        <label className="inline-flex items-center justify-center px-6 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold/90 transition cursor-pointer shadow-sm">
-                                            Browse Files
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept=".pdf,.jpg,.jpeg,.png"
-                                                onChange={handleFileInput}
-                                                className="hidden"
-                                            />
-                                        </label>
-                                        <p className="text-charcoal/50 text-sm mt-4">
-                                            Supported formats: PDF, JPG, PNG (Max 10MB per file)
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Documents List */}
-                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl">
-                                <div className="px-6 py-5 bg-gradient-to-r from-charcoal/5 via-charcoal/0 to-transparent border-b border-charcoal/10">
-                                    <h2 className="text-2xl font-extrabold text-charcoal flex items-center gap-3">
-                                        <FileText className="w-6 h-6 text-gold" />
-                                        Your Documents
-                                    </h2>
-                                </div>
-
-                                <div className="p-6 bg-gradient-to-b from-white to-charcoal/5">
-                                    {documents.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <div className="w-16 h-16 rounded-2xl bg-charcoal/5 border border-charcoal/10 flex items-center justify-center mx-auto mb-4">
-                                                <FileText className="w-8 h-8 text-charcoal/30" />
-                                            </div>
-                                            <p className="text-charcoal/70 text-lg font-semibold">No documents uploaded yet</p>
-                                            <p className="text-charcoal/50 text-sm mt-2">Upload your first document to get started.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {documents.map((doc) => (
-                                                <div
-                                                    key={doc.id}
-                                                    className="bg-white rounded-2xl p-5 border border-charcoal/10 hover:border-gold/40 transition-all shadow-sm"
-                                                >
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div className="flex items-start gap-4 flex-1 min-w-0">
-                                                            <div className="w-12 h-12 bg-gold/15 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20">
-                                                                <FileText className="w-6 h-6 text-gold" />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                                                    <h3 className="text-charcoal font-semibold text-base md:text-lg truncate" title={doc.name}>
-                                                                        {doc.name}
-                                                                    </h3>
-                                                                    {getStatusBadge(doc.status)}
-                                                                </div>
-                                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal/70 text-sm">
-                                                                    <span>{getTypeLabel(doc.type)}</span>
-                                                                    {doc.size && <span>• {doc.size}</span>}
-                                                                    <span>• Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                                            <button
-                                                                onClick={() => {
-                                                                    // In production, this would download the actual file
-                                                                    const link = document.createElement('a');
-                                                                    link.href = '#'; // Would be actual file URL
-                                                                    link.download = doc.name;
-                                                                    link.click();
-                                                                }}
-                                                                className="p-2.5 rounded-xl bg-charcoal/5 hover:bg-charcoal/10 transition text-charcoal border border-charcoal/10"
-                                                                title="Download"
-                                                            >
-                                                                <Download className="w-5 h-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(doc.id)}
-                                                                className="p-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition text-red-600 border border-red-500/30"
-                                                                title="Delete"
-                                                            >
-                                                                <X className="w-5 h-5" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right column: originator + requirements */}
-                        <div className="lg:col-span-5 space-y-6">
                             {/* Bond Originator Selection */}
                             <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl">
                                 <div className="px-6 py-5 bg-gradient-to-r from-gold/15 via-gold/10 to-transparent border-b border-charcoal/10">
@@ -571,6 +425,152 @@ export default function DocumentsPage() {
                                             <p className="text-charcoal/70 text-sm mt-2 ml-7">
                                                 Your documents will be sent to your selected originator for prequalification once uploaded.
                                             </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Upload Section */}
+                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl">
+                                <div className="px-6 py-5 bg-gradient-to-r from-gold/15 via-gold/10 to-transparent border-b border-charcoal/10">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <h2 className="text-2xl font-extrabold text-charcoal flex items-center gap-3">
+                                                <Upload className="w-6 h-6 text-gold" />
+                                                Upload FICA Documents
+                                            </h2>
+                                            {selectedOriginator && (
+                                                <p className="text-charcoal/60 text-sm mt-2">
+                                                    Documents will be sent to{' '}
+                                                    <span className="font-semibold text-gold">
+                                                        {bondOriginators.find(o => o.id === selectedOriginator)?.name}
+                                                    </span>
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 bg-gradient-to-b from-white to-charcoal/5">
+                                    {!selectedOriginator && (
+                                        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+                                            <p className="text-yellow-700 text-sm flex items-center gap-2">
+                                                <AlertCircle className="w-4 h-4" />
+                                                Please select a bond originator first before uploading documents.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {uploadError && (
+                                        <div className="mb-4 p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-xl">
+                                            <p className="text-red-600 text-sm flex items-center gap-2">
+                                                <AlertCircle className="w-4 h-4" />
+                                                {uploadError}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                                            isDragging ? 'border-gold bg-gold/5' : 'border-charcoal/20 hover:border-gold/50'
+                                        }`}
+                                    >
+                                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/70 border border-charcoal/10 flex items-center justify-center">
+                                            <Upload className={`w-8 h-8 ${isDragging ? 'text-gold' : 'text-charcoal/50'}`} />
+                                        </div>
+                                        <p className="text-charcoal/70 mb-2">Drag and drop files here, or</p>
+                                        <label className="inline-flex items-center justify-center px-6 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold/90 transition cursor-pointer shadow-sm">
+                                            Browse Files
+                                            <input
+                                                type="file"
+                                                multiple
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={handleFileInput}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                        <p className="text-charcoal/50 text-sm mt-4">
+                                            Supported formats: PDF, JPG, PNG (Max 10MB per file)
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right column: documents + requirements */}
+                        <div className="lg:col-span-5 space-y-6">
+                            {/* Documents List */}
+                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl">
+                                <div className="px-6 py-5 bg-gradient-to-r from-charcoal/5 via-charcoal/0 to-transparent border-b border-charcoal/10">
+                                    <h2 className="text-2xl font-extrabold text-charcoal flex items-center gap-3">
+                                        <FileText className="w-6 h-6 text-gold" />
+                                        Your Documents
+                                    </h2>
+                                </div>
+
+                                <div className="p-6 bg-gradient-to-b from-white to-charcoal/5">
+                                    {documents.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <div className="w-16 h-16 rounded-2xl bg-charcoal/5 border border-charcoal/10 flex items-center justify-center mx-auto mb-4">
+                                                <FileText className="w-8 h-8 text-charcoal/30" />
+                                            </div>
+                                            <p className="text-charcoal/70 text-lg font-semibold">No documents uploaded yet</p>
+                                            <p className="text-charcoal/50 text-sm mt-2">Upload your first document to get started.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {documents.map((doc) => (
+                                                <div
+                                                    key={doc.id}
+                                                    className="bg-white rounded-2xl p-5 border border-charcoal/10 hover:border-gold/40 transition-all shadow-sm"
+                                                >
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="flex items-start gap-4 flex-1 min-w-0">
+                                                            <div className="w-12 h-12 bg-gold/15 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20">
+                                                                <FileText className="w-6 h-6 text-gold" />
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                                                    <h3 className="text-charcoal font-semibold text-base md:text-lg truncate" title={doc.name}>
+                                                                        {doc.name}
+                                                                    </h3>
+                                                                    {getStatusBadge(doc.status)}
+                                                                </div>
+                                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal/70 text-sm">
+                                                                    <span>{getTypeLabel(doc.type)}</span>
+                                                                    {doc.size && <span>• {doc.size}</span>}
+                                                                    <span>• Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                            <button
+                                                                onClick={() => {
+                                                                    // In production, this would download the actual file
+                                                                    const link = document.createElement('a');
+                                                                    link.href = '#'; // Would be actual file URL
+                                                                    link.download = doc.name;
+                                                                    link.click();
+                                                                }}
+                                                                className="p-2.5 rounded-xl bg-charcoal/5 hover:bg-charcoal/10 transition text-charcoal border border-charcoal/10"
+                                                                title="Download"
+                                                            >
+                                                                <Download className="w-5 h-5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDelete(doc.id)}
+                                                                className="p-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition text-red-600 border border-red-500/30"
+                                                                title="Delete"
+                                                            >
+                                                                <X className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
