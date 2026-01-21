@@ -164,17 +164,77 @@ export default function InvestorsLearnPage() {
                         </Link>
 
                         {/* Module 7 */}
-                        <Link href="/learn/investors/mistakes" className="block">
+                        <Link href="/learn/investors/pre-purchase-mistakes" className="block">
                             <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
                                 <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
                                     <AlertTriangle className="w-8 h-8 text-red-600" />
                                 </div>
                                 <h3 className="text-2xl font-bold text-red-600 mb-4">
-                                    Common Mistakes to Avoid
+                                    Pre-Purchase Mistakes
                                 </h3>
                                 <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Learn from the mistakes of others. Discover the most common pitfalls
-                                    property investors face and how to avoid them to protect your investment.
+                                    Avoid costly errors before you buy. Learn about insufficient research,
+                                    emotional decisions, and poor location choices that can derail your investment.
+                                </p>
+                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 8 */}
+                        <Link href="/learn/investors/financial-mistakes" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
+                                    <AlertTriangle className="w-8 h-8 text-red-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-red-600 mb-4">
+                                    Financial Mistakes
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Protect your finances. Understand how underestimating costs and over-leveraging
+                                    can turn a promising investment into a financial burden.
+                                </p>
+                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 9 */}
+                        <Link href="/learn/investors/property-management-mistakes" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
+                                    <AlertTriangle className="w-8 h-8 text-red-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-red-600 mb-4">
+                                    Property Management Mistakes
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Manage your properties effectively. Learn how inadequate tenant screening
+                                    and maintenance neglect can cost you thousands and damage your investment.
+                                </p>
+                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 10 */}
+                        <Link href="/learn/investors/portfolio-strategy-mistakes" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
+                                    <AlertTriangle className="w-8 h-8 text-red-600" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-red-600 mb-4">
+                                    Portfolio Strategy Mistakes
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Build a successful portfolio. Avoid mistakes in diversification, tax planning,
+                                    and setting unrealistic expectations that undermine long-term success.
                                 </p>
                                 <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
                                     <span>Start Learning</span>
