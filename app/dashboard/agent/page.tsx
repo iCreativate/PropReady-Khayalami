@@ -11,6 +11,10 @@ export default function MyAgentPage() {
     const [selectedOtherAgent, setSelectedOtherAgent] = useState<any>(null);
     const [showAgentDetails, setShowAgentDetails] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState<{ id: string; fullName: string; email: string } | null>(null);
+    const [agent, setAgent] = useState<any>(null);
+    const [otherAgents, setOtherAgents] = useState<any[]>([]);
+    const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
     useEffect(() => {
         // Check if user is logged in
@@ -19,6 +23,31 @@ export default function MyAgentPage() {
             if (!userData) {
                 router.push('/login');
             } else {
+                const user = JSON.parse(userData);
+                setCurrentUser(user);
+
+                const storedSelectedAgent = localStorage.getItem(`propReady_selectedAgent_${user.id}`);
+                const selected = storedSelectedAgent ? JSON.parse(storedSelectedAgent) : null;
+                setAgent(selected);
+
+                const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
+                const mappedAgents = storedAgents.map((a: any) => ({
+                    id: a.id,
+                    name: a.fullName || a.name || 'Agent',
+                    company: a.company || a.brandName || 'Agency',
+                    email: a.email || '',
+                    phone: a.phone || '',
+                    rating: typeof a.rating === 'number' ? a.rating : 4.8,
+                    totalSales: typeof a.totalSales === 'number' ? a.totalSales : 0,
+                    experience: a.experience || '—',
+                    specialties: Array.isArray(a.specialties) ? a.specialties : [],
+                    bio: a.bio,
+                    location: a.location || 'South Africa',
+                    eaabNumber: a.eaabNumber,
+                    verified: a.status ? a.status === 'approved' : !!a.verified
+                }));
+                setOtherAgents(mappedAgents.filter((a: any) => !selected || a.id !== selected.id));
+                setRecentActivity([]);
                 setIsLoading(false);
             }
         }
@@ -35,70 +64,7 @@ export default function MyAgentPage() {
         );
     }
     
-    // Mock agent data - in production, this would come from an API
-    const agent = {
-        name: 'Sarah Johnson',
-        company: 'Premier Real Estate',
-        email: 'sarah.johnson@premierrealestate.co.za',
-        phone: '082 456 7890',
-        rating: 4.9,
-        totalSales: 127,
-        experience: '8 years',
-        specialties: ['First-time buyers', 'Family homes', 'Investment properties'],
-        bio: 'With over 8 years of experience in the Johannesburg property market, I specialize in helping first-time buyers find their dream homes. I understand the challenges you face and am here to guide you every step of the way.',
-        location: 'Johannesburg, Gauteng',
-        eaabNumber: 'EAAB123456',
-        verified: true
-    };
-
-    const recentActivity = [
-        { date: '2 days ago', action: 'Sent you 3 new property listings', type: 'properties' },
-        { date: '5 days ago', action: 'Scheduled viewing for Modern Apartment', type: 'viewing' },
-        { date: '1 week ago', action: 'Updated your property preferences', type: 'preferences' }
-    ];
-
-    // Other available agents
-    const otherAgents = [
-        {
-            id: '1',
-            name: 'Michael Chen',
-            company: 'Elite Properties',
-            email: 'michael.chen@eliteproperties.co.za',
-            phone: '083 123 4567',
-            rating: 4.8,
-            totalSales: 95,
-            experience: '6 years',
-            specialties: ['Luxury homes', 'Commercial properties'],
-            location: 'Cape Town, Western Cape',
-            verified: true
-        },
-        {
-            id: '2',
-            name: 'Thabo Mthembu',
-            company: 'Urban Realty',
-            email: 'thabo.mthembu@urbanrealty.co.za',
-            phone: '084 234 5678',
-            rating: 4.7,
-            totalSales: 78,
-            experience: '5 years',
-            specialties: ['Affordable housing', 'First-time buyers'],
-            location: 'Durban, KwaZulu-Natal',
-            verified: true
-        },
-        {
-            id: '3',
-            name: 'Lisa van der Merwe',
-            company: 'Coastal Estates',
-            email: 'lisa.vandermerwe@coastalestates.co.za',
-            phone: '081 345 6789',
-            rating: 4.9,
-            totalSales: 142,
-            experience: '10 years',
-            specialties: ['Beachfront properties', 'Investment properties'],
-            location: 'Port Elizabeth, Eastern Cape',
-            verified: true
-        }
-    ];
+    // All agent data is loaded from real registered agents (localStorage: propReady_agents)
 
     return (
         <div className="min-h-screen bg-white">
@@ -157,6 +123,23 @@ export default function MyAgentPage() {
                         </p>
                     </div>
 
+                    {!agent ? (
+                        <div className="premium-card rounded-2xl p-10 text-center">
+                            <div className="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-gold/20">
+                                <Users className="w-8 h-8 text-gold" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-charcoal mb-2">No agent selected yet</h2>
+                            <p className="text-charcoal/70 mb-6 max-w-xl mx-auto">
+                                Once you choose an agent, their details will appear here.
+                            </p>
+                            <Link
+                                href="/search"
+                                className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gold text-charcoal font-semibold hover:bg-gold/90 transition"
+                            >
+                                Browse Properties
+                            </Link>
+                        </div>
+                    ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Agent Profile Card */}
                         <div className="lg:col-span-2 space-y-6">
@@ -206,7 +189,7 @@ export default function MyAgentPage() {
                                 <div className="border-t border-charcoal/10 pt-6 mt-6">
                                     <h3 className="text-charcoal font-semibold mb-3">Specialties</h3>
                                     <div className="flex flex-wrap gap-2">
-                                        {agent.specialties.map((specialty, index) => (
+                                        {agent.specialties.map((specialty: string, index: number) => (
                                             <span
                                                 key={index}
                                                 className="px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-sm font-semibold"
@@ -303,6 +286,7 @@ export default function MyAgentPage() {
                             )}
                         </div>
                     </div>
+                    )}
 
                     {/* Other Agents Section */}
                     <div className="mt-8">
@@ -353,7 +337,7 @@ export default function MyAgentPage() {
                                     <div className="border-t border-charcoal/10 pt-4 mb-4">
                                         <p className="text-charcoal/50 text-xs mb-2">Specialties</p>
                                         <div className="flex flex-wrap gap-1.5">
-                                            {otherAgent.specialties.map((specialty, idx) => (
+                                            {otherAgent.specialties.map((specialty: string, idx: number) => (
                                                 <span
                                                     key={idx}
                                                     className="px-2 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold"

@@ -14,59 +14,6 @@ export default function AgentLoginPage() {
         password: ''
     });
 
-    // Initialize demo agents on component mount
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const existingAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            
-            // Demo agent accounts
-            const demoAgents = [
-                {
-                    id: 'demo-agent-1',
-                    fullName: 'Sarah Johnson',
-                    email: 'sarah.johnson@premierrealestate.co.za',
-                    phone: '0824567890',
-                    eaabNumber: '123456',
-                    company: 'Premier Real Estate',
-                    password: 'demo123',
-                    timestamp: new Date().toISOString(),
-                    status: 'approved'
-                },
-                {
-                    id: 'demo-agent-2',
-                    fullName: 'Michael Chen',
-                    email: 'michael.chen@eliteproperties.co.za',
-                    phone: '0831234567',
-                    eaabNumber: '234567',
-                    company: 'Elite Properties',
-                    password: 'demo123',
-                    timestamp: new Date().toISOString(),
-                    status: 'approved'
-                },
-                {
-                    id: 'demo-agent-3',
-                    fullName: 'Thabo Mthembu',
-                    email: 'thabo.mthembu@urbanrealty.co.za',
-                    phone: '0842345678',
-                    eaabNumber: '345678',
-                    company: 'Urban Realty',
-                    password: 'demo123',
-                    timestamp: new Date().toISOString(),
-                    status: 'approved'
-                }
-            ];
-
-            // Check if demo agents already exist
-            const hasDemoAgents = existingAgents.some((agent: any) => agent.id?.startsWith('demo-agent-'));
-            
-            if (!hasDemoAgents) {
-                // Add demo agents to existing agents
-                const updatedAgents = [...existingAgents, ...demoAgents];
-                localStorage.setItem('propReady_agents', JSON.stringify(updatedAgents));
-            }
-        }
-    }, []);
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');

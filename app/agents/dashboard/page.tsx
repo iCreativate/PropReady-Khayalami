@@ -128,47 +128,7 @@ export default function AgentsDashboardPage() {
     useEffect(() => {
         // Load leads from localStorage
         if (typeof window !== 'undefined') {
-            let storedLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
-            
-            // Add dummy leads if none exist
-            const dummyLeads: Lead[] = [
-                {
-                    id: 'lead-dummy-1',
-                    fullName: 'Sarah Mkhize',
-                    email: 'sarah.mkhize@email.com',
-                    phone: '082 123 4567',
-                    monthlyIncome: '55000',
-                    depositSaved: '120000',
-                    employmentStatus: 'permanent',
-                    creditScore: 'excellent',
-                    score: 92,
-                    preQualAmount: 1200000,
-                    status: 'new',
-                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                    contactedAt: null
-                },
-                {
-                    id: 'lead-dummy-2',
-                    fullName: 'Thabo Ndlovu',
-                    email: 'thabo.ndlovu@email.com',
-                    phone: '083 234 5678',
-                    monthlyIncome: '45000',
-                    depositSaved: '95000',
-                    employmentStatus: 'permanent',
-                    creditScore: 'good',
-                    score: 85,
-                    preQualAmount: 950000,
-                    status: 'contacted',
-                    timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-                    contactedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
-                }
-            ];
-
-            const hasDummyLeads = storedLeads.some((lead: Lead) => lead.id.startsWith('lead-dummy-'));
-            if (!hasDummyLeads) {
-                storedLeads = [...storedLeads, ...dummyLeads];
-                localStorage.setItem('propReady_leads', JSON.stringify(storedLeads));
-            }
+            const storedLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
             
             const sortedLeads = storedLeads.sort((a: Lead, b: Lead) => 
                 new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -237,90 +197,8 @@ export default function AgentsDashboardPage() {
         }
     }, [selectedViewing, showViewingModal]);
 
-    // Dummy properties for scheduling viewings
-    const dummyProperties: ListedProperty[] = [
-        {
-            id: 'dummy-prop-1',
-            title: 'Modern 3-Bedroom House',
-            address: '123 Main Street, Sandton, Johannesburg',
-            type: 'House',
-            price: 1200000,
-            bedrooms: 3,
-            bathrooms: 2,
-            size: 150,
-            description: 'Beautiful modern home with garden',
-            agentId: currentAgent?.id || '',
-            timestamp: new Date().toISOString()
-        },
-        {
-            id: 'dummy-prop-2',
-            title: 'Luxury 2-Bedroom Apartment',
-            address: '456 Oak Avenue, Rosebank, Johannesburg',
-            type: 'Apartment',
-            price: 850000,
-            bedrooms: 2,
-            bathrooms: 2,
-            size: 95,
-            description: 'Spacious apartment with city views',
-            agentId: currentAgent?.id || '',
-            timestamp: new Date().toISOString()
-        },
-        {
-            id: 'dummy-prop-3',
-            title: 'Family 4-Bedroom Townhouse',
-            address: '789 High Street, Sandton, Johannesburg',
-            type: 'Townhouse',
-            price: 1500000,
-            bedrooms: 4,
-            bathrooms: 3,
-            size: 180,
-            description: 'Perfect for families with garage and garden',
-            agentId: currentAgent?.id || '',
-            timestamp: new Date().toISOString()
-        },
-        {
-            id: 'dummy-prop-4',
-            title: 'Cozy 1-Bedroom Flat',
-            address: '321 Park Lane, Braamfontein, Johannesburg',
-            type: 'Apartment',
-            price: 650000,
-            bedrooms: 1,
-            bathrooms: 1,
-            size: 65,
-            description: 'Affordable starter home',
-            agentId: currentAgent?.id || '',
-            timestamp: new Date().toISOString()
-        },
-        {
-            id: 'dummy-prop-5',
-            title: 'Executive Penthouse',
-            address: '555 Sky Tower, Sandton, Johannesburg',
-            type: 'Apartment',
-            price: 2500000,
-            bedrooms: 3,
-            bathrooms: 3,
-            size: 200,
-            description: 'Luxury penthouse with panoramic views',
-            agentId: currentAgent?.id || '',
-            timestamp: new Date().toISOString()
-        },
-        {
-            id: 'dummy-prop-6',
-            title: 'Spacious 5-Bedroom Family Home',
-            address: '888 Garden Estate, Fourways, Johannesburg',
-            type: 'House',
-            price: 3200000,
-            bedrooms: 5,
-            bathrooms: 4,
-            size: 350,
-            description: 'Large family home with pool and garden',
-            agentId: currentAgent?.id || '',
-            timestamp: new Date().toISOString()
-        }
-    ];
-
-    // Combine listed properties with dummy properties for dropdown
-    const allAvailableProperties = [...listedProperties, ...dummyProperties];
+    // Scheduling viewings is only possible for properties actually listed by this agent
+    const allAvailableProperties = listedProperties;
 
     // Filter viewings
     const filteredViewings = viewingAppointments.filter(viewing => {
@@ -1696,28 +1574,23 @@ export default function AgentsDashboardPage() {
                                         <select
                                             value={viewingForm.propertyId}
                                             onChange={(e) => {
-                                                const selectedProp = allAvailableProperties.find(p => p.id === e.target.value);
                                                 setViewingForm({ ...viewingForm, propertyId: e.target.value });
                                             }}
                                             className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                            disabled={allAvailableProperties.length === 0}
                                         >
-                                            <option value="">Select a property</option>
-                                            {listedProperties.length > 0 && (
-                                                <optgroup label="My Listed Properties">
-                                                    {listedProperties.map(property => (
+                                            {allAvailableProperties.length === 0 ? (
+                                                <option value="">No listed properties yet (list a property first)</option>
+                                            ) : (
+                                                <>
+                                                    <option value="">Select a property</option>
+                                                    {allAvailableProperties.map(property => (
                                                         <option key={property.id} value={property.id}>
                                                             {property.title} - {property.address} (R {property.price.toLocaleString('en-ZA')})
                                                         </option>
                                                     ))}
-                                                </optgroup>
+                                                </>
                                             )}
-                                            <optgroup label="Available Properties">
-                                                {dummyProperties.map(property => (
-                                                    <option key={property.id} value={property.id}>
-                                                        {property.title} - {property.address} (R {property.price.toLocaleString('en-ZA')})
-                                                    </option>
-                                                ))}
-                                            </optgroup>
                                         </select>
                                     </div>
                                 )}

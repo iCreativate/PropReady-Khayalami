@@ -29,6 +29,7 @@ export default function SellerDashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingAppointments, setViewingAppointments] = useState<any[]>([]);
+    const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
 
     useEffect(() => {
         // Check if user is logged in
@@ -69,6 +70,28 @@ export default function SellerDashboardPage() {
         }
     }, [router]);
 
+    useEffect(() => {
+        // Load real registered agents
+        if (typeof window !== 'undefined') {
+            const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
+            const mapped: Agent[] = storedAgents.map((a: any) => ({
+                id: a.id,
+                name: a.fullName || a.name || 'Agent',
+                company: a.company || a.brandName || 'Agency',
+                email: a.email || '',
+                phone: a.phone || '',
+                rating: typeof a.rating === 'number' ? a.rating : 4.8,
+                totalSales: typeof a.totalSales === 'number' ? a.totalSales : 0,
+                experience: a.experience || '—',
+                location: a.location || 'South Africa',
+                listingQualityScore: typeof a.listingQualityScore === 'number' ? a.listingQualityScore : 85,
+                specialties: Array.isArray(a.specialties) ? a.specialties : [],
+                verified: a.status ? a.status === 'approved' : !!a.verified
+            }));
+            setAvailableAgents(mapped);
+        }
+    }, []);
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -79,52 +102,6 @@ export default function SellerDashboardPage() {
             </div>
         );
     }
-
-    // Mock agents data
-    const availableAgents: Agent[] = [
-        {
-            id: '1',
-            name: 'Sarah Johnson',
-            company: 'Premier Real Estate',
-            email: 'sarah.johnson@premierrealestate.co.za',
-            phone: '082 456 7890',
-            rating: 4.9,
-            totalSales: 127,
-            experience: '8 years',
-            location: 'Johannesburg, Gauteng',
-            listingQualityScore: 92,
-            specialties: ['First-time sellers', 'Family homes', 'Investment properties'],
-            verified: true
-        },
-        {
-            id: '2',
-            name: 'Michael Chen',
-            company: 'Elite Properties',
-            email: 'michael.chen@eliteproperties.co.za',
-            phone: '083 123 4567',
-            rating: 4.8,
-            totalSales: 95,
-            experience: '6 years',
-            location: 'Cape Town, Western Cape',
-            listingQualityScore: 88,
-            specialties: ['Luxury homes', 'Commercial properties'],
-            verified: true
-        },
-        {
-            id: '3',
-            name: 'Nomsa Dlamini',
-            company: 'Heritage Realty',
-            email: 'nomsa.dlamini@heritagerealty.co.za',
-            phone: '083 678 9012',
-            rating: 4.8,
-            totalSales: 110,
-            experience: '7 years',
-            location: 'Soweto, Gauteng',
-            listingQualityScore: 90,
-            specialties: ['Family homes', 'First-time sellers'],
-            verified: true
-        }
-    ];
 
     const filteredAgents = availableAgents.filter(agent =>
         agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

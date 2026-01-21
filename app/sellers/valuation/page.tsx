@@ -40,6 +40,7 @@ export default function ValuationBookingPage() {
     const [selectedAgency, setSelectedAgency] = useState<string | null>(null);
     const [hasAccount, setHasAccount] = useState(false);
     const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string } | null>(null);
+    const [agents, setAgents] = useState<Agent[]>([]);
 
     // Check if user has completed account creation
     useEffect(() => {
@@ -53,99 +54,28 @@ export default function ValuationBookingPage() {
         }
     }, []);
 
-    // Mock agents/agencies data - in production, this would come from an API
-    const agents: Agent[] = [
-        {
-            id: '1',
-            name: 'Sarah Johnson',
-            company: 'Premier Real Estate',
-            brandName: 'Premier Real Estate',
-            email: 'sarah.johnson@premierrealestate.co.za',
-            phone: '082 456 7890',
-            rating: 4.9,
-            totalSales: 127,
-            experience: '8 years',
-            location: 'Johannesburg, Gauteng',
-            listingQualityScore: 92,
-            specialties: ['First-time buyers', 'Family homes', 'Investment properties'],
-            verified: true
-        },
-        {
-            id: '2',
-            name: 'Michael Chen',
-            company: 'Elite Properties',
-            brandName: 'Elite Properties',
-            email: 'michael.chen@eliteproperties.co.za',
-            phone: '083 123 4567',
-            rating: 4.8,
-            totalSales: 95,
-            experience: '6 years',
-            location: 'Cape Town, Western Cape',
-            listingQualityScore: 88,
-            specialties: ['Luxury homes', 'Commercial properties'],
-            verified: true
-        },
-        {
-            id: '3',
-            name: 'Thabo Mthembu',
-            company: 'Urban Realty',
-            brandName: 'Urban Realty',
-            email: 'thabo.mthembu@urbanrealty.co.za',
-            phone: '084 234 5678',
-            rating: 4.7,
-            totalSales: 78,
-            experience: '5 years',
-            location: 'Durban, KwaZulu-Natal',
-            listingQualityScore: 85,
-            specialties: ['Affordable housing', 'First-time buyers'],
-            verified: true
-        },
-        {
-            id: '4',
-            name: 'Lisa van der Merwe',
-            company: 'Coastal Estates',
-            brandName: 'Coastal Estates',
-            email: 'lisa.vandermerwe@coastalestates.co.za',
-            phone: '081 345 6789',
-            rating: 4.9,
-            totalSales: 142,
-            experience: '10 years',
-            location: 'Port Elizabeth, Eastern Cape',
-            listingQualityScore: 95,
-            specialties: ['Beachfront properties', 'Investment properties'],
-            verified: true
-        },
-        {
-            id: '5',
-            name: 'David Williams',
-            company: 'Metro Properties',
-            brandName: 'Metro Properties',
-            email: 'david.williams@metroproperties.co.za',
-            phone: '082 567 8901',
-            rating: 4.6,
-            totalSales: 65,
-            experience: '4 years',
-            location: 'Pretoria, Gauteng',
-            listingQualityScore: 82,
-            specialties: ['Townhouses', 'Apartments'],
-            verified: true
-        },
-        {
-            id: '6',
-            name: 'Nomsa Dlamini',
-            company: 'Heritage Realty',
-            brandName: 'Heritage Realty',
-            email: 'nomsa.dlamini@heritagerealty.co.za',
-            phone: '083 678 9012',
-            rating: 4.8,
-            totalSales: 110,
-            experience: '7 years',
-            location: 'Soweto, Gauteng',
-            listingQualityScore: 90,
-            specialties: ['Family homes', 'First-time buyers'],
-            verified: true
+    useEffect(() => {
+        // Load real registered agents
+        if (typeof window !== 'undefined') {
+            const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
+            const mapped: Agent[] = storedAgents.map((a: any) => ({
+                id: a.id,
+                name: a.fullName || a.name || 'Agent',
+                company: a.company || a.brandName || 'Agency',
+                brandName: a.brandName || a.company,
+                email: a.email || '',
+                phone: a.phone || '',
+                rating: typeof a.rating === 'number' ? a.rating : 4.8,
+                totalSales: typeof a.totalSales === 'number' ? a.totalSales : 0,
+                experience: a.experience || '—',
+                location: a.location || 'South Africa',
+                listingQualityScore: typeof a.listingQualityScore === 'number' ? a.listingQualityScore : 85,
+                specialties: Array.isArray(a.specialties) ? a.specialties : [],
+                verified: a.status ? a.status === 'approved' : !!a.verified
+            }));
+            setAgents(mapped);
         }
-    ];
+    }, []);
 
     // Group agents by agency
     const agencies = useMemo(() => {
@@ -177,7 +107,7 @@ export default function ValuationBookingPage() {
         });
 
         return agencyList.sort((a, b) => b.averageQualityScore - a.averageQualityScore);
-    }, []);
+    }, [agents]);
 
     // Filter agencies
     const filteredAgencies = agencies.filter(agency => {
