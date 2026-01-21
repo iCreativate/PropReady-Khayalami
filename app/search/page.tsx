@@ -7,18 +7,25 @@ import { ArrowLeft, Home, Search, SlidersHorizontal, MapPin, Bed, Bath, Square, 
 type FilterType = 'all' | 'houses' | 'apartments' | 'townhouses' | 'under-1m';
 
 interface Property {
-    id: number;
+    id: string;
+    title: string;
+    address: string;
     type: string;
     price: number;
     bedrooms: number;
     bathrooms: number;
     size: number;
+    description?: string;
+    agentId?: string;
+    timestamp?: string;
     matchScore?: number;
     isMatched?: boolean;
 }
 
 export default function SearchPage() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [listedProperties, setListedProperties] = useState<Property[]>([]);
     const [quizResult, setQuizResult] = useState<{
         preQualAmount: number;
         score: number;
@@ -38,32 +45,42 @@ export default function SearchPage() {
         }
     }, []);
 
-    // Mock properties data - expanded list
-    const allProperties: Property[] = [
-        { id: 1, type: 'Apartment', price: 850000, bedrooms: 2, bathrooms: 1, size: 80 },
-        { id: 2, type: 'Townhouse', price: 900000, bedrooms: 3, bathrooms: 2, size: 90 },
-        { id: 3, type: 'Apartment', price: 950000, bedrooms: 2, bathrooms: 2, size: 100 },
-        { id: 4, type: 'House', price: 1200000, bedrooms: 3, bathrooms: 2, size: 110 },
-        { id: 5, type: 'Townhouse', price: 1000000, bedrooms: 3, bathrooms: 2, size: 120 },
-        { id: 6, type: 'House', price: 1100000, bedrooms: 4, bathrooms: 3, size: 130 },
-        { id: 7, type: 'Apartment', price: 750000, bedrooms: 1, bathrooms: 1, size: 65 },
-        { id: 8, type: 'House', price: 1300000, bedrooms: 4, bathrooms: 3, size: 140 },
-        { id: 9, type: 'Townhouse', price: 1050000, bedrooms: 3, bathrooms: 2, size: 115 },
-        { id: 10, type: 'Apartment', price: 880000, bedrooms: 2, bathrooms: 1, size: 85 },
-        { id: 11, type: 'House', price: 1400000, bedrooms: 5, bathrooms: 4, size: 160 },
-        { id: 12, type: 'Townhouse', price: 920000, bedrooms: 3, bathrooms: 2, size: 95 },
-    ];
+    useEffect(() => {
+        // Load agent-listed properties from localStorage
+        if (typeof window === 'undefined') return;
+        try {
+            const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
+            const normalized: Property[] = (Array.isArray(stored) ? stored : [])
+                .filter((p: any) => p && p.id && p.type && typeof p.price === 'number')
+                .map((p: any) => ({
+                    id: String(p.id),
+                    title: String(p.title || 'Listed Property'),
+                    address: String(p.address || 'iKhayalami, Johannesburg'),
+                    type: String(p.type || 'Property'),
+                    price: Number(p.price || 0),
+                    bedrooms: Number(p.bedrooms || 0),
+                    bathrooms: Number(p.bathrooms || 0),
+                    size: Number(p.size || 0),
+                    description: p.description ? String(p.description) : undefined,
+                    agentId: p.agentId ? String(p.agentId) : undefined,
+                    timestamp: p.timestamp ? String(p.timestamp) : undefined,
+                }));
+            setListedProperties(normalized);
+        } catch {
+            setListedProperties([]);
+        }
+    }, []);
 
     // Calculate match score for each property
     const propertiesWithScores = useMemo(() => {
         if (!quizResult || quizResult.preQualAmount === 0) {
-            return allProperties.map(prop => ({ ...prop, matchScore: 0, isMatched: false }));
+            return listedProperties.map(prop => ({ ...prop, matchScore: 0, isMatched: false }));
         }
 
         const preQualAmount = quizResult.preQualAmount;
         const propReadyScore = quizResult.score || 0;
 
-        return allProperties.map(property => {
+        return listedProperties.map(property => {
             // Calculate match score based on:
             // 1. How close price is to prequal amount (60% weight)
             // 2. PropReady Score (40% weight)
@@ -82,25 +99,39 @@ export default function SearchPage() {
                 isMatched
             };
         });
-    }, [quizResult]);
+    }, [quizResult, listedProperties]);
 
     // Filter and sort properties
     const filteredProperties = useMemo(() => {
+        const normalizeType = (t: string) => (t || '').toLowerCase();
+        const q = searchQuery.trim().toLowerCase();
+
         // First filter by active filter
         let filtered = propertiesWithScores.filter(property => {
             switch (activeFilter) {
                 case 'houses':
-                    return property.type === 'House';
+                    return normalizeType(property.type).includes('house');
                 case 'apartments':
-                    return property.type === 'Apartment';
+                    return normalizeType(property.type).includes('apartment');
                 case 'townhouses':
-                    return property.type === 'Townhouse';
+                    return normalizeType(property.type).includes('townhouse');
                 case 'under-1m':
                     return property.price < 1000000;
                 default:
                     return true;
             }
         });
+
+        // Search filter (title, address, type)
+        if (q) {
+            filtered = filtered.filter((p) => {
+                return (
+                    (p.title || '').toLowerCase().includes(q) ||
+                    (p.address || '').toLowerCase().includes(q) ||
+                    (p.type || '').toLowerCase().includes(q)
+                );
+            });
+        }
 
         // Sort: matched properties first (by match score), then others
         filtered.sort((a, b) => {
@@ -113,7 +144,7 @@ export default function SearchPage() {
         });
 
         return filtered;
-    }, [propertiesWithScores, activeFilter]);
+    }, [propertiesWithScores, activeFilter, searchQuery]);
 
     return (
         <div className="min-h-screen bg-white">
@@ -153,6 +184,8 @@ export default function SearchPage() {
                                     <input
                                         type="text"
                                         placeholder="Search by location, suburb, or property name..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                         className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
                                     />
                                 </div>
@@ -273,12 +306,12 @@ export default function SearchPage() {
                                                     {/* Location */}
                                                     <div className="flex items-center text-charcoal/50 mb-3 text-sm">
                                                         <MapPin className="w-4 h-4 mr-2" />
-                                                        <span>iKhayalami, Johannesburg</span>
+                                                        <span className="truncate">{property.address}</span>
                                                     </div>
 
                                                     {/* Property Type */}
                                                     <p className="text-charcoal font-semibold mb-4 text-base">
-                                                        Modern {property.type}
+                                                        {property.title}
                                                     </p>
 
                                                     {/* Features */}
@@ -303,12 +336,6 @@ export default function SearchPage() {
                                                             <span className="text-charcoal/50 text-xs font-medium">Match Score</span>
                                                             <span className="px-3 py-1.5 rounded-full bg-gold/20 border border-gold/30 text-gold font-semibold text-sm">
                                                                 {property.matchScore}% Match
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-charcoal/50 text-xs font-medium">PropReady Score</span>
-                                                            <span className="px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold font-semibold text-sm">
-                                                                {85 + property.id}%
                                                             </span>
                                                         </div>
                                                     </div>
@@ -343,12 +370,12 @@ export default function SearchPage() {
                                                     {/* Location */}
                                                     <div className="flex items-center text-charcoal/50 mb-3 text-sm">
                                                         <MapPin className="w-4 h-4 mr-2" />
-                                                        <span>iKhayalami, Johannesburg</span>
+                                                        <span className="truncate">{property.address}</span>
                                                     </div>
 
                                                     {/* Property Type */}
                                                     <p className="text-charcoal font-semibold mb-4 text-base">
-                                                        Modern {property.type}
+                                                        {property.title}
                                                     </p>
 
                                                     {/* Features */}
@@ -367,14 +394,11 @@ export default function SearchPage() {
                                                         </div>
                                                     </div>
 
-                                                    {/* PropReady Score Badge */}
+                                                    {/* Listed by agent */}
                                                     <div className="pt-4 border-t border-charcoal/10">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-charcoal/50 text-xs font-medium">PropReady Score</span>
-                                                            <span className="px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold font-semibold text-sm">
-                                                                {85 + property.id}%
-                                                            </span>
-                                                        </div>
+                                                        <p className="text-xs text-charcoal/50">
+                                                            Listed by an agent{property.timestamp ? ` • ${new Date(property.timestamp).toLocaleDateString('en-ZA')}` : ''}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -386,8 +410,14 @@ export default function SearchPage() {
                     ) : (
                         <div className="premium-card rounded-xl p-12 text-center">
                             <Home className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                            <p className="text-charcoal/70 text-lg mb-2">No properties found</p>
-                            <p className="text-charcoal/50 text-sm">Try adjusting your filters</p>
+                            <p className="text-charcoal/70 text-lg mb-2">
+                                {listedProperties.length === 0 ? 'No properties have been listed yet' : 'No properties found'}
+                            </p>
+                            <p className="text-charcoal/50 text-sm">
+                                {listedProperties.length === 0
+                                    ? 'Once agents list properties in their dashboard, they will appear here.'
+                                    : 'Try adjusting your filters or search.'}
+                            </p>
                         </div>
                     )}
 
