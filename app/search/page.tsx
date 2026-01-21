@@ -26,6 +26,7 @@ export default function SearchPage() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [listedProperties, setListedProperties] = useState<Property[]>([]);
+    const [showFilters, setShowFilters] = useState(false);
     const [quizResult, setQuizResult] = useState<{
         preQualAmount: number;
         score: number;
@@ -69,6 +70,17 @@ export default function SearchPage() {
         } catch {
             setListedProperties([]);
         }
+    }, []);
+
+    useEffect(() => {
+        // Ensure filters are visible on desktop, collapsible on mobile
+        const update = () => {
+            if (typeof window === 'undefined') return;
+            setShowFilters(window.innerWidth >= 768); // md breakpoint
+        };
+        update();
+        window.addEventListener('resize', update);
+        return () => window.removeEventListener('resize', update);
     }, []);
 
     // Calculate match score for each property
@@ -189,16 +201,22 @@ export default function SearchPage() {
                                         className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
                                     />
                                 </div>
-                                <button className="px-6 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal hover:bg-gold hover:text-white hover:border-gold transition-all font-semibold flex items-center space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowFilters((v) => !v)}
+                                    className="px-6 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal hover:bg-gold hover:text-white hover:border-gold transition-all font-semibold flex items-center space-x-2"
+                                >
                                     <SlidersHorizontal className="w-5 h-5" />
-                                    <span>Filters</span>
+                                    <span className="hidden sm:inline">Filters</span>
+                                    <span className="sm:hidden">{showFilters ? 'Hide' : 'Filters'}</span>
                                 </button>
                             </div>
                         </div>
                     </div>
 
                     {/* Quick Filters */}
-                    <div className="mb-8 flex flex-wrap gap-3">
+                    <div className={`mb-8 ${showFilters ? 'block' : 'hidden'}`}>
+                        <div className="flex flex-wrap gap-3">
                         <button 
                             onClick={() => setActiveFilter('all')}
                             className={`px-4 py-2 rounded-full font-semibold shadow-md transition-all ${
@@ -249,6 +267,7 @@ export default function SearchPage() {
                         >
                             Under R1M
                         </button>
+                        </div>
                     </div>
 
                     {/* Results Count */}

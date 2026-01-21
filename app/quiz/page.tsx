@@ -38,9 +38,24 @@ export default function QuizPage() {
 
     const totalSteps = 8;
 
+    const formatNumberInput = (value: string) => {
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        if (!digitsOnly) return '';
+        return new Intl.NumberFormat('en-ZA').format(Number(digitsOnly));
+    };
+
+    const parseNumberInput = (value: string) => {
+        const digitsOnly = value.replace(/[^\d]/g, '');
+        return digitsOnly ? Number(digitsOnly) : 0;
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'monthlyIncome' || name === 'expenses' || name === 'depositSaved') {
+            setFormData(prev => ({ ...prev, [name]: formatNumberInput(value) }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
         
         // Clear error when user starts typing
         if (errors[name]) {
@@ -87,7 +102,7 @@ export default function QuizPage() {
             case 2:
                 if (!formData.monthlyIncome.trim()) {
                     newErrors.monthlyIncome = 'Monthly income is required';
-                } else if (parseFloat(formData.monthlyIncome) <= 0) {
+                } else if (parseNumberInput(formData.monthlyIncome) <= 0) {
                     newErrors.monthlyIncome = 'Monthly income must be greater than 0';
                 }
                 if (!formData.employmentStatus) {
@@ -99,14 +114,14 @@ export default function QuizPage() {
                     newErrors.hasDebt = 'Please select whether you have existing debt';
                 } else if (formData.hasDebt && !formData.expenses.trim()) {
                     newErrors.expenses = 'Monthly debt repayments are required when you have debt';
-                } else if (formData.hasDebt && parseFloat(formData.expenses) < 0) {
+                } else if (formData.hasDebt && parseNumberInput(formData.expenses) < 0) {
                     newErrors.expenses = 'Monthly debt repayments cannot be negative';
                 }
                 break;
             case 4:
                 if (!formData.depositSaved.trim()) {
                     newErrors.depositSaved = 'Deposit amount is required';
-                } else if (parseFloat(formData.depositSaved) < 0) {
+                } else if (parseNumberInput(formData.depositSaved) < 0) {
                     newErrors.depositSaved = 'Deposit amount cannot be negative';
                 }
                 break;
@@ -148,9 +163,9 @@ export default function QuizPage() {
 
     const calculatePropReadyScore = () => {
         let score = 0;
-        const monthlyIncome = parseFloat(formData.monthlyIncome) || 0;
-        const expenses = parseFloat(formData.expenses) || 0;
-        const depositSaved = parseFloat(formData.depositSaved) || 0;
+        const monthlyIncome = parseNumberInput(formData.monthlyIncome);
+        const expenses = parseNumberInput(formData.expenses);
+        const depositSaved = parseNumberInput(formData.depositSaved);
 
         // 1. Monthly Income Score (0-30 points)
         // Higher income = better score
@@ -211,8 +226,8 @@ export default function QuizPage() {
     };
 
     const calculatePreQualAmount = () => {
-        const monthlyIncome = parseFloat(formData.monthlyIncome) || 0;
-        const expenses = parseFloat(formData.expenses) || 0;
+        const monthlyIncome = parseNumberInput(formData.monthlyIncome);
+        const expenses = parseNumberInput(formData.expenses);
 
         // Calculate annual income
         const annualIncome = monthlyIncome * 12;
@@ -399,14 +414,13 @@ export default function QuizPage() {
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/50">R</span>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
                                     name="monthlyIncome"
                                     value={formData.monthlyIncome}
                                     onChange={handleInputChange}
                                     placeholder="e.g., 45000"
                                     required
-                                    min="0"
-                                    step="1000"
                                     className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.monthlyIncome ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
                                 />
                             </div>
@@ -495,14 +509,13 @@ export default function QuizPage() {
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/50">R</span>
                                     <input
-                                        type="number"
+                                        type="text"
+                                        inputMode="numeric"
                                         name="expenses"
                                         value={formData.expenses}
                                         onChange={handleInputChange}
                                         placeholder="e.g., 5000"
                                         required
-                                        min="0"
-                                        step="100"
                                         className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.expenses ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
                                     />
                                 </div>
@@ -529,14 +542,13 @@ export default function QuizPage() {
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/50">R</span>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
                                     name="depositSaved"
                                     value={formData.depositSaved}
                                     onChange={handleInputChange}
                                     placeholder="e.g., 100000"
                                     required
-                                    min="0"
-                                    step="1000"
                                     className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.depositSaved ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
                                 />
                             </div>
