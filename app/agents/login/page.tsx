@@ -3,20 +3,26 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle, Shield } from 'lucide-react';
 
 export default function AgentLoginPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [showOTP, setShowOTP] = useState(false);
+    const [otp, setOtp] = useState('');
+    const [storedOTP, setStoredOTP] = useState('');
+    const [agentData, setAgentData] = useState<any>(null);
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleEmailPasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         if (typeof window !== 'undefined') {
             const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
@@ -25,19 +31,62 @@ export default function AgentLoginPage() {
             );
 
             if (agent) {
+                // Store agent data temporarily
+                setAgentData(agent);
+                
+                // Send OTP
+                try {
+                    const response = await fetch('/api/send-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email: formData.email, type: 'login' }),
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Store OTP temporarily (in production, this would be server-side)
+                        if (data.otp) {
+                            setStoredOTP(data.otp);
+                        }
+                        setShowOTP(true);
+                    } else {
+                        setError('Failed to send OTP. Please try again.');
+                    }
+                } catch (err) {
+                    console.error('Error sending OTP:', err);
+                    setError('Failed to send OTP. Please try again.');
+                }
+            } else {
+                setError('Invalid email or password. Please try again.');
+            }
+        }
+        setIsLoading(false);
+    };
+
+    const handleOTPSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        // In production, verify OTP from server
+        // For now, check against stored OTP (development only)
+        if (storedOTP && otp === storedOTP) {
+            if (typeof window !== 'undefined' && agentData) {
                 // Store current agent session
                 localStorage.setItem('propReady_currentAgent', JSON.stringify({
-                    id: agent.id,
-                    fullName: agent.fullName,
-                    email: agent.email,
-                    company: agent.company
+                    id: agentData.id,
+                    fullName: agentData.fullName,
+                    email: agentData.email,
+                    company: agentData.company
                 }));
 
                 // Redirect to dashboard
                 router.push('/agents/dashboard');
-            } else {
-                setError('Invalid email or password. Please try again.');
             }
+        } else {
+            setError('Invalid OTP. Please try again.');
         }
     };
 
@@ -78,87 +127,183 @@ export default function AgentLoginPage() {
                             </p>
                         </div>
 
-                        {/* Login Form */}
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {error && (
-                                <div className="p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-lg">
-                                    <p className="text-red-600 text-sm flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {error}
-                                    </p>
+                        {!showOTP ? (
+                            /* Email/Password Form */
+                            <form onSubmit={handleEmailPasswordSubmit} className="space-y-6">
+                                {error && (
+                                    <div className="p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-lg">
+                                        <p className="text-red-600 text-sm flex items-center gap-2">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {error}
+                                        </p>
+                                    </div>
+                                )}
+                                {/* Email Input */}
+                                <div>
+                                    <label className="block text-charcoal font-semibold mb-2">
+                                        Email Address
+                                    </label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <input
+                                            type="email"
+                                            placeholder="agent@example.com"
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                            required
+                                            disabled={isLoading}
+                                            className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold disabled:opacity-50"
+                                        />
+                                    </div>
                                 </div>
-                            )}
-                            {/* Email Input */}
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2">
-                                    Email Address
-                                </label>
-                                <div className="relative">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                    <input
-                                        type="email"
-                                        placeholder="agent@example.com"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-                            </div>
 
-                            {/* Password Input */}
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2">
-                                    Password
-                                </label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                    <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        placeholder="••••••••"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
-                                    >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                {/* Password Input */}
+                                <div>
+                                    <label className="block text-charcoal font-semibold mb-2">
+                                        Password
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            placeholder="••••••••"
+                                            value={formData.password}
+                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                            required
+                                            disabled={isLoading}
+                                            className="w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold disabled:opacity-50"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
+                                        >
+                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Remember Me & Forgot Password */}
+                                <div className="flex items-center justify-between">
+                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="w-4 h-4 rounded border-white/20 bg-white/10 text-gold focus:ring-gold"
+                                        />
+                                        <span className="text-charcoal/80 text-sm">Remember me</span>
+                                    </label>
+                                    <button type="button" className="text-gold hover:text-gold-600 text-sm font-semibold">
+                                        Forgot Password?
                                     </button>
                                 </div>
-                            </div>
 
-                            {/* Remember Me & Forgot Password */}
-                            <div className="flex items-center justify-between">
-                                <label className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="w-4 h-4 rounded border-white/20 bg-white/10 text-gold focus:ring-gold"
-                                    />
-                                    <span className="text-charcoal/80 text-sm">Remember me</span>
-                                </label>
-                                <button type="button" className="text-gold hover:text-gold-600 text-sm font-semibold">
-                                    Forgot Password?
+                                {/* Login Button */}
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                >
+                                    {isLoading ? 'Sending OTP...' : 'Continue'}
                                 </button>
-                            </div>
+                            </form>
+                        ) : (
+                            /* OTP Form */
+                            <form onSubmit={handleOTPSubmit} className="space-y-6">
+                                <div className="text-center mb-6">
+                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gold/10 rounded-full mb-4">
+                                        <Shield className="w-8 h-8 text-gold" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-charcoal mb-2">Enter Verification Code</h3>
+                                    <p className="text-charcoal/70 text-sm">
+                                        We&apos;ve sent a 6-digit code to <strong>{formData.email}</strong>
+                                    </p>
+                                </div>
 
-                            {/* Login Button */}
-                            <button
-                                type="submit"
-                                className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
-                            >
-                                Sign In
-                            </button>
-                        </form>
+                                {error && (
+                                    <div className="p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-lg">
+                                        <p className="text-red-600 text-sm flex items-center gap-2">
+                                            <AlertCircle className="w-4 h-4" />
+                                            {error}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* OTP Input */}
+                                <div>
+                                    <label className="block text-charcoal font-semibold mb-2 text-center">
+                                        Enter OTP Code
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            placeholder="000000"
+                                            value={otp}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                                setOtp(value);
+                                            }}
+                                            maxLength={6}
+                                            required
+                                            className="w-full px-4 py-4 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-gold"
+                                        />
+                                    </div>
+                                    <p className="text-charcoal/60 text-sm mt-2 text-center">
+                                        Didn&apos;t receive the code?{' '}
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                setError('');
+                                                try {
+                                                    const response = await fetch('/api/send-otp', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ email: formData.email, type: 'login' }),
+                                                    });
+                                                    const data = await response.json();
+                                                    if (data.success && data.otp) {
+                                                        setStoredOTP(data.otp);
+                                                    }
+                                                } catch (err) {
+                                                    setError('Failed to resend OTP');
+                                                }
+                                            }}
+                                            className="text-gold hover:text-gold-600 font-semibold"
+                                        >
+                                            Resend
+                                        </button>
+                                    </p>
+                                </div>
+
+                                {/* Verify Button */}
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                                >
+                                    Verify & Sign In
+                                </button>
+
+                                {/* Back Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowOTP(false);
+                                        setOtp('');
+                                        setError('');
+                                    }}
+                                    className="w-full py-2 text-charcoal/70 hover:text-charcoal text-sm font-semibold"
+                                >
+                                    ← Back to email/password
+                                </button>
+                            </form>
+                        )}
 
                         {/* Divider */}
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-charcoal/20"></div>
                             </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-4 bg-charcoal/10 text-charcoal/70">
+                            <div className="relative flex justify-center">
+                                <span className="px-6 py-2 bg-gradient-to-r from-gold/10 to-gold/5 border border-gold/30 rounded-full text-gold font-semibold text-sm shadow-sm">
                                     New to PropReady?
                                 </span>
                             </div>
@@ -189,7 +334,7 @@ export default function AgentLoginPage() {
                     </div>
 
                     {/* Additional Info */}
-                    <div className="mt-6 text-center">
+                    <div className="mt-12 mb-6 text-center">
                         <p className="text-charcoal/60 text-sm">
                             By signing in, you agree to our{' '}
                             <button className="text-gold hover:text-gold-600 font-semibold">

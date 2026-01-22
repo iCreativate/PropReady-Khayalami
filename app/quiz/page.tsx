@@ -288,6 +288,23 @@ export default function QuizPage() {
             
             localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
 
+            // Send welcome email
+            try {
+                await fetch('/api/send-welcome-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        fullName: formData.fullName
+                    }),
+                });
+            } catch (err) {
+                console.error('Error sending welcome email:', err);
+                // Don't block registration if email fails
+            }
+
             // Store as a lead for agents
             const existingLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
             const lead = {

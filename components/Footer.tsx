@@ -15,7 +15,7 @@ export default function Footer() {
                             <span className="text-white text-xl font-bold">PropReady</span>
                         </Link>
                         <p className="text-white/70 text-sm mb-4">
-                            Your Home. Ready. 100% Free for buyers and Sellers - Get pre-qualified for a home loan in minutes.
+                            Your Home. Ready. 100% Free for buyers and Sellers - Learn more about real estate in minutes.
                         </p>
                         <div className="flex items-center space-x-4">
                             <a

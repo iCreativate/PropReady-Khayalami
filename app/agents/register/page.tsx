@@ -54,9 +54,14 @@ export default function AgentRegisterPage() {
         }
 
         if (!formData.eaabNumber.trim()) {
-            newErrors.eaabNumber = 'EAAB registration number is required';
-        } else if (!/^\d{6}$/.test(formData.eaabNumber.replace(/\s/g, ''))) {
-            newErrors.eaabNumber = 'EAAB number must be 6 digits';
+            newErrors.eaabNumber = 'EAAB/PPRA registration number is required';
+        } else {
+            const cleanedNumber = formData.eaabNumber.replace(/\s/g, '');
+            // EAAB/PPRA FFC numbers are 10-11 digits (traditional format) or newer formats
+            // Valid formats: 10 digits, 11 digits, or 6 digits (legacy)
+            if (!/^\d{10,11}$|^\d{6}$/.test(cleanedNumber)) {
+                newErrors.eaabNumber = 'EAAB/PPRA number must be 10-11 digits (or 6 digits for legacy numbers)';
+            }
         }
 
         if (!formData.company.trim()) {
@@ -119,6 +124,23 @@ export default function AgentRegisterPage() {
             // Store agent registration
             existingAgents.push(agent);
             localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
+
+            // Send welcome email
+            try {
+                await fetch('/api/send-welcome-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: formData.email,
+                        fullName: formData.fullName
+                    }),
+                });
+            } catch (err) {
+                console.error('Error sending welcome email:', err);
+                // Don't block registration if email fails
+            }
 
             // Also store as logged in agent for demo purposes
             localStorage.setItem('propReady_currentAgent', JSON.stringify({
@@ -279,7 +301,7 @@ export default function AgentRegisterPage() {
                                         placeholder="123456"
                                         value={formData.eaabNumber}
                                         onChange={handleInputChange}
-                                        maxLength={6}
+                                        maxLength={11}
                                         className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.eaabNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
                                     />
                                 </div>

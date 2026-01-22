@@ -121,9 +121,14 @@ export default function AgentSettingsPage() {
         }
 
         if (!formData.eaabNumber.trim()) {
-            newErrors.eaabNumber = 'EAAB registration number is required';
-        } else if (!/^\d{6}$/.test(formData.eaabNumber.replace(/\s/g, ''))) {
-            newErrors.eaabNumber = 'EAAB number must be 6 digits';
+            newErrors.eaabNumber = 'EAAB/PPRA registration number is required';
+        } else {
+            const cleanedNumber = formData.eaabNumber.replace(/\s/g, '');
+            // EAAB/PPRA FFC numbers are 10-11 digits (traditional format) or newer formats
+            // Valid formats: 10 digits, 11 digits, or 6 digits (legacy)
+            if (!/^\d{10,11}$|^\d{6}$/.test(cleanedNumber)) {
+                newErrors.eaabNumber = 'EAAB/PPRA number must be 10-11 digits (or 6 digits for legacy numbers)';
+            }
         }
 
         if (!formData.company.trim()) {
