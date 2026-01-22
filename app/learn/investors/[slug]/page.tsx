@@ -1,5 +1,10 @@
 import Link from 'next/link';
 import LearningToolkit from '@/components/LearningToolkit';
+import ROICalculator from '@/components/ROICalculator';
+import TaxDeductionTracker from '@/components/TaxDeductionTracker';
+import PropertyAnalysisTemplate from '@/components/PropertyAnalysisTemplate';
+import TotalCostCalculator from '@/components/TotalCostCalculator';
+import PortfolioDiversificationTracker from '@/components/PortfolioDiversificationTracker';
 import { ArrowLeft, BookOpen, Home, CheckCircle, Target, BarChart3, DollarSign, PiggyBank, Building2, TrendingUp, AlertTriangle } from 'lucide-react';
 
 export default async function InvestorsLearningModulePage({
@@ -182,29 +187,7 @@ export default async function InvestorsLearningModulePage({
                     title: 'ROI Calculator Template',
                     description: 'Calculate your return on investment',
                     type: 'template' as const,
-                    content: (
-                        <div className="space-y-4">
-                            <h4 className="font-bold text-charcoal text-lg mb-4">ROI Calculation Worksheet</h4>
-                            <div className="space-y-3">
-                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-2">Property Purchase Price</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-2">Annual Rental Income</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-2">Annual Expenses (rates, levies, maintenance, etc.)</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-4 bg-gold/10 rounded-lg border border-gold/30">
-                                    <p className="text-sm font-semibold text-charcoal mb-1">Net Annual Profit</p>
-                                    <p className="text-2xl font-bold text-gold">R 0</p>
-                                </div>
-                            </div>
-                        </div>
-                    )
+                    content: <ROICalculator />
                 }
             ]
         },
@@ -533,33 +516,7 @@ export default async function InvestorsLearningModulePage({
                     title: 'Property Analysis Template',
                     description: 'Evaluate potential investment properties systematically',
                     type: 'template' as const,
-                    content: (
-                        <div className="space-y-4">
-                            <h4 className="font-bold text-charcoal text-lg mb-4">Property Evaluation Checklist</h4>
-                            <div className="space-y-3">
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Property Address</label>
-                                    <input type="text" placeholder="Enter address" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Asking Price</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Estimated Rental Income</label>
-                                    <input type="text" placeholder="R 0/month" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Comparable Sales in Area</label>
-                                    <textarea placeholder="List similar properties and their sale prices" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" rows={3}></textarea>
-                                </div>
-                                <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
-                                    <p className="text-sm font-semibold text-charcoal mb-1">Gross Rental Yield</p>
-                                    <p className="text-xl font-bold text-gold">0%</p>
-                                </div>
-                            </div>
-                        </div>
-                    )
+                    content: <PropertyAnalysisTemplate />
                 }
             ]
         },
@@ -1079,29 +1036,7 @@ export default async function InvestorsLearningModulePage({
                     title: 'Portfolio Diversification Tracker',
                     description: 'Track your portfolio diversification across locations and property types',
                     type: 'template' as const,
-                    content: (
-                        <div className="space-y-4">
-                            <h4 className="font-bold text-charcoal text-lg mb-4">Portfolio Diversification Analysis</h4>
-                            <div className="space-y-3">
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Properties by Location</label>
-                                    <textarea placeholder="List properties and their locations" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" rows={3}></textarea>
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Property Types</label>
-                                    <textarea placeholder="List property types (residential, commercial, etc.)" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" rows={2}></textarea>
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Cash Reserves</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
-                                    <p className="text-sm font-semibold text-charcoal mb-1">Diversification Score</p>
-                                    <p className="text-xl font-bold text-gold">Good - Well Diversified</p>
-                                </div>
-                            </div>
-                        </div>
-                    )
+                    content: <PortfolioDiversificationTracker />
                 }
             ]
         }
