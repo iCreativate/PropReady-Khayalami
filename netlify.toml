@@ -1,7 +1,6 @@
 [build]
   command = "npm run build"
-  # Explicitly set to empty to override UI setting - plugin will handle it
-  publish = ""
+  publish = ".next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
