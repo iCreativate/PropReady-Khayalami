@@ -113,19 +113,23 @@ export async function POST(request: NextRequest) {
 
         if (error) {
             console.error('Resend error:', error);
-            return NextResponse.json(
-                { error: 'Failed to send email' },
-                { status: 500 }
-            );
+            // Still return OTP even if email sending fails (for development/testing)
+            // In production, you might want to handle this differently
+            return NextResponse.json({
+                success: false,
+                message: 'Failed to send email, but OTP generated',
+                error: 'Email sending failed',
+                otp: process.env.NODE_ENV === 'development' ? otp : undefined
+            });
         }
 
         // In production, store OTP in Redis/database with 10-minute expiry
-        // For now, return OTP (remove in production!)
+        // For now, return OTP for verification (in production, use server-side verification)
         return NextResponse.json({
             success: true,
             message: 'OTP sent successfully',
-            // Remove this in production - only for development
-            otp: process.env.NODE_ENV === 'development' ? otp : undefined
+            // Return OTP for client-side verification (in production, verify server-side)
+            otp: otp
         });
 
     } catch (error) {

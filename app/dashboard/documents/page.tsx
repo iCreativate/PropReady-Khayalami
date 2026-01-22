@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Home, FileText, Download, Upload, CheckCircle, AlertCircle, Calendar, X, Building2, Star, Phone, ExternalLink, Trophy, Briefcase, Clipboard } from 'lucide-react';
+import { Home, FileText, Download, Upload, CheckCircle, AlertCircle, Calendar, X, Building2, Star, Phone, ExternalLink, Trophy, Briefcase, Clipboard, Send } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 
@@ -23,6 +23,9 @@ export default function DocumentsPage() {
     const [isDragging, setIsDragging] = useState(false);
     const [uploadError, setUploadError] = useState<string>('');
     const [selectedOriginator, setSelectedOriginator] = useState<string>('');
+    const [isSending, setIsSending] = useState(false);
+    const [sendSuccess, setSendSuccess] = useState(false);
+    const [sendError, setSendError] = useState<string>('');
 
     const bondOriginators = [
         {
@@ -186,6 +189,58 @@ export default function DocumentsPage() {
     const handleOriginatorSelect = (originatorId: string) => {
         setSelectedOriginator(originatorId);
         localStorage.setItem('propReady_selectedOriginator', originatorId);
+    };
+
+    const handleSendToOriginator = async () => {
+        if (!selectedOriginator) {
+            setSendError('Please select a bond originator first.');
+            return;
+        }
+
+        if (documents.length === 0) {
+            setSendError('Please upload at least one document before sending.');
+            return;
+        }
+
+        setIsSending(true);
+        setSendError('');
+        setSendSuccess(false);
+
+        try {
+            // Get user data
+            const userData = JSON.parse(localStorage.getItem('propReady_currentUser') || '{}');
+            const originator = bondOriginators.find(o => o.id === selectedOriginator);
+
+            // In production, this would send documents via API
+            // For now, simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Store sent status
+            const sentData = {
+                originatorId: selectedOriginator,
+                originatorName: originator?.name || 'Unknown',
+                documents: documents.map(doc => ({
+                    id: doc.id,
+                    name: doc.name,
+                    type: doc.type
+                })),
+                sentAt: new Date().toISOString(),
+                userId: userData.id
+            };
+
+            localStorage.setItem('propReady_documentsSent', JSON.stringify(sentData));
+            setSendSuccess(true);
+            
+            // Clear success message after 5 seconds
+            setTimeout(() => {
+                setSendSuccess(false);
+            }, 5000);
+        } catch (error) {
+            console.error('Error sending documents:', error);
+            setSendError('Failed to send documents. Please try again.');
+        } finally {
+            setIsSending(false);
+        }
     };
 
     if (isLoading) {
@@ -521,57 +576,101 @@ export default function DocumentsPage() {
                                             <p className="text-charcoal/50 text-sm mt-2">Upload your first document to get started.</p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-4">
-                                            {documents.map((doc) => (
-                                                <div
-                                                    key={doc.id}
-                                                    className="bg-white rounded-2xl p-5 border border-charcoal/10 hover:border-gold/40 transition-all shadow-sm"
-                                                >
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div className="flex items-start gap-4 flex-1 min-w-0">
-                                                            <div className="w-12 h-12 bg-gold/15 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20">
-                                                                <FileText className="w-6 h-6 text-gold" />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                                                    <h3 className="text-charcoal font-semibold text-base md:text-lg truncate" title={doc.name}>
-                                                                        {doc.name}
-                                                                    </h3>
-                                                                    {getStatusBadge(doc.status)}
+                                        <>
+                                            <div className="space-y-4 mb-6">
+                                                {documents.map((doc) => (
+                                                    <div
+                                                        key={doc.id}
+                                                        className="bg-white rounded-2xl p-5 border border-charcoal/10 hover:border-gold/40 transition-all shadow-sm"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-4">
+                                                            <div className="flex items-start gap-4 flex-1 min-w-0">
+                                                                <div className="w-12 h-12 bg-gold/15 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20">
+                                                                    <FileText className="w-6 h-6 text-gold" />
                                                                 </div>
-                                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal/70 text-sm">
-                                                                    <span>{getTypeLabel(doc.type)}</span>
-                                                                    {doc.size && <span>• {doc.size}</span>}
-                                                                    <span>• Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                                                        <h3 className="text-charcoal font-semibold text-base md:text-lg truncate" title={doc.name}>
+                                                                            {doc.name}
+                                                                        </h3>
+                                                                        {getStatusBadge(doc.status)}
+                                                                    </div>
+                                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal/70 text-sm">
+                                                                        <span>{getTypeLabel(doc.type)}</span>
+                                                                        {doc.size && <span>• {doc.size}</span>}
+                                                                        <span>• Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                                            <button
-                                                                onClick={() => {
-                                                                    // In production, this would download the actual file
-                                                                    const link = document.createElement('a');
-                                                                    link.href = '#'; // Would be actual file URL
-                                                                    link.download = doc.name;
-                                                                    link.click();
-                                                                }}
-                                                                className="p-2.5 rounded-xl bg-charcoal/5 hover:bg-charcoal/10 transition text-charcoal border border-charcoal/10"
-                                                                title="Download"
-                                                            >
-                                                                <Download className="w-5 h-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(doc.id)}
-                                                                className="p-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition text-red-600 border border-red-500/30"
-                                                                title="Delete"
-                                                            >
-                                                                <X className="w-5 h-5" />
-                                                            </button>
+                                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        // In production, this would download the actual file
+                                                                        const link = document.createElement('a');
+                                                                        link.href = '#'; // Would be actual file URL
+                                                                        link.download = doc.name;
+                                                                        link.click();
+                                                                    }}
+                                                                    className="p-2.5 rounded-xl bg-charcoal/5 hover:bg-charcoal/10 transition text-charcoal border border-charcoal/10"
+                                                                    title="Download"
+                                                                >
+                                                                    <Download className="w-5 h-5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(doc.id)}
+                                                                    className="p-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition text-red-600 border border-red-500/30"
+                                                                    title="Delete"
+                                                                >
+                                                                    <X className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Send to Bond Originator Button */}
+                                            {selectedOriginator && documents.length > 0 && (
+                                                <div className="pt-6 border-t border-charcoal/10">
+                                                    {sendSuccess && (
+                                                        <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                                                            <p className="text-green-700 text-sm flex items-center gap-2">
+                                                                <CheckCircle className="w-5 h-5" />
+                                                                Documents successfully sent to {bondOriginators.find(o => o.id === selectedOriginator)?.name}!
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    {sendError && (
+                                                        <div className="mb-4 p-4 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-xl">
+                                                            <p className="text-red-600 text-sm flex items-center gap-2">
+                                                                <AlertCircle className="w-5 h-5" />
+                                                                {sendError}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={handleSendToOriginator}
+                                                        disabled={isSending || !selectedOriginator || documents.length === 0}
+                                                        className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-gold via-gold/90 to-gold/70 text-white font-bold rounded-xl hover:from-gold/90 hover:via-gold/80 hover:to-gold/60 transform hover:scale-[1.02] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                                    >
+                                                        {isSending ? (
+                                                            <>
+                                                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                                <span>Sending...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Send className="w-5 h-5" />
+                                                                <span>Send to {bondOriginators.find(o => o.id === selectedOriginator)?.name}</span>
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                    <p className="text-charcoal/60 text-xs text-center mt-3">
+                                                        Your documents will be securely shared with your selected bond originator for prequalification.
+                                                    </p>
                                                 </div>
-                                            ))}
-                                        </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
