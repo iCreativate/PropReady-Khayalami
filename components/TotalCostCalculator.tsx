@@ -32,6 +32,16 @@ export default function TotalCostCalculator() {
                               monthlyMaintenance + 
                               parseNumberInput(propertyManagement);
 
+    // Format number with commas for display (using same approach as other calculators)
+    const formatDisplayValue = (num: number): string => {
+        if (num === 0) return '0';
+        // Round to 2 decimal places, then format with commas
+        const rounded = Math.round(num * 100) / 100;
+        return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    };
+
+    const formattedTotal = formatDisplayValue(totalMonthlyCosts);
+
     return (
         <div className="space-y-4">
             <h4 className="font-bold text-charcoal text-lg mb-4">Property Investment Cost Breakdown</h4>
@@ -109,7 +119,7 @@ export default function TotalCostCalculator() {
                 <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
                     <p className="text-sm font-semibold text-charcoal mb-1">Total Monthly Costs</p>
                     <p className="text-xl font-bold text-gold">
-                        R {totalMonthlyCosts.toLocaleString('en-ZA', { maximumFractionDigits: 2 })}
+                        R {formattedTotal}
                     </p>
                 </div>
             </div>

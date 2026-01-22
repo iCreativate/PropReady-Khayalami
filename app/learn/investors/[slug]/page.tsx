@@ -764,45 +764,7 @@ export default async function InvestorsLearningModulePage({
                     title: 'Total Cost Calculator',
                     description: 'Calculate all costs to avoid underestimating expenses',
                     type: 'template' as const,
-                    content: (
-                        <div className="space-y-4">
-                            <h4 className="font-bold text-charcoal text-lg mb-4">Property Investment Cost Breakdown</h4>
-                            <div className="space-y-3">
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Purchase Price</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Transfer Costs (8-10%)</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Municipal Rates</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Levies (if applicable)</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Insurance</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Annual Maintenance Budget (1-2% of value)</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Property Management (8-12% of rental)</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
-                                </div>
-                                <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
-                                    <p className="text-sm font-semibold text-charcoal mb-1">Total Monthly Costs</p>
-                                    <p className="text-xl font-bold text-gold">R 0</p>
-                                </div>
-                            </div>
-                        </div>
-                    )
+                    content: <TotalCostCalculator />
                 }
             ]
         },
