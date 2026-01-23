@@ -66,20 +66,32 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Use verified domain if available, otherwise fall back to Resend's default
+        // TODO: Replace 'yourdomain.com' with your actual verified domain
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'PropReady <onboarding@resend.dev>';
+        
+        console.log('Attempting to send welcome email:', { from: fromEmail, to: email });
+
         const { data, error } = await resend.emails.send({
-            from: 'PropReady <onboarding@resend.dev>', // Update with your verified domain
+            from: fromEmail,
             to: email,
             subject: 'Welcome to PropReady - Your Home. Ready.',
             html: htmlContent,
         });
 
         if (error) {
-            console.error('Resend error:', error);
+            console.error('Resend error details:', JSON.stringify(error, null, 2));
             return NextResponse.json(
-                { error: 'Failed to send welcome email' },
+                { 
+                    error: 'Failed to send welcome email',
+                    message: error.message || 'Email sending failed',
+                    errorDetails: error
+                },
                 { status: 500 }
             );
         }
+
+        console.log('Welcome email sent successfully:', data);
 
         return NextResponse.json({
             success: true,

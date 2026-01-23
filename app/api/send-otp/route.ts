@@ -104,24 +104,32 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        // Use verified domain if available, otherwise fall back to Resend's default
+        // TODO: Replace 'yourdomain.com' with your actual verified domain
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'PropReady <onboarding@resend.dev>';
+        
+        console.log('Attempting to send email:', { from: fromEmail, to: email, type });
+
         const { data, error } = await resend.emails.send({
-            from: 'PropReady <onboarding@resend.dev>', // Update with your verified domain
+            from: fromEmail,
             to: email,
             subject: subject,
             html: htmlContent,
         });
 
         if (error) {
-            console.error('Resend error:', error);
-            // Still return OTP even if email sending fails (for development/testing)
-            // In production, you might want to handle this differently
+            console.error('Resend error details:', JSON.stringify(error, null, 2));
+            // Return detailed error information for debugging
             return NextResponse.json({
                 success: false,
-                message: 'Failed to send email, but OTP generated',
-                error: 'Email sending failed',
+                message: 'Failed to send email',
+                error: error.message || 'Email sending failed',
+                errorDetails: error,
                 otp: process.env.NODE_ENV === 'development' ? otp : undefined
-            });
+            }, { status: 500 });
         }
+
+        console.log('Email sent successfully:', data);
 
         // In production, store OTP in Redis/database with 10-minute expiry
         // For now, return OTP for verification (in production, use server-side verification)
@@ -132,10 +140,14 @@ export async function POST(request: NextRequest) {
             otp: otp
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error sending OTP:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { 
+                error: 'Internal server error',
+                message: error?.message || 'An unexpected error occurred',
+                details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+            },
             { status: 500 }
         );
     }

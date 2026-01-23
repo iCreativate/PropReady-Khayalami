@@ -56,24 +56,30 @@ export default function LoginPage() {
 
                     const data = await response.json();
                     
+                    console.log('OTP API response:', data);
+                    
                     // If OTP is returned (even if email sending failed), proceed with OTP verification
                     if (data.otp) {
                         setStoredOTP(data.otp);
                         setShowOTP(true);
                         if (!data.success) {
                             // Show warning if email sending failed but OTP is available
-                            setError('Email sending failed, but you can use the OTP shown below for testing.');
+                            const errorMsg = data.error || 'Email sending failed, but you can use the OTP shown below for testing.';
+                            setError(errorMsg);
+                            console.warn('Email sending failed:', data.errorDetails);
                         }
                     } else if (data.success) {
                         // Email sent successfully but OTP not returned (shouldn't happen, but handle gracefully)
                         setShowOTP(true);
                         setError('OTP sent to your email. Please check your inbox.');
                     } else {
-                        setError(data.error || 'Failed to send OTP. Please try again.');
+                        const errorMsg = data.error || data.message || 'Failed to send OTP. Please try again.';
+                        setError(errorMsg);
+                        console.error('OTP sending failed:', data);
                     }
-                } catch (err) {
+                } catch (err: any) {
                     console.error('Error sending OTP:', err);
-                    setError('Failed to send OTP. Please try again.');
+                    setError(`Failed to send OTP: ${err?.message || 'Network error'}. Please try again.`);
                 }
             } else {
                 setError('Invalid email or password. Please try again.');
