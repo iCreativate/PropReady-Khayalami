@@ -121,9 +121,20 @@ export default function AgentRegisterPage() {
                 status: 'pending' // Would be approved by admin in production
             };
 
-            // Store agent registration
-            existingAgents.push(agent);
-            localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
+            // Store agent registration in database
+            try {
+                const { db } = await import('@/lib/supabase');
+                await db.createAgent(agent);
+                
+                // Also store in localStorage as backup
+                existingAgents.push(agent);
+                localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
+            } catch (error) {
+                console.error('Error saving agent to database:', error);
+                // Fallback to localStorage only
+                existingAgents.push(agent);
+                localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
+            }
 
             // Send welcome email
             try {
@@ -412,13 +423,13 @@ export default function AgentRegisterPage() {
                                     />
                                     <span className="text-charcoal/80 text-sm">
                                         I agree to the{' '}
-                                        <button type="button" className="text-gold hover:text-gold-600 font-semibold">
+                                        <Link href="/terms" className="text-gold hover:text-gold-600 font-semibold">
                                             Terms of Service
-                                        </button>{' '}
+                                        </Link>{' '}
                                         and{' '}
-                                        <button type="button" className="text-gold hover:text-gold-600 font-semibold">
+                                        <Link href="/privacy" className="text-gold hover:text-gold-600 font-semibold">
                                             Privacy Policy
-                                        </button>
+                                        </Link>
                                     </span>
                                 </label>
                                 {errors.agreeToTerms && (

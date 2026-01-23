@@ -71,8 +71,7 @@ export default function HomePage() {
 
                     {/* Subheading */}
                     <p className="text-xl md:text-2xl text-charcoal/90 mb-12 max-w-3xl mx-auto">
-                        Get pre-qualified for a home loan in minutes. Connect with verified agents.
-                        Find your dream home. All for free.
+                        Get pre-qualified for a home loan in minutes. Connect with verified agents and find your dream home. 100% free for buyers and sellers.
                     </p>
 
                     {/* CTA Button */}

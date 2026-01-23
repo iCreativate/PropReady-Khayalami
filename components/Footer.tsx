@@ -118,12 +118,6 @@ export default function Footer() {
                         <h3 className="text-white font-bold text-lg mb-4">Contact Us</h3>
                         <ul className="space-y-3">
                             <li className="flex items-center space-x-2 text-white/70 text-sm">
-                                <Phone className="w-4 h-4 text-gold" />
-                                <a href="tel:+27123456789" className="hover:text-gold transition">
-                                    +27 12 345 6789
-                                </a>
-                            </li>
-                            <li className="flex items-center space-x-2 text-white/70 text-sm">
                                 <Mail className="w-4 h-4 text-gold" />
                                 <a href="mailto:info@propready.co.za" className="hover:text-gold transition">
                                     info@propready.co.za
@@ -148,14 +142,11 @@ export default function Footer() {
                             © {new Date().getFullYear()} PropReady-iKhayalami. All rights reserved.
                         </p>
                         <div className="flex items-center space-x-6 text-sm">
-                            <Link href="#" className="text-white/60 hover:text-gold transition">
+                            <Link href="/privacy" className="text-white/60 hover:text-gold transition">
                                 Privacy Policy
                             </Link>
-                            <Link href="#" className="text-white/60 hover:text-gold transition">
+                            <Link href="/terms" className="text-white/60 hover:text-gold transition">
                                 Terms of Service
-                            </Link>
-                            <Link href="#" className="text-white/60 hover:text-gold transition">
-                                Cookie Policy
                             </Link>
                         </div>
                     </div>

@@ -272,21 +272,46 @@ export default function QuizPage() {
                 timestamp: new Date().toISOString()
             };
 
-            // Store user account
-            const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
-            existingUsers.push(userAccount);
-            localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
-
-            // Store quiz result
-            const quizResult = {
-                ...formData,
-                score,
-                preQualAmount,
-                timestamp: new Date().toISOString(),
-                id: userId
-            };
-            
-            localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
+            // Store user account and quiz result in database
+            try {
+                const { db } = await import('@/lib/supabase');
+                
+                // Save user to database
+                await db.createUser(userAccount);
+                
+                // Save quiz result to database
+                const quizResult = {
+                    ...formData,
+                    score,
+                    preQualAmount,
+                    timestamp: new Date().toISOString(),
+                    id: userId,
+                    user_id: userId
+                };
+                
+                await db.saveQuizResult(quizResult);
+                
+                // Also store in localStorage as backup
+                const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
+                existingUsers.push(userAccount);
+                localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
+                localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
+            } catch (error) {
+                console.error('Error saving to database:', error);
+                // Fallback to localStorage only
+                const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
+                existingUsers.push(userAccount);
+                localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
+                
+                const quizResult = {
+                    ...formData,
+                    score,
+                    preQualAmount,
+                    timestamp: new Date().toISOString(),
+                    id: userId
+                };
+                localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
+            }
 
             // Send welcome email
             try {
