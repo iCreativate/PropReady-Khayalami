@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { db } from '@/lib/supabase';
 
 export default function LoginPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -24,29 +26,72 @@ export default function LoginPage() {
         }
     }, [router]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
-        if (typeof window !== 'undefined') {
-            const users = JSON.parse(localStorage.getItem('propReady_users') || '[]');
-            const user = users.find((u: any) => 
-                u.email === formData.email && u.password === formData.password
-            );
+        try {
+            // Try to get user from database first
+            const { data: user, error: dbError } = await db.getUserByEmail(formData.email);
 
+            if (dbError) {
+                console.error('Database error:', dbError);
+                // Fall through to localStorage check
+            }
+
+            // Check if user exists and password matches
+            let authenticatedUser = null;
+            
             if (user) {
+                // User found in database - check password
+                // Handle both snake_case (from DB) and camelCase (from localStorage) field names
+                const dbPassword = user.password;
+                const dbFullName = user.full_name || user.fullName;
+                const dbId = user.id;
+                const dbEmail = user.email;
+
+                if (dbPassword === formData.password) {
+                    authenticatedUser = {
+                        id: dbId,
+                        fullName: dbFullName,
+                        email: dbEmail
+                    };
+                }
+            }
+
+            // If not found in database, check localStorage as fallback
+            if (!authenticatedUser && typeof window !== 'undefined') {
+                const users = JSON.parse(localStorage.getItem('propReady_users') || '[]');
+                const localUser = users.find((u: any) => 
+                    u.email === formData.email && u.password === formData.password
+                );
+
+                if (localUser) {
+                    authenticatedUser = {
+                        id: localUser.id,
+                        fullName: localUser.fullName,
+                        email: localUser.email
+                    };
+                }
+            }
+
+            if (authenticatedUser) {
                 // Store current user session
-                localStorage.setItem('propReady_currentUser', JSON.stringify({
-                    id: user.id,
-                    fullName: user.fullName,
-                    email: user.email
-                }));
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('propReady_currentUser', JSON.stringify(authenticatedUser));
+                }
 
                 // Redirect to dashboard
                 router.push('/dashboard');
             } else {
                 setError('Invalid email or password. Please try again.');
             }
+        } catch (err) {
+            console.error('Login error:', err);
+            setError('An error occurred during login. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -167,9 +212,10 @@ export default function LoginPage() {
                                 {/* Login Button */}
                                 <button
                                     type="submit"
-                                    className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                                    disabled={isLoading}
+                                    className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                                 >
-                                    Sign In
+                                    {isLoading ? 'Signing In...' : 'Sign In'}
                                 </button>
                             </form>
 
