@@ -30,11 +30,26 @@ export const db = {
             return { data: userData, error: null };
         }
 
+        // Convert camelCase to snake_case for database
+        const dbUserData = {
+            id: userData.id,
+            full_name: userData.fullName,
+            email: userData.email,
+            phone: userData.phone,
+            password: userData.password,
+            created_at: userData.timestamp,
+            updated_at: userData.timestamp
+        };
+
         const { data, error } = await supabase
             .from('users')
-            .insert([userData])
+            .insert([dbUserData])
             .select()
             .single();
+
+        if (error) {
+            console.error('Supabase createUser error:', error);
+        }
 
         return { data, error };
     },
@@ -132,11 +147,29 @@ export const db = {
             return { data: agentData, error: null };
         }
 
+        // Convert camelCase to snake_case for database
+        const dbAgentData = {
+            id: agentData.id,
+            full_name: agentData.fullName,
+            email: agentData.email,
+            phone: agentData.phone,
+            eaab_number: agentData.eaabNumber,
+            company: agentData.company,
+            password: agentData.password,
+            status: agentData.status || 'pending',
+            created_at: agentData.timestamp || new Date().toISOString(),
+            updated_at: agentData.timestamp || new Date().toISOString()
+        };
+
         const { data, error } = await supabase
             .from('agents')
-            .insert([agentData])
+            .insert([dbAgentData])
             .select()
             .single();
+
+        if (error) {
+            console.error('Supabase createAgent error:', error);
+        }
 
         return { data, error };
     },

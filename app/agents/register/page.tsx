@@ -124,7 +124,13 @@ export default function AgentRegisterPage() {
             // Store agent registration in database
             try {
                 const { db } = await import('@/lib/supabase');
-                await db.createAgent(agent);
+                const result = await db.createAgent(agent);
+                
+                if (result.error) {
+                    console.error('Error creating agent:', result.error);
+                } else {
+                    console.log('Agent saved to database successfully');
+                }
                 
                 // Also store in localStorage as backup
                 existingAgents.push(agent);

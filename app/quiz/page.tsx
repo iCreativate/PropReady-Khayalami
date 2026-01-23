@@ -277,7 +277,12 @@ export default function QuizPage() {
                 const { db } = await import('@/lib/supabase');
                 
                 // Save user to database
-                await db.createUser(userAccount);
+                const userResult = await db.createUser(userAccount);
+                if (userResult.error) {
+                    console.error('Error creating user:', userResult.error);
+                } else {
+                    console.log('User saved to database successfully');
+                }
                 
                 // Save quiz result to database
                 const quizResult = {
@@ -289,7 +294,12 @@ export default function QuizPage() {
                     user_id: userId
                 };
                 
-                await db.saveQuizResult(quizResult);
+                const quizResultDb = await db.saveQuizResult(quizResult);
+                if (quizResultDb.error) {
+                    console.error('Error saving quiz result:', quizResultDb.error);
+                } else {
+                    console.log('Quiz result saved to database successfully');
+                }
                 
                 // Also store in localStorage as backup
                 const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
