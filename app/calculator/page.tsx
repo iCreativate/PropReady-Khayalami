@@ -140,12 +140,14 @@ export default function BondCalculatorPage() {
                                 <div className="space-y-6">
                                     {/* Purchase Price */}
                                     <div>
-                                        <label className="block text-charcoal/70 font-semibold mb-2 text-sm">
+                                        <label htmlFor="calc-purchase-price" className="block text-charcoal/70 font-semibold mb-2 text-sm">
                                             Purchase Price
                                         </label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                             <input
+                                                id="calc-purchase-price"
+                                                name="purchasePrice"
                                                 type="text"
                                                 value={purchasePrice === 0 ? '' : formatNumber(purchasePrice)}
                                                 onChange={(e) => {
@@ -160,12 +162,14 @@ export default function BondCalculatorPage() {
 
                                     {/* Deposit */}
                                     <div>
-                                        <label className="block text-charcoal/70 font-semibold mb-2 text-sm">
+                                        <label htmlFor="calc-deposit" className="block text-charcoal/70 font-semibold mb-2 text-sm">
                                             Deposit Amount
                                         </label>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                             <input
+                                                id="calc-deposit"
+                                                name="deposit"
                                                 type="text"
                                                 value={deposit === 0 ? '' : formatNumber(deposit)}
                                                 onChange={(e) => {
@@ -185,12 +189,14 @@ export default function BondCalculatorPage() {
 
                                     {/* Interest Rate */}
                                     <div>
-                                        <label className="block text-charcoal/70 font-semibold mb-2 text-sm">
+                                        <label htmlFor="calc-interest-rate" className="block text-charcoal/70 font-semibold mb-2 text-sm">
                                             Interest Rate (% per annum)
                                         </label>
                                         <div className="relative">
                                             <Percent className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                             <input
+                                                id="calc-interest-rate"
+                                                name="interestRate"
                                                 type="number"
                                                 value={interestRate}
                                                 onChange={(e) => setInterestRate(Number(e.target.value))}
@@ -200,7 +206,10 @@ export default function BondCalculatorPage() {
                                                 className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/30 focus:outline-none focus:ring-2 focus:ring-gold text-lg font-semibold"
                                             />
                                         </div>
+                                        <label htmlFor="calc-interest-rate-slider" className="sr-only">Interest Rate Slider</label>
                                         <input
+                                            id="calc-interest-rate-slider"
+                                            name="interestRateSlider"
                                             type="range"
                                             min="8"
                                             max="18"
@@ -208,6 +217,7 @@ export default function BondCalculatorPage() {
                                             value={interestRate}
                                             onChange={(e) => setInterestRate(Number(e.target.value))}
                                             className="w-full mt-4 accent-gold h-2 bg-charcoal/20 rounded-lg appearance-none cursor-pointer"
+                                            aria-label="Interest rate slider"
                                         />
                                         <div className="flex justify-between text-charcoal/50 text-sm mt-1">
                                             <span>8%</span>
@@ -217,12 +227,14 @@ export default function BondCalculatorPage() {
 
                                     {/* Loan Term */}
                                     <div>
-                                        <label className="block text-charcoal/70 font-semibold mb-2 text-sm">
+                                        <label htmlFor="calc-loan-term" className="block text-charcoal/70 font-semibold mb-2 text-sm">
                                             Loan Term (years)
                                         </label>
                                         <div className="relative">
                                             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                             <input
+                                                id="calc-loan-term"
+                                                name="loanTerm"
                                                 type="number"
                                                 value={loanTerm}
                                                 onChange={(e) => setLoanTerm(Number(e.target.value))}
@@ -232,7 +244,10 @@ export default function BondCalculatorPage() {
                                                 className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/30 focus:outline-none focus:ring-2 focus:ring-gold text-lg font-semibold"
                                             />
                                         </div>
+                                        <label htmlFor="calc-loan-term-slider" className="sr-only">Loan Term Slider</label>
                                         <input
+                                            id="calc-loan-term-slider"
+                                            name="loanTermSlider"
                                             type="range"
                                             min="5"
                                             max="30"

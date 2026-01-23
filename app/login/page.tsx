@@ -162,18 +162,21 @@ export default function LoginPage() {
 
                                 {/* Email Input */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
+                                    <label htmlFor="login-email" className="block text-charcoal font-semibold mb-2">
                                         Email Address
                                     </label>
                                     <div className="relative">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                         <input
+                                            id="login-email"
+                                            name="email"
                                             type="email"
                                             placeholder="Enter your email"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             required
                                             disabled={isLoading}
+                                            autoComplete="email"
                                             className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold disabled:opacity-50"
                                         />
                                     </div>
@@ -181,24 +184,28 @@ export default function LoginPage() {
 
                                 {/* Password Input */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
+                                    <label htmlFor="login-password" className="block text-charcoal font-semibold mb-2">
                                         Password
                                     </label>
                                     <div className="relative">
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                         <input
+                                            id="login-password"
+                                            name="password"
                                             type={showPassword ? 'text' : 'password'}
                                             placeholder="Enter your password"
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                             required
                                             disabled={isLoading}
+                                            autoComplete="current-password"
                                             className="w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold disabled:opacity-50"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
+                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
                                         >
                                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
@@ -207,8 +214,10 @@ export default function LoginPage() {
 
                                 {/* Remember Me & Forgot Password */}
                                 <div className="flex items-center justify-between">
-                                    <label className="flex items-center space-x-2 cursor-pointer">
+                                    <label htmlFor="remember-me" className="flex items-center space-x-2 cursor-pointer">
                                         <input
+                                            id="remember-me"
+                                            name="rememberMe"
                                             type="checkbox"
                                             className="w-4 h-4 rounded border-charcoal/20 bg-white/10 text-gold focus:ring-gold"
                                         />
@@ -252,11 +261,13 @@ export default function LoginPage() {
 
                                 {/* OTP Input */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2 text-center">
+                                    <label htmlFor="login-otp" className="block text-charcoal font-semibold mb-2 text-center">
                                         Enter OTP Code
                                     </label>
                                     <div className="relative">
                                         <input
+                                            id="login-otp"
+                                            name="otp"
                                             type="text"
                                             placeholder="000000"
                                             value={otp}
@@ -266,6 +277,8 @@ export default function LoginPage() {
                                             }}
                                             maxLength={6}
                                             required
+                                            autoComplete="one-time-code"
+                                            inputMode="numeric"
                                             className="w-full px-4 py-4 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-gold"
                                         />
                                     </div>

@@ -334,16 +334,16 @@ export default async function InvestorsLearningModulePage({
                             <h4 className="font-bold text-charcoal text-lg mb-4">Annual Expense Tracking</h4>
                             <div className="space-y-3">
                                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Bond Interest (not capital)</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                    <label htmlFor="tax-bond-interest" className="block text-sm font-semibold text-charcoal mb-1">Bond Interest (not capital)</label>
+                                    <input id="tax-bond-interest" name="bondInterest" type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
                                 </div>
                                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Rates & Taxes</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                    <label htmlFor="tax-rates-taxes" className="block text-sm font-semibold text-charcoal mb-1">Rates & Taxes</label>
+                                    <input id="tax-rates-taxes" name="ratesTaxes" type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
                                 </div>
                                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                                    <label className="block text-sm font-semibold text-charcoal mb-1">Maintenance & Repairs</label>
-                                    <input type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
+                                    <label htmlFor="tax-maintenance" className="block text-sm font-semibold text-charcoal mb-1">Maintenance & Repairs</label>
+                                    <input id="tax-maintenance" name="maintenance" type="text" placeholder="R 0" className="w-full px-3 py-2 border border-charcoal/20 rounded-lg" />
                                 </div>
                                 <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
                                     <p className="text-sm font-semibold text-charcoal mb-1">Total Deductible Expenses</p>
@@ -643,43 +643,43 @@ export default async function InvestorsLearningModulePage({
                             <div className="space-y-3">
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-property-inspection" name="propertyInspection" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Property inspection completed</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-comparable-sales" name="comparableSales" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Comparable sales researched (CMA)</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-area-growth" name="areaGrowth" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Area growth trends analyzed</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-location-factors" name="locationFactors" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Location factors verified (safety, amenities, infrastructure)</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-rental-rates" name="rentalRates" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Rental rates verified in area</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-property-history" name="propertyHistory" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Property history checked (no hidden issues)</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-objective-criteria" name="objectiveCriteria" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Objective investment criteria met (not emotional decision)</span>
                                     </label>
                                 </div>
@@ -852,43 +852,43 @@ export default async function InvestorsLearningModulePage({
                             <div className="space-y-3">
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-application-form" name="applicationForm" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Application form completed with all details</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-credit-check" name="creditCheck" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Credit check completed</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-employment" name="employment" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Employment verified (payslips, bank statements)</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-income-ratio" name="incomeRatio" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Income is at least 3x monthly rental</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-references" name="references" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">2+ previous landlord references checked</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-identity" name="identity" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Identity verified (ID copy)</span>
                                     </label>
                                 </div>
                                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
                                     <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input type="checkbox" className="w-5 h-5 text-gold rounded" />
+                                        <input id="check-lease-agreement" name="leaseAgreement" type="checkbox" className="w-5 h-5 text-gold rounded" />
                                         <span className="text-sm font-semibold text-charcoal">Proper lease agreement prepared</span>
                                     </label>
                                 </div>
