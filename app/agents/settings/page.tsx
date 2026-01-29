@@ -75,7 +75,12 @@ export default function AgentSettingsPage() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let finalValue = value;
+        // Restrict FFC field to digits only, max 7
+        if (name === 'eaabNumber') {
+            finalValue = value.replace(/\D/g, '').slice(0, 7);
+        }
+        setFormData(prev => ({ ...prev, [name]: finalValue }));
         
         // Clear error when user starts typing
         if (errors[name]) {
@@ -120,15 +125,11 @@ export default function AgentSettingsPage() {
             newErrors.phone = 'Please enter a valid South African phone number';
         }
 
+        const cleanedFFC = formData.eaabNumber.replace(/\D/g, '');
         if (!formData.eaabNumber.trim()) {
-            newErrors.eaabNumber = 'EAAB/PPRA registration number is required';
-        } else {
-            const cleanedNumber = formData.eaabNumber.replace(/\s/g, '');
-            // EAAB/PPRA FFC numbers are 10-11 digits (traditional format) or newer formats
-            // Valid formats: 10 digits, 11 digits, or 6 digits (legacy)
-            if (!/^\d{10,11}$|^\d{6}$/.test(cleanedNumber)) {
-                newErrors.eaabNumber = 'EAAB/PPRA number must be 10-11 digits (or 6 digits for legacy numbers)';
-            }
+            newErrors.eaabNumber = 'FFC number (Fidelity Fund Certificate) is required';
+        } else if (cleanedFFC.length !== 7) {
+            newErrors.eaabNumber = 'FFC number must be exactly 7 digits';
         }
 
         if (!formData.company.trim()) {
@@ -184,7 +185,7 @@ export default function AgentSettingsPage() {
                 agents[agentIndex] = {
                     ...agents[agentIndex],
                     ...formData,
-                    eaabNumber: formData.eaabNumber.replace(/\s/g, '')
+                    eaabNumber: formData.eaabNumber.replace(/\D/g, '')
                 };
                 localStorage.setItem('propReady_agents', JSON.stringify(agents));
             }
@@ -379,19 +380,22 @@ export default function AgentSettingsPage() {
                                     )}
                                 </div>
 
-                                {/* EAAB Number */}
+                                {/* FFC Number (Fidelity Fund Certificate) */}
                                 <div>
                                     <label className="block text-charcoal font-semibold mb-2">
-                                        EAAB Registration Number <span className="text-red-600">*</span>
+                                        FFC Number (Fidelity Fund Certificate) <span className="text-red-600">*</span>
                                     </label>
                                     <div className="relative">
                                         <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                         <input
                                             type="text"
                                             name="eaabNumber"
+                                            placeholder="1234567"
                                             value={formData.eaabNumber}
                                             onChange={handleInputChange}
-                                            maxLength={6}
+                                            maxLength={7}
+                                            inputMode="numeric"
+                                            autoComplete="off"
                                             className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.eaabNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
                                         />
                                     </div>
@@ -401,6 +405,7 @@ export default function AgentSettingsPage() {
                                             {errors.eaabNumber}
                                         </p>
                                     )}
+                                    <p className="text-charcoal/60 text-sm mt-1">Your 7-digit PPRA Fidelity Fund Certificate number</p>
                                 </div>
 
                                 {/* Company */}

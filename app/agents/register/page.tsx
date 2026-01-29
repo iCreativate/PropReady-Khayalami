@@ -28,6 +28,7 @@ export default function AgentRegisterPage() {
         email: '',
         phone: '',
         eaabNumber: '',
+        confirmFFCNumber: '',
         company: '',
         password: '',
         confirmPassword: '',
@@ -53,15 +54,19 @@ export default function AgentRegisterPage() {
             newErrors.phone = 'Please enter a valid South African phone number';
         }
 
+        const cleanedFFC = formData.eaabNumber.replace(/\D/g, '');
+        const cleanedConfirm = formData.confirmFFCNumber.replace(/\D/g, '');
         if (!formData.eaabNumber.trim()) {
-            newErrors.eaabNumber = 'EAAB/PPRA registration number is required';
-        } else {
-            const cleanedNumber = formData.eaabNumber.replace(/\s/g, '');
-            // EAAB/PPRA FFC numbers are 10-11 digits (traditional format) or newer formats
-            // Valid formats: 10 digits, 11 digits, or 6 digits (legacy)
-            if (!/^\d{10,11}$|^\d{6}$/.test(cleanedNumber)) {
-                newErrors.eaabNumber = 'EAAB/PPRA number must be 10-11 digits (or 6 digits for legacy numbers)';
-            }
+            newErrors.eaabNumber = 'FFC number (Fidelity Fund Certificate) is required';
+        } else if (cleanedFFC.length !== 7) {
+            newErrors.eaabNumber = 'FFC number must be exactly 7 digits';
+        }
+        if (!formData.confirmFFCNumber.trim()) {
+            newErrors.confirmFFCNumber = 'Please confirm your FFC number';
+        } else if (cleanedConfirm.length !== 7) {
+            newErrors.confirmFFCNumber = 'FFC number must be exactly 7 digits';
+        } else if (cleanedFFC !== cleanedConfirm) {
+            newErrors.confirmFFCNumber = 'FFC numbers do not match. Please re-enter to confirm.';
         }
 
         if (!formData.company.trim()) {
@@ -114,7 +119,7 @@ export default function AgentRegisterPage() {
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
-                eaabNumber: formData.eaabNumber.replace(/\s/g, ''),
+                eaabNumber: formData.eaabNumber.replace(/\D/g, ''),
                 company: formData.company,
                 password: formData.password, // In production, this should be hashed
                 timestamp: new Date().toISOString(),
@@ -179,9 +184,14 @@ export default function AgentRegisterPage() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
+        let finalValue: string | boolean = type === 'checkbox' ? checked : value;
+        // Restrict FFC fields to digits only
+        if (name === 'eaabNumber' || name === 'confirmFFCNumber') {
+            finalValue = (value as string).replace(/\D/g, '').slice(0, 7);
+        }
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: finalValue
         }));
         
         // Clear error when user starts typing
@@ -189,6 +199,9 @@ export default function AgentRegisterPage() {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
+                if (name === 'eaabNumber' || name === 'confirmFFCNumber') {
+                    delete newErrors[name === 'eaabNumber' ? 'confirmFFCNumber' : 'eaabNumber'];
+                }
                 return newErrors;
             });
         }
@@ -305,20 +318,22 @@ export default function AgentRegisterPage() {
                                 )}
                             </div>
 
-                            {/* EAAB Number */}
+                            {/* FFC Number (Fidelity Fund Certificate) */}
                             <div>
                                 <label className="block text-charcoal font-semibold mb-2">
-                                    EAAB Registration Number <span className="text-red-600">*</span>
+                                    FFC Number (Fidelity Fund Certificate) <span className="text-red-600">*</span>
                                 </label>
                                 <div className="relative">
                                     <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                     <input
                                         type="text"
                                         name="eaabNumber"
-                                        placeholder="123456"
+                                        placeholder="1234567"
                                         value={formData.eaabNumber}
                                         onChange={handleInputChange}
-                                        maxLength={11}
+                                        maxLength={7}
+                                        inputMode="numeric"
+                                        autoComplete="off"
                                         className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.eaabNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
                                     />
                                 </div>
@@ -328,7 +343,35 @@ export default function AgentRegisterPage() {
                                         {errors.eaabNumber}
                                     </p>
                                 )}
-                                <p className="text-charcoal/60 text-sm mt-1">Your 6-digit EAAB registration number</p>
+                                <p className="text-charcoal/60 text-sm mt-1">Your 7-digit PPRA Fidelity Fund Certificate number. Verify at theppra.org.za</p>
+                            </div>
+
+                            {/* Confirm FFC Number */}
+                            <div>
+                                <label className="block text-charcoal font-semibold mb-2">
+                                    Confirm FFC Number <span className="text-red-600">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <input
+                                        type="text"
+                                        name="confirmFFCNumber"
+                                        placeholder="1234567"
+                                        value={formData.confirmFFCNumber}
+                                        onChange={handleInputChange}
+                                        maxLength={7}
+                                        inputMode="numeric"
+                                        autoComplete="off"
+                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.confirmFFCNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    />
+                                </div>
+                                {errors.confirmFFCNumber && (
+                                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {errors.confirmFFCNumber}
+                                    </p>
+                                )}
+                                <p className="text-charcoal/60 text-sm mt-1">Re-enter your FFC number to confirm and prevent errors</p>
                             </div>
 
                             {/* Company/Agency */}
