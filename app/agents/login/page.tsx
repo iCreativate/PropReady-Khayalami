@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { db } from '@/lib/supabase';
 
 export default function AgentLoginPage() {
     const router = useRouter();
@@ -22,43 +21,31 @@ export default function AgentLoginPage() {
         setIsLoading(true);
 
         try {
-            // Try to get agent from database first
-            const { data: agent, error: dbError } = await db.getAgentByEmail(formData.email);
+            // Try database via server API first (uses server env vars)
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email, password: formData.password, type: 'agent' }),
+            });
+            const loginJson = await loginRes.json().catch(() => ({}));
 
-            if (dbError) {
-                console.error('Database error:', dbError);
-                // Fall through to localStorage check
-            }
-
-            // Check if agent exists and password matches
             let authenticatedAgent = null;
-            
-            if (agent) {
-                // Agent found in database - check password
-                // Handle both snake_case (from DB) and camelCase (from localStorage) field names
-                const dbPassword = agent.password;
-                const dbFullName = agent.full_name || agent.fullName;
-                const dbId = agent.id;
-                const dbEmail = agent.email;
-                const dbCompany = agent.company;
 
-                if (dbPassword === formData.password) {
-                    authenticatedAgent = {
-                        id: dbId,
-                        fullName: dbFullName,
-                        email: dbEmail,
-                        company: dbCompany
-                    };
-                }
+            if (loginRes.ok && loginJson.success && loginJson.user) {
+                authenticatedAgent = {
+                    id: loginJson.user.id,
+                    fullName: loginJson.user.fullName,
+                    email: loginJson.user.email,
+                    company: loginJson.user.company
+                };
             }
 
-            // If not found in database, check localStorage as fallback
+            // Fallback to localStorage if database not configured or agent not in DB
             if (!authenticatedAgent && typeof window !== 'undefined') {
                 const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-                const localAgent = agents.find((a: any) => 
+                const localAgent = agents.find((a: any) =>
                     a.email === formData.email && a.password === formData.password
                 );
-
                 if (localAgent) {
                     authenticatedAgent = {
                         id: localAgent.id,
@@ -70,12 +57,9 @@ export default function AgentLoginPage() {
             }
 
             if (authenticatedAgent) {
-                // Store current agent session
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('propReady_currentAgent', JSON.stringify(authenticatedAgent));
                 }
-
-                // Redirect to dashboard
                 router.push('/agents/dashboard');
             } else {
                 setError('Invalid email or password. Please try again.');

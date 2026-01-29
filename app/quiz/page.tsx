@@ -272,54 +272,35 @@ export default function QuizPage() {
                 timestamp: new Date().toISOString()
             };
 
-            // Store user account and quiz result in database
-            try {
-                const { db } = await import('@/lib/supabase');
-                
-                // Save user to database
-                const userResult = await db.createUser(userAccount);
-                if (userResult.error) {
-                    console.error('Error creating user:', userResult.error);
-                } else {
-                    console.log('User saved to database successfully');
-                }
-                
-                // Save quiz result to database
-                const quizResult = {
-                    ...formData,
-                    score,
-                    preQualAmount,
-                    timestamp: new Date().toISOString(),
-                    id: userId,
-                    user_id: userId
-                };
-                
-                const quizResultDb = await db.saveQuizResult(quizResult);
-                if (quizResultDb.error) {
-                    console.error('Error saving quiz result:', quizResultDb.error);
-                } else {
-                    console.log('Quiz result saved to database successfully');
-                }
-                
-                // Also store in localStorage as backup
+            const quizResult = {
+                ...formData,
+                score,
+                preQualAmount,
+                timestamp: new Date().toISOString(),
+                id: userId,
+                user_id: userId
+            };
+
+            // Save to database via server API (uses server env vars)
+            const registerRes = await fetch('/api/users/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: userAccount, quizResult }),
+            });
+            const registerJson = await registerRes.json().catch(() => ({}));
+
+            if (registerRes.ok && registerJson.success) {
+                // Database saved; keep localStorage in sync for session
                 const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
                 existingUsers.push(userAccount);
                 localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
                 localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
-            } catch (error) {
-                console.error('Error saving to database:', error);
-                // Fallback to localStorage only
+            } else {
+                // Database not configured or failed; fallback to localStorage only
+                console.warn('Database save failed:', registerJson.error || registerRes.statusText);
                 const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
                 existingUsers.push(userAccount);
                 localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
-                
-                const quizResult = {
-                    ...formData,
-                    score,
-                    preQualAmount,
-                    timestamp: new Date().toISOString(),
-                    id: userId
-                };
                 localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
             }
 

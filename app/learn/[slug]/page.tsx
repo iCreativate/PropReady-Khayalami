@@ -59,6 +59,54 @@ export default async function LearningModulePage({
                         <li><strong>Credit Check:</strong> Banks assess your credit score, payment history, and affordability.</li>
                         <li><strong>Approval:</strong> You receive a &quot;grant&quot; or &quot;approval in principle&quot; detailing the loan amount and interest rate offered.</li>
                     </ul>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. FICA Documents: What You Need</h3>
+                    <div className="premium-card p-6 rounded-xl mb-4 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">What are FICA Documents?</h4>
+                        <p className="mb-4 text-charcoal/70 leading-relaxed">
+                            FICA stands for the <strong className="text-charcoal">Financial Intelligence Centre Act</strong>. It is South African legislation that requires banks and other accountable institutions to verify your identity and address before they can do business with you. When you apply for a home loan, the bank must comply with FICA to combat money laundering and fraud. You will need to provide &quot;FICA documents&quot;—proof of who you are and where you live—before your bond application can be approved.
+                        </p>
+                        <p className="text-charcoal/70 leading-relaxed">
+                            FICA verification is mandatory for all home loan applicants. Having these documents ready speeds up your application and avoids delays.
+                        </p>
+                    </div>
+
+                    <h4 className="text-xl font-bold text-charcoal mt-6 mb-3">Types of Documents Required for FICA</h4>
+                    <p className="text-charcoal/80 mb-4">Banks typically require the following for FICA compliance when applying for a home loan:</p>
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div className="premium-card p-4 rounded-xl bg-white/50 border border-charcoal/10">
+                            <h4 className="font-bold text-charcoal mb-2">Proof of Identity</h4>
+                            <ul className="list-disc pl-5 space-y-1 text-charcoal/80 text-sm">
+                                <li><strong>Valid South African ID book or ID card</strong> (preferred)</li>
+                                <li><strong>Valid passport</strong> (if you are not a South African citizen)</li>
+                                <li><strong>Valid driver&apos;s licence</strong> (sometimes accepted as secondary ID)</li>
+                            </ul>
+                            <p className="text-charcoal/60 text-sm mt-2">Documents must be original or certified copies. Certification must be recent (usually within 3 months).</p>
+                        </div>
+                        <div className="premium-card p-4 rounded-xl bg-white/50 border border-charcoal/10">
+                            <h4 className="font-bold text-charcoal mb-2">Proof of Address</h4>
+                            <ul className="list-disc pl-5 space-y-1 text-charcoal/80 text-sm">
+                                <li><strong>Utility bill</strong> (electricity, water, rates) in your name, not older than 3 months</li>
+                                <li><strong>Municipal account</strong> or lease agreement</li>
+                                <li><strong>Bank statement</strong> showing your physical address (within 3 months)</li>
+                                <li><strong>Retail store account statement</strong> (e.g. Edgars, Woolworths) with your address</li>
+                            </ul>
+                            <p className="text-charcoal/60 text-sm mt-2">The document must clearly show your full name and physical address (not a P.O. Box only).</p>
+                        </div>
+                    </div>
+                    <div className="premium-card p-4 rounded-xl bg-white/50 border border-charcoal/10">
+                        <h4 className="font-bold text-charcoal mb-2">Additional FICA Documents (if applicable)</h4>
+                        <ul className="list-disc pl-5 space-y-1 text-charcoal/80 text-sm">
+                            <li><strong>Marriage certificate</strong> — if married in community of property</li>
+                            <li><strong>Antenuptial contract</strong> — if married out of community of property</li>
+                            <li><strong>Divorce decree</strong> — if divorced and relevant to the application</li>
+                            <li><strong>Death certificate</strong> — if applying as executor or surviving spouse</li>
+                            <li><strong>Trust deed / company documents</strong> — if buying in a trust or company name</li>
+                        </ul>
+                    </div>
+                    <div className="mt-6 p-4 bg-gold/10 rounded-lg border border-gold/20">
+                        <p className="text-sm text-charcoal/80"><strong>Tip:</strong> Ask your bond originator or bank for their exact FICA checklist. Some banks accept certified copies; others may require originals. Having everything ready from the start avoids back-and-forth and speeds up approval.</p>
+                    </div>
                 </div>
             ),
             toolkit: [

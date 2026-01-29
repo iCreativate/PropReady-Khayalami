@@ -126,23 +126,25 @@ export default function AgentRegisterPage() {
                 status: 'pending' // Would be approved by admin in production
             };
 
-            // Store agent registration in database
-            try {
-                const { db } = await import('@/lib/supabase');
-                const result = await db.createAgent(agent);
-                
-                if (result.error) {
-                    console.error('Error creating agent:', result.error);
-                } else {
-                    console.log('Agent saved to database successfully');
-                }
-                
-                // Also store in localStorage as backup
+            // Save to database via server API (uses server env vars)
+            const registerRes = await fetch('/api/agents/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(agent),
+            });
+            const registerJson = await registerRes.json().catch(() => ({}));
+
+            if (registerRes.ok && registerJson.success) {
                 existingAgents.push(agent);
                 localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
-            } catch (error) {
-                console.error('Error saving agent to database:', error);
-                // Fallback to localStorage only
+            } else {
+                const apiError = registerJson.error || registerRes.statusText;
+                if (registerRes.status === 409) {
+                    setErrors({ email: apiError });
+                    setIsSubmitting(false);
+                    return;
+                }
+                console.warn('Database save failed:', apiError);
                 existingAgents.push(agent);
                 localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
             }

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { db } from '@/lib/supabase';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -32,41 +31,30 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            // Try to get user from database first
-            const { data: user, error: dbError } = await db.getUserByEmail(formData.email);
+            // Try database via server API first (uses server env vars)
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email, password: formData.password, type: 'user' }),
+            });
+            const loginJson = await loginRes.json().catch(() => ({}));
 
-            if (dbError) {
-                console.error('Database error:', dbError);
-                // Fall through to localStorage check
-            }
-
-            // Check if user exists and password matches
             let authenticatedUser = null;
-            
-            if (user) {
-                // User found in database - check password
-                // Handle both snake_case (from DB) and camelCase (from localStorage) field names
-                const dbPassword = user.password;
-                const dbFullName = user.full_name || user.fullName;
-                const dbId = user.id;
-                const dbEmail = user.email;
 
-                if (dbPassword === formData.password) {
-                    authenticatedUser = {
-                        id: dbId,
-                        fullName: dbFullName,
-                        email: dbEmail
-                    };
-                }
+            if (loginRes.ok && loginJson.success && loginJson.user) {
+                authenticatedUser = {
+                    id: loginJson.user.id,
+                    fullName: loginJson.user.fullName,
+                    email: loginJson.user.email
+                };
             }
 
-            // If not found in database, check localStorage as fallback
+            // Fallback to localStorage if database not configured or user not in DB
             if (!authenticatedUser && typeof window !== 'undefined') {
                 const users = JSON.parse(localStorage.getItem('propReady_users') || '[]');
-                const localUser = users.find((u: any) => 
+                const localUser = users.find((u: any) =>
                     u.email === formData.email && u.password === formData.password
                 );
-
                 if (localUser) {
                     authenticatedUser = {
                         id: localUser.id,
@@ -77,12 +65,9 @@ export default function LoginPage() {
             }
 
             if (authenticatedUser) {
-                // Store current user session
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('propReady_currentUser', JSON.stringify(authenticatedUser));
                 }
-
-                // Redirect to dashboard
                 router.push('/dashboard');
             } else {
                 setError('Invalid email or password. Please try again.');
