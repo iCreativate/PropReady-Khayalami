@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         if (type === 'agent') {
             const { data: agent, error } = await supabase
                 .from('agents')
-                .select('id, full_name, email, company, password')
+                .select('id, full_name, email, company, password, plan')
                 .eq('email', email)
                 .single();
 
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
                     fullName: safe.full_name,
                     email: safe.email,
                     company: safe.company,
+                    plan: safe.plan || 'free',
                 },
             });
         }

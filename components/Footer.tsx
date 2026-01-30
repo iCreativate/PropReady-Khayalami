@@ -110,6 +110,11 @@ export default function Footer() {
                                     PropReady Quiz
                                 </Link>
                             </li>
+                            <li>
+                                <Link href="/popi" className="text-white/70 hover:text-gold transition text-sm">
+                                    POPI Act
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
@@ -137,16 +142,19 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="border-t border-white/10 pt-8 mt-8">
-                    <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                    <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 gap-4">
                         <p className="text-white/60 text-sm text-center md:text-left">
-                            © {new Date().getFullYear()} PropReady-iKhayalami. All rights reserved.
+                            © {new Date().getFullYear()} PropReady-iKhayalami. All rights reserved. We adhere to the Protection of Personal Information Act (POPI Act) of South Africa.
                         </p>
-                        <div className="flex items-center space-x-6 text-sm">
+                        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-sm">
                             <Link href="/privacy" className="text-white/60 hover:text-gold transition">
                                 Privacy Policy
                             </Link>
                             <Link href="/terms" className="text-white/60 hover:text-gold transition">
                                 Terms of Service
+                            </Link>
+                            <Link href="/popi" className="text-white/60 hover:text-gold transition">
+                                POPI Act
                             </Link>
                         </div>
                     </div>

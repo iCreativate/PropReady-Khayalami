@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
             company: agentData.company,
             password: agentData.password,
             status: agentData.status || 'pending',
+            plan: 'free', // Free plan: 3 leads; upgrade to Pro/Enterprise for more
             created_at: agentData.timestamp || new Date().toISOString(),
             updated_at: agentData.timestamp || new Date().toISOString(),
         };

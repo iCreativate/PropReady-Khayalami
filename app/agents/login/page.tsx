@@ -36,7 +36,8 @@ export default function AgentLoginPage() {
                     id: loginJson.user.id,
                     fullName: loginJson.user.fullName,
                     email: loginJson.user.email,
-                    company: loginJson.user.company
+                    company: loginJson.user.company,
+                    plan: loginJson.user.plan || 'free'
                 };
             }
 
@@ -51,7 +52,8 @@ export default function AgentLoginPage() {
                         id: localAgent.id,
                         fullName: localAgent.fullName,
                         email: localAgent.email,
-                        company: localAgent.company
+                        company: localAgent.company,
+                        plan: localAgent.plan || 'free'
                     };
                 }
             }

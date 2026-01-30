@@ -1,7 +1,24 @@
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
 import { ArrowLeft, BookOpen, Home, FileText, TrendingUp, Users, DollarSign, CheckCircle, Target, BarChart3, Calendar, Building2, Scale, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
 
-export default function SellersHubPage() {
+async function getAgentCount(): Promise<number> {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return 0;
+    try {
+        const supabase = createClient(url, key);
+        const { count } = await supabase.from('agents').select('*', { count: 'exact', head: true });
+        return count ?? 0;
+    } catch {
+        return 0;
+    }
+}
+
+export default async function SellersHubPage() {
+    const agentCount = await getAgentCount();
+    const showFindAgent = agentCount > 10;
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-white via-white to-charcoal/5">
             {/* Header */}
@@ -289,13 +306,15 @@ export default function SellersHubPage() {
                                 <Calendar className="w-5 h-5" />
                                 <span>Book a Free Valuation</span>
                             </Link>
-                            <Link
-                                href="/agents/login"
-                                className="inline-flex items-center space-x-2 px-8 py-4 border-2 border-gold text-gold font-semibold rounded-xl hover:bg-gold/10 transform hover:scale-105 transition-all"
-                            >
-                                <span>Find an Agent</span>
-                                <ArrowLeft className="w-5 h-5 rotate-180" />
-                            </Link>
+                            {showFindAgent && (
+                                <Link
+                                    href="/agents/login"
+                                    className="inline-flex items-center space-x-2 px-8 py-4 border-2 border-gold text-gold font-semibold rounded-xl hover:bg-gold/10 transform hover:scale-105 transition-all"
+                                >
+                                    <span>Find an Agent</span>
+                                    <ArrowLeft className="w-5 h-5 rotate-180" />
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>

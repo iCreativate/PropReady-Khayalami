@@ -24,6 +24,7 @@ export default function QuizPage() {
         fullName: '',
         email: '',
         phone: '',
+        inMarketForProperty: null as boolean | null,
         monthlyIncome: '',
         expenses: '',
         hasDebt: null as boolean | null,
@@ -37,7 +38,7 @@ export default function QuizPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const totalSteps = 8;
+    const totalSteps = 9;
 
     // Use comma-grouping explicitly (avoids locale NBSP grouping issues on some mobile browsers)
     const formatNumberInput = (value: string) => {
@@ -64,6 +65,17 @@ export default function QuizPage() {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
+
+    const handleInMarketSelection = (value: boolean) => {
+        setFormData(prev => ({ ...prev, inMarketForProperty: value }));
+        if (errors.inMarketForProperty) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.inMarketForProperty;
                 return newErrors;
             });
         }
@@ -102,6 +114,11 @@ export default function QuizPage() {
                 }
                 break;
             case 2:
+                if (formData.inMarketForProperty === null) {
+                    newErrors.inMarketForProperty = 'Please select an option';
+                }
+                break;
+            case 3:
                 if (!formData.monthlyIncome.trim()) {
                     newErrors.monthlyIncome = 'Monthly income is required';
                 } else if (parseNumberInput(formData.monthlyIncome) <= 0) {
@@ -111,7 +128,7 @@ export default function QuizPage() {
                     newErrors.employmentStatus = 'Employment status is required';
                 }
                 break;
-            case 3:
+            case 4:
                 if (formData.hasDebt === null) {
                     newErrors.hasDebt = 'Please select whether you have existing debt';
                 } else if (formData.hasDebt && !formData.expenses.trim()) {
@@ -120,14 +137,14 @@ export default function QuizPage() {
                     newErrors.expenses = 'Monthly debt repayments cannot be negative';
                 }
                 break;
-            case 4:
+            case 5:
                 if (!formData.depositSaved.trim()) {
                     newErrors.depositSaved = 'Deposit amount is required';
                 } else if (parseNumberInput(formData.depositSaved) < 0) {
                     newErrors.depositSaved = 'Deposit amount cannot be negative';
                 }
                 break;
-            case 6:
+            case 7:
                 if (!formData.password) {
                     newErrors.password = 'Password is required';
                 } else if (formData.password.length < 8) {
@@ -139,6 +156,8 @@ export default function QuizPage() {
                     newErrors.confirmPassword = 'Passwords do not match';
                 }
                 break;
+            case 6:
+                break; // Credit profile step - no required validation
         }
 
         setErrors(newErrors);
@@ -328,6 +347,7 @@ export default function QuizPage() {
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
+                inMarketForProperty: formData.inMarketForProperty,
                 monthlyIncome: formData.monthlyIncome,
                 depositSaved: formData.depositSaved,
                 employmentStatus: formData.employmentStatus,
@@ -449,6 +469,52 @@ export default function QuizPage() {
             case 2:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                        <h2 className="text-2xl font-bold text-charcoal mb-6">Property Search</h2>
+                        <p className="text-charcoal/60 mb-6 text-center">
+                            Help us tailor your experience
+                        </p>
+                        <div className="premium-card rounded-xl p-6">
+                            <label className="block text-charcoal font-semibold text-lg mb-4">
+                                Are you in the market for a new property? <span className="text-red-600">*</span>
+                            </label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleInMarketSelection(true)}
+                                    className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.inMarketForProperty === true
+                                            ? 'bg-gold text-white border-gold'
+                                            : errors.inMarketForProperty
+                                            ? 'bg-white border-2 border-red-500 text-charcoal hover:bg-red-500/10'
+                                            : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
+                                        }`}
+                                >
+                                    Yes
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleInMarketSelection(false)}
+                                    className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.inMarketForProperty === false
+                                            ? 'bg-gold text-white border-gold'
+                                            : errors.inMarketForProperty
+                                            ? 'bg-white border-2 border-red-500 text-charcoal hover:bg-red-500/10'
+                                            : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
+                                        }`}
+                                >
+                                    No
+                                </button>
+                            </div>
+                            {errors.inMarketForProperty && (
+                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {errors.inMarketForProperty}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                );
+            case 3:
+                return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-2xl font-bold text-charcoal mb-6">Financial Overview</h2>
 
                         <div className="premium-card rounded-xl p-6">
@@ -502,7 +568,7 @@ export default function QuizPage() {
                         </div>
                     </div>
                 );
-            case 3:
+            case 4:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-2xl font-bold text-charcoal mb-6">Expenses & Debt</h2>
@@ -574,7 +640,7 @@ export default function QuizPage() {
                         )}
                     </div>
                 );
-            case 4:
+            case 5:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-2xl font-bold text-charcoal mb-6">Savings & Deposit</h2>
@@ -609,7 +675,7 @@ export default function QuizPage() {
                         </div>
                     </div>
                 );
-            case 5:
+            case 6:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-2xl font-bold text-charcoal mb-6">Credit Profile</h2>
@@ -643,7 +709,7 @@ export default function QuizPage() {
                         </div>
                     </div>
                 );
-            case 6:
+            case 7:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
                         <div className="w-20 h-20 bg-gold rounded-full flex items-center justify-center mx-auto mb-6">
@@ -723,7 +789,7 @@ export default function QuizPage() {
                         </div>
                     </div>
                 );
-            case 7:
+            case 8:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
                         <div className="w-20 h-20 bg-gold rounded-full flex items-center justify-center mx-auto mb-6">
@@ -744,6 +810,10 @@ export default function QuizPage() {
                                     <span className="font-semibold text-charcoal text-right break-words min-w-[40%]">{formData.fullName || '-'}</span>
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
+                                    <span>In market for new property:</span>
+                                    <span className="font-semibold text-charcoal text-right">{formData.inMarketForProperty === true ? 'Yes' : formData.inMarketForProperty === false ? 'No' : '-'}</span>
+                                </div>
+                                <div className="flex items-start justify-between gap-4">
                                     <span>Monthly Income:</span>
                                     <span className="font-semibold text-charcoal text-right whitespace-nowrap">{formatCurrency(parseAmountForDisplay(formData.monthlyIncome))}</span>
                                 </div>
@@ -759,7 +829,7 @@ export default function QuizPage() {
                         </div>
                     </div>
                 );
-            case 8:
+            case 9:
                 return (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <div className="text-center mb-6">

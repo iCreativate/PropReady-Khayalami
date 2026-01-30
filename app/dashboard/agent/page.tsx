@@ -16,6 +16,7 @@ export default function MyAgentPage() {
     const [agent, setAgent] = useState<any>(null);
     const [otherAgents, setOtherAgents] = useState<any[]>([]);
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
+    const [showFindAgent, setShowFindAgent] = useState(false);
 
     useEffect(() => {
         // Check if user is logged in
@@ -53,6 +54,13 @@ export default function MyAgentPage() {
             }
         }
     }, [router]);
+
+    useEffect(() => {
+        fetch('/api/agents/count')
+            .then((res) => res.ok ? res.json() : { count: 0 })
+            .then((data) => setShowFindAgent((data?.count ?? 0) > 10))
+            .catch(() => setShowFindAgent(false));
+    }, []);
 
     if (isLoading) {
         return (
@@ -278,16 +286,19 @@ export default function MyAgentPage() {
                                 <div className="premium-card rounded-xl p-6 text-center">
                                     <Users className="w-12 h-12 text-charcoal/30 mx-auto mb-4" />
                                     <p className="text-charcoal/60 mb-4">No agent assigned yet</p>
-                                    <button className="px-6 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition">
-                                        Find an Agent
-                                    </button>
+                                    {showFindAgent && (
+                                        <Link href="/agents/login" className="inline-block px-6 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition">
+                                            Find an Agent
+                                        </Link>
+                                    )}
                                 </div>
                             )}
                         </div>
                     </div>
                     )}
 
-                    {/* Other Agents Section */}
+                    {/* Other Agents Section - only when more than 10 agents on platform */}
+                    {showFindAgent && (
                     <div className="mt-8">
                         <div className="mb-6">
                             <h2 className="text-3xl font-bold text-charcoal mb-2">Other Available Agents</h2>
@@ -360,6 +371,7 @@ export default function MyAgentPage() {
                             ))}
                         </div>
                     </div>
+                    )}
                 </div>
 
                 {/* Background Pattern */}

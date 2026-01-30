@@ -175,7 +175,8 @@ export default function AgentRegisterPage() {
                 id: agent.id,
                 fullName: agent.fullName,
                 email: agent.email,
-                company: agent.company
+                company: agent.company,
+                plan: 'free'
             }));
         }
 
@@ -246,7 +247,10 @@ export default function AgentRegisterPage() {
                                 Join Our Network
                             </h1>
                             <p className="text-charcoal/80">
-                                Register as a verified PropReady agent
+                                Register as a verified PropReady agent — 100% free.
+                            </p>
+                            <p className="text-charcoal/60 text-sm mt-1">
+                                Free plan: view up to 3 leads. Upgrade to Pro or Enterprise for more leads.
                             </p>
                         </div>
 

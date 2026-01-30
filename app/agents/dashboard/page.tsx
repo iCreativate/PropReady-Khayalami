@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 
 interface Lead {
     id: string;
@@ -76,7 +77,7 @@ export default function AgentsDashboardPage() {
     const [filteredSellers, setFilteredSellers] = useState<Seller[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [currentAgent, setCurrentAgent] = useState<{ fullName: string; email: string; company?: string; id?: string } | null>(null);
+    const [currentAgent, setCurrentAgent] = useState<{ fullName: string; email: string; company?: string; id?: string; plan?: string } | null>(null);
     const [showActionsModal, setShowActionsModal] = useState<Lead | Seller | null>(null);
     const [showPropertyModal, setShowPropertyModal] = useState(false);
     const [showViewingModal, setShowViewingModal] = useState(false);
@@ -125,9 +126,13 @@ export default function AgentsDashboardPage() {
     }, []);
 
     useEffect(() => {
-        // Load all leads (buyers + sellers + investors) from one API, merge with localStorage, split by type
+        // Load all leads (buyers + sellers + investors) from one API, merge with localStorage, split by type. Apply plan limit (Free = 3 leads per type).
         async function loadLeads() {
             if (typeof window === 'undefined') return;
+            const agentData = localStorage.getItem('propReady_currentAgent');
+            const plan = agentData ? (JSON.parse(agentData).plan || 'free') : 'free';
+            const leadLimit = getLeadLimit(plan);
+
             const storedBuyers: Lead[] = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
             const storedSellers: (Seller & { leadType?: string })[] = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
             const buyersWithType = storedBuyers.map(l => ({ ...l, leadType: 'buyer' as const }));
@@ -151,8 +156,10 @@ export default function AgentsDashboardPage() {
             const merged = [...apiLeads, ...localBuyersOnly, ...localSellersOnly].sort((a, b) =>
                 new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
             );
-            const buyers = merged.filter(l => (l as Lead).leadType !== 'seller' && (l as Lead).leadType !== 'investor') as Lead[];
-            const sellersList = merged.filter(l => (l as Lead).leadType === 'seller' || (l as Lead).leadType === 'investor') as Seller[];
+            const allBuyers = merged.filter(l => (l as Lead).leadType !== 'seller' && (l as Lead).leadType !== 'investor') as Lead[];
+            const allSellers = merged.filter(l => (l as Lead).leadType === 'seller' || (l as Lead).leadType === 'investor') as Seller[];
+            const buyers = allBuyers.slice(0, leadLimit);
+            const sellersList = allSellers.slice(0, leadLimit);
             setLeads(buyers);
             setFilteredLeads(buyers);
             setSellers(sellersList);
@@ -746,6 +753,32 @@ export default function AgentsDashboardPage() {
                             </div>
                         )}
                     </div>
+
+                    {/* Plan tiers / upgrade banner for Free plan */}
+                    {currentAgent && (currentAgent.plan === 'free' || !currentAgent.plan) && (
+                        <div className="mb-6 rounded-xl border border-gold/30 bg-gradient-to-r from-gold/10 to-gold/5 p-6">
+                            <h3 className="text-lg font-bold text-charcoal mb-2">Your plan: Free — up to {AGENT_PLANS.free.leadLimit} leads</h3>
+                            <p className="text-charcoal/70 text-sm mb-4">Want more leads? Upgrade to Pro or Enterprise.</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="rounded-lg bg-white/80 border border-charcoal/10 p-4">
+                                    <p className="font-bold text-charcoal">Free</p>
+                                    <p className="text-charcoal/70 text-sm">{AGENT_PLANS.free.leadLimit} leads</p>
+                                    <p className="text-charcoal/50 text-xs mt-1">Register for free</p>
+                                </div>
+                                <div className="rounded-lg bg-gold/10 border border-gold/30 p-4">
+                                    <p className="font-bold text-gold">Pro</p>
+                                    <p className="text-charcoal/70 text-sm">Up to {AGENT_PLANS.pro.leadLimit} leads</p>
+                                    <p className="text-charcoal/50 text-xs mt-1">Contact us to upgrade</p>
+                                </div>
+                                <div className="rounded-lg bg-white/80 border border-charcoal/10 p-4">
+                                    <p className="font-bold text-charcoal">Enterprise</p>
+                                    <p className="text-charcoal/70 text-sm">Unlimited leads</p>
+                                    <p className="text-charcoal/50 text-xs mt-1">For teams &amp; high volume</p>
+                                </div>
+                            </div>
+                            <p className="text-charcoal/60 text-sm mt-4">Email <a href="mailto:info@propready.co.za" className="text-gold hover:underline">info@propready.co.za</a> to upgrade.</p>
+                        </div>
+                    )}
 
                     {/* Leads Section with Tabs */}
                     <div id="leads-section" className="glass-effect rounded-xl p-6">

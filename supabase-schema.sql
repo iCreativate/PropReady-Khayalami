@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS agents (
     company TEXT NOT NULL,
     password TEXT NOT NULL, -- In production, use proper hashing
     status TEXT DEFAULT 'pending', -- pending, approved, rejected
+    plan TEXT DEFAULT 'free', -- free (3 leads), pro (50), enterprise (unlimited)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
