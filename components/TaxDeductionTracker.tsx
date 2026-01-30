@@ -60,7 +60,7 @@ export default function TaxDeductionTracker() {
                 <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
                     <p className="text-sm font-semibold text-charcoal mb-1">Total Deductible Expenses</p>
                     <p className="text-xl font-bold text-gold">
-                        R {totalDeductible.toLocaleString('en-ZA')}
+                        R {totalDeductible.toLocaleString('en-US')}
                     </p>
                 </div>
             </div>

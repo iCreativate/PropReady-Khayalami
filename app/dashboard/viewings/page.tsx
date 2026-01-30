@@ -542,7 +542,7 @@ export default function ViewingsPage() {
                                                             <MapPin className="w-4 h-4" />
                                                             {viewing.propertyAddress}
                                                         </p>
-                                                        <p className="text-gold font-bold text-xl">R {viewing.propertyPrice.toLocaleString('en-ZA')}</p>
+                                                        <p className="text-gold font-bold text-xl">R {viewing.propertyPrice.toLocaleString('en-US')}</p>
                                                     </div>
                                                     {getStatusBadge(viewing.status)}
                                                 </div>

@@ -218,13 +218,13 @@ export default function SellerDashboardPage() {
                                     </div>
                                     <div className="text-right">
                                         <div className="text-3xl font-bold text-gold mb-1">
-                                            R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString('en-ZA') : '0'}
+                                            R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString('en-US') : '0'}
                                         </div>
                                         <p className="text-charcoal/50 text-sm font-medium">Estimated Value</p>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
                                         <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Property Type</p>
                                         <p className="text-charcoal font-bold text-xl capitalize">
@@ -235,12 +235,6 @@ export default function SellerDashboardPage() {
                                         <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Timeline</p>
                                         <p className="text-charcoal font-bold text-xl capitalize">
                                             {sellerInfo.timeline ? sellerInfo.timeline.replace('-', ' to ') : 'N/A'}
-                                        </p>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                        <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Location</p>
-                                        <p className="text-charcoal font-bold text-sm">
-                                            {sellerInfo.propertyAddress ? sellerInfo.propertyAddress.split(',')[0] : 'N/A'}
                                         </p>
                                     </div>
                                 </div>
@@ -443,9 +437,13 @@ export default function SellerDashboardPage() {
                         <div className="premium-card rounded-2xl p-8 mb-8">
                             <h2 className="text-2xl font-bold text-charcoal mb-6">Property Details</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
+                                <div className="md:col-span-2">
                                     <p className="text-charcoal/60 text-sm mb-1">Property Address</p>
-                                    <p className="text-charcoal font-semibold">{sellerInfo.propertyAddress || 'N/A'}</p>
+                                    <p className="text-charcoal font-semibold">
+                                        {sellerInfo.propertyAddress
+                                            ? sellerInfo.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean).join(', ')
+                                            : 'N/A'}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-charcoal/60 text-sm mb-1">Property Type</p>
@@ -460,13 +458,17 @@ export default function SellerDashboardPage() {
                                     <p className="text-charcoal font-semibold">{sellerInfo.bathrooms || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-charcoal/60 text-sm mb-1">Property Size</p>
-                                    <p className="text-charcoal font-semibold">{sellerInfo.propertySize ? `${sellerInfo.propertySize} m²` : 'N/A'}</p>
+                                    <p className="text-charcoal/60 text-sm mb-1">Land size</p>
+                                    <p className="text-charcoal font-semibold">{sellerInfo.landSize ? `${sellerInfo.landSize} m²` : 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal/60 text-sm mb-1">Building / structure size</p>
+                                    <p className="text-charcoal font-semibold">{sellerInfo.buildingSize ? `${sellerInfo.buildingSize} m²` : 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-charcoal/60 text-sm mb-1">Estimated Value</p>
                                     <p className="text-gold font-bold text-xl">
-                                        R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString() : '0'}
+                                        R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString('en-US') : '0'}
                                     </p>
                                 </div>
                                 <div>
@@ -483,7 +485,7 @@ export default function SellerDashboardPage() {
                                     <div>
                                         <p className="text-charcoal/60 text-sm mb-1">Bond Balance</p>
                                         <p className="text-charcoal font-semibold">
-                                            R {sellerInfo.bondBalance ? parseFloat(sellerInfo.bondBalance).toLocaleString() : '0'}
+                                            R {sellerInfo.bondBalance ? parseFloat(sellerInfo.bondBalance).toLocaleString('en-US') : '0'}
                                         </p>
                                     </div>
                                 )}

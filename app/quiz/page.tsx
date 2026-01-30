@@ -744,11 +744,11 @@ export default function QuizPage() {
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
                                     <span>Monthly Income:</span>
-                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {formData.monthlyIncome || '0'}</span>
+                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {(parseFloat(String(formData.monthlyIncome || '0').replace(/[,\s]/g, '')) || 0).toLocaleString('en-US')}</span>
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
                                     <span>Deposit:</span>
-                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {formData.depositSaved || '0'}</span>
+                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {(parseFloat(String(formData.depositSaved || '0').replace(/[,\s]/g, '')) || 0).toLocaleString('en-US')}</span>
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
                                     <span>Employment:</span>

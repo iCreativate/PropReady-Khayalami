@@ -28,6 +28,8 @@ interface Seller extends Lead {
     bedrooms?: string;
     bathrooms?: string;
     propertySize?: string;
+    landSize?: string;
+    buildingSize?: string;
     currentValue?: string;
     reasonForSelling?: string;
     timeline?: string;
@@ -710,7 +712,7 @@ export default function AgentsDashboardPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <DollarSign className="w-4 h-4" />
-                                                <span>R {property.price.toLocaleString('en-ZA')}</span>
+                                                <span>R {property.price.toLocaleString('en-US')}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-1">
@@ -851,7 +853,7 @@ export default function AgentsDashboardPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-gold font-bold">R {(lead.preQualAmount ?? 0).toLocaleString('en-ZA')}</p>
+                                                    <p className="text-gold font-bold">R {(lead.preQualAmount ?? 0).toLocaleString('en-US')}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-2">
@@ -925,15 +927,22 @@ export default function AgentsDashboardPage() {
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <div className="space-y-1">
-                                                            <p className="text-charcoal/80 text-sm">{seller.propertyAddress}</p>
+                                                            <p className="text-charcoal/80 text-sm">
+                                                                {seller.propertyAddress
+                                                                    ? seller.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean).join(', ')
+                                                                    : 'N/A'}
+                                                            </p>
                                                             <p className="text-charcoal/60 text-sm">
                                                                 {seller.bedrooms} bed, {seller.bathrooms} bath
+                                                                {(seller.landSize || seller.buildingSize) && (
+                                                                    <> · {[seller.landSize && `${seller.landSize} m² land`, seller.buildingSize && `${seller.buildingSize} m² building`].filter(Boolean).join(', ')}</>
+                                                                )}
                                                             </p>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <p className="text-gold font-bold">
-                                                            R {seller.currentValue ? parseFloat(seller.currentValue).toLocaleString('en-ZA') : '0'}
+                                                            R {seller.currentValue ? parseFloat(seller.currentValue).toLocaleString('en-US') : '0'}
                                                         </p>
                                                     </td>
                                                     <td className="py-4 px-4">
@@ -1284,7 +1293,7 @@ export default function AgentsDashboardPage() {
                                 <div className="text-center mb-6">
                                     {activeTab === 'buyers' && 'preQualAmount' in showActionsModal && (
                                         <p className="text-charcoal/70 text-sm mb-4">
-                                            Pre-Qual Amount: R {((showActionsModal as Lead).preQualAmount ?? 0).toLocaleString('en-ZA')}
+                                            Pre-Qual Amount: R {((showActionsModal as Lead).preQualAmount ?? 0).toLocaleString('en-US')}
                                         </p>
                                     )}
                                 </div>
@@ -1322,7 +1331,7 @@ export default function AgentsDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="text-charcoal/60">Deposit</p>
-                                            <p className="text-charcoal font-semibold">R {(showActionsModal as Lead).depositSaved || '0'}</p>
+                                            <p className="text-charcoal font-semibold">R {(parseFloat(String((showActionsModal as Lead).depositSaved || '0').replace(/[,\s]/g, '')) || 0).toLocaleString('en-US')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1334,7 +1343,11 @@ export default function AgentsDashboardPage() {
                                     <div className="space-y-2 text-sm">
                                         <div>
                                             <p className="text-charcoal/60">Address</p>
-                                            <p className="text-charcoal font-semibold">{(showActionsModal as Seller).propertyAddress}</p>
+                                            <p className="text-charcoal font-semibold">
+                                                {(showActionsModal as Seller).propertyAddress
+                                                    ? String((showActionsModal as Seller).propertyAddress).split(',').map((s: string) => s.trim()).filter(Boolean).join(', ')
+                                                    : 'N/A'}
+                                            </p>
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
@@ -1344,8 +1357,16 @@ export default function AgentsDashboardPage() {
                                             <div>
                                                 <p className="text-charcoal/60">Value</p>
                                                 <p className="text-charcoal font-semibold">
-                                                    R {parseFloat((showActionsModal as Seller).currentValue ?? '0').toLocaleString('en-ZA')}
+                                                    R {parseFloat((showActionsModal as Seller).currentValue ?? '0').toLocaleString('en-US')}
                                                 </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-charcoal/60">Land size</p>
+                                                <p className="text-charcoal font-semibold">{(showActionsModal as Seller).landSize ? `${(showActionsModal as Seller).landSize} m²` : 'N/A'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-charcoal/60">Building size</p>
+                                                <p className="text-charcoal font-semibold">{(showActionsModal as Seller).buildingSize ? `${(showActionsModal as Seller).buildingSize} m²` : 'N/A'}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1641,7 +1662,7 @@ export default function AgentsDashboardPage() {
                                                     <option value="">Select a property</option>
                                                     {allAvailableProperties.map(property => (
                                                         <option key={property.id} value={property.id}>
-                                                            {property.title} - {property.address} (R {property.price.toLocaleString('en-ZA')})
+                                                            {property.title} - {property.address} (R {property.price.toLocaleString('en-US')})
                                                         </option>
                                                     ))}
                                                 </>
@@ -2004,7 +2025,7 @@ export default function AgentsDashboardPage() {
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <TrendingUp className="w-4 h-4" />
-                                                                <span>Pre-Qual: R {(lead.preQualAmount ?? 0).toLocaleString('en-ZA')}</span>
+                                                                <span>Pre-Qual: R {(lead.preQualAmount ?? 0).toLocaleString('en-US')}</span>
                                                                 <span className="text-charcoal/40">•</span>
                                                                 <span>Score: {lead.score}%</span>
                                                             </div>

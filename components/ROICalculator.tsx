@@ -60,7 +60,7 @@ export default function ROICalculator() {
                 <div className="p-4 bg-gold/10 rounded-lg border border-gold/30">
                     <p className="text-sm font-semibold text-charcoal mb-1">Net Annual Profit</p>
                     <p className="text-2xl font-bold text-gold">
-                        R {netProfit.toLocaleString('en-ZA')}
+                        R {netProfit.toLocaleString('en-US')}
                     </p>
                 </div>
             </div>

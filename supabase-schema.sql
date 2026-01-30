@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS leads (
     bedrooms TEXT,
     bathrooms TEXT,
     property_size TEXT,
+    land_size TEXT,
+    building_size TEXT,
     current_value TEXT,
     reason_for_selling TEXT,
     timeline TEXT,

@@ -17,7 +17,8 @@ export default function SellersQuizPage() {
         propertyType: '',
         bedrooms: '',
         bathrooms: '',
-        propertySize: '',
+        landSize: '',
+        buildingSize: '',
         yearBuilt: '',
         currentValue: '',
         reasonForSelling: '',
@@ -180,9 +181,11 @@ export default function SellersQuizPage() {
                 localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
             }
             
-            // Store seller information
+            // Store seller information (address with commas; two size fields)
+            const addressFormatted = formData.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean).join(', ');
             const sellerInfo = {
                 ...formData,
+                propertyAddress: addressFormatted || formData.propertyAddress,
                 password: undefined, // Don't store password in seller info
                 confirmPassword: undefined,
                 timestamp: new Date().toISOString(),
@@ -199,11 +202,12 @@ export default function SellersQuizPage() {
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
-                propertyAddress: formData.propertyAddress,
+                propertyAddress: formData.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean).join(', '),
                 propertyType: formData.propertyType,
                 bedrooms: formData.bedrooms,
                 bathrooms: formData.bathrooms,
-                propertySize: formData.propertySize,
+                landSize: formData.landSize,
+                buildingSize: formData.buildingSize,
                 currentValue: formData.currentValue,
                 reasonForSelling: formData.reasonForSelling,
                 timeline: formData.timeline,
@@ -332,6 +336,7 @@ export default function SellersQuizPage() {
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Property Address <span className="text-red-600">*</span>
                             </label>
+                            <p className="text-charcoal/60 text-sm mb-2">Enter street, suburb, city (use commas to separate)</p>
                             <div className="relative">
                                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                 <input
@@ -438,14 +443,33 @@ export default function SellersQuizPage() {
 
                         <div className="premium-card rounded-xl p-6">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
-                                Property Size (m²) <span className="text-charcoal/50 text-sm">(Optional)</span>
+                                1. Land size (m²) <span className="text-charcoal/50 text-sm">(Optional)</span>
                             </label>
+                            <p className="text-charcoal/60 text-sm mb-2">Size of the stand/erf/land</p>
                             <div className="relative">
                                 <HomeIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                 <input
                                     type="number"
-                                    name="propertySize"
-                                    value={formData.propertySize}
+                                    name="landSize"
+                                    value={formData.landSize}
+                                    onChange={handleInputChange}
+                                    placeholder="e.g., 500"
+                                    min="0"
+                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold"
+                                />
+                            </div>
+                        </div>
+                        <div className="premium-card rounded-xl p-6">
+                            <label className="block text-charcoal font-semibold text-lg mb-4">
+                                2. Building / structure size (m²) <span className="text-charcoal/50 text-sm">(Optional)</span>
+                            </label>
+                            <p className="text-charcoal/60 text-sm mb-2">Built-up area of the house or structure</p>
+                            <div className="relative">
+                                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
+                                <input
+                                    type="number"
+                                    name="buildingSize"
+                                    value={formData.buildingSize}
                                     onChange={handleInputChange}
                                     placeholder="e.g., 150"
                                     min="0"
@@ -708,7 +732,7 @@ export default function SellersQuizPage() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Estimated Value:</span>
-                                    <span className="font-semibold text-charcoal">R {formData.currentValue ? parseFloat(formData.currentValue).toLocaleString() : '0'}</span>
+                                    <span className="font-semibold text-charcoal">R {formData.currentValue ? parseFloat(formData.currentValue).toLocaleString('en-US') : '0'}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Timeline:</span>
