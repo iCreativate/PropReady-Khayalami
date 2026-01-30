@@ -5,25 +5,39 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 function toLeadRow(lead: Record<string, unknown>) {
-    // Omit agent_id so DB uses NULL (shared leads for all agents)
+    const type = (lead.leadType ?? lead.lead_type ?? 'buyer') as string;
     return {
         id: lead.id,
+        agent_id: null,
+        lead_type: type === 'seller' || type === 'investor' ? type : 'buyer',
         full_name: lead.fullName,
         email: lead.email,
         phone: lead.phone ?? null,
-        monthly_income: lead.monthlyIncome ?? null,
-        deposit_saved: lead.depositSaved ?? null,
-        employment_status: lead.employmentStatus ?? null,
-        credit_score: lead.creditScore ?? null,
+        monthly_income: lead.monthlyIncome ?? lead.monthly_income ?? null,
+        deposit_saved: lead.depositSaved ?? lead.deposit_saved ?? null,
+        employment_status: lead.employmentStatus ?? lead.employment_status ?? null,
+        credit_score: lead.creditScore ?? lead.credit_score ?? null,
         score: lead.score ?? null,
-        pre_qual_amount: lead.preQualAmount ?? null,
+        pre_qual_amount: lead.preQualAmount ?? lead.pre_qual_amount ?? null,
+        property_address: lead.propertyAddress ?? lead.property_address ?? null,
+        property_type: lead.propertyType ?? lead.property_type ?? null,
+        bedrooms: lead.bedrooms ?? null,
+        bathrooms: lead.bathrooms ?? null,
+        property_size: lead.propertySize ?? lead.property_size ?? null,
+        current_value: lead.currentValue ?? lead.current_value ?? null,
+        reason_for_selling: lead.reasonForSelling ?? lead.reason_for_selling ?? null,
+        timeline: lead.timeline ?? null,
+        has_bond: lead.hasBond ?? lead.has_bond ?? null,
+        bond_balance: lead.bondBalance ?? lead.bond_balance ?? null,
         status: lead.status ?? 'new',
     };
 }
 
 function fromLeadRow(row: Record<string, unknown>) {
-    return {
+    const leadType = (row.lead_type ?? 'buyer') as string;
+    const base = {
         id: row.id,
+        leadType,
         fullName: row.full_name,
         email: row.email,
         phone: row.phone ?? null,
@@ -37,6 +51,22 @@ function fromLeadRow(row: Record<string, unknown>) {
         timestamp: row.created_at,
         contactedAt: row.updated_at && (row.status === 'contacted' || row.status === 'qualified') ? row.updated_at : null,
     };
+    if (leadType === 'seller' || leadType === 'investor') {
+        return {
+            ...base,
+            propertyAddress: row.property_address ?? null,
+            propertyType: row.property_type ?? null,
+            bedrooms: row.bedrooms ?? null,
+            bathrooms: row.bathrooms ?? null,
+            propertySize: row.property_size ?? null,
+            currentValue: row.current_value ?? null,
+            reasonForSelling: row.reason_for_selling ?? null,
+            timeline: row.timeline ?? null,
+            hasBond: row.has_bond ?? null,
+            bondBalance: row.bond_balance ?? null,
+        };
+    }
+    return base;
 }
 
 export async function GET() {
@@ -97,19 +127,24 @@ export async function POST(request: NextRequest) {
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
         const { error } = await supabase
             .from('leads')
-            .insert([row])
+            .upsert([row], { onConflict: 'id' })
             .select()
             .single();
 
         if (error) {
             console.error('Supabase createLead error:', error);
+            const msg = error.message || '';
             const hint = error.code === '23502'
                 ? ' Run in Supabase SQL: ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;'
-                : error.code === '42P01'
-                    ? ' Create the leads table in Supabase (run supabase-schema.sql).'
-                    : error.code === '42501'
-                        ? ' RLS blocking insert. Run in Supabase SQL: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
-                        : '';
+                : error.code === '23505'
+                    ? ' Duplicate id. API uses upsert; ensure latest code is deployed.'
+                    : error.code === '42P01'
+                        ? ' Create the leads table in Supabase (run supabase-schema.sql).'
+                        : error.code === '42501'
+                            ? ' RLS blocking insert. Run in Supabase SQL: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
+                            : /column.*does not exist|undefined column/i.test(msg)
+                                ? ' Run supabase-migration-leads-seller-columns.sql in Supabase SQL Editor to add lead_type and seller columns.'
+                                : '';
             return NextResponse.json(
                 { success: false, error: error.message + hint, code: error.code },
                 { status: 500 }

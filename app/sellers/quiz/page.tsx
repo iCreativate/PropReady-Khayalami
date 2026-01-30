@@ -192,15 +192,40 @@ export default function SellersQuizPage() {
             // Store as single object for the seller's own use
             localStorage.setItem('propReady_sellerInfo', JSON.stringify(sellerInfo));
             
-            // Also store in sellers array for agents to access
-            const existingSellers = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
-            // Remove old seller info if exists
-            const filteredSellers = existingSellers.filter((s: any) => s.id !== (existingUser?.id || userId));
-            filteredSellers.push({
-                ...sellerInfo,
+            // Store as lead (seller type) for agents - same leads table as buyers
+            const sellerLead = {
+                id: existingUser?.id || userId,
+                leadType: 'seller',
+                fullName: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                propertyAddress: formData.propertyAddress,
+                propertyType: formData.propertyType,
+                bedrooms: formData.bedrooms,
+                bathrooms: formData.bathrooms,
+                propertySize: formData.propertySize,
+                currentValue: formData.currentValue,
+                reasonForSelling: formData.reasonForSelling,
+                timeline: formData.timeline,
+                hasBond: formData.hasBond,
+                bondBalance: formData.bondBalance,
                 status: 'new',
+                timestamp: sellerInfo.timestamp,
                 contactedAt: null
+            };
+            const leadsRes = await fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sellerLead),
             });
+            if (!leadsRes.ok) {
+                const errBody = await leadsRes.json().catch(() => ({}));
+                console.error('Seller lead save to database failed:', leadsRes.status, errBody);
+                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('propReady_sellerLeadSyncFailed', '1');
+            }
+            const existingSellers = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
+            const filteredSellers = existingSellers.filter((s: any) => s.id !== (existingUser?.id || userId));
+            filteredSellers.push({ ...sellerLead, ...sellerInfo });
             localStorage.setItem('propReady_sellers', JSON.stringify(filteredSellers));
 
             // Store current user session

@@ -6,38 +6,33 @@ import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Cal
 
 interface Lead {
     id: string;
+    leadType?: 'buyer' | 'seller' | 'investor';
     fullName: string;
     email: string;
     phone: string;
-    monthlyIncome: string;
-    depositSaved: string;
-    employmentStatus: string;
-    creditScore: string;
-    score: number;
-    preQualAmount: number;
+    monthlyIncome?: string;
+    depositSaved?: string;
+    employmentStatus?: string;
+    creditScore?: string;
+    score?: number;
+    preQualAmount?: number;
     status: 'new' | 'contacted' | 'qualified' | 'not-interested';
     timestamp: string;
     contactedAt: string | null;
 }
 
-interface Seller {
-    id: string;
-    fullName: string;
-    email: string;
-    phone: string;
-    propertyAddress: string;
-    propertyType: string;
-    bedrooms: string;
-    bathrooms: string;
-    propertySize: string;
-    currentValue: string;
-    reasonForSelling: string;
-    timeline: string;
-    hasBond: boolean | null;
-    bondBalance: string;
-    status: 'new' | 'contacted' | 'qualified' | 'not-interested';
-    timestamp: string;
-    contactedAt: string | null;
+interface Seller extends Lead {
+    leadType: 'seller' | 'investor';
+    propertyAddress?: string;
+    propertyType?: string;
+    bedrooms?: string;
+    bathrooms?: string;
+    propertySize?: string;
+    currentValue?: string;
+    reasonForSelling?: string;
+    timeline?: string;
+    hasBond?: boolean | null;
+    bondBalance?: string;
 }
 
 interface ListedProperty {
@@ -127,11 +122,14 @@ export default function AgentsDashboardPage() {
     }, []);
 
     useEffect(() => {
-        // Load leads: fetch from database (no cache), merge with localStorage
+        // Load all leads (buyers + sellers + investors) from one API, merge with localStorage, split by type
         async function loadLeads() {
             if (typeof window === 'undefined') return;
-            const storedLeads: Lead[] = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
-            let apiLeads: Lead[] = [];
+            const storedBuyers: Lead[] = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
+            const storedSellers: (Seller & { leadType?: string })[] = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
+            const buyersWithType = storedBuyers.map(l => ({ ...l, leadType: 'buyer' as const }));
+            const sellersWithType = storedSellers.map(s => ({ ...s, leadType: 'seller' as const, status: s.status || 'new', contactedAt: s.contactedAt ?? null }));
+            let apiLeads: (Lead | Seller)[] = [];
             try {
                 const res = await fetch(`/api/leads?_=${Date.now()}`, {
                     cache: 'no-store',
@@ -144,37 +142,21 @@ export default function AgentsDashboardPage() {
             } catch (e) {
                 console.warn('Failed to load leads from API', e);
             }
-            // Merge: API leads first, then add localStorage leads not already in API (by id)
-            const ids = new Set(apiLeads.map((l: Lead) => l.id));
-            const localOnly = storedLeads.filter((l: Lead) => !ids.has(l.id));
-            const merged = [...apiLeads, ...localOnly].sort((a: Lead, b: Lead) =>
+            const ids = new Set(apiLeads.map(l => l.id));
+            const localBuyersOnly = buyersWithType.filter(l => !ids.has(l.id));
+            const localSellersOnly = sellersWithType.filter(s => !ids.has(s.id));
+            const merged = [...apiLeads, ...localBuyersOnly, ...localSellersOnly].sort((a, b) =>
                 new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
             );
-            setLeads(merged);
-            setFilteredLeads(merged);
+            const buyers = merged.filter(l => (l as Lead).leadType !== 'seller' && (l as Lead).leadType !== 'investor') as Lead[];
+            const sellersList = merged.filter(l => (l as Lead).leadType === 'seller' || (l as Lead).leadType === 'investor') as Seller[];
+            setLeads(buyers);
+            setFilteredLeads(buyers);
+            setSellers(sellersList);
+            setFilteredSellers(sellersList);
         }
         loadLeads();
     }, [leadsRefreshKey]);
-
-    useEffect(() => {
-        // Load sellers from localStorage
-        if (typeof window !== 'undefined') {
-            const storedSellers = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
-            
-            // Add status and contactedAt to sellers if missing
-            const sellersWithStatus = storedSellers.map((seller: any) => ({
-                ...seller,
-                status: seller.status || 'new',
-                contactedAt: seller.contactedAt || null
-            }));
-            
-            const sortedSellers = sellersWithStatus.sort((a: Seller, b: Seller) => 
-                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-            );
-            setSellers(sortedSellers);
-            setFilteredSellers(sortedSellers);
-        }
-    }, []);
 
     useEffect(() => {
         // Load listed properties
@@ -401,6 +383,29 @@ export default function AgentsDashboardPage() {
                 localStorage.setItem('propReady_leads', JSON.stringify(updatedLeads));
             }
         } else {
+            const newContactedAt = status === 'contacted' ? new Date().toISOString() : null;
+            try {
+                const res = await fetch(`/api/leads/${contactId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status }),
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.lead) {
+                        const updatedSeller = { ...json.lead, contactedAt: json.lead.contactedAt ?? newContactedAt };
+                        setSellers(prev => {
+                            const updated = prev.map(s => s.id === contactId ? { ...s, ...updatedSeller } : s);
+                            setFilteredSellers(updated);
+                            if (typeof window !== 'undefined') localStorage.setItem('propReady_sellers', JSON.stringify(updated));
+                            return updated;
+                        });
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to update seller status in API', e);
+            }
             const updatedSellers = sellers.map(seller => {
                 if (seller.id === contactId) {
                     return {
@@ -412,6 +417,7 @@ export default function AgentsDashboardPage() {
                 return seller;
             });
             setSellers(updatedSellers);
+            setFilteredSellers(updatedSellers);
             if (typeof window !== 'undefined') {
                 localStorage.setItem('propReady_sellers', JSON.stringify(updatedSellers));
             }

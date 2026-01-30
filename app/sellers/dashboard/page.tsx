@@ -30,6 +30,7 @@ export default function SellerDashboardPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingAppointments, setViewingAppointments] = useState<any[]>([]);
     const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
+    const [showSyncFailedBanner, setShowSyncFailedBanner] = useState(false);
 
     useEffect(() => {
         // Check if user is logged in
@@ -63,6 +64,9 @@ export default function SellerDashboardPage() {
                 setViewingAppointments(userViewings);
                 
                 setIsLoading(false);
+                if (sessionStorage.getItem('propReady_sellerLeadSyncFailed')) {
+                    setShowSyncFailedBanner(true);
+                }
             } else {
                 // Redirect to login if not authenticated
                 router.push('/login');
@@ -175,6 +179,24 @@ export default function SellerDashboardPage() {
             {/* Main Content */}
             <main className="relative px-4 pt-24 pb-8">
                 <div className="container mx-auto max-w-7xl relative z-10">
+                    {showSyncFailedBanner && (
+                        <div className="mb-6 flex items-center justify-between gap-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-amber-900">
+                            <p className="text-sm">
+                                Your info was saved locally. We couldn&apos;t sync to agent dashboards—your agent may need to run a database update (see setup docs).
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('propReady_sellerLeadSyncFailed');
+                                    setShowSyncFailedBanner(false);
+                                }}
+                                className="shrink-0 rounded p-1 hover:bg-amber-100 transition"
+                                aria-label="Dismiss"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    )}
                     {/* Welcome Section */}
                     <div className="mb-8">
                         <h1 className="text-4xl font-bold text-charcoal mb-2">

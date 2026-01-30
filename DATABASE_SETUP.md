@@ -51,7 +51,7 @@ After deployment, test the following:
 - Agent registration
 - Login functionality
 - Data persistence (data should persist across sessions)
-- **Leads**: Complete the buyer quiz, then open the agent dashboard on any browser/device — leads should appear from the database.
+- **Leads (buyers, sellers, investors)**: Complete the buyer quiz or seller quiz; open the agent dashboard — leads appear under Buyers or Sellers tab from the same `leads` table (filtered by type).
 
 **If leads stay empty on the agent dashboard:**
 
@@ -81,7 +81,7 @@ The database includes the following tables:
 - `agents` - Registered real estate agents
 - `documents` - User-uploaded documents
 - `properties` - Property listings
-- `leads` - Leads for agents
+- `leads` - All leads (buyers, sellers, investors); one table with `lead_type` and optional seller fields
 - `viewings` - Property viewing appointments
 
 See `supabase-schema.sql` for the complete schema.

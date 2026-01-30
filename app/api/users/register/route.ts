@@ -83,9 +83,10 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Create lead for agents (same request; no separate client call needed)
+        // Create lead for agents (buyer); same request
         const dbLead = {
             id: userData.id,
+            lead_type: 'buyer',
             full_name: userData.fullName,
             email: userData.email,
             phone: userData.phone ?? null,
