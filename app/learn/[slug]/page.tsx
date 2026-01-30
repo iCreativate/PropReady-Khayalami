@@ -1195,7 +1195,49 @@ export default async function LearningModulePage({
                         <strong>Tip:</strong> Deceased estate sales can be priced competitively, but always do a proper valuation and inspection. Delays are common, so avoid tying up your finances in a long wait if you need to move quickly.
                     </p>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'deceased-estate-buyer-checklist',
+                    title: 'Deceased Estate Purchase Checklist',
+                    description: 'Essential checks when buying from a deceased estate',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Before You Offer</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Confirm Letter of Executorship (or Letters of Authority) is in place</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Verify the executor is authorised to sell the property</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Get a proper valuation and professional home inspection</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Budget for longer timelines (Master&apos;s Office can delay)</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Before Paying Deposit</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Have your conveyancer verify all Master&apos;s requirements are met</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Confirm death certificate and sale authority are in order</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'understanding-trusts': {
             title: 'Understanding Trusts',
@@ -1234,7 +1276,49 @@ export default async function LearningModulePage({
                         </ul>
                     </div>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'trust-buyer-checklist',
+                    title: 'Trust Purchase Checklist',
+                    description: 'Checks when buying from or in the name of a trust',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Buying a Property Held in a Trust</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Confirm all required trustees have signed the sale agreement</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Verify trustee resolution authorising the sale</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Check that the trust deed allows trustees to sell the property</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Buying in the Name of a Trust</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Confirm bond eligibility for trusts with your bank or originator</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Have trust deed, trustee resolutions, and signatory proof ready</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Clarify suretyship requirements with the bank early</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'first-time-buyer-mistakes': {
             title: 'Mistakes First-Time Home Buyers Make',
@@ -1281,7 +1365,49 @@ export default async function LearningModulePage({
                         </ul>
                     </div>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'first-time-buyer-avoid-checklist',
+                    title: 'First-Time Buyer Avoid-Mistakes Checklist',
+                    description: 'Stay on track and avoid common first-time buyer errors',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Before You Shop</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Get pre-qualified (use a bond originator—it&apos;s free)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Budget for transfer duty, transfer fees, bond registration and initiation</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Set a maximum price before viewing and stick to it</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">When Making an Offer</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Include a bond clause (subject to bond approval)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Factor in a professional home inspection before waiving conditions</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Read every clause of the OTP; ask conveyancer or agent to explain</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'bond-application-avoid': {
             title: 'What to Avoid When Applying for a Bond',
@@ -1328,7 +1454,42 @@ export default async function LearningModulePage({
                         </ul>
                     </div>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'bond-avoid-checklist',
+                    title: 'What to Avoid When Applying for a Bond',
+                    description: 'Checklist to keep your application on track',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Before and During Application</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Keep your job stable—avoid changing jobs before or during application</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Avoid new credit, personal loans, or big purchases (3–6 months before)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Pay all accounts on time; clear any defaults if possible</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Submit complete FICA and income documents (payslips, bank statements)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Declare all debt and income accurately—no overstating or understating</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'buying-property-as-business': {
             title: 'Buying a Property as a Business',
@@ -1378,7 +1539,53 @@ export default async function LearningModulePage({
                         <strong>Tip:</strong> Speak to a bond originator and your accountant before you make an offer. Entity purchases have tax (e.g. transfer duty, future CGT or income tax) and compliance implications that differ from personal purchases.
                     </p>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'business-buyer-checklist',
+                    title: 'Buying Property as a Business Checklist',
+                    description: 'Documents and steps when buying in a company or CC name',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Documents Required</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Certificate of Incorporation (company) or Registration Certificate (CC)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Board or member resolution authorising the purchase and naming signatories</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>FICA for entity: ID, address of directors/members; business address proof</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Tax number, VAT (if applicable), proof of good standing (CIPC/tax)</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Before You Offer</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Confirm bank eligibility and suretyship requirements (bond originator)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Budget for transfer duty, transfer costs, bond registration; expect higher deposit</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Speak to your accountant re tax and compliance implications</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         }
     };
 

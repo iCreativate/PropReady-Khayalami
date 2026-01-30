@@ -1109,7 +1109,49 @@ export default async function SellersLearningModulePage({
                         <strong>Tip:</strong> Buyers of deceased estates often expect longer timelines. Be transparent with your agent and conveyancer about Master&apos;s Office delays so buyers can plan accordingly.
                     </p>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'deceased-estate-seller-checklist',
+                    title: 'Selling a Deceased Estate Checklist',
+                    description: 'Essential steps and documents when selling from a deceased estate',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Before Marketing or Accepting Offers</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Obtain Letter of Executorship (or Letters of Authority) from the Master</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Confirm the will or court order authorises the sale</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Have death certificate available</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">What to Have Ready for Transfer</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Letter of Executorship (or Letters of Authority)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Trustee resolution or court order authorising the sale (if required)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Mandatory disclosure form completed honestly</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'understanding-trusts': {
             title: 'Understanding Trusts',
@@ -1141,7 +1183,45 @@ export default async function SellersLearningModulePage({
                         </ul>
                     </div>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'trust-seller-checklist',
+                    title: 'Selling Property Held in a Trust Checklist',
+                    description: 'Documents and steps when selling from a trust',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Documents to Have Ready</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Trust deed (certified copy)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Trustee resolution authorising the sale and naming signatories</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Proof of identity and authority of trustees signing</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Bond settlement figure (if there is a bond) for net proceeds</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">If the Trust Has a Bond</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Ensure trust has funds for bond cancellation costs (or sale covers bond + costs)</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'first-time-seller-mistakes': {
             title: 'Mistakes First-Time Sellers Make',
@@ -1187,7 +1267,45 @@ export default async function SellersLearningModulePage({
                         </ul>
                     </div>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'first-time-seller-avoid-checklist',
+                    title: 'First-Time Seller Avoid-Mistakes Checklist',
+                    description: 'Stay on track and avoid common first-time seller errors',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Pricing &amp; Preparation</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Get at least 2–3 valuations and price in line with the market</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Declutter, fix obvious defects, consider professional photos</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Invest in good photography or clear, well-lit shots</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Legal &amp; Costs</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Complete the mandatory disclosure form honestly</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Get a full cost breakdown (commission, bond cancellation, rates, CGT) before signing mandate or accepting offer</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'selling-pitfalls': {
             title: 'What to Avoid When Selling',
@@ -1233,7 +1351,44 @@ export default async function SellersLearningModulePage({
                         </ul>
                     </div>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'selling-pitfalls-checklist',
+                    title: 'What to Avoid When Selling Checklist',
+                    description: 'Do this instead—avoid common selling pitfalls',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Disclosure &amp; Defects</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Disclose all known defects; complete the disclosure form honestly</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Bond &amp; Process</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Arrange bond clearance; have funds ready for cancellation</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Respond quickly to viewings, offers, and conveyancer requests</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Contract</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Only sign the OTP when committed; read and understand every clause</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         },
         'selling-property-under-business': {
             title: 'Selling a Property Under a Business',
@@ -1284,7 +1439,57 @@ export default async function SellersLearningModulePage({
                         <strong>Tip:</strong> Have the resolution and entity documents ready before you list. Buyers and conveyancers will ask for them early. Delays in providing entity documents can delay the whole transfer.
                     </p>
                 </div>
-            )
+            ),
+            toolkit: [
+                {
+                    id: 'business-seller-checklist',
+                    title: 'Selling Property Under a Business Checklist',
+                    description: 'Documents and steps when selling in a company or CC name',
+                    type: 'checklist' as const,
+                    content: (
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-charcoal text-lg mb-4">Documents Required</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Certificate of Incorporation (company) or Registration Certificate (CC)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Board or member resolution authorising the sale and naming signatories</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>FICA for entity and directors/members; business address proof</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Tax number, VAT (if applicable), proof of good standing</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Mandatory disclosure form completed honestly</span>
+                                </li>
+                            </ul>
+                            <h4 className="font-bold text-charcoal text-lg mb-4 mt-6">Before You List or Accept Offer</h4>
+                            <ul className="space-y-2">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Have resolution and entity documents ready (buyers and conveyancers ask early)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Bond settlement figure and funds for cancellation (if entity has a bond)</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle className="w-5 h-5 text-gold flex-shrink-0 mt-0.5" />
+                                    <span>Accountant advice on CGT/income tax and net proceeds</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )
+                }
+            ]
         }
     };
 
