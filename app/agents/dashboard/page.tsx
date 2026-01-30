@@ -91,6 +91,7 @@ export default function AgentsDashboardPage() {
     const [viewingSearchTerm, setViewingSearchTerm] = useState('');
     const [viewingStatusFilter, setViewingStatusFilter] = useState<string>('all');
     const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+    const [leadsRefreshKey, setLeadsRefreshKey] = useState(0);
     
     const [propertyForm, setPropertyForm] = useState({
         title: '',
@@ -126,17 +127,34 @@ export default function AgentsDashboardPage() {
     }, []);
 
     useEffect(() => {
-        // Load leads from localStorage
-        if (typeof window !== 'undefined') {
-            const storedLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
-            
-            const sortedLeads = storedLeads.sort((a: Lead, b: Lead) => 
-                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        // Load leads: fetch from database (no cache), merge with localStorage
+        async function loadLeads() {
+            if (typeof window === 'undefined') return;
+            const storedLeads: Lead[] = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
+            let apiLeads: Lead[] = [];
+            try {
+                const res = await fetch(`/api/leads?_=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache' },
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.leads)) {
+                    apiLeads = data.leads;
+                }
+            } catch (e) {
+                console.warn('Failed to load leads from API', e);
+            }
+            // Merge: API leads first, then add localStorage leads not already in API (by id)
+            const ids = new Set(apiLeads.map((l: Lead) => l.id));
+            const localOnly = storedLeads.filter((l: Lead) => !ids.has(l.id));
+            const merged = [...apiLeads, ...localOnly].sort((a: Lead, b: Lead) =>
+                new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
             );
-            setLeads(sortedLeads);
-            setFilteredLeads(sortedLeads);
+            setLeads(merged);
+            setFilteredLeads(merged);
         }
-    }, []);
+        loadLeads();
+    }, [leadsRefreshKey]);
 
     useEffect(() => {
         // Load sellers from localStorage
@@ -342,21 +360,45 @@ export default function AgentsDashboardPage() {
         updateContactStatus(contact.id, 'contacted');
     };
 
-    const updateContactStatus = (contactId: string, status: 'new' | 'contacted' | 'qualified' | 'not-interested') => {
+    const updateContactStatus = async (contactId: string, status: 'new' | 'contacted' | 'qualified' | 'not-interested') => {
         if (activeTab === 'buyers') {
-        const updatedLeads = leads.map(lead => {
-                if (lead.id === contactId) {
-                return {
-                    ...lead,
-                    status,
-                    contactedAt: status === 'contacted' ? new Date().toISOString() : lead.contactedAt
-                };
+            const newContactedAt = status === 'contacted' ? new Date().toISOString() : null;
+            try {
+                const res = await fetch(`/api/leads/${contactId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status }),
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.lead) {
+                        const updatedLead = { ...json.lead, contactedAt: json.lead.contactedAt ?? newContactedAt };
+                        setLeads(prev => {
+                            const updated = prev.map(l => l.id === contactId ? { ...l, ...updatedLead } : l);
+                            setFilteredLeads(updated);
+                            if (typeof window !== 'undefined') localStorage.setItem('propReady_leads', JSON.stringify(updated));
+                            return updated;
+                        });
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to update lead status in API', e);
             }
-            return lead;
-        });
-        setLeads(updatedLeads);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('propReady_leads', JSON.stringify(updatedLeads));
+            const updatedLeads = leads.map(lead => {
+                if (lead.id === contactId) {
+                    return {
+                        ...lead,
+                        status,
+                        contactedAt: status === 'contacted' ? new Date().toISOString() : lead.contactedAt
+                    };
+                }
+                return lead;
+            });
+            setLeads(updatedLeads);
+            setFilteredLeads(updatedLeads);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('propReady_leads', JSON.stringify(updatedLeads));
             }
         } else {
             const updatedSellers = sellers.map(seller => {
@@ -700,7 +742,14 @@ export default function AgentsDashboardPage() {
                     <div id="leads-section" className="glass-effect rounded-xl p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-charcoal">Prequalified Leads</h2>
-                            <div className="flex gap-2">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setLeadsRefreshKey(k => k + 1)}
+                                    className="px-3 py-2 rounded-lg bg-charcoal/10 text-charcoal text-sm font-medium hover:bg-charcoal/20 transition"
+                                >
+                                    Refresh leads
+                                </button>
                                 <button
                                     onClick={() => setActiveTab('buyers')}
                                     className={`px-4 py-2 rounded-lg font-semibold transition ${
@@ -721,8 +770,8 @@ export default function AgentsDashboardPage() {
                                 >
                                     Sellers
                                 </button>
+                            </div>
                         </div>
-                    </div>
 
                     {/* Filters and Search */}
                         <div className="mb-6">

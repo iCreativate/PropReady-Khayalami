@@ -74,10 +74,10 @@ CREATE TABLE IF NOT EXISTS properties (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Leads table (for agents)
+-- Leads table (for agents). agent_id is optional (NULL = shared pool; all agents see the lead).
 CREATE TABLE IF NOT EXISTS leads (
     id TEXT PRIMARY KEY,
-    agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,
+    agent_id TEXT REFERENCES agents(id) ON DELETE CASCADE,  -- nullable: NULL = shared leads
     full_name TEXT NOT NULL,
     email TEXT NOT NULL,
     phone TEXT,
@@ -134,5 +134,12 @@ CREATE POLICY "Allow all operations on quiz_results" ON quiz_results FOR ALL USI
 CREATE POLICY "Allow all operations on agents" ON agents FOR ALL USING (true);
 CREATE POLICY "Allow all operations on documents" ON documents FOR ALL USING (true);
 CREATE POLICY "Allow all operations on properties" ON properties FOR ALL USING (true);
-CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true);
+CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on viewings" ON viewings FOR ALL USING (true);
+
+-- If leads table already existed with agent_id NOT NULL, allow shared leads:
+-- ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;
+
+-- If leads INSERT is blocked by RLS, run this in Supabase SQL Editor:
+-- DROP POLICY IF EXISTS "Allow all operations on leads" ON leads;
+-- CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);

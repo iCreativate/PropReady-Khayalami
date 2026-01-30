@@ -83,6 +83,32 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Create lead for agents (same request; no separate client call needed)
+        const dbLead = {
+            id: userData.id,
+            full_name: userData.fullName,
+            email: userData.email,
+            phone: userData.phone ?? null,
+            monthly_income: quizData?.monthlyIncome ?? quizData?.monthly_income ?? null,
+            deposit_saved: quizData?.depositSaved ?? quizData?.deposit_saved ?? null,
+            employment_status: quizData?.employmentStatus ?? quizData?.employment_status ?? null,
+            credit_score: quizData?.creditScore ?? quizData?.credit_score ?? null,
+            score: quizData?.score ?? null,
+            pre_qual_amount: quizData?.preQualAmount ?? quizData?.pre_qual_amount ?? null,
+            status: 'new',
+        };
+
+        const { error: leadError } = await supabase
+            .from('leads')
+            .insert([dbLead])
+            .select()
+            .single();
+
+        if (leadError) {
+            console.error('Supabase createLead error (from users/register):', leadError);
+            // Don't fail registration; user and quiz are saved; lead can be retried or fixed
+        }
+
         return NextResponse.json({ success: true });
     } catch (err) {
         console.error('API users/register error:', err);

@@ -51,6 +51,27 @@ After deployment, test the following:
 - Agent registration
 - Login functionality
 - Data persistence (data should persist across sessions)
+- **Leads**: Complete the buyer quiz, then open the agent dashboard on any browser/device — leads should appear from the database.
+
+**If leads stay empty on the agent dashboard:**
+
+1. **Check the leads API:** Open `https://your-site.netlify.app/api/leads/debug` in a browser. You should see:
+   - `configured: true` – env vars are set
+   - `tableOk: true` – leads table exists and is readable
+   - `leadCount` – number of leads in the DB (0 is ok)
+
+   If you see `tableOk: false` and an `error`, use the `hint` in the response or run the SQL below in Supabase.
+
+2. **Create or fix the leads table** (Supabase → SQL Editor):
+   - Run the full `supabase-schema.sql` to create all tables.
+   - If `agent_id` was NOT NULL: `ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;`
+   - If inserts are blocked by RLS, run:
+     ```sql
+     DROP POLICY IF EXISTS "Allow all operations on leads" ON leads;
+     CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);
+     ```
+
+3. **After submitting the quiz:** Open DevTools (F12) → Console. If lead save failed, you’ll see `Lead save to database failed:` with the API error.
 
 ## Database Schema
 

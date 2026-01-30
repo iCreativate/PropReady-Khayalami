@@ -321,8 +321,7 @@ export default function QuizPage() {
                 // Don't block registration if email fails
             }
 
-            // Store as a lead for agents
-            const existingLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
+            // Store as a lead for agents (database + localStorage)
             const lead = {
                 id: userId,
                 fullName: formData.fullName,
@@ -338,6 +337,16 @@ export default function QuizPage() {
                 timestamp: new Date().toISOString(),
                 contactedAt: null
             };
+            const leadsRes = await fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lead),
+            });
+            if (!leadsRes.ok) {
+                const errBody = await leadsRes.json().catch(() => ({}));
+                console.error('Lead save to database failed:', leadsRes.status, errBody);
+            }
+            const existingLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
             existingLeads.push(lead);
             localStorage.setItem('propReady_leads', JSON.stringify(existingLeads));
 
