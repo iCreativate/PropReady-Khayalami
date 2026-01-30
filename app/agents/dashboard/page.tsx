@@ -851,7 +851,7 @@ export default function AgentsDashboardPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-gold font-bold">R {lead.preQualAmount.toLocaleString('en-ZA')}</p>
+                                                    <p className="text-gold font-bold">R {(lead.preQualAmount ?? 0).toLocaleString('en-ZA')}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-2">
@@ -1284,7 +1284,7 @@ export default function AgentsDashboardPage() {
                                 <div className="text-center mb-6">
                                     {activeTab === 'buyers' && 'preQualAmount' in showActionsModal && (
                                         <p className="text-charcoal/70 text-sm mb-4">
-                                            Pre-Qual Amount: R {(showActionsModal as Lead).preQualAmount.toLocaleString('en-ZA')}
+                                            Pre-Qual Amount: R {((showActionsModal as Lead).preQualAmount ?? 0).toLocaleString('en-ZA')}
                                         </p>
                                     )}
                                 </div>
@@ -1344,7 +1344,7 @@ export default function AgentsDashboardPage() {
                                             <div>
                                                 <p className="text-charcoal/60">Value</p>
                                                 <p className="text-charcoal font-semibold">
-                                                    R {(showActionsModal as Seller).currentValue ? parseFloat((showActionsModal as Seller).currentValue).toLocaleString('en-ZA') : '0'}
+                                                    R {parseFloat((showActionsModal as Seller).currentValue ?? '0').toLocaleString('en-ZA')}
                                                 </p>
                                             </div>
                                         </div>
@@ -2004,7 +2004,7 @@ export default function AgentsDashboardPage() {
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <TrendingUp className="w-4 h-4" />
-                                                                <span>Pre-Qual: R {lead.preQualAmount.toLocaleString('en-ZA')}</span>
+                                                                <span>Pre-Qual: R {(lead.preQualAmount ?? 0).toLocaleString('en-ZA')}</span>
                                                                 <span className="text-charcoal/40">•</span>
                                                                 <span>Score: {lead.score}%</span>
                                                             </div>
