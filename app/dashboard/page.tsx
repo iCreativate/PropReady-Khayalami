@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Home, FileText, Heart, Users, TrendingUp, Download, Calendar, ArrowLeft, Building2, Phone, ExternalLink, CheckCircle, X, MapPin, Clock } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 
 interface Originator {
     name: string;
@@ -293,7 +294,7 @@ export default function DashboardPage() {
                                     <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
                                         <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Property Value</p>
                                         <p className="text-charcoal font-bold text-xl">
-                                            R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString('en-US') : '0'}
+                                            {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
                                         </p>
                                     </div>
                                     <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
@@ -336,19 +337,19 @@ export default function DashboardPage() {
                                 <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
                                     <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Pre-Qualification</p>
                                     <p className="text-charcoal font-bold text-xl">
-                                        R {quizResult?.preQualAmount.toLocaleString('en-US') || '0'}
+                                        {formatCurrency(quizResult?.preQualAmount ?? 0)}
                                     </p>
                                 </div>
                                 <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
                                     <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Monthly Budget</p>
                                     <p className="text-charcoal font-bold text-xl">
-                                        R {quizResult ? calculateMonthlyBudget(quizResult.preQualAmount).toLocaleString('en-US') : '0'}
+                                        {quizResult ? formatCurrency(calculateMonthlyBudget(quizResult.preQualAmount)) : 'R 0'}
                                     </p>
                                 </div>
                                 <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
                                     <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Deposit Saved</p>
                                     <p className="text-charcoal font-bold text-xl text-right whitespace-nowrap">
-                                        R {quizResult ? parseNumberFromString(quizResult.depositSaved || '0').toLocaleString('en-US') : '0'}
+                                        {formatCurrency(quizResult ? parseNumberFromString(quizResult.depositSaved || '0') : 0)}
                                     </p>
                                 </div>
                             </div>
@@ -559,7 +560,7 @@ export default function DashboardPage() {
                                         </h2>
                                         {quizResult && quizResult.preQualAmount > 0 && (
                                             <p className="text-charcoal/60 text-sm ml-8">
-                                                Matched based on your R {quizResult.preQualAmount.toLocaleString('en-US')} prequalification and {quizResult.score}% PropReady Score
+                                                Matched based on your {formatCurrency(quizResult.preQualAmount)} prequalification and {quizResult.score}% PropReady Score
                                             </p>
                                         )}
                                     </div>
@@ -583,13 +584,13 @@ export default function DashboardPage() {
                                                     <h3 className="text-charcoal font-semibold mb-1">Modern {property.type}</h3>
                                                     <p className="text-charcoal/50 text-sm mb-2">{property.location}</p>
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-gold font-bold text-lg">R {property.price.toLocaleString('en-US')}</span>
+                                                        <span className="text-gold font-bold text-lg">{formatCurrency(property.price)}</span>
                                                         <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold">
                                                             {property.matchScore}% Match
                                                         </span>
                                                     </div>
                                                     <p className="text-charcoal/40 text-xs mt-1">
-                                                        Based on your R {quizResult.preQualAmount.toLocaleString('en-US')} prequalification
+                                                        Based on your {formatCurrency(quizResult.preQualAmount)} prequalification
                                                     </p>
                                                 </div>
                                             </Link>

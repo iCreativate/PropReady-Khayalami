@@ -22,6 +22,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const ffc = String(agentData.eaabNumber).replace(/\D/g, '');
+        if (ffc.length !== 7) {
+            return NextResponse.json(
+                { success: false, error: 'FFC number must be exactly 7 digits' },
+                { status: 400 }
+            );
+        }
+        if (/^0+$/.test(ffc)) {
+            return NextResponse.json(
+                { success: false, error: 'Enter a valid 7-digit PPRA FFC number' },
+                { status: 400 }
+            );
+        }
+
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         const dbAgent = {
@@ -29,7 +43,7 @@ export async function POST(request: NextRequest) {
             full_name: agentData.fullName,
             email: agentData.email,
             phone: agentData.phone,
-            eaab_number: agentData.eaabNumber,
+            eaab_number: ffc,
             company: agentData.company,
             password: agentData.password,
             status: agentData.status || 'pending',

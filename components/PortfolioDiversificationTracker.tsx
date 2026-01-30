@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/currency';
 
 // Format number input with commas
 const formatNumberInput = (value: string) => {
@@ -231,7 +232,7 @@ export default function PortfolioDiversificationTracker() {
                         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                             <p className="text-sm font-semibold text-charcoal mb-2">Portfolio Summary</p>
                             <div className="space-y-1 text-sm">
-                                <p className="text-charcoal/70">Total Portfolio Value: <span className="font-semibold text-charcoal">R {metrics.totalValue.toLocaleString('en-US')}</span></p>
+                                <p className="text-charcoal/70">Total Portfolio Value: <span className="font-semibold text-charcoal">{formatCurrency(metrics.totalValue)}</span></p>
                                 <p className="text-charcoal/70">Locations: <span className="font-semibold text-charcoal">{metrics.locationCount}</span></p>
                                 <p className="text-charcoal/70">Property Types: <span className="font-semibold text-charcoal">{metrics.typeCount}</span></p>
                             </div>

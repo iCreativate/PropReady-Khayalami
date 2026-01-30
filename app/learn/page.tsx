@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Home, FileText, Calculator, Users, Coins, Wallet } from 'lucide-react';
+import { ArrowLeft, BookOpen, Home, FileText, Calculator, Users, Coins, Wallet, Building2, Scale, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
 
 export default function LearnPage() {
     return (
@@ -155,6 +155,106 @@ export default function LearnPage() {
                                 <p className="text-charcoal/60 mb-6 leading-relaxed">
                                     Learn about the Finance Linked Individual Subsidy Programme (FLISP)
                                     and how it can help you buy your first home if you earn between R3,501 and R22,000.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 7 - Buying a Deceased Estate */}
+                        <Link href="/learn/buying-deceased-estate" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
+                                    <Building2 className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4">
+                                    Buying a Deceased Estate
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    What you need to know when buying a property from a deceased estate:
+                                    executors, Master&apos;s Office, delays, and how to protect yourself.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 8 - Understanding Trusts */}
+                        <Link href="/learn/understanding-trusts" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
+                                    <Scale className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4">
+                                    Understanding Trusts
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Buying property held in a trust: trustees, consent, bond implications,
+                                    and what to check before you sign.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 9 - Mistakes First-Time Buyers Make */}
+                        <Link href="/learn/first-time-buyer-mistakes" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
+                                    <AlertCircle className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4">
+                                    Mistakes First-Time Buyers Make
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Common pitfalls: skipping pre-qualification, ignoring hidden costs,
+                                    emotional bidding, and how to avoid them.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 10 - What to Avoid When Applying for a Bond */}
+                        <Link href="/learn/bond-application-avoid" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
+                                    <ShieldCheck className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4">
+                                    What to Avoid When Applying for a Bond
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Don&apos;t make these mistakes: job-hopping, new credit, incomplete documents,
+                                    and other factors that can delay or derail your bond approval.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 11 - Buying a Property as a Business */}
+                        <Link href="/learn/buying-property-as-business" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
+                                    <Briefcase className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4">
+                                    Buying a Property as a Business
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    What is required when buying property in a company or close corporation name:
+                                    documents, bond requirements, and tax considerations.
                                 </p>
                                 <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
                                     <span>Start Learning</span>

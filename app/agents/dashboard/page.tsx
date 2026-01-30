@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 
 interface Lead {
     id: string;
@@ -712,7 +713,7 @@ export default function AgentsDashboardPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <DollarSign className="w-4 h-4" />
-                                                <span>R {property.price.toLocaleString('en-US')}</span>
+                                                <span>{formatCurrency(property.price)}</span>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-1">
@@ -751,13 +752,6 @@ export default function AgentsDashboardPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-charcoal">Prequalified Leads</h2>
                             <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setLeadsRefreshKey(k => k + 1)}
-                                    className="px-3 py-2 rounded-lg bg-charcoal/10 text-charcoal text-sm font-medium hover:bg-charcoal/20 transition"
-                                >
-                                    Refresh leads
-                                </button>
                                 <button
                                     onClick={() => setActiveTab('buyers')}
                                     className={`px-4 py-2 rounded-lg font-semibold transition ${
@@ -853,7 +847,7 @@ export default function AgentsDashboardPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
-                                                    <p className="text-gold font-bold">R {(lead.preQualAmount ?? 0).toLocaleString('en-US')}</p>
+                                                    <p className="text-gold font-bold">{formatCurrency(lead.preQualAmount ?? 0)}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-2">
@@ -942,7 +936,7 @@ export default function AgentsDashboardPage() {
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <p className="text-gold font-bold">
-                                                            R {seller.currentValue ? parseFloat(seller.currentValue).toLocaleString('en-US') : '0'}
+                                                            {formatCurrency(parseAmountForDisplay(seller.currentValue))}
                                                         </p>
                                                     </td>
                                                     <td className="py-4 px-4">
@@ -1293,7 +1287,7 @@ export default function AgentsDashboardPage() {
                                 <div className="text-center mb-6">
                                     {activeTab === 'buyers' && 'preQualAmount' in showActionsModal && (
                                         <p className="text-charcoal/70 text-sm mb-4">
-                                            Pre-Qual Amount: R {((showActionsModal as Lead).preQualAmount ?? 0).toLocaleString('en-US')}
+                                            Pre-Qual Amount: {formatCurrency((showActionsModal as Lead).preQualAmount ?? 0)}
                                         </p>
                                     )}
                                 </div>
@@ -1331,7 +1325,7 @@ export default function AgentsDashboardPage() {
                                         </div>
                                         <div>
                                             <p className="text-charcoal/60">Deposit</p>
-                                            <p className="text-charcoal font-semibold">R {(parseFloat(String((showActionsModal as Lead).depositSaved || '0').replace(/[,\s]/g, '')) || 0).toLocaleString('en-US')}</p>
+                                            <p className="text-charcoal font-semibold">{formatCurrency(parseAmountForDisplay((showActionsModal as Lead).depositSaved))}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1357,7 +1351,7 @@ export default function AgentsDashboardPage() {
                                             <div>
                                                 <p className="text-charcoal/60">Value</p>
                                                 <p className="text-charcoal font-semibold">
-                                                    R {parseFloat((showActionsModal as Seller).currentValue ?? '0').toLocaleString('en-US')}
+                                                    {formatCurrency(parseAmountForDisplay((showActionsModal as Seller).currentValue))}
                                                 </p>
                                             </div>
                                             <div>
@@ -1662,7 +1656,7 @@ export default function AgentsDashboardPage() {
                                                     <option value="">Select a property</option>
                                                     {allAvailableProperties.map(property => (
                                                         <option key={property.id} value={property.id}>
-                                                            {property.title} - {property.address} (R {property.price.toLocaleString('en-US')})
+                                                            {property.title} - {property.address} ({formatCurrency(property.price)})
                                                         </option>
                                                     ))}
                                                 </>
@@ -2025,7 +2019,7 @@ export default function AgentsDashboardPage() {
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <TrendingUp className="w-4 h-4" />
-                                                                <span>Pre-Qual: R {(lead.preQualAmount ?? 0).toLocaleString('en-US')}</span>
+                                                                <span>Pre-Qual: {formatCurrency(lead.preQualAmount ?? 0)}</span>
                                                                 <span className="text-charcoal/40">•</span>
                                                                 <span>Score: {lead.score}%</span>
                                                             </div>

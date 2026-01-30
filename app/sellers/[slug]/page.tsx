@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import LearningToolkit from '@/components/LearningToolkit';
 import CommissionCalculator from '@/components/CommissionCalculator';
-import { ArrowLeft, Home, DollarSign, Users, Target, FileText, BarChart3, CheckCircle, Calendar, BookOpen } from 'lucide-react';
+import { ArrowLeft, Home, DollarSign, Users, Target, FileText, BarChart3, CheckCircle, Calendar, BookOpen, Building2, Scale, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
 
 export default async function SellersLearningModulePage({
     params,
@@ -1072,6 +1072,220 @@ export default async function SellersLearningModulePage({
                 }
             ]
         },
+        'selling-deceased-estate': {
+            title: 'Selling a Deceased Estate',
+            icon: 'Building2',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Selling property from a deceased estate is different from a normal sale. As an executor or heir,
+                        here&apos;s what you need to know.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Your Role as Seller</h3>
+                    <p>
+                        When the property forms part of a deceased estate, the <strong>executor</strong> (appointed by the Master of the High Court) is responsible for winding up the estate. The executor may sell the property to pay debts, distribute to heirs, or as directed by the will. As seller, you (or the executor) must have the <strong>Letter of Executorship</strong> before marketing or accepting offers.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Key Steps and Timelines</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li><strong>Master&apos;s Office:</strong> The executor must obtain a Letter of Executorship from the Master before any sale. This can take weeks or months.</li>
+                        <li><strong>Liquidation and Distribution Account:</strong> Creditors and heirs must be accounted for. There is a waiting period for objections before the estate can be finalised.</li>
+                        <li><strong>Authority to Sell:</strong> The will or court order must authorise the sale. All heirs who must consent (per the will or law) must agree.</li>
+                        <li><strong>Transfer:</strong> The transfer attorney will need the Letter of Executorship, death certificate, and proof that the sale is authorised.</li>
+                    </ul>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">What You Must Have Ready</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Letter of Executorship (or Letters of Authority).</li>
+                            <li>Death certificate.</li>
+                            <li>Trustee resolution or court order authorising the sale (if required).</li>
+                            <li>Disclosure of any defects to the buyer (mandatory disclosure form).</li>
+                        </ul>
+                    </div>
+
+                    <p className="text-charcoal/80 mt-6">
+                        <strong>Tip:</strong> Buyers of deceased estates often expect longer timelines. Be transparent with your agent and conveyancer about Master&apos;s Office delays so buyers can plan accordingly.
+                    </p>
+                </div>
+            )
+        },
+        'understanding-trusts': {
+            title: 'Understanding Trusts',
+            icon: 'Scale',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        If the property you are selling is held in a <strong>trust</strong>, the sale process has specific requirements.
+                        Here&apos;s what you need to know as a seller.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Selling Property Held in a Trust</h3>
+                    <p>
+                        The <strong>trustees</strong> act on behalf of the trust. All trustees who must sign (per the trust deed) must agree to the sale. Banks and conveyancers will require a <strong>trustee resolution</strong> authorising the sale of the property. The transfer attorney will need the trust deed, letters of authority (if applicable), and proof that the signatories are authorised trustees.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Bond Cancellation (If the Trust Has a Bond)</h3>
+                    <p>
+                        If the trust has a bond over the property, the bond must be cancelled before or simultaneously with transfer. The cancellation attorney (appointed by the bank) will cancel the bond. The seller (trust) typically pays the cancellation costs. Ensure the trust has funds set aside for this, or that the sale price covers the outstanding bond and costs.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">What to Have Ready</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Trust deed (certified copy).</li>
+                            <li>Trustee resolution authorising the sale and naming the signatories.</li>
+                            <li>Proof of identity and authority of trustees signing.</li>
+                            <li>Bond settlement figure (if there is a bond) so you know the net proceeds.</li>
+                        </ul>
+                    </div>
+                </div>
+            )
+        },
+        'first-time-seller-mistakes': {
+            title: 'Mistakes First-Time Sellers Make',
+            icon: 'AlertCircle',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        First-time sellers often make the same mistakes. Knowing them in advance helps you sell faster and at a better price.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Overpricing</h3>
+                    <p>
+                        Setting the price too high because of emotional attachment or what you &quot;need&quot; leads to the property sitting on the market. Buyers and agents compare with similar sales. <strong>Get at least 2–3 valuations</strong> and price in line with the market. Properties that linger often sell for less later.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Skipping Preparation and Staging</h3>
+                    <p>
+                        Not decluttering, cleaning, or doing small repairs makes your property look tired. Buyers form an impression in the first few minutes. <strong>Declutter, fix obvious defects, and consider professional photos.</strong> A well-presented home sells faster and for more.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Poor or No Professional Photos</h3>
+                    <p>
+                        Most buyers search online first. Blurry or dark photos put you at a disadvantage. Invest in good photography (or at least clear, well-lit shots) and a clear description. It is one of the best returns on investment when selling.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Hiding Defects</h3>
+                    <p>
+                        You must disclose known defects to the buyer. Hiding problems can lead to the sale falling through, legal claims, or a damaged reputation. Complete the <strong>mandatory disclosure form</strong> honestly. Fix major issues or price accordingly.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Not Understanding Costs</h3>
+                    <p>
+                        Agent commission, bond cancellation fees, rates and levies, and capital gains tax (if applicable) all reduce your net proceeds. <strong>Get a full cost breakdown</strong> from your agent and conveyancer before you sign a mandate or accept an offer.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">Quick Checklist</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Price realistically using multiple valuations.</li>
+                            <li>Prepare and stage the property; get good photos.</li>
+                            <li>Disclose defects; complete the disclosure form honestly.</li>
+                            <li>Understand all selling costs before you list.</li>
+                        </ul>
+                    </div>
+                </div>
+            )
+        },
+        'selling-pitfalls': {
+            title: 'What to Avoid When Selling',
+            icon: 'ShieldCheck',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Avoid these common pitfalls so your sale goes smoothly and you get the best outcome.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Hiding Defects</h3>
+                    <p>
+                        You have a legal duty to disclose known defects. Hiding damp, structural issues, or boundary disputes can lead to the deal falling through, claims from the buyer, or delays. Always complete the <strong>mandatory disclosure form</strong> honestly and fix or disclose major issues.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Ignoring Bond Clearance</h3>
+                    <p>
+                        If you have a bond, it must be cancelled before or at transfer. The bank will provide a settlement figure. Ensure you have the funds (from the sale or elsewhere) to settle the bond and pay cancellation costs. Delays in bond clearance delay the whole transfer.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Being Unavailable for Viewings or Documents</h3>
+                    <p>
+                        Buyers and agents need access for viewings. Conveyancers need signed documents and FICA from you. Being slow to respond or unavailable stretches the timeline and can cause the buyer to walk away. Respond promptly to viewings, offers, and attorney requests.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Changing Your Mind Mid-Process</h3>
+                    <p>
+                        Once the Offer to Purchase is signed, you are in a binding contract. Withdrawing without a valid clause (e.g. subject to finding a property) can lead to claims for damages. Only sign when you are committed to selling on the agreed terms.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Not Reading the Offer to Purchase</h3>
+                    <p>
+                        The OTP sets out the price, conditions, occupation date, and fixtures and fittings. Read every clause. Understand the bond clause (buyer has a set time to get finance), the inspection clause, and any special conditions. Ask your agent or attorney to explain anything you don&apos;t understand before you sign.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">Do This Instead</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Disclose all known defects and complete the disclosure form honestly.</li>
+                            <li>Arrange bond clearance and have funds ready for cancellation.</li>
+                            <li>Respond quickly to viewings, offers, and conveyancer requests.</li>
+                            <li>Only sign the OTP when you are committed; read and understand every clause.</li>
+                        </ul>
+                    </div>
+                </div>
+            )
+        },
+        'selling-property-under-business': {
+            title: 'Selling a Property Under a Business',
+            icon: 'Briefcase',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Selling property held by a <strong>company</strong> (Pty Ltd) or <strong>close corporation</strong> (CC) is different from selling as an individual.
+                        Here&apos;s what is required when selling a property under a business.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Your Role as Seller</h3>
+                    <p>
+                        The <strong>seller</strong> is the entity (company or CC), not the directors or members. The entity acts through its authorised signatories. Banks and conveyancers will require a <strong>board or member resolution</strong> authorising the sale of the property and naming the signatories. The transfer attorney will need the entity&apos;s registration documents, resolution, and proof that the signatories are authorised to sign on behalf of the entity.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">What Is Required: Documents</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li><strong>Registration documents:</strong> Certificate of Incorporation (company) or Registration Certificate (CC).</li>
+                        <li><strong>Resolution:</strong> A board or member resolution authorising the sale of the property and naming the signatories.</li>
+                        <li><strong>FICA for the entity:</strong> Proof of identity and address of directors/members, and proof of business address.</li>
+                        <li><strong>Tax and compliance:</strong> Tax number, VAT (if applicable), and proof that the entity is in good standing (e.g. no outstanding taxes or CIPC compliance).</li>
+                        <li><strong>Mandatory disclosure:</strong> Complete the disclosure form honestly; the entity (seller) must disclose known defects.</li>
+                    </ul>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Bond Cancellation (If the Business Has a Bond)</h3>
+                    <p>
+                        If the entity has a bond over the property, the bond must be cancelled before or simultaneously with transfer. The cancellation attorney (appointed by the bank) will cancel the bond. The seller (entity) typically pays the cancellation costs. Ensure the entity has funds set aside for this, or that the sale price covers the outstanding bond and costs. Directors or members may be sureties—check with the bank and your attorney.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Tax Considerations</h3>
+                    <p>
+                        Selling property held by a company or CC can have <strong>capital gains tax (CGT)</strong> or <strong>income tax</strong> implications, depending on how the property was used (e.g. trading stock vs capital asset). Speak to your accountant before you list or accept an offer so you understand the net proceeds after tax and costs.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">Quick Checklist</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Entity registration documents and resolution authorising the sale.</li>
+                            <li>FICA and tax documents for the entity and signatories.</li>
+                            <li>Bond settlement figure (if there is a bond) and funds for cancellation.</li>
+                            <li>Mandatory disclosure form completed honestly.</li>
+                            <li>Accountant advice on CGT/income tax and net proceeds.</li>
+                        </ul>
+                    </div>
+
+                    <p className="text-charcoal/80 mt-6">
+                        <strong>Tip:</strong> Have the resolution and entity documents ready before you list. Buyers and conveyancers will ask for them early. Delays in providing entity documents can delay the whole transfer.
+                    </p>
+                </div>
+            )
+        }
     };
 
     // Ordered list of modules for "Next topic" navigation
@@ -1081,7 +1295,12 @@ export default async function SellersLearningModulePage({
         'marketing',
         'sale-process',
         'costs',
-        'tips'
+        'tips',
+        'selling-deceased-estate',
+        'understanding-trusts',
+        'first-time-seller-mistakes',
+        'selling-pitfalls',
+        'selling-property-under-business'
     ] as const;
 
     const currentModule = modules[slug];
@@ -1089,7 +1308,7 @@ export default async function SellersLearningModulePage({
     const nextSlug = currentIndex >= 0 && currentIndex < moduleOrder.length - 1 ? moduleOrder[currentIndex + 1] : null;
     const nextModule = nextSlug ? modules[nextSlug] : null;
 
-    if (!module) {
+    if (!currentModule) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center">
@@ -1107,6 +1326,11 @@ export default async function SellersLearningModulePage({
         FileText,
         BarChart3,
         CheckCircle,
+        Building2,
+        Scale,
+        AlertCircle,
+        ShieldCheck,
+        Briefcase,
     };
     const IconComponent = (currentModule.icon && iconMap[currentModule.icon]) || FileText;
 

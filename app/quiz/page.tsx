@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff } from 'lucide-react';
+import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 
 interface Originator {
     name: string;
@@ -744,11 +745,11 @@ export default function QuizPage() {
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
                                     <span>Monthly Income:</span>
-                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {(parseFloat(String(formData.monthlyIncome || '0').replace(/[,\s]/g, '')) || 0).toLocaleString('en-US')}</span>
+                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">{formatCurrency(parseAmountForDisplay(formData.monthlyIncome))}</span>
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
                                     <span>Deposit:</span>
-                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">R {(parseFloat(String(formData.depositSaved || '0').replace(/[,\s]/g, '')) || 0).toLocaleString('en-US')}</span>
+                                    <span className="font-semibold text-charcoal text-right whitespace-nowrap">{formatCurrency(parseAmountForDisplay(formData.depositSaved))}</span>
                                 </div>
                                 <div className="flex items-start justify-between gap-4">
                                     <span>Employment:</span>

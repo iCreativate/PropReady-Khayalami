@@ -127,9 +127,11 @@ export default function AgentSettingsPage() {
 
         const cleanedFFC = formData.eaabNumber.replace(/\D/g, '');
         if (!formData.eaabNumber.trim()) {
-            newErrors.eaabNumber = 'FFC number (Fidelity Fund Certificate) is required';
+            newErrors.eaabNumber = 'A valid FFC number (Fidelity Fund Certificate) is required';
         } else if (cleanedFFC.length !== 7) {
             newErrors.eaabNumber = 'FFC number must be exactly 7 digits';
+        } else if (/^0+$/.test(cleanedFFC)) {
+            newErrors.eaabNumber = 'Enter your valid 7-digit PPRA FFC number (cannot be all zeros)';
         }
 
         if (!formData.company.trim()) {
@@ -380,22 +382,24 @@ export default function AgentSettingsPage() {
                                     )}
                                 </div>
 
-                                {/* FFC Number (Fidelity Fund Certificate) */}
+                                {/* Valid FFC Number (Fidelity Fund Certificate) */}
                                 <div>
                                     <label className="block text-charcoal font-semibold mb-2">
-                                        FFC Number (Fidelity Fund Certificate) <span className="text-red-600">*</span>
+                                        Valid FFC Number (Fidelity Fund Certificate) <span className="text-red-600">*</span>
                                     </label>
                                     <div className="relative">
                                         <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                         <input
                                             type="text"
                                             name="eaabNumber"
-                                            placeholder="1234567"
+                                            placeholder="e.g. 1234567 (7 digits only)"
                                             value={formData.eaabNumber}
                                             onChange={handleInputChange}
                                             maxLength={7}
                                             inputMode="numeric"
                                             autoComplete="off"
+                                            pattern="[0-9]{7}"
+                                            title="Enter your 7-digit PPRA FFC number"
                                             className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.eaabNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
                                         />
                                     </div>
@@ -405,7 +409,7 @@ export default function AgentSettingsPage() {
                                             {errors.eaabNumber}
                                         </p>
                                     )}
-                                    <p className="text-charcoal/60 text-sm mt-1">Your 7-digit PPRA Fidelity Fund Certificate number</p>
+                                    <p className="text-charcoal/60 text-sm mt-1">Your valid 7-digit PPRA Fidelity Fund Certificate number. Verify at theppra.org.za</p>
                                 </div>
 
                                 {/* Company */}

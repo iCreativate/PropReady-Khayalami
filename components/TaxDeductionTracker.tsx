@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/currency';
 
 // Format number input with commas
 const formatNumberInput = (value: string) => {
@@ -60,7 +61,7 @@ export default function TaxDeductionTracker() {
                 <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">
                     <p className="text-sm font-semibold text-charcoal mb-1">Total Deductible Expenses</p>
                     <p className="text-xl font-bold text-gold">
-                        R {totalDeductible.toLocaleString('en-US')}
+                        {formatCurrency(totalDeductible)}
                     </p>
                 </div>
             </div>

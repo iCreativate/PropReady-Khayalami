@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, FileText, Building2, Calendar, ArrowLeft, Phone, Mail, MapPin, DollarSign, Users, CheckCircle, X, Search, Star, Clock } from 'lucide-react';
+import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 
 interface Agent {
     id: string;
@@ -218,7 +219,7 @@ export default function SellerDashboardPage() {
                                     </div>
                                     <div className="text-right">
                                         <div className="text-3xl font-bold text-gold mb-1">
-                                            R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString('en-US') : '0'}
+                                            {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
                                         </div>
                                         <p className="text-charcoal/50 text-sm font-medium">Estimated Value</p>
                                     </div>
@@ -468,7 +469,7 @@ export default function SellerDashboardPage() {
                                 <div>
                                     <p className="text-charcoal/60 text-sm mb-1">Estimated Value</p>
                                     <p className="text-gold font-bold text-xl">
-                                        R {sellerInfo.currentValue ? parseFloat(sellerInfo.currentValue).toLocaleString('en-US') : '0'}
+                                        {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
                                     </p>
                                 </div>
                                 <div>
@@ -485,7 +486,7 @@ export default function SellerDashboardPage() {
                                     <div>
                                         <p className="text-charcoal/60 text-sm mb-1">Bond Balance</p>
                                         <p className="text-charcoal font-semibold">
-                                            R {sellerInfo.bondBalance ? parseFloat(sellerInfo.bondBalance).toLocaleString('en-US') : '0'}
+                                            {formatCurrency(parseAmountForDisplay(sellerInfo.bondBalance))}
                                         </p>
                                     </div>
                                 )}

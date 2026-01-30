@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Calendar, TrendingUp, DollarSign, MapPin, Home as HomeIcon, Mail, Phone, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 
 export default function SellersQuizPage() {
     const router = useRouter();
@@ -492,14 +493,19 @@ export default function SellersQuizPage() {
                                 <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                 <span className="absolute left-10 top-1/2 -translate-y-1/2 text-charcoal/50">R</span>
                                 <input
-                                    type="number"
+                                    type="text"
+                                    inputMode="numeric"
                                     name="currentValue"
-                                    value={formData.currentValue}
-                                    onChange={handleInputChange}
-                                    placeholder="e.g., 1500000"
+                                    value={formData.currentValue ? formatNumber(parseAmountForDisplay(formData.currentValue)) : ''}
+                                    onChange={(e) => {
+                                        const digits = e.target.value.replace(/\D/g, '');
+                                        setFormData(prev => ({ ...prev, currentValue: digits }));
+                                        if (errors.currentValue) {
+                                            setErrors(prev => ({ ...prev, currentValue: '' }));
+                                        }
+                                    }}
+                                    placeholder="e.g., 1,500,000"
                                     required
-                                    min="0"
-                                    step="10000"
                                     className={`w-full pl-16 pr-4 py-3 rounded-lg bg-white border ${errors.currentValue ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
                                 />
                             </div>
@@ -732,7 +738,7 @@ export default function SellersQuizPage() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Estimated Value:</span>
-                                    <span className="font-semibold text-charcoal">R {formData.currentValue ? parseFloat(formData.currentValue).toLocaleString('en-US') : '0'}</span>
+                                    <span className="font-semibold text-charcoal">{formatCurrency(parseAmountForDisplay(formData.currentValue))}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Timeline:</span>

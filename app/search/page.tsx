@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Home, Search, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
+import { formatCurrency } from '@/lib/currency';
 
 type FilterType = 'all' | 'houses' | 'apartments' | 'townhouses' | 'under-1m';
 
@@ -297,7 +298,7 @@ export default function SearchPage() {
                                         <TrendingUp className="w-5 h-5 text-gold" />
                                         <h3 className="text-xl font-bold text-charcoal">Matched to Your Profile</h3>
                                         <span className="px-2 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold">
-                                            Based on R {quizResult.preQualAmount.toLocaleString('en-US')} prequalification
+                                            Based on {formatCurrency(quizResult.preQualAmount)} prequalification
                                         </span>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -319,7 +320,7 @@ export default function SearchPage() {
                                                 <div className="p-6">
                                                     {/* Price */}
                                                     <div className="mb-4">
-                                                        <span className="text-2xl font-bold text-gold">R {property.price.toLocaleString('en-US')}</span>
+                                                        <span className="text-2xl font-bold text-gold">{formatCurrency(property.price)}</span>
                                                     </div>
 
                                                     {/* Location */}
@@ -383,7 +384,7 @@ export default function SearchPage() {
                                                 <div className="p-6">
                                                     {/* Price */}
                                                     <div className="mb-4">
-                                                        <span className="text-2xl font-bold text-gold">R {property.price.toLocaleString('en-US')}</span>
+                                                        <span className="text-2xl font-bold text-gold">{formatCurrency(property.price)}</span>
                                                     </div>
 
                                                     {/* Location */}

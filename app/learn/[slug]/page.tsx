@@ -1157,6 +1157,228 @@ export default async function LearningModulePage({
                     )
                 }
             ]
+        },
+        'buying-deceased-estate': {
+            title: 'Buying a Deceased Estate',
+            icon: 'Building2',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Buying a property from a deceased estate can offer value, but the process is different from a normal sale.
+                        Here&apos;s what you need to know.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">What is a Deceased Estate?</h3>
+                    <p>
+                        When someone dies, their assets (including property) form part of their estate. The estate is wound up by an <strong>executor</strong>,
+                        who is appointed by the Master of the High Court. The executor may sell the property to pay debts, distribute to heirs, or as directed by the will.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Key Steps and Delays</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li><strong>Master&apos;s Office:</strong> The executor must get a Letter of Executorship from the Master before they can sell. This can take weeks or months.</li>
+                        <li><strong>Liquidation and Distribution Account:</strong> Creditors and heirs must be accounted for. There is a waiting period for objections.</li>
+                        <li><strong>Transfer:</strong> Once the executor is authorised to sell, transfer follows a similar path to a normal sale, but the seller is the estate (executor).</li>
+                    </ul>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">What to Check Before You Buy</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Confirm the executor is properly appointed (Letter of Executorship).</li>
+                            <li>Check that the sale is authorised (will or court order).</li>
+                            <li>Understand that timelines are often longer—build in extra time for bond approval and transfer.</li>
+                            <li>Have your conveyancer verify that all Master&apos;s requirements have been met before you pay a deposit.</li>
+                        </ul>
+                    </div>
+
+                    <p className="text-charcoal/80 mt-6">
+                        <strong>Tip:</strong> Deceased estate sales can be priced competitively, but always do a proper valuation and inspection. Delays are common, so avoid tying up your finances in a long wait if you need to move quickly.
+                    </p>
+                </div>
+            )
+        },
+        'understanding-trusts': {
+            title: 'Understanding Trusts',
+            icon: 'Scale',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Property is sometimes held in a <strong>trust</strong> rather than in an individual&apos;s name.
+                        Buying from a trust or buying in the name of a trust has specific rules you should understand.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">What is a Trust?</h3>
+                    <p>
+                        A trust is a legal arrangement where assets (like a property) are held by <strong>trustees</strong> for the benefit of <strong>beneficiaries</strong>.
+                        The trustees manage the trust according to the trust deed. In South Africa, family trusts are often used for estate planning and asset protection.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Buying a Property Held in a Trust</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li><strong>Seller is the trust:</strong> The trustees act on behalf of the trust. All trustees who must sign (per the trust deed) must agree to the sale.</li>
+                        <li><strong>Resolution:</strong> Banks and conveyancers will require a trustee resolution authorising the sale of the property.</li>
+                        <li><strong>Transfer:</strong> The transfer attorney will need the trust deed, letters of authority, and proof that the signatories are authorised trustees.</li>
+                    </ul>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Getting a Bond When the Buyer is a Trust</h3>
+                    <p>
+                        If you are buying <em>in the name of a trust</em>, banks treat it as a different type of applicant. They will require the trust deed, trustee resolutions, and often personal suretyship from the trustees. Interest rates and terms can differ from a normal personal bond. Not all banks lend to trusts—your bond originator can advise.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">What to Check</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>That all required trustees have signed the sale agreement and resolution.</li>
+                            <li>That the trust deed allows the trustees to sell the property.</li>
+                            <li>If you are buying in a trust name, confirm bond eligibility and suretyship requirements with your bank or originator early.</li>
+                        </ul>
+                    </div>
+                </div>
+            )
+        },
+        'first-time-buyer-mistakes': {
+            title: 'Mistakes First-Time Home Buyers Make',
+            icon: 'AlertCircle',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        First-time buyers often make the same mistakes. Knowing them in advance helps you avoid costly errors and stress.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Skipping Pre-Qualification</h3>
+                    <p>
+                        Shopping without knowing what you can afford leads to disappointment or to making an offer you cannot finance. <strong>Get pre-qualified</strong> before you fall in love with a property. Use a bond originator—it&apos;s free and they check multiple banks.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Ignoring Hidden Costs</h3>
+                    <p>
+                        The purchase price is only part of the cost. You must budget for <strong>transfer duty, transfer fees, bond registration fees, and bond initiation fees</strong>. First-time buyers often forget these and run short at registration. Use our Transfer Costs module to estimate.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Emotional Bidding</h3>
+                    <p>
+                        Falling in love with a house can lead to overpaying or waiving important conditions (like a bond clause or inspection). Set a <strong>maximum price</strong> before you view and stick to it. Don&apos;t skip the bond clause in your offer—it protects you if the bank says no.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Skipping the Inspection</h3>
+                    <p>
+                        A professional home inspection can reveal structural issues, damp, or electrical problems. Skipping it to save a few thousand rand can cost you far more later. Always factor in an inspection before you waive conditions.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Not Reading the Offer to Purchase</h3>
+                    <p>
+                        The OTP is a binding contract. Read every clause: bond clause, occupation date, fixtures and fittings, and any special conditions. Ask your conveyancer or agent to explain anything you don&apos;t understand before you sign.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">Quick Checklist</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Get pre-qualified first.</li>
+                            <li>Budget for transfer and bond costs.</li>
+                            <li>Set a max price and include a bond clause.</li>
+                            <li>Get a home inspection.</li>
+                            <li>Read and understand the OTP before signing.</li>
+                        </ul>
+                    </div>
+                </div>
+            )
+        },
+        'bond-application-avoid': {
+            title: 'What to Avoid When Applying for a Bond',
+            icon: 'ShieldCheck',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Your behaviour in the months before and during your bond application can affect whether you get approved and at what rate.
+                        Here&apos;s what to avoid.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Job-Hopping Right Before Applying</h3>
+                    <p>
+                        Banks prefer stable employment. Changing jobs shortly before applying can raise concerns about income stability. If you must change jobs, have a solid employment contract and be prepared to explain. Ideally, stay in your current job until after registration.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Taking New Credit or Big Purchases</h3>
+                    <p>
+                        New credit cards, personal loans, or car finance before or during your bond application increase your debt-to-income ratio and can reduce the amount the bank will lend—or lead to a decline. Avoid any new credit from at least 3–6 months before you apply.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Missing Payments or Defaulting</h3>
+                    <p>
+                        Late payments on accounts, store cards, or existing loans damage your credit score. Banks check your payment history. Pay all accounts on time and clear any defaults if possible before applying.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Incomplete or Incorrect Documents</h3>
+                    <p>
+                        Submitting incomplete FICA documents, outdated payslips, or inconsistent information causes delays and can lead to rejection. Double-check the bank or originator&apos;s checklist and submit everything they ask for, correctly and in full.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Overstating Income or Understating Debt</h3>
+                    <p>
+                        Banks verify income and existing debt. Inconsistencies can result in a decline and may be considered fraud. Be accurate and declare all debt and income.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">Do This Instead</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Keep your job stable; avoid changing jobs before or during the application.</li>
+                            <li>Avoid new credit or big purchases before applying.</li>
+                            <li>Pay all accounts on time and fix your credit if needed.</li>
+                            <li>Submit complete, correct documents and declare all income and debt.</li>
+                        </ul>
+                    </div>
+                </div>
+            )
+        },
+        'buying-property-as-business': {
+            title: 'Buying a Property as a Business',
+            icon: 'Briefcase',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Buying property in a <strong>company</strong> (Pty Ltd) or <strong>close corporation</strong> (CC) name is different from buying as an individual.
+                        Here&apos;s what is required when buying a property as a business.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Why Buy in a Business Name?</h3>
+                    <p>
+                        Businesses often buy property for premises, investment, or asset holding. The buyer on the Offer to Purchase and the bond application is the <strong>entity</strong> (company or CC), not the individual directors or members. Banks and conveyancers treat entity purchases differently from personal purchases.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">What Is Required: Documents</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li><strong>Registration documents:</strong> Certificate of Incorporation (company) or Registration Certificate (CC).</li>
+                        <li><strong>Resolution:</strong> A board or member resolution authorising the purchase of the property and naming the signatories.</li>
+                        <li><strong>FICA for the entity:</strong> Proof of identity and address of directors/members, and proof of business address (e.g. utility bill, CIPC document).</li>
+                        <li><strong>Tax and compliance:</strong> Tax number, VAT registration (if applicable), and proof that the entity is in good standing (e.g. no outstanding taxes or CIPC compliance).</li>
+                    </ul>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">Bond Requirements When Buying as a Business</h3>
+                    <p>
+                        Not all banks lend to companies or CCs for property purchase. Those that do typically require:
+                    </p>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li><strong>Financials:</strong> Audited or management accounts, cash flow, and proof of ability to repay.</li>
+                        <li><strong>Personal suretyship:</strong> Directors or members are often required to sign as sureties, making them personally liable if the entity defaults.</li>
+                        <li><strong>Larger deposits:</strong> Banks may require a higher deposit (e.g. 20–30%) for entity purchases.</li>
+                        <li><strong>Different rates and terms:</strong> Interest rates and fees can differ from personal bonds. Use a bond originator who deals with commercial or entity applications.</li>
+                    </ul>
+
+                    <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <h4 className="text-xl font-bold text-gold mb-3">Quick Checklist</h4>
+                        <ul className="list-disc pl-6 space-y-2 text-charcoal/70">
+                            <li>Entity registration documents and resolution authorising the purchase.</li>
+                            <li>FICA and tax documents for the entity and signatories.</li>
+                            <li>Confirm bank eligibility and suretyship requirements early.</li>
+                            <li>Budget for transfer duty, transfer costs, and bond registration (and possibly higher deposit).</li>
+                        </ul>
+                    </div>
+
+                    <p className="text-charcoal/80 mt-6">
+                        <strong>Tip:</strong> Speak to a bond originator and your accountant before you make an offer. Entity purchases have tax (e.g. transfer duty, future CGT or income tax) and compliance implications that differ from personal purchases.
+                    </p>
+                </div>
+            )
         }
     };
 
@@ -1167,7 +1389,12 @@ export default async function LearningModulePage({
         'agents',
         'first-time-tips',
         'transfer-costs',
-        'flisp-subsidy'
+        'flisp-subsidy',
+        'buying-deceased-estate',
+        'understanding-trusts',
+        'first-time-buyer-mistakes',
+        'bond-application-avoid',
+        'buying-property-as-business'
     ] as const;
 
     const learningModule = modules[slug];

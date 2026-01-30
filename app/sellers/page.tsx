@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Home, FileText, TrendingUp, Users, DollarSign, CheckCircle, Target, BarChart3, Calendar } from 'lucide-react';
+import { ArrowLeft, BookOpen, Home, FileText, TrendingUp, Users, DollarSign, CheckCircle, Target, BarChart3, Calendar, Building2, Scale, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
 
 export default function SellersHubPage() {
     return (
@@ -164,6 +164,106 @@ export default function SellersHubPage() {
                                 <p className="text-charcoal/60 mb-6 leading-relaxed">
                                     Essential tips for preparing your home for sale, handling viewings,
                                     negotiating offers, and maximizing your property&apos;s value.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 7 - Selling a Deceased Estate */}
+                        <Link href="/sellers/selling-deceased-estate" className="block">
+                            <div className="premium-card rounded-2xl p-8 cursor-pointer h-full group hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5 border border-charcoal/10 hover:border-gold/30">
+                                <div className="w-16 h-16 bg-gradient-to-br from-gold/20 to-gold/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300 border border-gold/20 shadow-lg">
+                                    <Building2 className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4 group-hover:text-gold-600 transition-colors">
+                                    Selling a Deceased Estate
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    What you need to know when selling property from a deceased estate:
+                                    executors, Master&apos;s Office, timelines, and your role as seller.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 8 - Understanding Trusts */}
+                        <Link href="/sellers/understanding-trusts" className="block">
+                            <div className="premium-card rounded-2xl p-8 cursor-pointer h-full group hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5 border border-charcoal/10 hover:border-gold/30">
+                                <div className="w-16 h-16 bg-gradient-to-br from-gold/20 to-gold/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300 border border-gold/20 shadow-lg">
+                                    <Scale className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4 group-hover:text-gold-600 transition-colors">
+                                    Understanding Trusts
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Selling property held in a trust: trustee authority, resolutions,
+                                    bond cancellation, and what buyers and conveyancers need from you.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 9 - Mistakes First-Time Sellers Make */}
+                        <Link href="/sellers/first-time-seller-mistakes" className="block">
+                            <div className="premium-card rounded-2xl p-8 cursor-pointer h-full group hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5 border border-charcoal/10 hover:border-gold/30">
+                                <div className="w-16 h-16 bg-gradient-to-br from-gold/20 to-gold/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300 border border-gold/20 shadow-lg">
+                                    <AlertCircle className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4 group-hover:text-gold-600 transition-colors">
+                                    Mistakes First-Time Sellers Make
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Common pitfalls: overpricing, skipping prep, poor photos,
+                                    and how to avoid them to sell faster and at a better price.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 10 - What to Avoid When Selling */}
+                        <Link href="/sellers/selling-pitfalls" className="block">
+                            <div className="premium-card rounded-2xl p-8 cursor-pointer h-full group hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5 border border-charcoal/10 hover:border-gold/30">
+                                <div className="w-16 h-16 bg-gradient-to-br from-gold/20 to-gold/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300 border border-gold/20 shadow-lg">
+                                    <ShieldCheck className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4 group-hover:text-gold-600 transition-colors">
+                                    What to Avoid When Selling
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Don&apos;t make these mistakes: hiding defects, poor staging,
+                                    ignoring bond clearance, and other pitfalls that delay or derail a sale.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
+                        {/* Module 11 - Selling a Property Under a Business */}
+                        <Link href="/sellers/selling-property-under-business" className="block">
+                            <div className="premium-card rounded-2xl p-8 cursor-pointer h-full group hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5 border border-charcoal/10 hover:border-gold/30">
+                                <div className="w-16 h-16 bg-gradient-to-br from-gold/20 to-gold/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:from-gold/30 group-hover:to-gold/20 transition-transform duration-300 border border-gold/20 shadow-lg">
+                                    <Briefcase className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4 group-hover:text-gold-600 transition-colors">
+                                    Selling a Property Under a Business
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    What is required when selling property held by a company or close corporation:
+                                    resolutions, bond cancellation, and tax considerations.
                                 </p>
                                 <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
                                     <span>Start Learning</span>

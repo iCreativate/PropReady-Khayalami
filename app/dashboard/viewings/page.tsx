@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import { formatCurrency } from '@/lib/currency';
 
 interface Viewing {
     id: string;
@@ -542,7 +543,7 @@ export default function ViewingsPage() {
                                                             <MapPin className="w-4 h-4" />
                                                             {viewing.propertyAddress}
                                                         </p>
-                                                        <p className="text-gold font-bold text-xl">R {viewing.propertyPrice.toLocaleString('en-US')}</p>
+                                                        <p className="text-gold font-bold text-xl">{formatCurrency(viewing.propertyPrice)}</p>
                                                     </div>
                                                     {getStatusBadge(viewing.status)}
                                                 </div>
