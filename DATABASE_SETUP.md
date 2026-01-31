@@ -31,7 +31,20 @@ PropReady now uses Supabase for data storage. The app will work with localStorag
 4. Click "Run" to execute the SQL
 5. Verify tables were created by going to **Table Editor**
 
-### 4. Add Environment Variables to Netlify
+### 4. (Optional) Property image uploads – create Storage bucket
+
+If agents will **upload** property images (not only paste URLs), create a Supabase Storage bucket so uploads work:
+
+1. In Supabase dashboard go to **Storage**
+2. Click **New bucket**
+3. Name: `property-images`
+4. Enable **Public bucket** (so listing images can be displayed via public URLs)
+5. Click **Create bucket**
+6. In **Settings** → **API**, copy the **service_role** key and add it to your env as `SUPABASE_SERVICE_ROLE_KEY` (server-side only; never expose in client code)
+
+Without this bucket, agents can still add images by pasting image URLs.
+
+### 5. Add Environment Variables to Netlify
 
 1. Go to Netlify Dashboard → Your Site → **Site settings** → **Environment variables**
 2. Add the following variables:
@@ -39,12 +52,15 @@ PropReady now uses Supabase for data storage. The app will work with localStorag
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-project-url-here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
+
+(`SUPABASE_SERVICE_ROLE_KEY` is required for property image uploads; add it only if you use the `property-images` bucket.)
 
 3. Click "Save"
 4. Redeploy your site
 
-### 5. Verify Setup
+### 6. Verify Setup
 
 After deployment, test the following:
 - User registration (quiz completion)

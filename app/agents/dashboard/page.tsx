@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
+import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload } from 'lucide-react';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 
@@ -51,7 +52,13 @@ interface ListedProperty {
     description: string;
     agentId: string;
     timestamp: string;
+    images?: string[];
+    features?: string[];
+    listingScore?: number;
+    videoUrl?: string;
 }
+
+const PROPERTY_FEATURES = ['Parking', 'Garden', 'Security', 'Pet Friendly', 'Pool', 'Garage', 'Borehole', 'Solar', 'Fibre'];
 
 interface ViewingAppointment {
     id: string;
@@ -100,8 +107,16 @@ export default function AgentsDashboardPage() {
         bedrooms: '',
         bathrooms: '',
         size: '',
-        description: ''
+        description: '',
+        images: [] as string[],
+        features: [] as string[],
+        videoUrl: '',
     });
+    const [improveLoading, setImproveLoading] = useState(false);
+    const [improveResult, setImproveResult] = useState<{ listingScore: number; feedback: string[] } | null>(null);
+    const [bulkImageUrls, setBulkImageUrls] = useState('');
+    const [imageUploading, setImageUploading] = useState(false);
+    const imageInputRef = useRef<HTMLInputElement>(null);
 
     const [viewingForm, setViewingForm] = useState({
         propertyId: '',
@@ -455,16 +470,89 @@ export default function AgentsDashboardPage() {
         );
     };
 
+    const handleImproveWithAI = async () => {
+        setImproveLoading(true);
+        setImproveResult(null);
+        try {
+            const res = await fetch('/api/property/improve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: propertyForm.title,
+                    type: propertyForm.type,
+                    bedrooms: propertyForm.bedrooms,
+                    bathrooms: propertyForm.bathrooms,
+                    size: propertyForm.size,
+                    description: propertyForm.description,
+                    features: propertyForm.features,
+                    imageCount: propertyForm.images?.length ?? 0,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to improve');
+            if (data.improvedDescription != null) {
+                setPropertyForm(prev => ({ ...prev, description: data.improvedDescription }));
+            }
+            setImproveResult({ listingScore: data.listingScore ?? 0, feedback: data.feedback ?? [] });
+        } catch (e) {
+            setImproveResult({ listingScore: 0, feedback: ['Could not improve listing. Check your connection or try again.'] });
+        } finally {
+            setImproveLoading(false);
+        }
+    };
+
+    const compressionOptions = {
+        maxSizeMB: 1.5,
+        initialQuality: 0.92,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+    };
+
+    const handleUploadImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files?.length) return;
+        setImageUploading(true);
+        const existing = propertyForm.images?.length ? propertyForm.images : [];
+        const newUrls: string[] = [];
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.type.startsWith('image/')) continue;
+                const compressed = await imageCompression(file, compressionOptions);
+                const form = new FormData();
+                form.append('file', compressed, compressed.name || file.name);
+                const res = await fetch('/api/property/upload-image', { method: 'POST', body: form });
+                const data = await res.json();
+                if (res.ok && data.url) newUrls.push(data.url);
+            }
+            if (newUrls.length) {
+                setPropertyForm(prev => ({ ...prev, images: [...existing, ...newUrls] }));
+            }
+        } catch (err) {
+            console.error('Upload error:', err);
+        } finally {
+            setImageUploading(false);
+            e.target.value = '';
+        }
+    };
+
     const handleAddProperty = () => {
         if (!currentAgent?.id) return;
         
         const newProperty: ListedProperty = {
             id: `property-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            ...propertyForm,
-            price: parseFloat(propertyForm.price),
-            bedrooms: parseInt(propertyForm.bedrooms),
-            bathrooms: parseInt(propertyForm.bathrooms),
-            size: parseFloat(propertyForm.size),
+            title: propertyForm.title,
+            address: propertyForm.address,
+            type: propertyForm.type,
+            price: parseFloat(propertyForm.price) || 0,
+            bedrooms: parseInt(propertyForm.bedrooms, 10) || 0,
+            bathrooms: parseInt(propertyForm.bathrooms, 10) || 0,
+            size: parseFloat(propertyForm.size) || 0,
+            description: propertyForm.description,
+            images: propertyForm.images?.length ? propertyForm.images : undefined,
+            features: propertyForm.features?.length ? propertyForm.features : undefined,
+            listingScore: improveResult?.listingScore,
+            videoUrl: propertyForm.videoUrl?.trim() || undefined,
             agentId: currentAgent.id,
             timestamp: new Date().toISOString()
         };
@@ -482,8 +570,12 @@ export default function AgentsDashboardPage() {
             bedrooms: '',
             bathrooms: '',
             size: '',
-            description: ''
+            description: '',
+            images: [],
+            features: [],
+            videoUrl: '',
         });
+        setImproveResult(null);
         setShowPropertyModal(false);
     };
 
@@ -695,7 +787,7 @@ export default function AgentsDashboardPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-charcoal">My Listed Properties</h2>
                             <button
-                                onClick={() => setShowPropertyModal(true)}
+                                onClick={() => { setImproveResult(null); setBulkImageUrls(''); setShowPropertyModal(true); }}
                                 className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
@@ -714,43 +806,94 @@ export default function AgentsDashboardPage() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {listedProperties.map((property) => (
-                                    <div key={property.id} className="bg-white/10 rounded-lg p-4 border border-charcoal/20">
-                                        <h3 className="text-charcoal font-semibold mb-2">{property.title}</h3>
-                                        <div className="space-y-1 text-sm text-charcoal/70 mb-4">
-                                            <div className="flex items-center gap-2">
-                                                <MapPin className="w-4 h-4" />
-                                                <span>{property.address}</span>
+                                    <div key={property.id} className="bg-white/10 rounded-lg overflow-hidden border border-charcoal/20 flex flex-col">
+                                        {property.images?.length && property.images[0] ? (
+                                            <div className="relative w-full aspect-[16/10] bg-charcoal/10">
+                                                <img
+                                                    src={property.images[0]}
+                                                    alt={property.title}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                />
+                                                {property.images.length > 1 && (
+                                                    <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                        {property.images.length} photos
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <DollarSign className="w-4 h-4" />
-                                                <span>{formatCurrency(property.price)}</span>
+                                        ) : (
+                                            <div className="w-full aspect-[16/10] bg-charcoal/10 flex items-center justify-center">
+                                                <ImageIcon className="w-12 h-12 text-charcoal/30" />
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="flex items-center gap-1">
-                                                    <Bed className="w-4 h-4" />
-                                                    <span>{property.bedrooms}</span>
+                                        )}
+                                        <div className="p-4 flex-1 flex flex-col">
+                                            <div className="flex items-start justify-between gap-2 mb-2">
+                                                <h3 className="text-charcoal font-semibold">{property.title}</h3>
+                                                {property.listingScore != null && (
+                                                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold bg-gold/20 text-gold">
+                                                        {property.listingScore}/100
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="space-y-1 text-sm text-charcoal/70 mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                                                    <span className="truncate">{property.address}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Bath className="w-4 h-4" />
-                                                    <span>{property.bathrooms}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <DollarSign className="w-4 h-4" />
+                                                    <span>{formatCurrency(property.price)}</span>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Square className="w-4 h-4" />
-                                                    <span>{property.size}m²</span>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-1">
+                                                        <Bed className="w-4 h-4" />
+                                                        <span>{property.bedrooms}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Bath className="w-4 h-4" />
+                                                        <span>{property.bathrooms}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <Square className="w-4 h-4" />
+                                                        <span>{property.size}m²</span>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            {property.features?.length ? (
+                                                <div className="flex flex-wrap gap-1 mb-3">
+                                                    {property.features.slice(0, 5).map((f) => (
+                                                        <span key={f} className="px-2 py-0.5 rounded bg-charcoal/10 text-charcoal/80 text-xs">
+                                                            {f}
+                                                        </span>
+                                                    ))}
+                                                    {property.features.length > 5 && (
+                                                        <span className="text-charcoal/50 text-xs">+{property.features.length - 5}</span>
+                                                    )}
+                                                </div>
+                                            ) : null}
+                                            {property.videoUrl ? (
+                                                <a
+                                                    href={property.videoUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 text-sm text-gold font-semibold hover:underline mb-3"
+                                                >
+                                                    <Video className="w-4 h-4" />
+                                                    Watch video
+                                                </a>
+                                            ) : null}
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedPropertyForViewing(property);
+                                                    setViewingForm(prev => ({ ...prev, propertyId: property.id }));
+                                                    setShowViewingModal(true);
+                                                }}
+                                                className="mt-auto w-full px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-2"
+                                            >
+                                                <CalendarIcon className="w-4 h-4" />
+                                                Schedule Viewing
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                setSelectedPropertyForViewing(property);
-                                                setViewingForm(prev => ({ ...prev, propertyId: property.id }));
-                                                setShowViewingModal(true);
-                                            }}
-                                            className="w-full px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-2"
-                                        >
-                                            <CalendarIcon className="w-4 h-4" />
-                                            Schedule Viewing
-                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -1608,7 +1751,159 @@ export default function AgentsDashboardPage() {
                             </div>
 
                             <div>
-                                <label className="block text-charcoal font-semibold mb-2">Description</label>
+                                <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
+                                    <ImageIcon className="w-4 h-4" />
+                                    Image URLs
+                                    {(propertyForm.images?.length ?? 0) > 0 && (
+                                        <span className="text-charcoal/60 font-normal text-sm">({propertyForm.images?.length} images)</span>
+                                    )}
+                                </label>
+                                <p className="text-charcoal/60 text-sm mb-2">Images are compressed automatically to reduce file size without losing quality. Upload files or paste URLs.</p>
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    <input
+                                        ref={imageInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        multiple
+                                        className="hidden"
+                                        onChange={handleUploadImages}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => imageInputRef.current?.click()}
+                                        disabled={imageUploading}
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50"
+                                    >
+                                        <Upload className="w-4 h-4" />
+                                        {imageUploading ? 'Compressing & uploading…' : 'Upload images (auto-compressed)'}
+                                    </button>
+                                    <span className="text-charcoal/60 text-sm">or paste URLs below</span>
+                                </div>
+                                <div className="space-y-2 mb-2">
+                                    <textarea
+                                        placeholder="Paste multiple image URLs here (one per line or comma-separated)"
+                                        rows={3}
+                                        value={bulkImageUrls}
+                                        onChange={(e) => setBulkImageUrls(e.target.value)}
+                                        className="w-full px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const urls = bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+                                            if (urls.length > 0) {
+                                                const existing = propertyForm.images?.length ? propertyForm.images : [];
+                                                setPropertyForm({ ...propertyForm, images: [...existing, ...urls] });
+                                                setBulkImageUrls('');
+                                            }
+                                        }}
+                                        disabled={!bulkImageUrls.trim()}
+                                        className="text-sm text-gold font-semibold hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add these URLs ({bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).length || 0})
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    {(propertyForm.images?.length ? propertyForm.images : ['']).map((url, idx) => (
+                                        <div key={idx} className="flex gap-2">
+                                            <input
+                                                type="url"
+                                                value={url}
+                                                onChange={(e) => {
+                                                    const next = [...(propertyForm.images || [])];
+                                                    next[idx] = e.target.value.trim();
+                                                    setPropertyForm({ ...propertyForm, images: next.filter(Boolean).length ? next : [] });
+                                                }}
+                                                placeholder="https://..."
+                                                className="flex-1 px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const next = (propertyForm.images || []).filter((_, i) => i !== idx);
+                                                    setPropertyForm({ ...propertyForm, images: next });
+                                                }}
+                                                className="p-2 rounded-lg border border-charcoal/20 text-charcoal/70 hover:bg-charcoal/10"
+                                                aria-label="Remove image"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => setPropertyForm({ ...propertyForm, images: ((propertyForm.images?.length ? propertyForm.images : ['']).concat('')) })}
+                                        className="text-sm text-gold font-semibold hover:underline flex items-center gap-1"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add another image URL
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
+                                    <Video className="w-4 h-4" />
+                                    Video URL
+                                </label>
+                                <p className="text-charcoal/60 text-sm mb-2">YouTube, Vimeo or any other video hosting link (optional)</p>
+                                <input
+                                    type="url"
+                                    value={propertyForm.videoUrl}
+                                    onChange={(e) => setPropertyForm({ ...propertyForm, videoUrl: e.target.value })}
+                                    placeholder="e.g. https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-charcoal font-semibold mb-2">Features & amenities</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {PROPERTY_FEATURES.map((f) => (
+                                        <label key={f} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-charcoal/20 bg-white cursor-pointer hover:border-gold/50 transition">
+                                            <input
+                                                type="checkbox"
+                                                checked={(propertyForm.features || []).includes(f)}
+                                                onChange={(e) => {
+                                                    const next = e.target.checked
+                                                        ? [...(propertyForm.features || []), f]
+                                                        : (propertyForm.features || []).filter(x => x !== f);
+                                                    setPropertyForm({ ...propertyForm, features: next });
+                                                }}
+                                                className="rounded border-charcoal/30 text-gold focus:ring-gold"
+                                            />
+                                            <span className="text-sm text-charcoal">{f}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-charcoal font-semibold">Description</label>
+                                    <button
+                                        type="button"
+                                        onClick={handleImproveWithAI}
+                                        disabled={improveLoading}
+                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/30 hover:bg-gold/20 transition text-sm font-semibold disabled:opacity-50"
+                                    >
+                                        <Sparkles className="w-4 h-4" />
+                                        {improveLoading ? 'Improving…' : 'Improve with AI'}
+                                    </button>
+                                </div>
+                                {improveResult && (
+                                    <div className="mb-3 p-3 rounded-lg bg-charcoal/5 border border-charcoal/10">
+                                        <p className="text-sm font-semibold text-charcoal mb-1">
+                                            Listing score: <span className="text-gold">{improveResult.listingScore}/100</span>
+                                        </p>
+                                        {improveResult.feedback.length > 0 && (
+                                            <ul className="text-sm text-charcoal/70 list-disc list-inside space-y-0.5">
+                                                {improveResult.feedback.map((tip, i) => (
+                                                    <li key={i}>{tip}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                )}
                                 <textarea
                                     value={propertyForm.description}
                                     onChange={(e) => setPropertyForm({ ...propertyForm, description: e.target.value })}
