@@ -250,7 +250,7 @@ export default function AgentRegisterPage() {
                                 Register as a verified PropReady agent — 100% free.
                             </p>
                             <p className="text-charcoal/60 text-sm mt-1">
-                                Free plan: view up to 3 leads. Upgrade to Pro or Enterprise for more leads.
+                                Free: 3 leads. Upgrade to 10 leads (R120), 25 leads (R250), or unlimited (book a consultation).
                             </p>
                         </div>
 

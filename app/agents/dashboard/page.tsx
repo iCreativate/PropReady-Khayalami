@@ -758,28 +758,36 @@ export default function AgentsDashboardPage() {
                     {currentAgent && (currentAgent.plan === 'free' || !currentAgent.plan) && (
                         <div className="mb-6 rounded-xl border border-gold/30 bg-gradient-to-r from-gold/10 to-gold/5 p-6">
                             <h3 className="text-lg font-bold text-charcoal mb-2">Your plan: Free — up to {AGENT_PLANS.free.leadLimit} leads</h3>
-                            <p className="text-charcoal/70 text-sm mb-4">Want more leads? Click Pro or Enterprise to request an upgrade.</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <p className="text-charcoal/70 text-sm mb-4">Want more leads? Click a plan to upgrade.</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="rounded-lg bg-white/80 border border-charcoal/10 p-4 opacity-90">
                                     <p className="font-bold text-charcoal">Free</p>
                                     <p className="text-charcoal/70 text-sm">{AGENT_PLANS.free.leadLimit} leads</p>
                                     <p className="text-charcoal/50 text-xs mt-1">Your current plan</p>
                                 </div>
                                 <a
-                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady Plan Upgrade - Pro')}&body=${encodeURIComponent(`Hi,\n\nI would like to upgrade my PropReady agent plan to Pro (up to ${AGENT_PLANS.pro.leadLimit} leads).\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
+                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady Plan Upgrade - 10 leads (R120)')}&body=${encodeURIComponent(`Hi,\n\nI would like to upgrade my PropReady agent plan to 10 leads (R120).\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
                                     className="rounded-lg bg-gold/10 border border-gold/30 p-4 block transition-all hover:bg-gold/20 hover:border-gold/50 hover:shadow-md cursor-pointer group"
                                 >
-                                    <p className="font-bold text-gold">Pro</p>
-                                    <p className="text-charcoal/70 text-sm">Up to {AGENT_PLANS.pro.leadLimit} leads</p>
+                                    <p className="font-bold text-gold">10 leads</p>
+                                    <p className="text-charcoal/70 text-sm font-semibold">R120</p>
                                     <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to upgrade →</p>
                                 </a>
                                 <a
-                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady Plan Upgrade - Enterprise')}&body=${encodeURIComponent(`Hi,\n\nI would like to upgrade my PropReady agent plan to Enterprise (unlimited leads).\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
+                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady Plan Upgrade - 25 leads (R250)')}&body=${encodeURIComponent(`Hi,\n\nI would like to upgrade my PropReady agent plan to 25 leads (R250).\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
+                                    className="rounded-lg bg-gold/10 border border-gold/30 p-4 block transition-all hover:bg-gold/20 hover:border-gold/50 hover:shadow-md cursor-pointer group"
+                                >
+                                    <p className="font-bold text-gold">25 leads</p>
+                                    <p className="text-charcoal/70 text-sm font-semibold">R250</p>
+                                    <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to upgrade →</p>
+                                </a>
+                                <a
+                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady - Book a consultation (Unlimited leads)')}&body=${encodeURIComponent(`Hi,\n\nI would like to book a consultation for the Unlimited leads plan.\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
                                     className="rounded-lg bg-white/80 border border-charcoal/10 p-4 block transition-all hover:bg-gold/10 hover:border-gold/30 hover:shadow-md cursor-pointer group"
                                 >
-                                    <p className="font-bold text-charcoal group-hover:text-gold">Enterprise</p>
-                                    <p className="text-charcoal/70 text-sm">Unlimited leads</p>
-                                    <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to upgrade →</p>
+                                    <p className="font-bold text-charcoal group-hover:text-gold">Unlimited leads</p>
+                                    <p className="text-charcoal/70 text-sm font-semibold">Book a consultation</p>
+                                    <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to request →</p>
                                 </a>
                             </div>
                             <p className="text-charcoal/60 text-sm mt-4">Or email <a href="mailto:info@propready.co.za" className="text-gold hover:underline">info@propready.co.za</a> to upgrade.</p>
