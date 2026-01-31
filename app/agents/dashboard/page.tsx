@@ -113,6 +113,8 @@ export default function AgentsDashboardPage() {
         time: '',
         notes: ''
     });
+    // When scheduling a viewing, selected contact key (e.g. 'buyer-{id}' or 'seller-{id}') or '' for manual entry
+    const [selectedViewingContactKey, setSelectedViewingContactKey] = useState<string>('');
 
     useEffect(() => {
         // Load current agent info
@@ -531,6 +533,7 @@ export default function AgentsDashboardPage() {
             time: '',
             notes: ''
         });
+        setSelectedViewingContactKey('');
         setSelectedPropertyForViewing(null);
         setSelectedViewing(null);
         setShowViewingModal(false);
@@ -1025,6 +1028,7 @@ export default function AgentsDashboardPage() {
                                 onClick={() => {
                                     setShowViewingModal(true);
                                     setSelectedPropertyForViewing(null);
+                                    setSelectedViewingContactKey('');
                                     setViewingForm({
                                         propertyId: '',
                                         contactName: '',
@@ -1663,6 +1667,7 @@ export default function AgentsDashboardPage() {
                                         setShowViewingModal(false);
                                         setSelectedPropertyForViewing(null);
                                         setSelectedViewing(null);
+                                        setSelectedViewingContactKey('');
                                         setViewingForm({
                                             propertyId: '',
                                             contactName: '',
@@ -1715,7 +1720,11 @@ export default function AgentsDashboardPage() {
                                     <label className="block text-charcoal font-semibold mb-2">Contact Type</label>
                                     <select
                                         value={viewingForm.contactType}
-                                        onChange={(e) => setViewingForm({ ...viewingForm, contactType: e.target.value as 'buyer' | 'seller' })}
+                                        onChange={(e) => {
+                                            const newType = e.target.value as 'buyer' | 'seller';
+                                            setViewingForm({ ...viewingForm, contactType: newType });
+                                            setSelectedViewingContactKey('');
+                                        }}
                                         className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
                                     >
                                         <option value="buyer">Buyer</option>
@@ -1725,13 +1734,68 @@ export default function AgentsDashboardPage() {
 
                                 <div>
                                     <label className="block text-charcoal font-semibold mb-2">Contact Name</label>
-                                    <input
-                                        type="text"
-                                        value={viewingForm.contactName}
-                                        onChange={(e) => setViewingForm({ ...viewingForm, contactName: e.target.value })}
-                                        placeholder="Full name"
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
+                                    <select
+                                        value={selectedViewingContactKey}
+                                        onChange={(e) => {
+                                            const key = e.target.value;
+                                            setSelectedViewingContactKey(key);
+                                            if (key === '') {
+                                                setViewingForm(prev => ({ ...prev, contactName: '', contactEmail: '', contactPhone: '' }));
+                                                return;
+                                            }
+                                            const dashIdx = key.indexOf('-');
+                                            const type = key.slice(0, dashIdx);
+                                            const id = key.slice(dashIdx + 1);
+                                            if (type === 'buyer') {
+                                                const lead = leads.find(l => l.id === id);
+                                                if (lead) {
+                                                    setViewingForm(prev => ({
+                                                        ...prev,
+                                                        contactName: lead.fullName || '',
+                                                        contactEmail: lead.email || '',
+                                                        contactPhone: lead.phone || ''
+                                                    }));
+                                                }
+                                            } else {
+                                                const seller = sellers.find(s => s.id === id);
+                                                if (seller) {
+                                                    setViewingForm(prev => ({
+                                                        ...prev,
+                                                        contactName: seller.fullName || '',
+                                                        contactEmail: seller.email || '',
+                                                        contactPhone: seller.phone || ''
+                                                    }));
+                                                }
+                                            }
+                                        }}
+                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                    >
+                                        <option value="">
+                                            {viewingForm.contactType === 'buyer'
+                                                ? (leads.length === 0 ? 'No buyers in your leads yet' : 'Select a buyer or enter manually')
+                                                : (sellers.length === 0 ? 'No sellers in your leads yet' : 'Select a seller or enter manually')}
+                                        </option>
+                                        {viewingForm.contactType === 'buyer'
+                                            ? leads.map(lead => (
+                                                <option key={lead.id} value={`buyer-${lead.id}`}>
+                                                    {lead.fullName}{lead.email ? ` (${lead.email})` : ''}
+                                                </option>
+                                            ))
+                                            : sellers.map(seller => (
+                                                <option key={seller.id} value={`seller-${seller.id}`}>
+                                                    {seller.fullName}{seller.email ? ` (${seller.email})` : ''}
+                                                </option>
+                                            ))}
+                                    </select>
+                                    {(selectedViewingContactKey === '' || viewingForm.contactName) && (
+                                        <input
+                                            type="text"
+                                            value={viewingForm.contactName}
+                                            onChange={(e) => setViewingForm({ ...viewingForm, contactName: e.target.value })}
+                                            placeholder="Or type full name manually"
+                                            className="w-full mt-2 px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                        />
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -1800,6 +1864,7 @@ export default function AgentsDashboardPage() {
                                     setShowViewingModal(false);
                                     setSelectedPropertyForViewing(null);
                                     setSelectedViewing(null);
+                                    setSelectedViewingContactKey('');
                                     setViewingForm({
                                         propertyId: '',
                                         contactName: '',
@@ -2137,11 +2202,12 @@ export default function AgentsDashboardPage() {
                                                         <button
                                                             onClick={() => {
                                                                 setShowViewingModal(true);
+                                                                setSelectedViewingContactKey(`buyer-${lead.id}`);
                                                                 setViewingForm({
                                                                     propertyId: '',
-                                                                    contactName: lead.fullName,
-                                                                    contactEmail: lead.email,
-                                                                    contactPhone: lead.phone,
+                                                                    contactName: lead.fullName || '',
+                                                                    contactEmail: lead.email || '',
+                                                                    contactPhone: lead.phone || '',
                                                                     contactType: 'buyer',
                                                                     date: '',
                                                                     time: '',
