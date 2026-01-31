@@ -116,6 +116,7 @@ export default function AgentsDashboardPage() {
     const [improveResult, setImproveResult] = useState<{ listingScore: number; feedback: string[] } | null>(null);
     const [bulkImageUrls, setBulkImageUrls] = useState('');
     const [imageUploading, setImageUploading] = useState(false);
+    const [imageUploadError, setImageUploadError] = useState<string | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     const [viewingForm, setViewingForm] = useState({
@@ -512,6 +513,7 @@ export default function AgentsDashboardPage() {
         const files = e.target.files;
         if (!files?.length) return;
         setImageUploading(true);
+        setImageUploadError(null);
         const existing = propertyForm.images?.length ? propertyForm.images : [];
         const newUrls: string[] = [];
         try {
@@ -522,14 +524,21 @@ export default function AgentsDashboardPage() {
                 const form = new FormData();
                 form.append('file', compressed, compressed.name || file.name);
                 const res = await fetch('/api/property/upload-image', { method: 'POST', body: form });
-                const data = await res.json();
-                if (res.ok && data.url) newUrls.push(data.url);
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data.url) {
+                    newUrls.push(data.url);
+                } else {
+                    const msg = data?.error || (res.status === 503 ? 'Storage not configured' : `Upload failed (${res.status})`);
+                    setImageUploadError(msg);
+                    break;
+                }
             }
             if (newUrls.length) {
                 setPropertyForm(prev => ({ ...prev, images: [...existing, ...newUrls] }));
             }
         } catch (err) {
             console.error('Upload error:', err);
+            setImageUploadError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
             setImageUploading(false);
             e.target.value = '';
@@ -787,7 +796,7 @@ export default function AgentsDashboardPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-charcoal">My Listed Properties</h2>
                             <button
-                                onClick={() => { setImproveResult(null); setBulkImageUrls(''); setShowPropertyModal(true); }}
+                                onClick={() => { setImproveResult(null); setBulkImageUrls(''); setImageUploadError(null); setShowPropertyModal(true); }}
                                 className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
@@ -1779,6 +1788,9 @@ export default function AgentsDashboardPage() {
                                     </button>
                                     <span className="text-charcoal/60 text-sm">or paste URLs below</span>
                                 </div>
+                                {imageUploadError && (
+                                    <p className="text-red-600 text-sm mb-2" role="alert">{imageUploadError}</p>
+                                )}
                                 <div className="space-y-2 mb-2">
                                     <textarea
                                         placeholder="Paste multiple image URLs here (one per line or comma-separated)"

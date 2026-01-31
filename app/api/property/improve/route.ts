@@ -9,7 +9,18 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
  */
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
+        let body: Record<string, unknown> = {};
+        try {
+            body = await request.json();
+        } catch {
+            return NextResponse.json(
+                { error: 'Invalid JSON body' },
+                { status: 400 }
+            );
+        }
+        if (!body || typeof body !== 'object') {
+            body = {};
+        }
         const {
             title = '',
             type = '',
