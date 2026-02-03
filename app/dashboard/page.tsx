@@ -34,59 +34,65 @@ export default function DashboardPage() {
     const [viewingAppointments, setViewingAppointments] = useState<any[]>([]);
 
     useEffect(() => {
-        // Check if user is logged in and load quiz results
-        if (typeof window !== 'undefined') {
+        async function load() {
+            if (typeof window === 'undefined') return;
             const userData = localStorage.getItem('propReady_currentUser');
-            if (userData) {
-                const user = JSON.parse(userData);
-                setCurrentUser(user);
-                
-                // Check if user is a seller
-                const storedSellerInfo = localStorage.getItem('propReady_sellerInfo');
-                if (storedSellerInfo) {
-                    const seller = JSON.parse(storedSellerInfo);
-                    // Check if seller info belongs to current user
-                    if (seller.id === user.id || seller.email === user.email) {
-                        setSellerInfo(seller);
-                        setIsSeller(true);
-                    }
-                }
-                
-                // Load quiz result (buyer)
-                const storedQuizResult = localStorage.getItem('propReady_quizResult');
-                if (storedQuizResult) {
-                    const result = JSON.parse(storedQuizResult);
-                    // Check if quiz result belongs to current user
-                    if (result.id === user.id || result.email === user.email) {
-                        setQuizResult({
-                            score: result.score || 0,
-                            preQualAmount: result.preQualAmount || 0,
-                            monthlyIncome: result.monthlyIncome || '0',
-                            depositSaved: result.depositSaved || '0',
-                            fullName: result.fullName || 'User'
-                        });
-                    }
-                }
-
-                // Load viewing appointments for this user (buyer)
-                const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-                const quizData = JSON.parse(localStorage.getItem('propReady_quizResult') || '{}');
-                const quizPhone = (quizData.phone || '').replace(/\s/g, '');
-                const userViewings = storedViewings.filter((v: any) => 
-                    v.contactType === 'buyer' && (
-                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
-                        (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
-                    )
-                );
-                setViewingAppointments(userViewings);
-                
-                setIsLoading(false);
-            } else {
-                // Redirect to login if not authenticated
+            if (!userData) {
                 router.push('/login');
+                return;
             }
+            const user = JSON.parse(userData);
+            setCurrentUser(user);
+
+            const storedSellerInfo = localStorage.getItem('propReady_sellerInfo');
+            if (storedSellerInfo) {
+                const seller = JSON.parse(storedSellerInfo);
+                if (seller.id === user.id || seller.email === user.email) {
+                    setSellerInfo(seller);
+                    setIsSeller(true);
+                }
+            }
+
+            const storedQuizResult = localStorage.getItem('propReady_quizResult');
+            if (storedQuizResult) {
+                const result = JSON.parse(storedQuizResult);
+                if (result.id === user.id || result.email === user.email) {
+                    setQuizResult({
+                        score: result.score || 0,
+                        preQualAmount: result.preQualAmount || 0,
+                        monthlyIncome: result.monthlyIncome || '0',
+                        depositSaved: result.depositSaved || '0',
+                        fullName: result.fullName || 'User'
+                    });
+                }
+            }
+
+            const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
+            const quizData = JSON.parse(localStorage.getItem('propReady_quizResult') || '{}');
+            const quizPhone = (quizData.phone || '').replace(/\s/g, '');
+            const matchBuyer = (v: any) => v.contactType === 'buyer' && (
+                (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
+            );
+            let apiViewings: any[] = [];
+            try {
+                const res = await fetch(`/api/viewings?contactEmail=${encodeURIComponent(user.email)}`, { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.viewings)) {
+                    apiViewings = (data.viewings || []).filter(matchBuyer);
+                }
+            } catch (e) {
+                console.warn('Failed to load viewings from API', e);
+            }
+            const ids = new Set(apiViewings.map((v: any) => v.id));
+            const localOnly = storedViewings.filter((v: any) => matchBuyer(v) && !ids.has(v.id));
+            const userViewings = [...apiViewings, ...localOnly].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+            setViewingAppointments(userViewings);
+
+            setIsLoading(false);
         }
+        load();
     }, [router]);
 
     const getScoreLabel = (score: number) => {

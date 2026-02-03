@@ -32,40 +32,49 @@ export default function ViewingsPage() {
     const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id?: string } | null>(null);
 
     useEffect(() => {
-        // Check if user is logged in and load viewing appointments
-        if (typeof window !== 'undefined') {
+        async function load() {
+            if (typeof window === 'undefined') return;
             const userData = localStorage.getItem('propReady_currentUser');
             if (!userData) {
                 router.push('/login');
-            } else {
-                const user = JSON.parse(userData);
-                setCurrentUser(user);
+                return;
+            }
+            const user = JSON.parse(userData);
+            setCurrentUser(user);
                 
-                // Load viewing appointments from localStorage
+                // Load viewing appointments from API and localStorage
                 const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-                
-                // Load quiz result to get phone number for matching
                 const quizResult = JSON.parse(localStorage.getItem('propReady_quizResult') || '{}');
                 const sellerInfo = JSON.parse(localStorage.getItem('propReady_sellerInfo') || '{}');
-                
-                // Filter viewings for this user (buyer or seller)
                 const quizPhone = (quizResult.phone || '').replace(/\s/g, '');
                 const sellerPhone = (sellerInfo?.phone || '').replace(/\s/g, '');
-                const userViewings = storedViewings.filter((v: any) => {
+                const matchViewing = (v: any) => {
                     const matchesBuyer = v.contactType === 'buyer' && (
                         (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
                         (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
                         (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
                     );
-                    
                     const matchesSeller = v.contactType === 'seller' && (
                         (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
                         (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
                         (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
                     );
-                    
                     return matchesBuyer || matchesSeller;
-                }).map((v: any) => ({
+                };
+                let apiViewings: any[] = [];
+                try {
+                    const res = await fetch(`/api/viewings?contactEmail=${encodeURIComponent(user.email)}`, { cache: 'no-store' });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && Array.isArray(data.viewings)) {
+                        apiViewings = (data.viewings || []).filter(matchViewing);
+                    }
+                } catch (e) {
+                    console.warn('Failed to load viewings from API', e);
+                }
+                const ids = new Set(apiViewings.map((v: any) => v.id));
+                const localOnly = storedViewings.filter((v: any) => matchViewing(v) && !ids.has(v.id));
+                const merged = [...apiViewings, ...localOnly];
+                const userViewings = merged.map((v: any) => ({
                     id: v.id,
                     propertyTitle: v.propertyTitle,
                     propertyAddress: v.propertyAddress,
@@ -74,16 +83,16 @@ export default function ViewingsPage() {
                     agentCompany: 'PropReady',
                     agentPhone: '',
                     agentEmail: '',
-                    date: v.date,
-                    time: v.time,
+                    date: v.date ?? v.viewing_date,
+                    time: v.time ?? v.viewing_time,
                     status: v.status,
                     notes: v.notes
                 }));
                 
                 setViewingAppointments(userViewings);
-                setIsLoading(false);
-            }
+            setIsLoading(false);
         }
+        load();
     }, [router]);
 
     if (isLoading) {

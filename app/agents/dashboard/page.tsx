@@ -208,18 +208,30 @@ export default function AgentsDashboardPage() {
     }, [currentAgent]);
 
     useEffect(() => {
-        // Load viewing appointments
-        if (typeof window !== 'undefined' && currentAgent?.id) {
+        // Load viewing appointments from API and localStorage
+        async function loadViewings() {
+            if (typeof window === 'undefined' || !currentAgent?.id) return;
             const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-            // Filter by agent's properties or all if no properties yet
+            let apiViewings: ViewingAppointment[] = [];
+            try {
+                const res = await fetch(`/api/viewings?agentId=${encodeURIComponent(currentAgent.id)}`, { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.viewings)) {
+                    apiViewings = data.viewings;
+                }
+            } catch (e) {
+                console.warn('Failed to load viewings from API', e);
+            }
+            const ids = new Set(apiViewings.map((v: ViewingAppointment) => v.id));
+            const localOnly = storedViewings.filter((v: ViewingAppointment) => !ids.has(v.id));
+            const merged = [...apiViewings, ...localOnly];
             const agentViewings = listedProperties.length > 0
-                ? storedViewings.filter((v: ViewingAppointment) => 
-                    listedProperties.some(p => p.id === v.propertyId)
-                )
-                : storedViewings;
-            setViewingAppointments(agentViewings);
+                ? merged.filter((v: ViewingAppointment) => listedProperties.some(p => p.id === v.propertyId))
+                : merged;
+            setViewingAppointments(agentViewings.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()));
         }
-    }, [currentAgent, listedProperties]);
+        loadViewings();
+    }, [currentAgent, listedProperties, leadsRefreshKey]);
 
     // Initialize viewing form when editing
     useEffect(() => {
@@ -316,6 +328,11 @@ export default function AgentsDashboardPage() {
             );
             localStorage.setItem('propReady_viewingAppointments', JSON.stringify(updatedStored));
         }
+        fetch('/api/viewings', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: viewingId, status }),
+        }).catch((e) => console.warn('Viewing status sync failed', e));
     };
 
     const deleteViewing = (viewingId: string) => {
@@ -327,6 +344,7 @@ export default function AgentsDashboardPage() {
             localStorage.setItem('propReady_viewingAppointments', JSON.stringify(filtered));
         }
         setSelectedViewing(null);
+        fetch(`/api/viewings?id=${encodeURIComponent(viewingId)}`, { method: 'DELETE' }).catch((e) => console.warn('Viewing delete sync failed', e));
     };
 
     useEffect(() => {
@@ -705,7 +723,7 @@ export default function AgentsDashboardPage() {
         }
     };
 
-    const handleScheduleViewing = () => {
+    const handleScheduleViewing = async () => {
         const property = selectedPropertyForViewing || allAvailableProperties.find(p => p.id === viewingForm.propertyId);
         if (!property && !viewingForm.propertyId) {
             alert('Please select a property');
@@ -728,17 +746,30 @@ export default function AgentsDashboardPage() {
         const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
         
         if (selectedViewing) {
-            // Update existing viewing
             const updated = storedViewings.map((v: ViewingAppointment) => 
                 v.id === selectedViewing.id ? newViewing : v
             );
             localStorage.setItem('propReady_viewingAppointments', JSON.stringify(updated));
             setViewingAppointments(viewingAppointments.map(v => v.id === selectedViewing.id ? newViewing : v));
         } else {
-            // Add new viewing
             storedViewings.push(newViewing);
             localStorage.setItem('propReady_viewingAppointments', JSON.stringify(storedViewings));
             setViewingAppointments([...viewingAppointments, newViewing]);
+        }
+
+        // Sync to database
+        try {
+            const res = await fetch('/api/viewings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...newViewing, agentId: currentAgent?.id }),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                console.warn('Viewing save to database failed:', res.status, err);
+            }
+        } catch (e) {
+            console.warn('Viewing API sync failed', e);
         }
         
         setViewingForm({

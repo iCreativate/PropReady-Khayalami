@@ -34,47 +34,55 @@ export default function SellerDashboardPage() {
     const [showSyncFailedBanner, setShowSyncFailedBanner] = useState(false);
 
     useEffect(() => {
-        // Check if user is logged in
-        if (typeof window !== 'undefined') {
+        async function load() {
+            if (typeof window === 'undefined') return;
             const userData = localStorage.getItem('propReady_currentUser');
-            if (userData) {
-                const user = JSON.parse(userData);
-                setCurrentUser(user);
-                
-                // Load seller info
-                const storedSellerInfo = localStorage.getItem('propReady_sellerInfo');
-                if (storedSellerInfo) {
-                    setSellerInfo(JSON.parse(storedSellerInfo));
-                }
-
-                // Load selected agent
-                const storedSelectedAgent = localStorage.getItem(`propReady_selectedAgent_${user.id}`);
-                if (storedSelectedAgent) {
-                    setSelectedAgent(JSON.parse(storedSelectedAgent));
-                }
-
-                // Load viewing appointments for this user (seller)
-                const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-                const parsedSeller = storedSellerInfo ? JSON.parse(storedSellerInfo) : null;
-                const sellerPhone = parsedSeller?.phone?.replace(/\s/g, '') || '';
-                const userViewings = storedViewings.filter((v: any) => 
-                    v.contactType === 'seller' && (
-                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
-                        (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
-                    )
-                );
-                setViewingAppointments(userViewings);
-                
-                setIsLoading(false);
-                if (sessionStorage.getItem('propReady_sellerLeadSyncFailed')) {
-                    setShowSyncFailedBanner(true);
-                }
-            } else {
-                // Redirect to login if not authenticated
+            if (!userData) {
                 router.push('/login');
+                return;
             }
+            const user = JSON.parse(userData);
+            setCurrentUser(user);
+
+            const storedSellerInfo = localStorage.getItem('propReady_sellerInfo');
+            if (storedSellerInfo) {
+                setSellerInfo(JSON.parse(storedSellerInfo));
+            }
+
+            const storedSelectedAgent = localStorage.getItem(`propReady_selectedAgent_${user.id}`);
+            if (storedSelectedAgent) {
+                setSelectedAgent(JSON.parse(storedSelectedAgent));
+            }
+
+            const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
+            const parsedSeller = storedSellerInfo ? JSON.parse(storedSellerInfo) : null;
+            const sellerPhone = parsedSeller?.phone?.replace(/\s/g, '') || '';
+            const matchSeller = (v: any) => v.contactType === 'seller' && (
+                (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
+            );
+            let apiViewings: any[] = [];
+            try {
+                const res = await fetch(`/api/viewings?contactEmail=${encodeURIComponent(user.email)}`, { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.viewings)) {
+                    apiViewings = (data.viewings || []).filter(matchSeller);
+                }
+            } catch (e) {
+                console.warn('Failed to load viewings from API', e);
+            }
+            const ids = new Set(apiViewings.map((v: any) => v.id));
+            const localOnly = storedViewings.filter((v: any) => matchSeller(v) && !ids.has(v.id));
+            const userViewings = [...apiViewings, ...localOnly].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+            setViewingAppointments(userViewings);
+
+            if (sessionStorage.getItem('propReady_sellerLeadSyncFailed')) {
+                setShowSyncFailedBanner(true);
+            }
+            setIsLoading(false);
         }
+        load();
     }, [router]);
 
     useEffect(() => {
