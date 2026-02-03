@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const rawFile = formData.get('file');
-        const file = rawFile instanceof File ? rawFile : rawFile instanceof Blob ? new File([rawFile], 'image', { type: rawFile.type || 'image/jpeg' }) : null;
+        const file: File | null = rawFile instanceof File ? rawFile : (rawFile && typeof rawFile === 'object' && 'size' in rawFile) ? new File([rawFile as Blob], 'image', { type: (rawFile as Blob).type || 'image/jpeg' }) : null;
         if (!file || !(file.size > 0)) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }

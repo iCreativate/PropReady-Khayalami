@@ -33,34 +33,37 @@ export async function POST(request: NextRequest) {
         } = body;
 
         const featuresList = Array.isArray(features) ? features : [];
+        const titleStr = String(title ?? '');
+        const typeStr = String(type ?? '');
+        const descStr = String(description ?? '');
 
         if (OPENAI_API_KEY) {
             const improved = await improveWithOpenAI({
-                title,
-                type,
+                title: titleStr,
+                type: typeStr,
                 bedrooms: String(bedrooms),
                 bathrooms: String(bathrooms),
                 size: String(size),
-                description,
+                description: descStr,
                 features: featuresList,
-                imageCount,
+                imageCount: Number(imageCount) || 0,
             });
             return NextResponse.json(improved);
         }
 
         // Fallback: compute score and improve description without OpenAI
         const score = computeListingScore({
-            title,
-            type,
+            title: titleStr,
+            type: typeStr,
             bedrooms: String(bedrooms),
             bathrooms: String(bathrooms),
             size: String(size),
-            description,
+            description: descStr,
             features: featuresList,
-            imageCount,
+            imageCount: Number(imageCount) || 0,
         });
-        const improvedDescription = improveDescriptionFallback(description, { title, type, bedrooms, bathrooms, size, features: featuresList });
-        const feedback = getFeedbackFallback(score, { description: description.length, imageCount, features: featuresList.length });
+        const improvedDescription = improveDescriptionFallback(descStr, { title: titleStr, type: typeStr, bedrooms: String(bedrooms), bathrooms: String(bathrooms), size: String(size), features: featuresList });
+        const feedback = getFeedbackFallback(score, { description: descStr.length, imageCount: Number(imageCount) || 0, features: featuresList.length });
         return NextResponse.json({
             improvedDescription,
             listingScore: score,
