@@ -13,6 +13,7 @@ interface Lead {
     fullName: string;
     email: string;
     phone: string;
+    city?: string | null;
     monthlyIncome?: string;
     depositSaved?: string;
     employmentStatus?: string;
@@ -84,7 +85,8 @@ export default function AgentsDashboardPage() {
     const [filteredSellers, setFilteredSellers] = useState<Seller[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
-    const [currentAgent, setCurrentAgent] = useState<{ fullName: string; email: string; company?: string; id?: string; plan?: string } | null>(null);
+    const [locationFilter, setLocationFilter] = useState<'all' | 'nearby'>('all');
+    const [currentAgent, setCurrentAgent] = useState<{ fullName: string; email: string; company?: string; id?: string; plan?: string; city?: string } | null>(null);
     const [showActionsModal, setShowActionsModal] = useState<Lead | Seller | null>(null);
     const [showPropertyModal, setShowPropertyModal] = useState(false);
     const [showViewingModal, setShowViewingModal] = useState(false);
@@ -335,6 +337,15 @@ export default function AgentsDashboardPage() {
                 filtered = filtered.filter(item => item.status === statusFilter);
             }
 
+            // Filter by location (agent's city)
+            if (locationFilter === 'nearby' && currentAgent?.city?.trim()) {
+                const agentCity = currentAgent.city.toLowerCase().trim();
+                filtered = filtered.filter(item => {
+                    const leadCity = (item.city || '').toLowerCase().trim();
+                    return leadCity && (leadCity.includes(agentCity) || agentCity.includes(leadCity));
+                });
+            }
+
             setFilteredLeads(filtered);
         } else {
             let filtered: Seller[] = [...sellers];
@@ -353,9 +364,18 @@ export default function AgentsDashboardPage() {
                 filtered = filtered.filter(item => item.status === statusFilter);
             }
 
+            // Filter by location (agent's city)
+            if (locationFilter === 'nearby' && currentAgent?.city?.trim()) {
+                const agentCity = currentAgent.city.toLowerCase().trim();
+                filtered = filtered.filter(item => {
+                    const leadCity = (item.city || '').toLowerCase().trim();
+                    return leadCity && (leadCity.includes(agentCity) || agentCity.includes(leadCity));
+                });
+            }
+
             setFilteredSellers(filtered);
         }
-    }, [searchTerm, statusFilter, leads, sellers, activeTab]);
+    }, [searchTerm, statusFilter, locationFilter, leads, sellers, activeTab, currentAgent?.city]);
 
     const handleContact = (contact: Lead | Seller, method: 'phone' | 'email' | 'whatsapp') => {
         if (method === 'phone') {
@@ -506,7 +526,7 @@ export default function AgentsDashboardPage() {
         maxSizeMB: 1.5,
         initialQuality: 0.92,
         maxWidthOrHeight: 1920,
-        useWebWorker: true,
+        useWebWorker: false, // Disabled to avoid CSP violations (eval/Function in worker creation)
     };
 
     const handleUploadImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1011,6 +1031,16 @@ export default function AgentsDashboardPage() {
                                     <option value="qualified">Qualified</option>
                                     <option value="not-interested">Not Interested</option>
                                 </select>
+                                {currentAgent?.city && (
+                                    <select
+                                        value={locationFilter}
+                                        onChange={(e) => setLocationFilter(e.target.value as 'all' | 'nearby')}
+                                        className="px-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                    >
+                                        <option value="all">All areas</option>
+                                        <option value="nearby">My area ({currentAgent.city})</option>
+                                    </select>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1022,9 +1052,9 @@ export default function AgentsDashboardPage() {
                                 <User className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
                                     <p className="text-charcoal/70 text-lg">No buyers found</p>
                                 <p className="text-charcoal/50 text-sm mt-2">
-                                    {searchTerm || statusFilter !== 'all' 
-                                        ? 'Try adjusting your filters' 
-                                            : 'Buyers will appear here once they complete the prequalification'}
+                                    {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
+                                        ? 'Try adjusting your filters (search, status, or area)'
+                                        : 'Buyers will appear here once they complete the prequalification'}
                                 </p>
                             </div>
                         ) : (
@@ -1048,6 +1078,11 @@ export default function AgentsDashboardPage() {
                                                     <div>
                                                             <p className="text-charcoal font-semibold">{lead.fullName || 'N/A'}</p>
                                                         <p className="text-charcoal/60 text-sm">{lead.employmentStatus || 'N/A'}</p>
+                                                        {lead.city && (
+                                                            <p className="text-charcoal/50 text-xs flex items-center gap-1 mt-0.5">
+                                                                <MapPin className="w-3 h-3" />{lead.city}
+                                                            </p>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
@@ -1094,8 +1129,8 @@ export default function AgentsDashboardPage() {
                                     <Building2 className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
                                     <p className="text-charcoal/70 text-lg">No sellers found</p>
                                     <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
-                                        {searchTerm || statusFilter !== 'all' 
-                                            ? 'Try adjusting your filters' 
+                                        {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
+                                            ? 'Try adjusting your filters (search, status, or area)'
                                             : <>Sellers come from the database when they complete the seller quiz. Use Refresh above, or check <a href="/api/leads/debug" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">/api/leads/debug</a> to verify the database.</>}
                                     </p>
                                 </div>
@@ -1121,6 +1156,11 @@ export default function AgentsDashboardPage() {
                                                         <div>
                                                             <p className="text-charcoal font-semibold">{seller.fullName || 'N/A'}</p>
                                                             <p className="text-charcoal/60 text-sm capitalize">{seller.propertyType || 'N/A'}</p>
+                                                            {seller.city && (
+                                                                <p className="text-charcoal/50 text-xs flex items-center gap-1 mt-0.5">
+                                                                    <MapPin className="w-3 h-3" />{seller.city}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">

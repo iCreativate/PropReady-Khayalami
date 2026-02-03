@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
+import { getLocationFromBrowser } from '@/lib/geolocation';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 
 interface Originator {
@@ -24,6 +25,7 @@ export default function QuizPage() {
         fullName: '',
         email: '',
         phone: '',
+        city: '',
         inMarketForProperty: null as boolean | null,
         monthlyIncome: '',
         expenses: '',
@@ -111,6 +113,9 @@ export default function QuizPage() {
                     newErrors.phone = 'Phone number is required';
                 } else if (!/^0\d{9}$/.test(formData.phone.replace(/\s/g, ''))) {
                     newErrors.phone = 'Please enter a valid South African phone number (e.g., 082 123 4567)';
+                }
+                if (!formData.city.trim()) {
+                    newErrors.city = 'City or area is required (helps agents near you find you)';
                 }
                 break;
             case 2:
@@ -344,9 +349,11 @@ export default function QuizPage() {
             // Store as a lead for agents (database + localStorage)
             const lead = {
                 id: userId,
+                leadType: 'buyer',
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
+                city: formData.city.trim(),
                 inMarketForProperty: formData.inMarketForProperty,
                 monthlyIncome: formData.monthlyIncome,
                 depositSaved: formData.depositSaved,
@@ -461,6 +468,43 @@ export default function QuizPage() {
                                 <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.phone}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="premium-card rounded-xl p-6">
+                            <label className="block text-charcoal font-semibold text-lg mb-4">
+                                City or area <span className="text-red-600">*</span>
+                            </label>
+                            <p className="text-charcoal/60 text-sm mb-2">Agents near you will be able to connect with you</p>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g., Johannesburg, Sandton, Cape Town"
+                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const loc = await getLocationFromBrowser();
+                                        if (loc) setFormData(prev => ({ ...prev, city: loc.city }));
+                                        else alert('Could not get location. Please enter your city manually.');
+                                    }}
+                                    className="px-4 py-3 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 whitespace-nowrap"
+                                >
+                                    Use my location
+                                </button>
+                            </div>
+                            {errors.city && (
+                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {errors.city}
                                 </p>
                             )}
                         </div>

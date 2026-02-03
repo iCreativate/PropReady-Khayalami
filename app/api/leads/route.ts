@@ -32,6 +32,9 @@ function toLeadRow(lead: Record<string, unknown>) {
         has_bond: lead.hasBond ?? lead.has_bond ?? null,
         bond_balance: lead.bondBalance ?? lead.bond_balance ?? null,
         status: lead.status ?? 'new',
+        city: lead.city ?? null,
+        latitude: lead.latitude ?? null,
+        longitude: lead.longitude ?? null,
     };
 }
 
@@ -52,6 +55,9 @@ function fromLeadRow(row: Record<string, unknown>) {
         status: row.status ?? 'new',
         timestamp: row.created_at,
         contactedAt: row.updated_at && (row.status === 'contacted' || row.status === 'qualified') ? row.updated_at : null,
+        city: row.city ?? null,
+        latitude: row.latitude ?? null,
+        longitude: row.longitude ?? null,
     };
     if (leadType === 'seller' || leadType === 'investor') {
         return {
@@ -136,7 +142,7 @@ export async function POST(request: NextRequest) {
         let result = await tryUpsert(row);
 
         if (result.error && result.error.code === 'PGRST204' && /column.*does not exist|Could not find.*column/i.test(result.error.message || '')) {
-            const { building_size, land_size, property_size, ...fallback1 } = row as Record<string, unknown>;
+            const { building_size, land_size, property_size, city, latitude, longitude, ...fallback1 } = row as Record<string, unknown>;
             result = await tryUpsert(fallback1);
         }
         if (result.error && result.error.code === 'PGRST204' && /column.*does not exist|Could not find.*column/i.test(result.error.message || '')) {
@@ -163,8 +169,8 @@ export async function POST(request: NextRequest) {
                         ? ' Create the leads table in Supabase (run supabase-schema.sql).'
                         : result.error.code === '42501'
                             ? ' RLS blocking insert. Run in Supabase SQL: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
-                            : /column.*does not exist|undefined column|Could not find.*column/i.test(msg)
-                                ? ' Run supabase-migration-leads-seller-columns.sql in Supabase SQL Editor to add lead_type and seller columns.'
+                                : /column.*does not exist|undefined column|Could not find.*column/i.test(msg)
+                                ? ' Run supabase-migration-leads-seller-columns.sql and supabase-migration-leads-location.sql in Supabase SQL Editor.'
                                 : '';
             return NextResponse.json(
                 { success: false, error: result.error.message + hint, code: result.error.code },

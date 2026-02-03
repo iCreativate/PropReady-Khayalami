@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, User, Phone, Building2, FileText, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, User, Phone, Building2, FileText, CheckCircle, AlertCircle, ArrowRight, MapPin } from 'lucide-react';
 
 interface AgentRegistration {
     id: string;
@@ -12,6 +12,7 @@ interface AgentRegistration {
     phone: string;
     eaabNumber: string;
     company: string;
+    city?: string;
     password: string;
     timestamp: string;
     status: 'pending' | 'approved' | 'rejected';
@@ -30,6 +31,7 @@ export default function AgentRegisterPage() {
         eaabNumber: '',
         confirmFFCNumber: '',
         company: '',
+        city: '',
         password: '',
         confirmPassword: '',
         agreeToTerms: false
@@ -125,6 +127,7 @@ export default function AgentRegisterPage() {
                 phone: formData.phone,
                 eaabNumber: formData.eaabNumber.replace(/\D/g, ''),
                 company: formData.company,
+                city: formData.city?.trim() || undefined,
                 password: formData.password, // In production, this should be hashed
                 timestamp: new Date().toISOString(),
                 status: 'pending' // Would be approved by admin in production
@@ -175,6 +178,7 @@ export default function AgentRegisterPage() {
                 id: agent.id,
                 fullName: agent.fullName,
                 email: agent.email,
+                city: agent.city,
                 company: agent.company,
                 plan: 'free'
             }));
@@ -410,6 +414,25 @@ export default function AgentRegisterPage() {
                                         {errors.company}
                                     </p>
                                 )}
+                            </div>
+
+                            {/* City / Service Area */}
+                            <div>
+                                <label className="block text-charcoal font-semibold mb-2">
+                                    City or service area
+                                </label>
+                                <p className="text-charcoal/60 text-sm mb-2">Leads near you will be prioritized. Optional.</p>
+                                <div className="relative">
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        placeholder="e.g., Johannesburg, Sandton, Cape Town"
+                                        value={formData.city}
+                                        onChange={handleInputChange}
+                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    />
+                                </div>
                             </div>
 
                             {/* Password */}

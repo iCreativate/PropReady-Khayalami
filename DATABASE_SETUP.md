@@ -80,6 +80,8 @@ After deployment, test the following:
 
 2. **Create or fix the leads table** (Supabase → SQL Editor):
    - Run the full `supabase-schema.sql` to create all tables.
+   - Run `supabase-migration-leads-seller-columns.sql` for seller fields.
+   - Run `supabase-migration-leads-location.sql` for city/location matching.
    - If `agent_id` was NOT NULL: `ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;`
    - If inserts are blocked by RLS, run:
      ```sql
@@ -97,7 +99,7 @@ The database includes the following tables:
 - `agents` - Registered real estate agents
 - `documents` - User-uploaded documents
 - `properties` - Property listings
-- `leads` - All leads (buyers, sellers, investors); one table with `lead_type` and optional seller fields
+- `leads` - All leads (buyers, sellers, investors); one table with `lead_type`, seller fields, and `city` for location matching
 - `viewings` - Property viewing appointments
 
 See `supabase-schema.sql` for the complete schema.

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Calendar, TrendingUp, DollarSign, MapPin, Home as HomeIcon, Mail, Phone, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { getLocationFromBrowser } from '@/lib/geolocation';
 import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 
 export default function SellersQuizPage() {
@@ -14,6 +15,7 @@ export default function SellersQuizPage() {
         fullName: '',
         email: '',
         phone: '',
+        city: '',
         propertyAddress: '',
         propertyType: '',
         bedrooms: '',
@@ -87,6 +89,9 @@ export default function SellersQuizPage() {
                 }
                 if (!formData.propertyType) {
                     newErrors.propertyType = 'Property type is required';
+                }
+                if (!formData.city.trim()) {
+                    newErrors.city = 'City or area is required (helps agents near you find you)';
                 }
                 break;
             case 3:
@@ -203,6 +208,7 @@ export default function SellersQuizPage() {
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
+                city: formData.city.trim(),
                 propertyAddress: formData.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean).join(', '),
                 propertyType: formData.propertyType,
                 bedrooms: formData.bedrooms,
@@ -356,6 +362,53 @@ export default function SellersQuizPage() {
                                 <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.propertyAddress}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="premium-card rounded-xl p-6">
+                            <label className="block text-charcoal font-semibold text-lg mb-4">
+                                City or area <span className="text-red-600">*</span>
+                            </label>
+                            <p className="text-charcoal/60 text-sm mb-2">Agents near your property will be able to connect with you</p>
+                            <div className="flex gap-2">
+                                <div className="relative flex-1">
+                                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={formData.city}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g., Johannesburg, Sandton, Cape Town"
+                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    />
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const loc = await getLocationFromBrowser();
+                                        if (loc) setFormData(prev => ({ ...prev, city: loc.city }));
+                                        else alert('Could not get location. Please enter your city manually.');
+                                    }}
+                                    className="px-4 py-3 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 whitespace-nowrap"
+                                >
+                                    Use my location
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const parts = formData.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean);
+                                        if (parts.length > 0) setFormData(prev => ({ ...prev, city: parts[parts.length - 1] }));
+                                    }}
+                                    className="px-4 py-3 rounded-lg bg-charcoal/10 border border-charcoal/20 text-charcoal font-semibold hover:bg-charcoal/20 whitespace-nowrap"
+                                >
+                                    From address
+                                </button>
+                            </div>
+                            {errors.city && (
+                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                    <AlertCircle className="w-4 h-4" />
+                                    {errors.city}
                                 </p>
                             )}
                         </div>

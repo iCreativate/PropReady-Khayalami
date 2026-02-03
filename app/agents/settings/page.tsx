@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, Mail, Phone, Building2, FileText, User, Save, ArrowLeft, CheckCircle, AlertCircle, Lock, Eye, EyeOff } from 'lucide-react';
+import { Home, Mail, Phone, Building2, FileText, User, Save, ArrowLeft, CheckCircle, AlertCircle, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
 
 interface AgentData {
     id: string;
@@ -12,6 +12,7 @@ interface AgentData {
     phone: string;
     eaabNumber: string;
     company: string;
+    city?: string;
     password?: string;
 }
 
@@ -30,7 +31,8 @@ export default function AgentSettingsPage() {
         email: '',
         phone: '',
         eaabNumber: '',
-        company: ''
+        company: '',
+        city: ''
     });
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
@@ -55,7 +57,8 @@ export default function AgentSettingsPage() {
                         email: agent.email,
                         phone: agent.phone,
                         eaabNumber: agent.eaabNumber,
-                        company: agent.company
+                        company: agent.company,
+                        city: agent.city || ''
                     });
                 } else {
                     // If agent not found in agents list, use current agent info
@@ -65,7 +68,8 @@ export default function AgentSettingsPage() {
                         email: agentInfo.email || '',
                         phone: '',
                         eaabNumber: '',
-                        company: agentInfo.company || ''
+                        company: agentInfo.company || '',
+                        city: agentInfo.city || ''
                     });
                 }
             }
@@ -193,11 +197,14 @@ export default function AgentSettingsPage() {
             }
 
             // Update current agent info
+            const existing = JSON.parse(localStorage.getItem('propReady_currentAgent') || '{}');
             const currentAgent = {
                 id: formData.id,
                 fullName: formData.fullName,
                 email: formData.email,
-                company: formData.company
+                company: formData.company,
+                city: formData.city,
+                plan: existing.plan || agents[agentIndex]?.plan
             };
             localStorage.setItem('propReady_currentAgent', JSON.stringify(currentAgent));
         }
@@ -433,6 +440,25 @@ export default function AgentSettingsPage() {
                                             {errors.company}
                                         </p>
                                     )}
+                                </div>
+
+                                {/* City / Service Area */}
+                                <div className="md:col-span-2">
+                                    <label className="block text-charcoal font-semibold mb-2">
+                                        City or service area
+                                    </label>
+                                    <p className="text-charcoal/60 text-sm mb-2">Leads near you will be prioritized. Leave blank to see all leads.</p>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <input
+                                            type="text"
+                                            name="city"
+                                            value={formData.city || ''}
+                                            onChange={handleInputChange}
+                                            placeholder="e.g., Johannesburg, Sandton, Cape Town"
+                                            className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
