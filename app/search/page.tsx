@@ -19,6 +19,9 @@ interface Property {
     description?: string;
     agentId?: string;
     timestamp?: string;
+    images?: string[];
+    features?: string[];
+    videoUrl?: string;
     matchScore?: number;
     isMatched?: boolean;
 }
@@ -66,6 +69,9 @@ export default function SearchPage() {
                     description: p.description ? String(p.description) : undefined,
                     agentId: p.agentId ? String(p.agentId) : undefined,
                     timestamp: p.timestamp ? String(p.timestamp) : undefined,
+                    images: Array.isArray(p.images) ? p.images : undefined,
+                    features: Array.isArray(p.features) ? p.features : undefined,
+                    videoUrl: p.videoUrl ? String(p.videoUrl) : undefined,
                 }));
             setListedProperties(normalized);
         } catch {
@@ -303,7 +309,7 @@ export default function SearchPage() {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredProperties.filter(p => p.isMatched).map((property) => (
-                                            <div key={property.id} className="premium-card rounded-xl overflow-hidden cursor-pointer group border-2 border-gold/30 relative">
+                                            <Link key={property.id} href={`/search/${property.id}`} className="block premium-card rounded-xl overflow-hidden cursor-pointer group border-2 border-gold/30 relative hover:shadow-xl transition-shadow">
                                                 {/* Matched Badge */}
                                                 <div className="absolute top-3 right-3 z-10">
                                                     <span className="px-2 py-1 rounded-full bg-gold text-white text-xs font-semibold shadow-md">
@@ -311,9 +317,24 @@ export default function SearchPage() {
                                                     </span>
                                                 </div>
                                                 
-                                                {/* Property Image Placeholder */}
-                                                <div className="h-48 bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center border-b border-charcoal/10">
-                                                    <Home className="w-16 h-16 text-gold/40" />
+                                                {/* Property Image */}
+                                                <div className="h-48 bg-charcoal/10 relative overflow-hidden">
+                                                    {property.images?.length && property.images[0] ? (
+                                                        <img
+                                                            src={property.images[0]}
+                                                            alt={property.title}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                                                        />
+                                                    ) : null}
+                                                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-gold/20 to-gold/10 ${property.images?.length && property.images[0] ? 'hidden' : ''}`}>
+                                                        <Home className="w-16 h-16 text-gold/40" />
+                                                    </div>
+                                                    {property.images && property.images.length > 1 && (
+                                                        <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                            {property.images.length} photos
+                                                        </span>
+                                                    )}
                                                 </div>
 
                                                 {/* Property Details */}
@@ -360,7 +381,7 @@ export default function SearchPage() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
@@ -374,10 +395,25 @@ export default function SearchPage() {
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredProperties.filter(p => !p.isMatched || !quizResult || quizResult.preQualAmount === 0).map((property) => (
-                                            <div key={property.id} className="premium-card rounded-xl overflow-hidden cursor-pointer group">
-                                                {/* Property Image Placeholder */}
-                                                <div className="h-48 bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center border-b border-charcoal/10">
-                                                    <Home className="w-16 h-16 text-gold/40" />
+                                            <Link key={property.id} href={`/search/${property.id}`} className="block premium-card rounded-xl overflow-hidden cursor-pointer group hover:shadow-xl transition-shadow">
+                                                {/* Property Image */}
+                                                <div className="h-48 bg-charcoal/10 relative overflow-hidden">
+                                                    {property.images?.length && property.images[0] ? (
+                                                        <img
+                                                            src={property.images[0]}
+                                                            alt={property.title}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
+                                                        />
+                                                    ) : null}
+                                                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-gold/20 to-gold/10 border-b border-charcoal/10 ${property.images?.length && property.images[0] ? 'hidden' : ''}`}>
+                                                        <Home className="w-16 h-16 text-gold/40" />
+                                                    </div>
+                                                    {property.images && property.images.length > 1 && (
+                                                        <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                            {property.images.length} photos
+                                                        </span>
+                                                    )}
                                                 </div>
 
                                                 {/* Property Details */}
@@ -421,7 +457,7 @@ export default function SearchPage() {
                                                         </p>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         ))}
                                     </div>
                                 </div>
