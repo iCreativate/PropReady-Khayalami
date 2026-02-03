@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import imageCompression from 'browser-image-compression';
-import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload } from 'lucide-react';
+import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit, AlertCircle } from 'lucide-react';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 
@@ -120,6 +120,12 @@ export default function AgentsDashboardPage() {
     const [imageUploading, setImageUploading] = useState(false);
     const [imageUploadError, setImageUploadError] = useState<string | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
+
+    // Add property: 'choice' = pick method, 'import' = paste URL & fetch, 'manual' = traditional form
+    const [addPropertyMode, setAddPropertyMode] = useState<'choice' | 'import' | 'manual'>('choice');
+    const [importUrl, setImportUrl] = useState('');
+    const [importLoading, setImportLoading] = useState(false);
+    const [importError, setImportError] = useState<string | null>(null);
 
     const [viewingForm, setViewingForm] = useState({
         propertyId: '',
@@ -565,6 +571,46 @@ export default function AgentsDashboardPage() {
         }
     };
 
+    const handleImportFromUrl = async () => {
+        const url = importUrl.trim();
+        if (!url) {
+            setImportError('Please paste a property listing URL');
+            return;
+        }
+        setImportLoading(true);
+        setImportError(null);
+        try {
+            const res = await fetch('/api/property/import-from-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setImportError(data?.error || `Import failed (${res.status})`);
+                return;
+            }
+            setPropertyForm({
+                title: data.title || '',
+                address: data.address || '',
+                type: data.type || '',
+                price: data.price || '',
+                bedrooms: data.bedrooms || '',
+                bathrooms: data.bathrooms || '',
+                size: data.size || '',
+                description: data.description || '',
+                images: Array.isArray(data.images) ? data.images : [],
+                features: Array.isArray(data.features) ? data.features : [],
+                videoUrl: data.videoUrl || '',
+            });
+            setAddPropertyMode('manual');
+        } catch (err) {
+            setImportError(err instanceof Error ? err.message : 'Import failed');
+        } finally {
+            setImportLoading(false);
+        }
+    };
+
     const handleAddProperty = () => {
         if (!currentAgent?.id) return;
         
@@ -816,7 +862,16 @@ export default function AgentsDashboardPage() {
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-charcoal">My Listed Properties</h2>
                             <button
-                                onClick={() => { setImproveResult(null); setBulkImageUrls(''); setImageUploadError(null); setShowPropertyModal(true); }}
+                                onClick={() => {
+                                setImproveResult(null);
+                                setBulkImageUrls('');
+                                setImageUploadError(null);
+                                setAddPropertyMode('choice');
+                                setImportUrl('');
+                                setImportError(null);
+                                setPropertyForm({ title: '', address: '', type: '', price: '', bedrooms: '', bathrooms: '', size: '', description: '', images: [], features: [], videoUrl: '' });
+                                setShowPropertyModal(true);
+                            }}
                                 className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
                             >
                                 <Plus className="w-4 h-4" />
@@ -1709,7 +1764,10 @@ export default function AgentsDashboardPage() {
                                     </h2>
                                 </div>
                                 <button
-                                    onClick={() => setShowPropertyModal(false)}
+                                    onClick={() => {
+                                        setShowPropertyModal(false);
+                                        setAddPropertyMode('choice');
+                                    }}
                                     className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
                                     aria-label="Close"
                                 >
@@ -1721,6 +1779,94 @@ export default function AgentsDashboardPage() {
                         {/* Content area */}
                         <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
 
+                        {/* Step 1: Choose how to add */}
+                        {addPropertyMode === 'choice' && (
+                            <div className="space-y-6">
+                                <p className="text-charcoal/70 text-center">How would you like to add this property?</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddPropertyMode('import')}
+                                        className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/50 transition-all text-left"
+                                    >
+                                        <Link2 className="w-12 h-12 text-gold" />
+                                        <div>
+                                            <h3 className="font-semibold text-charcoal">Import from link</h3>
+                                            <p className="text-sm text-charcoal/60 mt-1">Paste a URL from Property24, Private Property, or other listing sites. We&apos;ll extract images, description, features and more.</p>
+                                        </div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAddPropertyMode('manual')}
+                                        className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-charcoal/20 bg-white hover:bg-charcoal/5 hover:border-charcoal/30 transition-all text-left"
+                                    >
+                                        <FileEdit className="w-12 h-12 text-charcoal/60" />
+                                        <div>
+                                            <h3 className="font-semibold text-charcoal">Add manually</h3>
+                                            <p className="text-sm text-charcoal/60 mt-1">Enter property details yourself. Best when you have your own photos and description.</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Step 2a: Import from URL */}
+                        {addPropertyMode === 'import' && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => { setAddPropertyMode('choice'); setImportError(null); }}
+                                        className="text-charcoal/60 hover:text-charcoal text-sm font-medium"
+                                    >
+                                        ← Back
+                                    </button>
+                                </div>
+                                <div>
+                                    <label className="block text-charcoal font-semibold mb-2">Paste property listing URL</label>
+                                    <p className="text-charcoal/60 text-sm mb-2">Works with Property24, Private Property, RE/MAX, and most property listing websites.</p>
+                                    <input
+                                        type="url"
+                                        value={importUrl}
+                                        onChange={(e) => { setImportUrl(e.target.value); setImportError(null); }}
+                                        placeholder="https://www.property24.co.za/..."
+                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                        onKeyDown={(e) => e.key === 'Enter' && handleImportFromUrl()}
+                                    />
+                                </div>
+                                {importError && (
+                                    <p className="text-red-600 text-sm flex items-center gap-1" role="alert">
+                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                        {importError}
+                                    </p>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleImportFromUrl}
+                                    disabled={importLoading || !importUrl.trim()}
+                                    className="w-full px-6 py-3.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                                >
+                                    {importLoading ? (
+                                        <>Fetching listing…</>
+                                    ) : (
+                                        <>Import property data</>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Step 2b/3: Manual form (or edit after import) */}
+                        {addPropertyMode === 'manual' && (
+                        <>
+                        <div className="flex items-center gap-2 mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setAddPropertyMode('choice')}
+                                className="text-charcoal/60 hover:text-charcoal text-sm font-medium"
+                            >
+                                ← Back
+                            </button>
+                        </div>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-charcoal font-semibold mb-2">Property Title</label>
@@ -1973,10 +2119,13 @@ export default function AgentsDashboardPage() {
                                 />
                             </div>
                         </div>
+                        </>
+                        )}
 
                         </div>
 
-                        {/* Footer */}
+                        {/* Footer - only show when in manual form */}
+                        {addPropertyMode === 'manual' && (
                         <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
                             <button
                                 onClick={() => setShowPropertyModal(false)}
@@ -1991,6 +2140,7 @@ export default function AgentsDashboardPage() {
                                 Add Property
                             </button>
                         </div>
+                        )}
                     </div>
                 </div>
             )}

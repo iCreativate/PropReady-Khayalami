@@ -34,6 +34,7 @@ export default function SellersQuizPage() {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [locationLoading, setLocationLoading] = useState(false);
 
     const totalSteps = 7;
 
@@ -371,8 +372,8 @@ export default function SellersQuizPage() {
                                 City or area <span className="text-red-600">*</span>
                             </label>
                             <p className="text-charcoal/60 text-sm mb-2">Agents near your property will be able to connect with you</p>
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
+                            <div className="flex flex-col gap-2">
+                                <div className="relative w-full min-w-0">
                                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/40" />
                                     <input
                                         type="text"
@@ -380,30 +381,50 @@ export default function SellersQuizPage() {
                                         value={formData.city}
                                         onChange={handleInputChange}
                                         placeholder="e.g., Johannesburg, Sandton, Cape Town"
-                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                        autoComplete="address-level2"
+                                        className={`w-full min-w-0 pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold text-base`}
                                     />
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        const loc = await getLocationFromBrowser();
-                                        if (loc) setFormData(prev => ({ ...prev, city: loc.city }));
-                                        else alert('Could not get location. Please enter your city manually.');
-                                    }}
-                                    className="px-4 py-3 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 whitespace-nowrap"
-                                >
-                                    Use my location
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const parts = formData.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean);
-                                        if (parts.length > 0) setFormData(prev => ({ ...prev, city: parts[parts.length - 1] }));
-                                    }}
-                                    className="px-4 py-3 rounded-lg bg-charcoal/10 border border-charcoal/20 text-charcoal font-semibold hover:bg-charcoal/20 whitespace-nowrap"
-                                >
-                                    From address
-                                </button>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            setLocationLoading(true);
+                                            try {
+                                                const loc = await getLocationFromBrowser();
+                                                if (loc.ok) setFormData(prev => ({ ...prev, city: loc.city }));
+                                                else {
+                                                    const msg = loc.error === 'permission_denied' ? 'Location access was denied. Please allow location in your browser settings or enter your city manually.' :
+                                                        loc.error === 'timeout' ? 'Location request timed out. Please enter your city manually.' :
+                                                        loc.error === 'unsupported' ? 'Geolocation is not supported in this browser. Please enter your city manually.' :
+                                                        'Could not determine your city. Please enter it manually.';
+                                                    alert(msg);
+                                                }
+                                            } finally {
+                                                setLocationLoading(false);
+                                            }
+                                        }}
+                                        disabled={locationLoading}
+                                        className="flex-1 min-w-[140px] px-4 py-3 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {locationLoading ? 'Getting location…' : 'Use my location'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const addr = formData.propertyAddress.trim();
+                                            if (!addr) {
+                                                alert('Please enter your property address first, then click From address.');
+                                                return;
+                                            }
+                                            const parts = addr.split(',').map((s: string) => s.trim()).filter(Boolean);
+                                            if (parts.length > 0) setFormData(prev => ({ ...prev, city: parts[parts.length - 1] }));
+                                        }}
+                                        className="flex-1 min-w-[140px] px-4 py-3 rounded-lg bg-charcoal/10 border border-charcoal/20 text-charcoal font-semibold hover:bg-charcoal/20"
+                                    >
+                                        From address
+                                    </button>
+                                </div>
                             </div>
                             {errors.city && (
                                 <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
