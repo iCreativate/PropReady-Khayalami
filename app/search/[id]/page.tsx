@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Home, MapPin, Bed, Bath, Square, Phone, Mail, Video } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { ArrowLeft, Home, MapPin, Bed, Bath, Square, Video, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
 
 interface Property {
@@ -25,10 +25,10 @@ interface Property {
 
 export default function PropertyDetailPage() {
     const params = useParams();
-    const router = useRouter();
     const id = params?.id as string;
     const [property, setProperty] = useState<Property | null>(null);
     const [loading, setLoading] = useState(true);
+    const [imageIndex, setImageIndex] = useState(0);
 
     useEffect(() => {
         if (typeof window === 'undefined' || !id) return;
@@ -36,6 +36,7 @@ export default function PropertyDetailPage() {
             const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
             const found = stored.find((p: any) => String(p.id) === id);
             if (found && found.published !== false) {
+                setImageIndex(0);
                 setProperty({
                     id: String(found.id),
                     title: String(found.title || 'Listed Property'),
@@ -119,38 +120,64 @@ export default function PropertyDetailPage() {
 
             <main className="pt-24 pb-12 px-4">
                 <div className="container mx-auto max-w-5xl">
-                    {/* Image gallery */}
-                    <div className="mb-8 rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl">
+                    {/* Image slider */}
+                    <div className="mb-8 rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl relative">
                         {property.images?.length ? (
-                            <div className={`grid gap-2 p-2 bg-charcoal/5 ${property.images.length === 1 ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
-                                <div className="aspect-[4/3] md:aspect-[16/10] rounded-xl overflow-hidden">
-                                    <img
-                                        src={property.images[0]}
-                                        alt={property.title}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                    />
+                            <>
+                                <div className="relative aspect-[16/10] bg-charcoal/10 overflow-hidden">
+                                    {property.images.map((url, i) => (
+                                        <div
+                                            key={i}
+                                            className={`absolute inset-0 transition-transform duration-300 ease-out ${
+                                                i === imageIndex ? 'translate-x-0 z-10' : i < imageIndex ? '-translate-x-full' : 'translate-x-full'
+                                            }`}
+                                        >
+                                            <img
+                                                src={url}
+                                                alt={`${property.title} - ${i + 1}`}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
                                 {property.images.length > 1 && (
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {property.images.slice(1, 5).map((url, i) => (
-                                            <div key={i} className="aspect-[4/3] rounded-lg overflow-hidden">
-                                                <img
-                                                    src={url}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => setImageIndex((prev) => (prev === 0 ? property.images!.length - 1 : prev - 1))}
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
+                                            aria-label="Previous image"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setImageIndex((prev) => (prev === property.images!.length - 1 ? 0 : prev + 1))}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
+                                            aria-label="Next image"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
+                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                                            {property.images.map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    onClick={() => setImageIndex(i)}
+                                                    className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                                                        i === imageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/70'
+                                                    }`}
+                                                    aria-label={`Go to image ${i + 1}`}
                                                 />
-                                            </div>
-                                        ))}
-                                        {property.images.length > 5 && (
-                                            <div className="aspect-[4/3] rounded-lg bg-charcoal/10 flex items-center justify-center text-charcoal/60 font-semibold">
-                                                +{property.images.length - 5}
-                                            </div>
-                                        )}
-                                    </div>
+                                            ))}
+                                        </div>
+                                        <span className="absolute top-3 right-3 z-20 px-2 py-1 rounded bg-black/60 text-white text-sm font-medium">
+                                            {imageIndex + 1} / {property.images.length}
+                                        </span>
+                                    </>
                                 )}
-                            </div>
+                            </>
                         ) : (
                             <div className="aspect-[16/10] bg-gradient-to-br from-gold/20 to-gold/10 flex items-center justify-center">
                                 <Home className="w-24 h-24 text-gold/40" />
