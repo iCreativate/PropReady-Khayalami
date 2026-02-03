@@ -55,11 +55,13 @@ export default function SellerDashboardPage() {
 
                 // Load viewing appointments for this user (seller)
                 const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
+                const parsedSeller = storedSellerInfo ? JSON.parse(storedSellerInfo) : null;
+                const sellerPhone = parsedSeller?.phone?.replace(/\s/g, '') || '';
                 const userViewings = storedViewings.filter((v: any) => 
                     v.contactType === 'seller' && (
-                        v.contactName.toLowerCase() === user.fullName.toLowerCase() ||
-                        v.contactEmail.toLowerCase() === user.email.toLowerCase() ||
-                        (sellerInfo && v.contactPhone.replace(/\s/g, '') === sellerInfo.phone?.replace(/\s/g, ''))
+                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                        (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
                     )
                 );
                 setViewingAppointments(userViewings);
@@ -278,6 +280,18 @@ export default function SellerDashboardPage() {
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Buyer Dashboard</h3>
                         </Link>
+
+                        <Link href="/dashboard/viewings" className="premium-card rounded-xl p-6 text-center group">
+                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                                <Calendar className="w-6 h-6 text-gold" />
+                            </div>
+                            <h3 className="text-charcoal font-semibold text-sm">Viewings</h3>
+                            {viewingAppointments.length > 0 && (
+                                <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-gold/20 text-gold text-xs font-semibold">
+                                    {viewingAppointments.length}
+                                </span>
+                            )}
+                        </Link>
                     </div>
 
                     {/* Viewing Appointments Section */}
@@ -293,6 +307,12 @@ export default function SellerDashboardPage() {
                                         <p className="text-charcoal/50 text-sm">Appointments scheduled by agents</p>
                                     </div>
                                 </div>
+                                <Link
+                                    href="/dashboard/viewings"
+                                    className="px-4 py-2 text-gold hover:underline text-sm font-semibold"
+                                >
+                                    View All
+                                </Link>
                             </div>
 
                             <div className="space-y-4">

@@ -49,17 +49,19 @@ export default function ViewingsPage() {
                 const sellerInfo = JSON.parse(localStorage.getItem('propReady_sellerInfo') || '{}');
                 
                 // Filter viewings for this user (buyer or seller)
+                const quizPhone = (quizResult.phone || '').replace(/\s/g, '');
+                const sellerPhone = (sellerInfo?.phone || '').replace(/\s/g, '');
                 const userViewings = storedViewings.filter((v: any) => {
                     const matchesBuyer = v.contactType === 'buyer' && (
-                        v.contactName.toLowerCase() === user.fullName.toLowerCase() ||
-                        v.contactEmail.toLowerCase() === user.email.toLowerCase() ||
-                        (quizResult.phone && v.contactPhone.replace(/\s/g, '') === quizResult.phone.replace(/\s/g, ''))
+                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                        (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
                     );
                     
                     const matchesSeller = v.contactType === 'seller' && (
-                        v.contactName.toLowerCase() === user.fullName.toLowerCase() ||
-                        v.contactEmail.toLowerCase() === user.email.toLowerCase() ||
-                        (sellerInfo.phone && v.contactPhone.replace(/\s/g, '') === sellerInfo.phone.replace(/\s/g, ''))
+                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                        (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
                     );
                     
                     return matchesBuyer || matchesSeller;

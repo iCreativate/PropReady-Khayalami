@@ -71,15 +71,15 @@ export default function HomePage() {
 
                     {/* Subheading */}
                     <p className="text-xl md:text-2xl text-charcoal/90 mb-12 max-w-3xl mx-auto">
-                        Get pre-qualified for a home loan in minutes. Connect with verified agents and find your dream home. 100% free for buyers and sellers.
+                        Learn about real estate, bonds, buying your first home, and navigating the property market. Connect with verified agents and find your dream home. 100% free for buyers and sellers.
                     </p>
 
                     {/* CTA Button */}
                     <Link
-                        href="/quiz"
+                        href="/learn"
                         className="inline-flex items-center space-x-2 px-8 py-4 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-2xl"
                     >
-                        <span>Start My Home Journey</span>
+                        <span>Explore Learner Hub</span>
                         <ArrowRight className="w-5 h-5" />
                     </Link>
 

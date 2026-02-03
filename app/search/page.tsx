@@ -53,7 +53,7 @@ export default function SearchPage() {
         try {
             const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
             const normalized: Property[] = (Array.isArray(stored) ? stored : [])
-                .filter((p: any) => p && p.id && p.type && typeof p.price === 'number')
+                .filter((p: any) => p && p.id && p.type && typeof p.price === 'number' && (p.published !== false))
                 .map((p: any) => ({
                     id: String(p.id),
                     title: String(p.title || 'Listed Property'),

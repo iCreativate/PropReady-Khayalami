@@ -71,11 +71,12 @@ export default function DashboardPage() {
                 // Load viewing appointments for this user (buyer)
                 const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
                 const quizData = JSON.parse(localStorage.getItem('propReady_quizResult') || '{}');
+                const quizPhone = (quizData.phone || '').replace(/\s/g, '');
                 const userViewings = storedViewings.filter((v: any) => 
                     v.contactType === 'buyer' && (
-                        v.contactName.toLowerCase() === user.fullName.toLowerCase() ||
-                        v.contactEmail.toLowerCase() === user.email.toLowerCase() ||
-                        (quizData.phone && v.contactPhone.replace(/\s/g, '') === quizData.phone.replace(/\s/g, ''))
+                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                        (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
                     )
                 );
                 setViewingAppointments(userViewings);

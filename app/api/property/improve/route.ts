@@ -32,23 +32,28 @@ export async function POST(request: NextRequest) {
             imageCount = 0,
         } = body;
 
-        const featuresList = Array.isArray(features) ? features : [];
+        const featuresList = (Array.isArray(features) ? features : []).filter((f): f is string => typeof f === 'string');
         const titleStr = String(title ?? '');
         const typeStr = String(type ?? '');
         const descStr = String(description ?? '');
 
         if (OPENAI_API_KEY) {
-            const improved = await improveWithOpenAI({
-                title: titleStr,
-                type: typeStr,
-                bedrooms: String(bedrooms),
-                bathrooms: String(bathrooms),
-                size: String(size),
-                description: descStr,
-                features: featuresList,
-                imageCount: Number(imageCount) || 0,
-            });
-            return NextResponse.json(improved);
+            try {
+                const improved = await improveWithOpenAI({
+                    title: titleStr,
+                    type: typeStr,
+                    bedrooms: String(bedrooms),
+                    bathrooms: String(bathrooms),
+                    size: String(size),
+                    description: descStr,
+                    features: featuresList,
+                    imageCount: Number(imageCount) || 0,
+                });
+                return NextResponse.json(improved);
+            } catch (openAiErr) {
+                console.warn('OpenAI improve failed, using fallback:', openAiErr);
+                // Fall through to fallback
+            }
         }
 
         // Fallback: compute score and improve description without OpenAI

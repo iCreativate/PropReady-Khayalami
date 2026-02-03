@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import imageCompression from 'browser-image-compression';
 import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit, AlertCircle } from 'lucide-react';
-import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 
 interface Lead {
@@ -57,6 +57,7 @@ interface ListedProperty {
     features?: string[];
     listingScore?: number;
     videoUrl?: string;
+    published?: boolean;
 }
 
 const PROPERTY_FEATURES = ['Parking', 'Garden', 'Security', 'Pet Friendly', 'Pool', 'Garage', 'Borehole', 'Solar', 'Fibre'];
@@ -89,6 +90,7 @@ export default function AgentsDashboardPage() {
     const [currentAgent, setCurrentAgent] = useState<{ fullName: string; email: string; company?: string; id?: string; plan?: string; city?: string } | null>(null);
     const [showActionsModal, setShowActionsModal] = useState<Lead | Seller | null>(null);
     const [showPropertyModal, setShowPropertyModal] = useState(false);
+    const [showViewPropertyModal, setShowViewPropertyModal] = useState<ListedProperty | null>(null);
     const [showViewingModal, setShowViewingModal] = useState(false);
     const [showSuccessfulLeadsModal, setShowSuccessfulLeadsModal] = useState(false);
     const [selectedPropertyForViewing, setSelectedPropertyForViewing] = useState<ListedProperty | null>(null);
@@ -198,7 +200,9 @@ export default function AgentsDashboardPage() {
         // Load listed properties
         if (typeof window !== 'undefined' && currentAgent?.id) {
             const storedProperties = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-            const agentProperties = storedProperties.filter((p: ListedProperty) => p.agentId === currentAgent.id);
+            const agentProperties = storedProperties
+                .filter((p: ListedProperty) => p.agentId === currentAgent.id)
+                .map((p: ListedProperty) => ({ ...p, published: p.published ?? true })); // Backward compat: old properties treated as published
             setListedProperties(agentProperties);
         }
     }, [currentAgent]);
@@ -511,18 +515,31 @@ export default function AgentsDashboardPage() {
                     bathrooms: propertyForm.bathrooms,
                     size: propertyForm.size,
                     description: propertyForm.description,
-                    features: propertyForm.features,
+                    features: Array.isArray(propertyForm.features) ? propertyForm.features : [],
                     imageCount: propertyForm.images?.length ?? 0,
                 }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to improve');
-            if (data.improvedDescription != null) {
-                setPropertyForm(prev => ({ ...prev, description: data.improvedDescription }));
+            let data: Record<string, unknown> = {};
+            try {
+                data = await res.json();
+            } catch {
+                throw new Error('Invalid response from server');
             }
-            setImproveResult({ listingScore: data.listingScore ?? 0, feedback: data.feedback ?? [] });
+            if (!res.ok) {
+                const errMsg = typeof data?.error === 'string' ? data.error : 'Failed to improve listing';
+                throw new Error(errMsg);
+            }
+            const improvedDesc = data.improvedDescription;
+            const score = typeof data.listingScore === 'number' ? data.listingScore : (typeof data.listingScore === 'string' ? parseInt(data.listingScore, 10) : 0);
+            const feedback = Array.isArray(data.feedback) ? data.feedback.map(String) : [];
+            if (typeof improvedDesc === 'string' && improvedDesc) {
+                setPropertyForm(prev => ({ ...prev, description: improvedDesc }));
+            }
+            setImproveResult({ listingScore: isNaN(score) ? 0 : Math.min(100, Math.max(0, score)), feedback });
         } catch (e) {
-            setImproveResult({ listingScore: 0, feedback: ['Could not improve listing. Check your connection or try again.'] });
+            const msg = e instanceof Error ? e.message : 'Could not improve listing. Check your connection or try again.';
+            setImproveResult({ listingScore: 0, feedback: [msg] });
+            alert(msg);
         } finally {
             setImproveLoading(false);
         }
@@ -619,7 +636,7 @@ export default function AgentsDashboardPage() {
             title: propertyForm.title,
             address: propertyForm.address,
             type: propertyForm.type,
-            price: parseFloat(propertyForm.price) || 0,
+            price: parseAmountForDisplay(propertyForm.price) || 0,
             bedrooms: parseInt(propertyForm.bedrooms, 10) || 0,
             bathrooms: parseInt(propertyForm.bathrooms, 10) || 0,
             size: parseFloat(propertyForm.size) || 0,
@@ -629,7 +646,8 @@ export default function AgentsDashboardPage() {
             listingScore: improveResult?.listingScore,
             videoUrl: propertyForm.videoUrl?.trim() || undefined,
             agentId: currentAgent.id,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            published: false, // Draft by default - agent must publish
         };
 
         const storedProperties = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
@@ -652,6 +670,39 @@ export default function AgentsDashboardPage() {
         });
         setImproveResult(null);
         setShowPropertyModal(false);
+    };
+
+    const handlePublishProperty = (property: ListedProperty) => {
+        const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
+        const updated = stored.map((p: ListedProperty) =>
+            p.id === property.id ? { ...p, published: true } : p
+        );
+        localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
+        setListedProperties(prev => prev.map(p => p.id === property.id ? { ...p, published: true } : p));
+        setShowViewPropertyModal(prev => prev?.id === property.id ? { ...prev, published: true } : prev);
+    };
+
+    const handleUnpublishProperty = (property: ListedProperty) => {
+        const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
+        const updated = stored.map((p: ListedProperty) =>
+            p.id === property.id ? { ...p, published: false } : p
+        );
+        localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
+        setListedProperties(prev => prev.map(p => p.id === property.id ? { ...p, published: false } : p));
+        setShowViewPropertyModal(prev => prev?.id === property.id ? { ...prev, published: false } : prev);
+    };
+
+    const handleDeleteProperty = (property: ListedProperty) => {
+        if (!confirm(`Delete "${property.title}"? This cannot be undone.`)) return;
+        const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
+        const updated = stored.filter((p: ListedProperty) => p.id !== property.id);
+        localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
+        setListedProperties(prev => prev.filter(p => p.id !== property.id));
+        setShowViewPropertyModal(null);
+        if (selectedPropertyForViewing?.id === property.id) {
+            setSelectedPropertyForViewing(null);
+            setShowViewingModal(false);
+        }
     };
 
     const handleScheduleViewing = () => {
@@ -913,11 +964,18 @@ export default function AgentsDashboardPage() {
                                         <div className="p-4 flex-1 flex flex-col">
                                             <div className="flex items-start justify-between gap-2 mb-2">
                                                 <h3 className="text-charcoal font-semibold">{property.title}</h3>
-                                                {property.listingScore != null && (
-                                                    <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold bg-gold/20 text-gold">
-                                                        {property.listingScore}/100
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                    {!property.published && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-700">
+                                                            Draft
+                                                        </span>
+                                                    )}
+                                                    {property.listingScore != null && (
+                                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gold/20 text-gold">
+                                                            {property.listingScore}/100
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="space-y-1 text-sm text-charcoal/70 mb-3">
                                                 <div className="flex items-center gap-2">
@@ -966,13 +1024,44 @@ export default function AgentsDashboardPage() {
                                                     Watch video
                                                 </a>
                                             ) : null}
+                                            <div className="flex items-center gap-2 mt-auto">
+                                                <button
+                                                    onClick={() => setShowViewPropertyModal(property)}
+                                                    className="flex-1 px-3 py-2 border border-charcoal/20 text-charcoal rounded-lg hover:bg-charcoal/5 transition text-sm flex items-center justify-center gap-1.5"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                    View
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteProperty(property)}
+                                                    className="p-2 border border-red-500/30 text-red-600 rounded-lg hover:bg-red-500/10 transition"
+                                                    title="Delete property"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                                {property.published ? (
+                                                    <button
+                                                        onClick={() => handleUnpublishProperty(property)}
+                                                        className="flex-1 px-3 py-2 bg-charcoal/10 text-charcoal rounded-lg hover:bg-charcoal/20 transition text-sm text-xs font-medium"
+                                                    >
+                                                        Unpublish
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handlePublishProperty(property)}
+                                                        className="flex-1 px-3 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-1.5"
+                                                    >
+                                                        Publish
+                                                    </button>
+                                                )}
+                                            </div>
                                             <button
                                                 onClick={() => {
                                                     setSelectedPropertyForViewing(property);
                                                     setViewingForm(prev => ({ ...prev, propertyId: property.id }));
                                                     setShowViewingModal(true);
                                                 }}
-                                                className="mt-auto w-full px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-2"
+                                                className="w-full px-4 py-2 bg-gold/20 text-gold border border-gold/40 rounded-lg hover:bg-gold/30 transition text-sm flex items-center justify-center gap-2 mt-2"
                                             >
                                                 <CalendarIcon className="w-4 h-4" />
                                                 Schedule Viewing
@@ -1909,10 +1998,14 @@ export default function AgentsDashboardPage() {
                                 <div>
                                     <label className="block text-charcoal font-semibold mb-2">Price (R)</label>
                                     <input
-                                        type="number"
-                                        value={propertyForm.price}
-                                        onChange={(e) => setPropertyForm({ ...propertyForm, price: e.target.value })}
-                                        placeholder="e.g., 1200000"
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={propertyForm.price ? formatNumber(parseAmountForDisplay(propertyForm.price)) : ''}
+                                        onChange={(e) => {
+                                            const digits = e.target.value.replace(/\D/g, '');
+                                            setPropertyForm(prev => ({ ...prev, price: digits }));
+                                        }}
+                                        placeholder="e.g., 1,500,000"
                                         className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
                                     />
                                 </div>
@@ -2137,10 +2230,148 @@ export default function AgentsDashboardPage() {
                                 onClick={handleAddProperty}
                                 className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                             >
-                                Add Property
+                                Save as Draft
                             </button>
                         </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* View Property Modal */}
+            {showViewPropertyModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                    </div>
+                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
+                            <div className="relative flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                    <h2 className="text-2xl font-bold text-white mb-1">{showViewPropertyModal.title}</h2>
+                                    <p className="text-white/90 text-sm flex items-center gap-1">
+                                        <MapPin className="w-4 h-4" />
+                                        {showViewPropertyModal.address}
+                                    </p>
+                                    <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${showViewPropertyModal.published ? 'bg-white/20 text-white' : 'bg-amber-500/30 text-amber-100'}`}>
+                                        {showViewPropertyModal.published ? 'Published' : 'Draft'}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setShowViewPropertyModal(null)}
+                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 border border-white/30 text-white hover:bg-white/30 transition flex items-center justify-center"
+                                    aria-label="Close"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+                            {showViewPropertyModal.images?.length ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {showViewPropertyModal.images.slice(0, 6).map((url, i) => (
+                                        <img key={i} src={url} alt="" className="w-full aspect-video object-cover rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ))}
+                                    {showViewPropertyModal.images.length > 6 && (
+                                        <div className="aspect-video rounded-lg bg-charcoal/10 flex items-center justify-center text-charcoal/60 text-sm">
+                                            +{showViewPropertyModal.images.length - 6} more
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="aspect-video bg-charcoal/10 rounded-xl flex items-center justify-center">
+                                    <ImageIcon className="w-16 h-16 text-charcoal/30" />
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Price</p>
+                                    <p className="text-charcoal font-bold">{formatCurrency(showViewPropertyModal.price)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Type</p>
+                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.type || '—'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Bedrooms</p>
+                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.bedrooms}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Bathrooms</p>
+                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.bathrooms}</p>
+                                </div>
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Size</p>
+                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.size} m²</p>
+                                </div>
+                                {showViewPropertyModal.listingScore != null && (
+                                    <div>
+                                        <p className="text-charcoal/50 text-xs font-medium mb-1">Listing Score</p>
+                                        <p className="text-gold font-bold">{showViewPropertyModal.listingScore}/100</p>
+                                    </div>
+                                )}
+                            </div>
+                            {showViewPropertyModal.description && (
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-2">Description</p>
+                                    <p className="text-charcoal/80 text-sm leading-relaxed whitespace-pre-wrap">{showViewPropertyModal.description}</p>
+                                </div>
+                            )}
+                            {showViewPropertyModal.features?.length ? (
+                                <div>
+                                    <p className="text-charcoal/50 text-xs font-medium mb-2">Features</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {showViewPropertyModal.features.map((f) => (
+                                            <span key={f} className="px-3 py-1 rounded-full bg-gold/10 text-gold text-sm font-medium">{f}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                            {showViewPropertyModal.videoUrl && (
+                                <a href={showViewPropertyModal.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-gold font-semibold hover:underline">
+                                    <Video className="w-4 h-4" />
+                                    Watch video
+                                </a>
+                            )}
+                        </div>
+                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex flex-wrap items-center justify-between gap-4">
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleDeleteProperty(showViewPropertyModal)}
+                                    className="px-4 py-2 border border-red-500/30 text-red-600 rounded-xl hover:bg-red-500/10 transition text-sm font-semibold"
+                                >
+                                    Delete
+                                </button>
+                                {showViewPropertyModal.published ? (
+                                    <button
+                                        onClick={() => handleUnpublishProperty(showViewPropertyModal)}
+                                        className="px-4 py-2 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition text-sm font-semibold"
+                                    >
+                                        Unpublish
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handlePublishProperty(showViewPropertyModal)}
+                                        className="px-6 py-2 bg-gold text-white rounded-xl hover:bg-gold-600 transition text-sm font-semibold"
+                                    >
+                                        Publish
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setSelectedPropertyForViewing(showViewPropertyModal);
+                                    setViewingForm(prev => ({ ...prev, propertyId: showViewPropertyModal.id }));
+                                    setShowViewPropertyModal(null);
+                                    setShowViewingModal(true);
+                                }}
+                                className="px-6 py-2 bg-gold/20 text-gold border border-gold/40 rounded-xl hover:bg-gold/30 transition text-sm font-semibold flex items-center gap-2"
+                            >
+                                <CalendarIcon className="w-4 h-4" />
+                                Schedule Viewing
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
