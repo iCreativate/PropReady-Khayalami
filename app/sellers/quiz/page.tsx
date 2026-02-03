@@ -227,6 +227,8 @@ export default function SellersQuizPage() {
                 const errBody = await leadsRes.json().catch(() => ({}));
                 console.error('Seller lead save to database failed:', leadsRes.status, errBody);
                 if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('propReady_sellerLeadSyncFailed', '1');
+                const hint = errBody?.error?.includes('column') ? ' The database may need the seller columns migration (supabase-migration-leads-seller-columns.sql).' : '';
+                alert(`Your info was saved locally, but we couldn't sync to the agent database (${leadsRes.status}). Agents may not see your listing until this is fixed.${hint}`);
             }
             const existingSellers = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
             const filteredSellers = existingSellers.filter((s: any) => s.id !== (existingUser?.id || userId));

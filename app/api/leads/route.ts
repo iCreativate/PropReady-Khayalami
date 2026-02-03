@@ -129,28 +129,45 @@ export async function POST(request: NextRequest) {
         }
 
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
-        const { error } = await supabase
-            .from('leads')
-            .upsert([row], { onConflict: 'id' })
-            .select()
-            .single();
 
-        if (error) {
-            console.error('Supabase createLead error:', error);
-            const msg = error.message || '';
-            const hint = error.code === '23502'
+        const tryUpsert = (payload: Record<string, unknown>) =>
+            supabase.from('leads').upsert([payload], { onConflict: 'id' }).select().single();
+
+        let result = await tryUpsert(row);
+
+        if (result.error && result.error.code === 'PGRST204' && /column.*does not exist|Could not find.*column/i.test(result.error.message || '')) {
+            const { building_size, land_size, property_size, ...fallback1 } = row as Record<string, unknown>;
+            result = await tryUpsert(fallback1);
+        }
+        if (result.error && result.error.code === 'PGRST204' && /column.*does not exist|Could not find.*column/i.test(result.error.message || '')) {
+            const coreOnly = {
+                id: row.id,
+                agent_id: row.agent_id,
+                lead_type: row.lead_type,
+                full_name: row.full_name,
+                email: row.email,
+                phone: row.phone,
+                status: row.status,
+            };
+            result = await tryUpsert(coreOnly);
+        }
+
+        if (result.error) {
+            console.error('Supabase createLead error:', result.error);
+            const msg = result.error.message || '';
+            const hint = result.error.code === '23502'
                 ? ' Run in Supabase SQL: ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;'
-                : error.code === '23505'
+                : result.error.code === '23505'
                     ? ' Duplicate id. API uses upsert; ensure latest code is deployed.'
-                    : error.code === '42P01'
+                    : result.error.code === '42P01'
                         ? ' Create the leads table in Supabase (run supabase-schema.sql).'
-                        : error.code === '42501'
+                        : result.error.code === '42501'
                             ? ' RLS blocking insert. Run in Supabase SQL: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
-                            : /column.*does not exist|undefined column/i.test(msg)
+                            : /column.*does not exist|undefined column|Could not find.*column/i.test(msg)
                                 ? ' Run supabase-migration-leads-seller-columns.sql in Supabase SQL Editor to add lead_type and seller columns.'
                                 : '';
             return NextResponse.json(
-                { success: false, error: error.message + hint, code: error.code },
+                { success: false, error: result.error.message + hint, code: result.error.code },
                 { status: 500 }
             );
         }

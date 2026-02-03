@@ -974,6 +974,14 @@ export default function AgentsDashboardPage() {
                                 >
                                     Sellers
                                 </button>
+                                <button
+                                    onClick={() => setLeadsRefreshKey(k => k + 1)}
+                                    className="px-4 py-2 rounded-lg bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5 transition flex items-center gap-2"
+                                    title="Refresh leads from database"
+                                >
+                                    <TrendingUp className="w-4 h-4" />
+                                    Refresh
+                                </button>
                             </div>
                         </div>
 
@@ -1085,10 +1093,10 @@ export default function AgentsDashboardPage() {
                                 <div className="text-center py-12">
                                     <Building2 className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
                                     <p className="text-charcoal/70 text-lg">No sellers found</p>
-                                    <p className="text-charcoal/50 text-sm mt-2">
+                                    <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
                                         {searchTerm || statusFilter !== 'all' 
                                             ? 'Try adjusting your filters' 
-                                            : 'Sellers will appear here once they complete the seller quiz'}
+                                            : <>Sellers come from the database when they complete the seller quiz. Use Refresh above, or check <a href="/api/leads/debug" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">/api/leads/debug</a> to verify the database.</>}
                                     </p>
                                 </div>
                             ) : (
