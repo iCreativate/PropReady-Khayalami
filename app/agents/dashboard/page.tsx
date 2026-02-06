@@ -129,6 +129,7 @@ export default function AgentsDashboardPage() {
 
     // Add property: 'choice' = pick method, 'import' = paste URL & fetch, 'manual' = traditional form
     const [addPropertyMode, setAddPropertyMode] = useState<'choice' | 'import' | 'manual'>('choice');
+    const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
     const [importUrl, setImportUrl] = useState('');
     const [importLoading, setImportLoading] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
@@ -698,9 +699,12 @@ export default function AgentsDashboardPage() {
 
     const handleAddProperty = async () => {
         if (!currentAgent?.id) return;
-        
-        const newProperty: ListedProperty = {
-            id: `property-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+
+        const isEditing = !!editingPropertyId;
+        const existing = listedProperties.find(p => p.id === editingPropertyId);
+
+        const propertyData: ListedProperty = {
+            id: isEditing ? editingPropertyId! : `property-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             title: propertyForm.title,
             address: propertyForm.address,
             type: propertyForm.type,
@@ -711,38 +715,67 @@ export default function AgentsDashboardPage() {
             description: propertyForm.description,
             images: propertyForm.images?.length ? propertyForm.images : undefined,
             features: propertyForm.features?.length ? propertyForm.features : undefined,
-            listingScore: improveResult?.listingScore,
+            listingScore: isEditing ? (existing?.listingScore ?? improveResult?.listingScore) : improveResult?.listingScore,
             videoUrl: propertyForm.videoUrl?.trim() || undefined,
             agentId: currentAgent.id,
-            timestamp: new Date().toISOString(),
-            published: false, // Draft by default - agent must publish
+            timestamp: isEditing ? (existing?.timestamp ?? new Date().toISOString()) : new Date().toISOString(),
+            published: isEditing ? (existing?.published ?? false) : false,
         };
 
         const storedProperties = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-        storedProperties.push(newProperty);
-        localStorage.setItem('propReady_listedProperties', JSON.stringify(storedProperties));
-        setListedProperties([...listedProperties, newProperty]);
-
-        // Sync to database (so properties appear on all browsers)
-        try {
-            const res = await fetch('/api/properties', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newProperty),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                console.warn('Property save to database failed:', res.status, err);
-                const msg = res.status === 503
-                    ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify environment variables, then redeploy.'
-                    : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
-                        ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table. See DATABASE_SETUP.md.'
-                        : err?.error || `Save failed (${res.status})`;
-                alert(`Property saved locally but could not sync to database.\n\n${msg}\n\nProperties will only appear on this browser until the database is set up.`);
+        if (isEditing) {
+            const updated = storedProperties.map((p: ListedProperty) =>
+                p.id === editingPropertyId ? propertyData : p
+            );
+            localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
+            setListedProperties(prev => prev.map(p => p.id === editingPropertyId ? propertyData : p));
+            try {
+                const res = await fetch('/api/properties', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: editingPropertyId,
+                        title: propertyData.title,
+                        address: propertyData.address,
+                        type: propertyData.type,
+                        price: propertyData.price,
+                        bedrooms: propertyData.bedrooms,
+                        bathrooms: propertyData.bathrooms,
+                        size: propertyData.size,
+                        description: propertyData.description,
+                        images: propertyData.images,
+                        features: propertyData.features,
+                        videoUrl: propertyData.videoUrl,
+                    }),
+                });
+                if (!res.ok) console.warn('Property update sync failed:', res.status);
+            } catch (e) {
+                console.warn('Property update API sync failed', e);
             }
-        } catch (e) {
-            console.warn('Property API sync failed', e);
-            alert('Property saved locally but could not sync to database. Check your connection and Netlify environment variables. Properties will only appear on this browser.');
+        } else {
+            storedProperties.push(propertyData);
+            localStorage.setItem('propReady_listedProperties', JSON.stringify(storedProperties));
+            setListedProperties([...listedProperties, propertyData]);
+            try {
+                const res = await fetch('/api/properties', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(propertyData),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    console.warn('Property save to database failed:', res.status, err);
+                    const msg = res.status === 503
+                        ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify environment variables, then redeploy.'
+                        : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
+                            ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table. See DATABASE_SETUP.md.'
+                            : err?.error || `Save failed (${res.status})`;
+                    alert(`Property saved locally but could not sync to database.\n\n${msg}\n\nProperties will only appear on this browser until the database is set up.`);
+                }
+            } catch (e) {
+                console.warn('Property API sync failed', e);
+                alert('Property saved locally but could not sync to database. Check your connection and Netlify environment variables. Properties will only appear on this browser.');
+            }
         }
 
         setPropertyForm({
@@ -761,6 +794,7 @@ export default function AgentsDashboardPage() {
         setSingleImageUrl('');
         setBulkImageUrls('');
         setImproveResult(null);
+        setEditingPropertyId(null);
         setShowPropertyModal(false);
     };
 
@@ -802,6 +836,28 @@ export default function AgentsDashboardPage() {
         } catch (e) {
             console.warn('Property unpublish API sync failed', e);
         }
+    };
+
+    const handleEditProperty = (property: ListedProperty) => {
+        setPropertyForm({
+            title: property.title || '',
+            address: property.address || '',
+            type: property.type || '',
+            price: property.price ? String(property.price) : '',
+            bedrooms: property.bedrooms ? String(property.bedrooms) : '',
+            bathrooms: property.bathrooms ? String(property.bathrooms) : '',
+            size: property.size ? String(property.size) : '',
+            description: property.description || '',
+            images: Array.isArray(property.images) ? [...property.images] : [],
+            features: Array.isArray(property.features) ? [...property.features] : [],
+            videoUrl: property.videoUrl || '',
+        });
+        setSingleImageUrl('');
+        setBulkImageUrls('');
+        setEditingPropertyId(property.id);
+        setAddPropertyMode('manual');
+        setShowViewPropertyModal(null);
+        setShowPropertyModal(true);
     };
 
     const handleDeleteProperty = async (property: ListedProperty) => {
@@ -1049,6 +1105,7 @@ export default function AgentsDashboardPage() {
                                 setSingleImageUrl('');
                                 setImageUploadError(null);
                                 setAddPropertyMode('choice');
+                                setEditingPropertyId(null);
                                 setImportUrl('');
                                 setImportError(null);
                                 setPropertyForm({ title: '', address: '', type: '', price: '', bedrooms: '', bathrooms: '', size: '', description: '', images: [], features: [], videoUrl: '' });
@@ -1163,6 +1220,15 @@ export default function AgentsDashboardPage() {
                                                     <Edit className="w-4 h-4" />
                                                     View
                                                 </button>
+                                                {!property.published && (
+                                                    <button
+                                                        onClick={() => handleEditProperty(property)}
+                                                        className="px-3 py-2 bg-gold/20 text-gold border border-gold/40 rounded-lg hover:bg-gold/30 transition text-sm font-semibold"
+                                                        title="Edit draft"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleDeleteProperty(property)}
                                                     className="p-2 border border-red-500/30 text-red-600 rounded-lg hover:bg-red-500/10 transition"
@@ -1980,13 +2046,14 @@ export default function AgentsDashboardPage() {
                             <div className="relative flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                     <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                                        Add Property to PropReady
+                                        {editingPropertyId ? 'Edit Property' : 'Add Property to PropReady'}
                                     </h2>
                                 </div>
                                 <button
                                     onClick={() => {
                                         setShowPropertyModal(false);
                                         setAddPropertyMode('choice');
+                                        setEditingPropertyId(null);
                                     }}
                                     className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
                                     aria-label="Close"
@@ -2081,7 +2148,14 @@ export default function AgentsDashboardPage() {
                         <div className="flex items-center gap-2 mb-4">
                             <button
                                 type="button"
-                                onClick={() => setAddPropertyMode('choice')}
+                                onClick={() => {
+                                    if (editingPropertyId) {
+                                        setShowPropertyModal(false);
+                                        setEditingPropertyId(null);
+                                    } else {
+                                        setAddPropertyMode('choice');
+                                    }
+                                }}
                                 className="text-charcoal/60 hover:text-charcoal text-sm font-medium"
                             >
                                 ← Back
@@ -2206,7 +2280,7 @@ export default function AgentsDashboardPage() {
                                                         const next = (propertyForm.images || []).filter((_, i) => i !== idx);
                                                         setPropertyForm({ ...propertyForm, images: next });
                                                     }}
-                                                    className="absolute top-1 right-1 p-1.5 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                    className="absolute top-1 right-1 p-1.5 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition opacity-90 hover:opacity-100"
                                                     aria-label="Remove image"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -2394,7 +2468,7 @@ export default function AgentsDashboardPage() {
                                 onClick={handleAddProperty}
                                 className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                             >
-                                Save as Draft
+                                {editingPropertyId ? 'Save changes' : 'Save as Draft'}
                             </button>
                         </div>
                         )}
@@ -2546,6 +2620,13 @@ export default function AgentsDashboardPage() {
                         </div>
                         <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex flex-wrap items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handleEditProperty(showViewPropertyModal)}
+                                    className="px-4 py-2 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition text-sm font-semibold flex items-center gap-2"
+                                >
+                                    <Edit className="w-4 h-4" />
+                                    Edit
+                                </button>
                                 <button
                                     onClick={() => handleDeleteProperty(showViewPropertyModal)}
                                     className="px-4 py-2 border border-red-500/30 text-red-600 rounded-xl hover:bg-red-500/10 transition text-sm font-semibold"
