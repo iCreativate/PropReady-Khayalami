@@ -677,7 +677,7 @@ export default function AgentsDashboardPage() {
         }
     };
 
-    const handleAddProperty = () => {
+    const handleAddProperty = async () => {
         if (!currentAgent?.id) return;
         
         const newProperty: ListedProperty = {
