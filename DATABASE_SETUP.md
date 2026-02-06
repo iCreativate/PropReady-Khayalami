@@ -51,11 +51,12 @@ Without this bucket, agents can still add images by pasting image URLs.
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-project-url-here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key-here
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
-(`SUPABASE_SERVICE_ROLE_KEY` is required for property image uploads; add it only if you use the `property-images` bucket.)
+**Required for leads, properties, and viewings:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the "anon" or "public" key from Supabase → Settings → API).  
+`SUPABASE_SERVICE_ROLE_KEY` is optional (for property image uploads; add only if you use the `property-images` bucket).
 
 3. Click "Save"
 4. Redeploy your site
@@ -83,7 +84,7 @@ After deployment, test the following:
    - Run `supabase-migration-leads-seller-columns.sql` for seller fields.
    - Run `supabase-migration-leads-location.sql` for city/location matching.
    - Run `supabase-migration-viewings.sql` for viewing appointments (so viewings sync to the database).
-   - Run `supabase-migration-properties.sql` for listed properties (so properties appear on the search page on all browsers). **Agents must click "Publish" on each property** for it to appear on the properties/search page.
+   - Run `supabase-migration-properties.sql` for listed properties (creates the **`listed_properties`** table – not the `properties` table). Properties will then sync across all browsers. **Agents must click "Publish"** on each property for it to appear on the search page.
    - If `agent_id` was NOT NULL: `ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;`
    - If inserts are blocked by RLS, run:
      ```sql
@@ -103,9 +104,9 @@ The database includes the following tables:
 - `properties` - Property listings
 - `leads` - All leads (buyers, sellers, investors); one table with `lead_type`, seller fields, and `city` for location matching
 - `viewing_appointments` - Property viewing appointments (created by `supabase-migration-viewings.sql`)
-- `listed_properties` - Agent-listed properties (created by `supabase-migration-properties.sql`)
+- `listed_properties` - Agent-listed properties (created by `supabase-migration-properties.sql`). **Check this table in Supabase**, not the `properties` table.
 
-See `supabase-schema.sql` for the complete schema. Run `supabase-migration-viewings.sql` so viewings sync to the database. Run `supabase-migration-properties.sql` so listed properties appear on the search page on all browsers and devices.
+See `supabase-schema.sql` for the complete schema. Run `supabase-migration-viewings.sql` so viewings sync. Run `supabase-migration-properties.sql` so listed properties sync across all browsers. Verify at `https://your-site.netlify.app/api/properties/debug`.
 
 ## Fallback Mode
 

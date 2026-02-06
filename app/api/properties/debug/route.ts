@@ -62,13 +62,14 @@ export async function GET() {
         return NextResponse.json({
             configured: true,
             tableOk: true,
+            tableName: 'listed_properties',
             propertyCount: totalCount ?? 0,
             publishedCount,
             sample: allRows || [],
             hint: publishedCount === 0 && (totalCount ?? 0) > 0
                 ? 'Properties exist but none are published. Agents must click "Publish" on each property for it to appear on the search page.'
                 : (totalCount ?? 0) === 0
-                    ? 'No properties in database. Add a property in the agent dashboard and click Publish.'
+                    ? 'No properties in database. Add a property in the agent dashboard and click Publish. If you added properties but this shows 0, check: (1) Run supabase-migration-properties.sql to create listed_properties table, (2) Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify env vars, (3) Redeploy.'
                     : undefined,
         });
     } catch (err) {

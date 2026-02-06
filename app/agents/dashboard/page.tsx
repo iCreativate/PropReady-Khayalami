@@ -223,13 +223,30 @@ export default function AgentsDashboardPage() {
             // Sync local-only properties to database so they appear on all browsers
             for (const p of localOnly) {
                 try {
-                    await fetch('/api/properties', {
+                    const res = await fetch('/api/properties', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(p),
                     });
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        const msg = res.status === 503
+                            ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify, then redeploy.'
+                            : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
+                                ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table.'
+                                : err?.error || `Sync failed (${res.status})`;
+                        if (!sessionStorage.getItem('propReady_propertySyncAlertShown')) {
+                            sessionStorage.setItem('propReady_propertySyncAlertShown', '1');
+                            alert(`Properties are not syncing to the database.\n\n${msg}\n\nThey will only appear on this browser until fixed. See DATABASE_SETUP.md.`);
+                        }
+                        break;
+                    }
                 } catch {
-                    /* ignore */
+                    if (!sessionStorage.getItem('propReady_propertySyncAlertShown')) {
+                        sessionStorage.setItem('propReady_propertySyncAlertShown', '1');
+                        alert('Properties could not sync to the database. Check your connection. They will only appear on this browser.');
+                    }
+                    break;
                 }
             }
             const merged = [...apiProperties, ...localOnly];
@@ -704,7 +721,7 @@ export default function AgentsDashboardPage() {
         localStorage.setItem('propReady_listedProperties', JSON.stringify(storedProperties));
         setListedProperties([...listedProperties, newProperty]);
 
-        // Sync to database
+        // Sync to database (so properties appear on all browsers)
         try {
             const res = await fetch('/api/properties', {
                 method: 'POST',
@@ -714,9 +731,16 @@ export default function AgentsDashboardPage() {
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 console.warn('Property save to database failed:', res.status, err);
+                const msg = res.status === 503
+                    ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify environment variables, then redeploy.'
+                    : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
+                        ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table. See DATABASE_SETUP.md.'
+                        : err?.error || `Save failed (${res.status})`;
+                alert(`Property saved locally but could not sync to database.\n\n${msg}\n\nProperties will only appear on this browser until the database is set up.`);
             }
         } catch (e) {
             console.warn('Property API sync failed', e);
+            alert('Property saved locally but could not sync to database. Check your connection and Netlify environment variables. Properties will only appear on this browser.');
         }
 
         setPropertyForm({
