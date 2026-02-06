@@ -32,33 +32,45 @@ export default function PropertyDetailPage() {
 
     useEffect(() => {
         if (typeof window === 'undefined' || !id) return;
-        try {
+        const toProperty = (p: any): Property => ({
+            id: String(p.id),
+            title: String(p.title || 'Listed Property'),
+            address: String(p.address || ''),
+            type: String(p.type || 'Property'),
+            price: Number(p.price || 0),
+            bedrooms: Number(p.bedrooms || 0),
+            bathrooms: Number(p.bathrooms || 0),
+            size: Number(p.size || 0),
+            description: p.description ? String(p.description) : undefined,
+            images: Array.isArray(p.images) ? p.images : undefined,
+            features: Array.isArray(p.features) ? p.features : undefined,
+            videoUrl: p.videoUrl ? String(p.videoUrl) : undefined,
+            agentId: p.agentId ? String(p.agentId) : undefined,
+            timestamp: p.timestamp ? String(p.timestamp) : undefined,
+        });
+        async function loadProperty() {
+            try {
+                const res = await fetch(`/api/properties?id=${encodeURIComponent(id)}`, { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.properties) && data.properties.length > 0) {
+                    const found = data.properties[0];
+                    setImageIndex(0);
+                    setProperty(toProperty(found));
+                    return;
+                }
+            } catch (e) {
+                console.warn('Failed to load property from API', e);
+            }
             const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
             const found = stored.find((p: any) => String(p.id) === id);
             if (found && found.published !== false) {
                 setImageIndex(0);
-                setProperty({
-                    id: String(found.id),
-                    title: String(found.title || 'Listed Property'),
-                    address: String(found.address || ''),
-                    type: String(found.type || 'Property'),
-                    price: Number(found.price || 0),
-                    bedrooms: Number(found.bedrooms || 0),
-                    bathrooms: Number(found.bathrooms || 0),
-                    size: Number(found.size || 0),
-                    description: found.description ? String(found.description) : undefined,
-                    images: Array.isArray(found.images) ? found.images : undefined,
-                    features: Array.isArray(found.features) ? found.features : undefined,
-                    videoUrl: found.videoUrl ? String(found.videoUrl) : undefined,
-                    agentId: found.agentId ? String(found.agentId) : undefined,
-                    timestamp: found.timestamp ? String(found.timestamp) : undefined,
-                });
+                setProperty(toProperty(found));
+            } else {
+                setProperty(null);
             }
-        } catch {
-            setProperty(null);
-        } finally {
-            setLoading(false);
         }
+        loadProperty().finally(() => setLoading(false));
     }, [id]);
 
     if (loading) {

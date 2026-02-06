@@ -83,6 +83,7 @@ After deployment, test the following:
    - Run `supabase-migration-leads-seller-columns.sql` for seller fields.
    - Run `supabase-migration-leads-location.sql` for city/location matching.
    - Run `supabase-migration-viewings.sql` for viewing appointments (so viewings sync to the database).
+   - Run `supabase-migration-properties.sql` for listed properties (so properties appear on the search page on all browsers).
    - If `agent_id` was NOT NULL: `ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;`
    - If inserts are blocked by RLS, run:
      ```sql
@@ -102,8 +103,9 @@ The database includes the following tables:
 - `properties` - Property listings
 - `leads` - All leads (buyers, sellers, investors); one table with `lead_type`, seller fields, and `city` for location matching
 - `viewing_appointments` - Property viewing appointments (created by `supabase-migration-viewings.sql`)
+- `listed_properties` - Agent-listed properties (created by `supabase-migration-properties.sql`)
 
-See `supabase-schema.sql` for the complete schema. Run `supabase-migration-viewings.sql` so viewings scheduled by agents are stored in the database and appear on buyer/seller dashboards.
+See `supabase-schema.sql` for the complete schema. Run `supabase-migration-viewings.sql` so viewings sync to the database. Run `supabase-migration-properties.sql` so listed properties appear on the search page on all browsers and devices.
 
 ## Fallback Mode
 

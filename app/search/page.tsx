@@ -51,32 +51,46 @@ export default function SearchPage() {
     }, []);
 
     useEffect(() => {
-        // Load agent-listed properties from localStorage
-        if (typeof window === 'undefined') return;
-        try {
+        // Load published properties from API and localStorage (so they appear on all browsers)
+        async function loadProperties() {
+            if (typeof window === 'undefined') return;
+            const normalize = (p: any): Property => ({
+                id: String(p.id),
+                title: String(p.title || 'Listed Property'),
+                address: String(p.address || 'iKhayalami, Johannesburg'),
+                type: String(p.type || 'Property'),
+                price: Number(p.price || 0),
+                bedrooms: Number(p.bedrooms || 0),
+                bathrooms: Number(p.bathrooms || 0),
+                size: Number(p.size || 0),
+                description: p.description ? String(p.description) : undefined,
+                agentId: p.agentId ? String(p.agentId) : undefined,
+                timestamp: p.timestamp ? String(p.timestamp) : undefined,
+                images: Array.isArray(p.images) ? p.images : undefined,
+                features: Array.isArray(p.features) ? p.features : undefined,
+                videoUrl: p.videoUrl ? String(p.videoUrl) : undefined,
+            });
+            let apiProperties: Property[] = [];
+            try {
+                const res = await fetch('/api/properties', { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.properties)) {
+                    apiProperties = data.properties
+                        .filter((p: any) => p && p.id && p.type && (p.published !== false))
+                        .map(normalize);
+                }
+            } catch (e) {
+                console.warn('Failed to load properties from API', e);
+            }
             const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-            const normalized: Property[] = (Array.isArray(stored) ? stored : [])
+            const localOnly = (Array.isArray(stored) ? stored : [])
                 .filter((p: any) => p && p.id && p.type && typeof p.price === 'number' && (p.published !== false))
-                .map((p: any) => ({
-                    id: String(p.id),
-                    title: String(p.title || 'Listed Property'),
-                    address: String(p.address || 'iKhayalami, Johannesburg'),
-                    type: String(p.type || 'Property'),
-                    price: Number(p.price || 0),
-                    bedrooms: Number(p.bedrooms || 0),
-                    bathrooms: Number(p.bathrooms || 0),
-                    size: Number(p.size || 0),
-                    description: p.description ? String(p.description) : undefined,
-                    agentId: p.agentId ? String(p.agentId) : undefined,
-                    timestamp: p.timestamp ? String(p.timestamp) : undefined,
-                    images: Array.isArray(p.images) ? p.images : undefined,
-                    features: Array.isArray(p.features) ? p.features : undefined,
-                    videoUrl: p.videoUrl ? String(p.videoUrl) : undefined,
-                }));
-            setListedProperties(normalized);
-        } catch {
-            setListedProperties([]);
+                .map(normalize);
+            const ids = new Set(apiProperties.map(p => p.id));
+            const merged = [...apiProperties, ...localOnly.filter(p => !ids.has(p.id))];
+            setListedProperties(merged);
         }
+        loadProperties();
     }, []);
 
     useEffect(() => {

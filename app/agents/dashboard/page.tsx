@@ -91,6 +91,7 @@ export default function AgentsDashboardPage() {
     const [showActionsModal, setShowActionsModal] = useState<Lead | Seller | null>(null);
     const [showPropertyModal, setShowPropertyModal] = useState(false);
     const [showViewPropertyModal, setShowViewPropertyModal] = useState<ListedProperty | null>(null);
+    const [viewPropertyImageIndex, setViewPropertyImageIndex] = useState(0);
     const [showViewingModal, setShowViewingModal] = useState(false);
     const [showSuccessfulLeadsModal, setShowSuccessfulLeadsModal] = useState(false);
     const [selectedPropertyForViewing, setSelectedPropertyForViewing] = useState<ListedProperty | null>(null);
@@ -102,6 +103,7 @@ export default function AgentsDashboardPage() {
     const [viewingStatusFilter, setViewingStatusFilter] = useState<string>('all');
     const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
     const [leadsRefreshKey, setLeadsRefreshKey] = useState(0);
+    const [propertiesRefreshKey, setPropertiesRefreshKey] = useState(0);
     
     const [propertyForm, setPropertyForm] = useState({
         title: '',
@@ -197,15 +199,44 @@ export default function AgentsDashboardPage() {
     }, [leadsRefreshKey]);
 
     useEffect(() => {
-        // Load listed properties
-        if (typeof window !== 'undefined' && currentAgent?.id) {
+        // Load listed properties from API and localStorage
+        async function loadProperties() {
+            if (typeof window === 'undefined' || !currentAgent?.id) return;
             const storedProperties = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-            const agentProperties = storedProperties
-                .filter((p: ListedProperty) => p.agentId === currentAgent.id)
-                .map((p: ListedProperty) => ({ ...p, published: p.published ?? true })); // Backward compat: old properties treated as published
-            setListedProperties(agentProperties);
+            let apiProperties: ListedProperty[] = [];
+            try {
+                const res = await fetch(`/api/properties?agentId=${encodeURIComponent(currentAgent.id)}&published=false`, { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && Array.isArray(data.properties)) {
+                    apiProperties = data.properties.map((p: Record<string, unknown>) => ({
+                        ...p,
+                        published: (p.published ?? true) as boolean,
+                    })) as ListedProperty[];
+                }
+            } catch (e) {
+                console.warn('Failed to load properties from API', e);
+            }
+            const ids = new Set(apiProperties.map((p: ListedProperty) => p.id));
+            const localOnly = storedProperties
+                .filter((p: ListedProperty) => p.agentId === currentAgent.id && !ids.has(p.id))
+                .map((p: ListedProperty) => ({ ...p, published: p.published ?? true }));
+            // Sync local-only properties to database so they appear on all browsers
+            for (const p of localOnly) {
+                try {
+                    await fetch('/api/properties', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(p),
+                    });
+                } catch {
+                    /* ignore */
+                }
+            }
+            const merged = [...apiProperties, ...localOnly];
+            setListedProperties(merged.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()));
         }
-    }, [currentAgent]);
+        loadProperties();
+    }, [currentAgent, propertiesRefreshKey]);
 
     useEffect(() => {
         // Load viewing appointments from API and localStorage
@@ -671,8 +702,23 @@ export default function AgentsDashboardPage() {
         const storedProperties = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
         storedProperties.push(newProperty);
         localStorage.setItem('propReady_listedProperties', JSON.stringify(storedProperties));
-        
         setListedProperties([...listedProperties, newProperty]);
+
+        // Sync to database
+        try {
+            const res = await fetch('/api/properties', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newProperty),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                console.warn('Property save to database failed:', res.status, err);
+            }
+        } catch (e) {
+            console.warn('Property API sync failed', e);
+        }
+
         setPropertyForm({
             title: '',
             address: '',
@@ -690,7 +736,7 @@ export default function AgentsDashboardPage() {
         setShowPropertyModal(false);
     };
 
-    const handlePublishProperty = (property: ListedProperty) => {
+    const handlePublishProperty = async (property: ListedProperty) => {
         const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
         const updated = stored.map((p: ListedProperty) =>
             p.id === property.id ? { ...p, published: true } : p
@@ -698,9 +744,19 @@ export default function AgentsDashboardPage() {
         localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
         setListedProperties(prev => prev.map(p => p.id === property.id ? { ...p, published: true } : p));
         setShowViewPropertyModal(prev => prev?.id === property.id ? { ...prev, published: true } : prev);
+        try {
+            const res = await fetch('/api/properties', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: property.id, published: true }),
+            });
+            if (!res.ok) console.warn('Property publish sync failed:', res.status);
+        } catch (e) {
+            console.warn('Property publish API sync failed', e);
+        }
     };
 
-    const handleUnpublishProperty = (property: ListedProperty) => {
+    const handleUnpublishProperty = async (property: ListedProperty) => {
         const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
         const updated = stored.map((p: ListedProperty) =>
             p.id === property.id ? { ...p, published: false } : p
@@ -708,9 +764,19 @@ export default function AgentsDashboardPage() {
         localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
         setListedProperties(prev => prev.map(p => p.id === property.id ? { ...p, published: false } : p));
         setShowViewPropertyModal(prev => prev?.id === property.id ? { ...prev, published: false } : prev);
+        try {
+            const res = await fetch('/api/properties', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: property.id, published: false }),
+            });
+            if (!res.ok) console.warn('Property unpublish sync failed:', res.status);
+        } catch (e) {
+            console.warn('Property unpublish API sync failed', e);
+        }
     };
 
-    const handleDeleteProperty = (property: ListedProperty) => {
+    const handleDeleteProperty = async (property: ListedProperty) => {
         if (!confirm(`Delete "${property.title}"? This cannot be undone.`)) return;
         const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
         const updated = stored.filter((p: ListedProperty) => p.id !== property.id);
@@ -720,6 +786,11 @@ export default function AgentsDashboardPage() {
         if (selectedPropertyForViewing?.id === property.id) {
             setSelectedPropertyForViewing(null);
             setShowViewingModal(false);
+        }
+        try {
+            await fetch(`/api/properties?id=${encodeURIComponent(property.id)}`, { method: 'DELETE' });
+        } catch (e) {
+            console.warn('Property delete API sync failed', e);
         }
     };
 
@@ -1057,7 +1128,7 @@ export default function AgentsDashboardPage() {
                                             ) : null}
                                             <div className="flex items-center gap-2 mt-auto">
                                                 <button
-                                                    onClick={() => setShowViewPropertyModal(property)}
+                                                    onClick={() => { setShowViewPropertyModal(property); setViewPropertyImageIndex(0); }}
                                                     className="flex-1 px-3 py-2 border border-charcoal/20 text-charcoal rounded-lg hover:bg-charcoal/5 transition text-sm flex items-center justify-center gap-1.5"
                                                 >
                                                     <Edit className="w-4 h-4" />
@@ -2300,14 +2371,59 @@ export default function AgentsDashboardPage() {
                         </div>
                         <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
                             {showViewPropertyModal.images?.length ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {showViewPropertyModal.images.slice(0, 6).map((url, i) => (
-                                        <img key={i} src={url} alt="" className="w-full aspect-video object-cover rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                                    ))}
-                                    {showViewPropertyModal.images.length > 6 && (
-                                        <div className="aspect-video rounded-lg bg-charcoal/10 flex items-center justify-center text-charcoal/60 text-sm">
-                                            +{showViewPropertyModal.images.length - 6} more
-                                        </div>
+                                <div className="rounded-xl overflow-hidden border border-charcoal/10 relative">
+                                    <div className="relative aspect-[16/10] bg-charcoal/10 overflow-hidden">
+                                        {showViewPropertyModal.images.map((url, i) => (
+                                            <div
+                                                key={i}
+                                                className={`absolute inset-0 transition-transform duration-300 ease-out ${
+                                                    i === viewPropertyImageIndex ? 'translate-x-0 z-10' : i < viewPropertyImageIndex ? '-translate-x-full' : 'translate-x-full'
+                                                }`}
+                                            >
+                                                <img
+                                                    src={url}
+                                                    alt={`${showViewPropertyModal.title} - ${i + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {showViewPropertyModal.images.length > 1 && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewPropertyImageIndex((prev) => (prev === 0 ? showViewPropertyModal.images!.length - 1 : prev - 1))}
+                                                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
+                                                aria-label="Previous image"
+                                            >
+                                                <ChevronLeft className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewPropertyImageIndex((prev) => (prev === showViewPropertyModal.images!.length - 1 ? 0 : prev + 1))}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
+                                                aria-label="Next image"
+                                            >
+                                                <ChevronRight className="w-5 h-5" />
+                                            </button>
+                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                                                {showViewPropertyModal.images.map((_, i) => (
+                                                    <button
+                                                        key={i}
+                                                        type="button"
+                                                        onClick={() => setViewPropertyImageIndex(i)}
+                                                        className={`w-2 h-2 rounded-full transition-colors ${
+                                                            i === viewPropertyImageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/70'
+                                                        }`}
+                                                        aria-label={`Go to image ${i + 1}`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <span className="absolute top-2 right-2 z-20 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                {viewPropertyImageIndex + 1} / {showViewPropertyModal.images.length}
+                                            </span>
+                                        </>
                                     )}
                                 </div>
                             ) : (
