@@ -248,6 +248,8 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     if (lower.includes('apartment') || lower.includes('flat')) out.type = 'Apartment';
     else if (lower.includes('townhouse') || lower.includes('town house')) out.type = 'Townhouse';
     else if (lower.includes('duplex')) out.type = 'Duplex';
+    else if (lower.includes('vacant') || (lower.includes('land') && !lower.includes('homeland'))) out.type = 'Vacant Land';
+    else if (lower.includes('commercial') || lower.includes('office') || lower.includes('retail') || lower.includes('industrial')) out.type = 'Commercial';
     else if (lower.includes('house') || lower.includes('home')) out.type = 'House';
   }
 

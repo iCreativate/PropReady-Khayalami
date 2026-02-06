@@ -122,6 +122,7 @@ export default function AgentsDashboardPage() {
     const [improveLoading, setImproveLoading] = useState(false);
     const [improveResult, setImproveResult] = useState<{ listingScore: number; feedback: string[] } | null>(null);
     const [bulkImageUrls, setBulkImageUrls] = useState('');
+    const [singleImageUrl, setSingleImageUrl] = useState('');
     const [imageUploading, setImageUploading] = useState(false);
     const [imageUploadError, setImageUploadError] = useState<string | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -757,6 +758,8 @@ export default function AgentsDashboardPage() {
             features: [],
             videoUrl: '',
         });
+        setSingleImageUrl('');
+        setBulkImageUrls('');
         setImproveResult(null);
         setShowPropertyModal(false);
     };
@@ -1043,6 +1046,7 @@ export default function AgentsDashboardPage() {
                                 onClick={() => {
                                 setImproveResult(null);
                                 setBulkImageUrls('');
+                                setSingleImageUrl('');
                                 setImageUploadError(null);
                                 setAddPropertyMode('choice');
                                 setImportUrl('');
@@ -2119,6 +2123,8 @@ export default function AgentsDashboardPage() {
                                         <option value="Apartment">Apartment</option>
                                         <option value="Townhouse">Townhouse</option>
                                         <option value="Duplex">Duplex</option>
+                                        <option value="Vacant Land">Vacant Land</option>
+                                        <option value="Commercial">Commercial</option>
                                     </select>
                                 </div>
 
@@ -2176,12 +2182,41 @@ export default function AgentsDashboardPage() {
                             <div>
                                 <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
                                     <ImageIcon className="w-4 h-4" />
-                                    Image URLs
+                                    Images
                                     {(propertyForm.images?.length ?? 0) > 0 && (
                                         <span className="text-charcoal/60 font-normal text-sm">({propertyForm.images?.length} images)</span>
                                     )}
                                 </label>
-                                <p className="text-charcoal/60 text-sm mb-2">Images are compressed automatically to reduce file size without losing quality. Upload files or paste URLs.</p>
+                                <p className="text-charcoal/60 text-sm mb-3">Add or remove images. Upload files, paste URLs, or manage imported images below.</p>
+
+                                {/* Thumbnail grid with delete */}
+                                {(propertyForm.images?.length ?? 0) > 0 && (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
+                                        {(propertyForm.images || []).map((url, idx) => (
+                                            <div key={`${idx}-${url.slice(0, 30)}`} className="relative group aspect-square rounded-lg overflow-hidden border border-charcoal/20 bg-charcoal/5">
+                                                <img
+                                                    src={getProxiedImageUrl(url)}
+                                                    alt={`Property image ${idx + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50" y="50" fill="%23999" text-anchor="middle" dy=".3em" font-size="12"%3EFailed%3C/text%3E%3C/svg%3E'; }}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const next = (propertyForm.images || []).filter((_, i) => i !== idx);
+                                                        setPropertyForm({ ...propertyForm, images: next });
+                                                    }}
+                                                    className="absolute top-1 right-1 p-1.5 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition opacity-0 group-hover:opacity-100 focus:opacity-100"
+                                                    aria-label="Remove image"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Add images: upload + single URL + bulk */}
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
                                     <input
                                         ref={imageInputRef}
@@ -2198,72 +2233,74 @@ export default function AgentsDashboardPage() {
                                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50"
                                     >
                                         <Upload className="w-4 h-4" />
-                                        {imageUploading ? 'Compressing & uploading…' : 'Upload images (auto-compressed)'}
+                                        {imageUploading ? 'Compressing & uploading…' : 'Upload images'}
                                     </button>
-                                    <span className="text-charcoal/60 text-sm">or paste URLs below</span>
+                                    <div className="flex gap-2 flex-1 min-w-0 max-w-md">
+                                        <input
+                                            type="url"
+                                            value={singleImageUrl}
+                                            onChange={(e) => setSingleImageUrl(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const u = singleImageUrl.trim();
+                                                    if (u) {
+                                                        const existing = propertyForm.images?.length ? propertyForm.images : [];
+                                                        setPropertyForm({ ...propertyForm, images: [...existing, u] });
+                                                        setSingleImageUrl('');
+                                                    }
+                                                }
+                                            }}
+                                            placeholder="Paste image URL and press Enter or Add"
+                                            className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const u = singleImageUrl.trim();
+                                                if (u) {
+                                                    const existing = propertyForm.images?.length ? propertyForm.images : [];
+                                                    setPropertyForm({ ...propertyForm, images: [...existing, u] });
+                                                    setSingleImageUrl('');
+                                                }
+                                            }}
+                                            disabled={!singleImageUrl.trim()}
+                                            className="px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50 shrink-0"
+                                        >
+                                            Add
+                                        </button>
+                                    </div>
                                 </div>
                                 {imageUploadError && (
                                     <p className="text-red-600 text-sm mb-2" role="alert">{imageUploadError}</p>
                                 )}
-                                <div className="space-y-2 mb-2">
-                                    <textarea
-                                        placeholder="Paste multiple image URLs here (one per line or comma-separated)"
-                                        rows={3}
-                                        value={bulkImageUrls}
-                                        onChange={(e) => setBulkImageUrls(e.target.value)}
-                                        className="w-full px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            const urls = bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-                                            if (urls.length > 0) {
-                                                const existing = propertyForm.images?.length ? propertyForm.images : [];
-                                                setPropertyForm({ ...propertyForm, images: [...existing, ...urls] });
-                                                setBulkImageUrls('');
-                                            }
-                                        }}
-                                        disabled={!bulkImageUrls.trim()}
-                                        className="text-sm text-gold font-semibold hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
-                                    >
-                                        <Plus className="w-4 h-4" /> Add these URLs ({bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).length || 0})
-                                    </button>
-                                </div>
-                                <div className="space-y-2">
-                                    {(propertyForm.images?.length ? propertyForm.images : ['']).map((url, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                            <input
-                                                type="url"
-                                                value={url}
-                                                onChange={(e) => {
-                                                    const next = [...(propertyForm.images || [])];
-                                                    next[idx] = e.target.value.trim();
-                                                    setPropertyForm({ ...propertyForm, images: next.filter(Boolean).length ? next : [] });
-                                                }}
-                                                placeholder="https://..."
-                                                className="flex-1 px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    const next = (propertyForm.images || []).filter((_, i) => i !== idx);
-                                                    setPropertyForm({ ...propertyForm, images: next });
-                                                }}
-                                                className="p-2 rounded-lg border border-charcoal/20 text-charcoal/70 hover:bg-charcoal/10"
-                                                aria-label="Remove image"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <button
-                                        type="button"
-                                        onClick={() => setPropertyForm({ ...propertyForm, images: ((propertyForm.images?.length ? propertyForm.images : ['']).concat('')) })}
-                                        className="text-sm text-gold font-semibold hover:underline flex items-center gap-1"
-                                    >
-                                        <Plus className="w-4 h-4" /> Add another image URL
-                                    </button>
-                                </div>
+                                <details className="mt-2">
+                                    <summary className="text-sm text-charcoal/70 cursor-pointer hover:text-charcoal">Paste multiple URLs (one per line)</summary>
+                                    <div className="mt-2 space-y-2">
+                                        <textarea
+                                            placeholder="Paste multiple image URLs here (one per line or comma-separated)"
+                                            rows={2}
+                                            value={bulkImageUrls}
+                                            onChange={(e) => setBulkImageUrls(e.target.value)}
+                                            className="w-full px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const urls = bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+                                                if (urls.length > 0) {
+                                                    const existing = propertyForm.images?.length ? propertyForm.images : [];
+                                                    setPropertyForm({ ...propertyForm, images: [...existing, ...urls] });
+                                                    setBulkImageUrls('');
+                                                }
+                                            }}
+                                            disabled={!bulkImageUrls.trim()}
+                                            className="text-sm text-gold font-semibold hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
+                                        >
+                                            <Plus className="w-4 h-4" /> Add these URLs ({bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).length || 0})
+                                        </button>
+                                    </div>
+                                </details>
                             </div>
 
                             <div>

@@ -6,7 +6,7 @@ import { ArrowLeft, Home, Search, SlidersHorizontal, MapPin, Bed, Bath, Square, 
 import { formatCurrency } from '@/lib/currency';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
 
-type FilterType = 'all' | 'houses' | 'apartments' | 'townhouses' | 'under-1m';
+type FilterType = 'all' | 'houses' | 'apartments' | 'townhouses' | 'vacant-land' | 'commercial' | 'under-1m';
 
 interface Property {
     id: string;
@@ -149,6 +149,10 @@ export default function SearchPage() {
                     return normalizeType(property.type).includes('apartment');
                 case 'townhouses':
                     return normalizeType(property.type).includes('townhouse');
+                case 'vacant-land':
+                    return normalizeType(property.type).includes('vacant') || normalizeType(property.type).includes('land');
+                case 'commercial':
+                    return normalizeType(property.type).includes('commercial');
                 case 'under-1m':
                     return property.price < 1000000;
                 default:
@@ -278,6 +282,26 @@ export default function SearchPage() {
                             }`}
                         >
                             Townhouses
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('vacant-land')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
+                                activeFilter === 'vacant-land'
+                                    ? 'bg-gold text-white border-2 border-gold'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
+                            }`}
+                        >
+                            Vacant Land
+                        </button>
+                        <button 
+                            onClick={() => setActiveFilter('commercial')}
+                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
+                                activeFilter === 'commercial'
+                                    ? 'bg-gold text-white border-2 border-gold'
+                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
+                            }`}
+                        >
+                            Commercial
                         </button>
                         <button 
                             onClick={() => setActiveFilter('under-1m')}
