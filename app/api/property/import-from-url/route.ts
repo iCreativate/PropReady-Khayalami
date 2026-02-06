@@ -20,21 +20,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'URL must be http or https' }, { status: 400 });
     }
 
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'PropReady/1.0 (https://propready.co.za; property import)',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Cache-Control': 'no-cache',
-      },
-      cache: 'no-store',
-      next: { revalidate: 0 },
-    });
+    const fetchWithRetry = async (attempt: number): Promise<Response> => {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-ZA,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Upgrade-Insecure-Requests': '1',
+        },
+        cache: 'no-store',
+        next: { revalidate: 0 },
+      });
+      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 1500));
+        return fetchWithRetry(attempt + 1);
+      }
+      return res;
+    };
+
+    const res = await fetchWithRetry(0);
 
     if (!res.ok) {
-      return NextResponse.json(
-        { error: `Could not fetch page (${res.status})` },
-        { status: 422 }
-      );
+      const msg = res.status === 503 || res.status === 502 || res.status === 504
+        ? `The listing site is temporarily unavailable (${res.status}). Please try again in a few minutes, or add the property manually.`
+        : `Could not fetch page (${res.status})`;
+      return NextResponse.json({ error: msg }, { status: 422 });
     }
 
     const html = await res.text();
