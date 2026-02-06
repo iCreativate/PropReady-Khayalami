@@ -320,7 +320,7 @@ export default function SearchPage() {
                     <div className="mb-6">
                         <div className="flex items-center justify-between">
                             <p className="text-charcoal/90 text-lg">
-                                <span className="font-bold text-gold">{filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'}</span> found in iKhayalami
+                                <span className="font-bold text-gold">{filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'}</span> found in PropReady
                             </p>
                             {quizResult && quizResult.preQualAmount > 0 && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20">

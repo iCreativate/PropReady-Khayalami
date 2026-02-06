@@ -90,6 +90,21 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     videoUrl: '',
   };
 
+  // Helper: exclude agent photos, logos, avatars - only keep property images
+  const isAgentOrNonPropertyImage = (url: string): boolean => {
+    const lower = url.toLowerCase();
+    const exclude = [
+      'logo', 'avatar', 'icon', 'placeholder', 'default',
+      'agent', 'agents', 'estate-agent', 'estateagent',
+      'profile', 'user-profile', 'headshot', 'staff', 'team',
+      'contact', 'agent-photo', 'agentphoto', 'agent_photo',
+      'agentimage', 'agent-image', 'agent_avatar', 'agent-avatar',
+      'user-avatar', 'user-photo', 'member-photo', 'person', 'portrait',
+      'advertiser', 'broker',
+    ];
+    return exclude.some((term) => lower.includes(term));
+  };
+
   // 1. Meta tags
   const ogTitle = html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
     || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i);
@@ -129,7 +144,7 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
             const urls = Array.isArray(img) ? img : [img];
             for (const u of urls) {
               const src = typeof u === 'string' ? u : u?.url || u?.contentUrl || u?.image;
-              if (src && !out.images.includes(src)) out.images.push(src);
+              if (src && !out.images.includes(src) && !isAgentOrNonPropertyImage(src)) out.images.push(src);
             }
           }
           const offers = item.offers || item.offers?.[0];
@@ -151,16 +166,37 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     }
   }
 
+  const resolveUrl = (src: string): string => {
+    if (src.startsWith('//')) return 'https:' + src;
+    if (src.startsWith('/')) return new URL(pageUrl).origin + src;
+    return src;
+  };
+
+  const addImageSafe = (src: string, seen: Set<string>) => {
+    const resolved = resolveUrl(src);
+    if (resolved && !seen.has(resolved) && !isAgentOrNonPropertyImage(resolved)) {
+      seen.add(resolved);
+      out.images.push(resolved);
+    }
+  };
+
+  const addImage = (src: string) => {
+    const resolved = resolveUrl(src);
+    if (resolved && !out.images.includes(resolved) && !isAgentOrNonPropertyImage(resolved)) {
+      out.images.push(resolved);
+    }
+  };
+
   // 2b. Hydration JSON (__NEXT_DATA__, __NUXT_DATA__, etc.) - often has full listing data
   const collectImagesFromObj = (obj: unknown, seen: Set<string>, maxDepth = 10): void => {
     if (!obj || maxDepth <= 0) return;
     if (Array.isArray(obj)) {
       for (const item of obj) {
         if (typeof item === 'string' && (item.includes('.jpg') || item.includes('.jpeg') || item.includes('.png') || item.includes('.webp') || item.includes('images.prop24.com') || item.includes('prop24.com') || item.startsWith('http'))) {
-          if (!seen.has(item)) { seen.add(item); out.images.push(item); }
+          addImageSafe(item, seen);
         } else if (item && typeof item === 'object') {
           const src = (item as Record<string, unknown>)?.url ?? (item as Record<string, unknown>)?.src ?? (item as Record<string, unknown>)?.image ?? (item as Record<string, unknown>)?.imageUrl ?? (item as Record<string, unknown>)?.large ?? (item as Record<string, unknown>)?.medium ?? (item as Record<string, unknown>)?.original ?? (item as Record<string, unknown>)?.full;
-          if (src && typeof src === 'string' && !seen.has(src)) { seen.add(src); out.images.push(src); }
+          if (src && typeof src === 'string') addImageSafe(src, seen);
           collectImagesFromObj(item, seen, maxDepth - 1);
         }
       }
@@ -216,7 +252,7 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
               ?? (img as Record<string, unknown>)?.image ?? (img as Record<string, unknown>)?.imageUrl
               ?? (img as Record<string, unknown>)?.large ?? (img as Record<string, unknown>)?.medium
               ?? (img as Record<string, unknown>)?.original ?? (img as Record<string, unknown>)?.full;
-            if (src && typeof src === 'string' && !imgSeen.has(src)) { imgSeen.add(src); out.images.push(src); }
+            if (src && typeof src === 'string') addImageSafe(src, imgSeen);
           }
         }
         // Recursively collect images from nested structures
@@ -284,22 +320,6 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
   }
 
   // 5. Images from page - multiple patterns for property galleries
-  const baseUrl = new URL(pageUrl);
-  const resolveUrl = (src: string): string => {
-    if (src.startsWith('//')) return 'https:' + src;
-    if (src.startsWith('/')) return baseUrl.origin + src;
-    return src;
-  };
-  const addImage = (src: string) => {
-    const resolved = resolveUrl(src);
-    if (resolved && !out.images.includes(resolved)) {
-      const lower = resolved.toLowerCase();
-      if (!lower.includes('logo') && !lower.includes('avatar') && !lower.includes('icon') && !lower.includes('placeholder')) {
-        out.images.push(resolved);
-      }
-    }
-  };
-
   // 5a. data-src, data-lazy, data-original, data-srcset (lazy-loaded gallery images)
   const dataSrcPatterns = [
     /data-src=["']([^"']+)["']/gi,
