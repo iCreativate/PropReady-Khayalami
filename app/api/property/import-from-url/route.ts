@@ -152,9 +152,34 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
   }
 
   // 2b. Hydration JSON (__NEXT_DATA__, __NUXT_DATA__, etc.) - often has full listing data
+  const collectImagesFromObj = (obj: unknown, seen: Set<string>, maxDepth = 10): void => {
+    if (!obj || maxDepth <= 0) return;
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        if (typeof item === 'string' && (item.includes('.jpg') || item.includes('.jpeg') || item.includes('.png') || item.includes('.webp') || item.includes('images.prop24.com') || item.includes('prop24.com') || item.startsWith('http'))) {
+          if (!seen.has(item)) { seen.add(item); out.images.push(item); }
+        } else if (item && typeof item === 'object') {
+          const src = (item as Record<string, unknown>)?.url ?? (item as Record<string, unknown>)?.src ?? (item as Record<string, unknown>)?.image ?? (item as Record<string, unknown>)?.imageUrl ?? (item as Record<string, unknown>)?.large ?? (item as Record<string, unknown>)?.medium ?? (item as Record<string, unknown>)?.original ?? (item as Record<string, unknown>)?.full;
+          if (src && typeof src === 'string' && !seen.has(src)) { seen.add(src); out.images.push(src); }
+          collectImagesFromObj(item, seen, maxDepth - 1);
+        }
+      }
+      return;
+    }
+    if (typeof obj === 'object' && obj !== null) {
+      const keys = ['images', 'photos', 'gallery', 'media', 'pictures', 'propertyImages', 'listingImages'];
+      for (const k of keys) {
+        const val = (obj as Record<string, unknown>)[k];
+        if (val) collectImagesFromObj(val, seen, maxDepth - 1);
+      }
+      for (const v of Object.values(obj)) collectImagesFromObj(v, seen, maxDepth - 1);
+    }
+  };
+
   const nextDataMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
     || html.match(/<script[^>]*id=["']__NUXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
-    || html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});?\s*<\/script>/i);
+    || html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});?\s*<\/script>/i)
+    || html.match(/window\.__PRELOADED_STATE__\s*=\s*({[\s\S]*?});?\s*<\/script>/i);
   if (nextDataMatch?.[1]) {
     try {
       const json = JSON.parse(nextDataMatch[1].trim());
@@ -168,6 +193,7 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
         || extractFromObj(json, ['props', 'pageProps', 'property'])
         || extractFromObj(json, ['props', 'pageProps', 'ad'])
         || extractFromObj(json, ['props', 'pageProps', 'page'])
+        || extractFromObj(json, ['props', 'pageProps', 'listing', 'media'])
         || extractFromObj(json, ['data', 'listing'])
         || extractFromObj(json, ['listing'])
         || (typeof json === 'object' && json !== null ? json : null);
@@ -181,16 +207,20 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
           }
         }
         // Property-specific images - check multiple possible structures
-        const imgs = L.images ?? L.photos ?? L.gallery ?? L.media ?? L.pictures;
+        const imgs = L.images ?? L.photos ?? L.gallery ?? L.media ?? L.pictures ?? L.propertyImages ?? L.listingImages;
+        const imgSeen = new Set(out.images);
         if (imgs && Array.isArray(imgs)) {
           for (const img of imgs) {
             const src = typeof img === 'string' ? img
               : (img as Record<string, unknown>)?.url ?? (img as Record<string, unknown>)?.src
               ?? (img as Record<string, unknown>)?.image ?? (img as Record<string, unknown>)?.imageUrl
-              ?? (img as Record<string, unknown>)?.large ?? (img as Record<string, unknown>)?.medium;
-            if (src && typeof src === 'string' && !out.images.includes(src)) out.images.push(src);
+              ?? (img as Record<string, unknown>)?.large ?? (img as Record<string, unknown>)?.medium
+              ?? (img as Record<string, unknown>)?.original ?? (img as Record<string, unknown>)?.full;
+            if (src && typeof src === 'string' && !imgSeen.has(src)) { imgSeen.add(src); out.images.push(src); }
           }
         }
+        // Recursively collect images from nested structures
+        collectImagesFromObj(listing, imgSeen);
       }
     } catch {
       // ignore
@@ -296,24 +326,24 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
   }
 
   // 5c. JSON arrays of image URLs in script or data attributes
-  const jsonImgMatches = html.matchAll(/(?:images|photos|gallery|media|pictures)\s*:\s*\[([^\]]+)\]/gi);
+  const jsonImgMatches = html.matchAll(/(?:images|photos|gallery|media|pictures|propertyImages|listingImages)\s*:\s*\[([^\]]+)\]/gi);
   for (const m of jsonImgMatches) {
     const urls = m[1].match(/["'](https?:\/\/[^"']+)["']/g) || m[1].match(/["'](\/[^"']+)["']/g);
     if (urls) {
       for (const u of urls) {
         const src = u.replace(/^["']|["']$/g, '');
-        if (src.includes('.jpg') || src.includes('.jpeg') || src.includes('.png') || src.includes('.webp') || src.includes('images.prop24.com') || src.includes('prop24.com')) {
+        if (src.includes('.jpg') || src.includes('.jpeg') || src.includes('.png') || src.includes('.webp') || src.includes('images.prop24.com') || src.includes('prop24.com') || src.includes('privateproperty')) {
           addImage(src);
         }
       }
     }
   }
 
-  // 5c2. Property24-style image IDs (images.prop24.com/123456)
+  // 5c2. Property24-style image IDs (images.prop24.com/123456) and Private Property CDN
   const prop24ImgMatches = html.matchAll(/images\.prop24\.com\/\d+/g);
-  for (const m of prop24ImgMatches) {
-    addImage('https://' + m[0]);
-  }
+  for (const m of prop24ImgMatches) addImage('https://' + m[0]);
+  const ppImgMatches = html.matchAll(/(?:https?:)?\/\/cdn\.privateproperty\.co\.za\/[^\s"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s"']*)?/gi);
+  for (const m of ppImgMatches) addImage(m[0].startsWith('http') ? m[0] : 'https:' + m[0]);
 
   // 5d. background-image: url(...) - some galleries use CSS
   const bgMatches = html.matchAll(/background(?:-image)?\s*:\s*url\(["']?([^"')]+)["']?\)/gi);
@@ -332,8 +362,7 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     }
   }
 
-  // Limit images but keep more (up to 50 for imported listings)
-  out.images = out.images.slice(0, 50);
+  // Import all images found - no artificial limit (agent can remove unwanted ones)
 
   // 6. Features from description / amenities
   const searchText = (out.description || html);
