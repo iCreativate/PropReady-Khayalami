@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
       headers: {
         'User-Agent': 'PropReady/1.0 (https://propready.co.za; property import)',
         'Accept': 'text/html,application/xhtml+xml',
+        'Cache-Control': 'no-cache',
       },
+      cache: 'no-store',
       next: { revalidate: 0 },
     });
 
@@ -97,13 +99,13 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i);
   if (ogDesc?.[1]) out.description = decodeHtml(ogDesc[1]);
 
-  const ogImages = html.matchAll(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi);
-  for (const m of ogImages) {
-    if (m[1] && !out.images.includes(m[1])) out.images.push(m[1]);
+  // Collect og:image for fallback only (often same across pages - we prioritize property-specific images)
+  const ogImageUrls: string[] = [];
+  for (const m of html.matchAll(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi)) {
+    if (m[1] && !ogImageUrls.includes(m[1])) ogImageUrls.push(m[1]);
   }
-  const ogImageAlt = html.matchAll(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/gi);
-  for (const m of ogImageAlt) {
-    if (m[1] && !out.images.includes(m[1])) out.images.push(m[1]);
+  for (const m of html.matchAll(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/gi)) {
+    if (m[1] && !ogImageUrls.includes(m[1])) ogImageUrls.push(m[1]);
   }
 
   // 2. JSON-LD
@@ -164,6 +166,8 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
       };
       const listing = extractFromObj(json, ['props', 'pageProps', 'listing'])
         || extractFromObj(json, ['props', 'pageProps', 'property'])
+        || extractFromObj(json, ['props', 'pageProps', 'ad'])
+        || extractFromObj(json, ['props', 'pageProps', 'page'])
         || extractFromObj(json, ['data', 'listing'])
         || extractFromObj(json, ['listing'])
         || (typeof json === 'object' && json !== null ? json : null);
@@ -176,10 +180,14 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
             if (!isNaN(num) && num > 0) out.price = String(Math.round(num));
           }
         }
-        const imgs = L.images ?? L.photos ?? L.gallery ?? L.media;
+        // Property-specific images - check multiple possible structures
+        const imgs = L.images ?? L.photos ?? L.gallery ?? L.media ?? L.pictures;
         if (imgs && Array.isArray(imgs)) {
           for (const img of imgs) {
-            const src = typeof img === 'string' ? img : (img as Record<string, unknown>)?.url ?? (img as Record<string, unknown>)?.src ?? (img as Record<string, unknown>)?.image;
+            const src = typeof img === 'string' ? img
+              : (img as Record<string, unknown>)?.url ?? (img as Record<string, unknown>)?.src
+              ?? (img as Record<string, unknown>)?.image ?? (img as Record<string, unknown>)?.imageUrl
+              ?? (img as Record<string, unknown>)?.large ?? (img as Record<string, unknown>)?.medium;
             if (src && typeof src === 'string' && !out.images.includes(src)) out.images.push(src);
           }
         }
@@ -286,23 +294,40 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
   }
 
   // 5c. JSON arrays of image URLs in script or data attributes
-  const jsonImgMatches = html.matchAll(/(?:images|photos|gallery|media)\s*:\s*\[([^\]]+)\]/gi);
+  const jsonImgMatches = html.matchAll(/(?:images|photos|gallery|media|pictures)\s*:\s*\[([^\]]+)\]/gi);
   for (const m of jsonImgMatches) {
     const urls = m[1].match(/["'](https?:\/\/[^"']+)["']/g) || m[1].match(/["'](\/[^"']+)["']/g);
     if (urls) {
       for (const u of urls) {
         const src = u.replace(/^["']|["']$/g, '');
-        if (src.includes('.jpg') || src.includes('.jpeg') || src.includes('.png') || src.includes('.webp')) {
+        if (src.includes('.jpg') || src.includes('.jpeg') || src.includes('.png') || src.includes('.webp') || src.includes('images.prop24.com') || src.includes('prop24.com')) {
           addImage(src);
         }
       }
     }
   }
 
+  // 5c2. Property24-style image IDs (images.prop24.com/123456)
+  const prop24ImgMatches = html.matchAll(/images\.prop24\.com\/\d+/g);
+  for (const m of prop24ImgMatches) {
+    addImage('https://' + m[0]);
+  }
+
   // 5d. background-image: url(...) - some galleries use CSS
   const bgMatches = html.matchAll(/background(?:-image)?\s*:\s*url\(["']?([^"')]+)["']?\)/gi);
   for (const m of bgMatches) {
     if (m[1].includes('.jpg') || m[1].includes('.png') || m[1].includes('.webp')) addImage(m[1]);
+  }
+
+  // 5e. Add og:image only as fallback when we have no/few property-specific images
+  // (og:image is often the same across pages on listing sites - causes duplicate images)
+  if (out.images.length < 2) {
+    for (const url of ogImageUrls) {
+      const lower = url.toLowerCase();
+      if (!lower.includes('logo') && !lower.includes('avatar') && !lower.includes('default')) {
+        addImage(url);
+      }
+    }
   }
 
   // Limit images but keep more (up to 50 for imported listings)
