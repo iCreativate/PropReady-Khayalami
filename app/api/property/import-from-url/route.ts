@@ -122,18 +122,18 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
             const a = typeof addr === 'string' ? addr : (addr.streetAddress || '') + ', ' + (addr.addressLocality || '') + ', ' + (addr.addressRegion || '');
             if (a.trim() && !out.address) out.address = a.replace(/^,\s*|,\s*$/g, '').trim();
           }
-          const img = item.image || item.primaryImageOfPage;
+          const img = item.image || item.primaryImageOfPage || item.photo;
           if (img) {
             const urls = Array.isArray(img) ? img : [img];
             for (const u of urls) {
-              const src = typeof u === 'string' ? u : u?.url || u?.contentUrl;
+              const src = typeof u === 'string' ? u : u?.url || u?.contentUrl || u?.image;
               if (src && !out.images.includes(src)) out.images.push(src);
             }
           }
           const offers = item.offers || item.offers?.[0];
           if (offers?.price && !out.price) {
             const p = offers.price;
-            out.price = String(typeof p === 'object' ? (p.value ?? p.price ?? '') : p).replace(/\D/g, '');
+            out.price = String(typeof p === 'object' ? (p.value ?? p.price ?? p.amount ?? '') : p).replace(/\D/g, '');
           }
           if (item.numberOfBedrooms != null && !out.bedrooms) out.bedrooms = String(item.numberOfBedrooms);
           if (item.numberOfBathroomsTotal != null && !out.bathrooms) out.bathrooms = String(item.numberOfBathroomsTotal);
@@ -149,12 +149,73 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     }
   }
 
-  // 3. Common HTML patterns (Property24, Private Property, etc.)
+  // 2b. Hydration JSON (__NEXT_DATA__, __NUXT_DATA__, etc.) - often has full listing data
+  const nextDataMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
+    || html.match(/<script[^>]*id=["']__NUXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i)
+    || html.match(/window\.__INITIAL_STATE__\s*=\s*({[\s\S]*?});?\s*<\/script>/i);
+  if (nextDataMatch?.[1]) {
+    try {
+      const json = JSON.parse(nextDataMatch[1].trim());
+      const extractFromObj = (obj: unknown, path: string[]): unknown => {
+        if (!obj || path.length === 0) return obj;
+        const key = path[0];
+        const next = (obj as Record<string, unknown>)[key];
+        return path.length === 1 ? next : extractFromObj(next, path.slice(1));
+      };
+      const listing = extractFromObj(json, ['props', 'pageProps', 'listing'])
+        || extractFromObj(json, ['props', 'pageProps', 'property'])
+        || extractFromObj(json, ['data', 'listing'])
+        || extractFromObj(json, ['listing'])
+        || (typeof json === 'object' && json !== null ? json : null);
+      if (listing && typeof listing === 'object') {
+        const L = listing as Record<string, unknown>;
+        if (!out.price) {
+          const p = L.price ?? L.listingPrice ?? L.amount ?? L.askingPrice ?? L.displayPrice;
+          if (p != null) {
+            const num = typeof p === 'number' ? p : parseFloat(String(p).replace(/\D/g, ''));
+            if (!isNaN(num) && num > 0) out.price = String(Math.round(num));
+          }
+        }
+        const imgs = L.images ?? L.photos ?? L.gallery ?? L.media;
+        if (imgs && Array.isArray(imgs)) {
+          for (const img of imgs) {
+            const src = typeof img === 'string' ? img : (img as Record<string, unknown>)?.url ?? (img as Record<string, unknown>)?.src ?? (img as Record<string, unknown>)?.image;
+            if (src && typeof src === 'string' && !out.images.includes(src)) out.images.push(src);
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Common HTML patterns (Property24, Private Property, etc.) - Price
   if (!out.price) {
-    const priceMatch = html.match(/R\s*[\d\s,]+(?:\.\d{2})?|[\d\s,]+(?:\.\d{2})?\s*R|price["']?\s*:?\s*["']?([\d\s,]+)/i);
-    if (priceMatch) {
-      const digits = (priceMatch[0] || priceMatch[1] || '').replace(/\D/g, '');
+    // JSON-style: "price":1500000 or "listingPrice":"1500000" or "amount":1500000
+    const jsonPriceMatch = html.match(/"price"\s*:\s*["']?(\d[\d\s,.]*)/i)
+      || html.match(/"listingPrice"\s*:\s*["']?(\d[\d\s,.]*)/i)
+      || html.match(/"amount"\s*:\s*["']?(\d[\d\s,.]*)/i)
+      || html.match(/"displayPrice"\s*:\s*["']?(\d[\d\s,.]*)/i)
+      || html.match(/"askingPrice"\s*:\s*["']?(\d[\d\s,.]*)/i);
+    if (jsonPriceMatch?.[1]) {
+      const digits = jsonPriceMatch[1].replace(/\D/g, '');
       if (digits.length >= 4) out.price = digits;
+    }
+  }
+  if (!out.price) {
+    // R 1 500 000 or R1,500,000 or R1.5m or R 1.5 million
+    const priceMatch = html.match(/R\s*(\d+(?:[.,]\d+)?)\s*[mM]illion?/i)
+      || html.match(/R\s*([\d\s,]+)(?:\.\d{2})?/i)
+      || html.match(/([\d\s,]+)(?:\.\d{2})?\s*R/i);
+    if (priceMatch?.[1]) {
+      let raw = priceMatch[1];
+      if (raw.toLowerCase().includes('m') || (priceMatch[0] || '').toLowerCase().includes('million')) {
+        const num = parseFloat(raw.replace(/[^\d.]/g, ''));
+        if (!isNaN(num)) raw = String(Math.round(num * 1000000));
+      } else {
+        raw = raw.replace(/\D/g, '');
+      }
+      if (raw.length >= 4) out.price = raw;
     }
   }
 
@@ -182,19 +243,70 @@ function extractPropertyData(html: string, pageUrl: string): ExtractedProperty {
     else if (lower.includes('house') || lower.includes('home')) out.type = 'House';
   }
 
-  // 5. Images from page (data-src, src for property galleries)
-  const imgSrcs = html.matchAll(/(?:data-src|data-lazy|src)=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"']*)?)["']/gi);
+  // 5. Images from page - multiple patterns for property galleries
   const baseUrl = new URL(pageUrl);
-  for (const m of imgSrcs) {
-    let src = m[1];
-    if (src.startsWith('//')) src = 'https:' + src;
-    else if (src.startsWith('/')) src = baseUrl.origin + src;
-    if (src && !out.images.includes(src) && !src.includes('logo') && !src.includes('avatar')) {
-      out.images.push(src);
+  const resolveUrl = (src: string): string => {
+    if (src.startsWith('//')) return 'https:' + src;
+    if (src.startsWith('/')) return baseUrl.origin + src;
+    return src;
+  };
+  const addImage = (src: string) => {
+    const resolved = resolveUrl(src);
+    if (resolved && !out.images.includes(resolved)) {
+      const lower = resolved.toLowerCase();
+      if (!lower.includes('logo') && !lower.includes('avatar') && !lower.includes('icon') && !lower.includes('placeholder')) {
+        out.images.push(resolved);
+      }
+    }
+  };
+
+  // 5a. data-src, data-lazy, data-original, data-srcset (lazy-loaded gallery images)
+  const dataSrcPatterns = [
+    /data-src=["']([^"']+)["']/gi,
+    /data-lazy=["']([^"']+)["']/gi,
+    /data-original=["']([^"']+)["']/gi,
+    /data-srcset=["']([^"']+)["']/gi,
+    /data-lazy-src=["']([^"']+)["']/gi,
+  ];
+  for (const re of dataSrcPatterns) {
+    for (const m of html.matchAll(re)) {
+      const raw = m[1];
+      if (raw.includes('.jpg') || raw.includes('.jpeg') || raw.includes('.png') || raw.includes('.webp') || raw.includes('.gif')) {
+        addImage(raw.split(/\s+/)[0]);
+      } else {
+        addImage(raw);
+      }
     }
   }
-  // Limit images to avoid huge payloads
-  out.images = out.images.slice(0, 20);
+
+  // 5b. Standard img src - property galleries often use /images/ or /photos/ or /media/ in path
+  const imgSrcs = html.matchAll(/(?:data-src|data-lazy|src)=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"']*)?)["']/gi);
+  for (const m of imgSrcs) {
+    addImage(m[1]);
+  }
+
+  // 5c. JSON arrays of image URLs in script or data attributes
+  const jsonImgMatches = html.matchAll(/(?:images|photos|gallery|media)\s*:\s*\[([^\]]+)\]/gi);
+  for (const m of jsonImgMatches) {
+    const urls = m[1].match(/["'](https?:\/\/[^"']+)["']/g) || m[1].match(/["'](\/[^"']+)["']/g);
+    if (urls) {
+      for (const u of urls) {
+        const src = u.replace(/^["']|["']$/g, '');
+        if (src.includes('.jpg') || src.includes('.jpeg') || src.includes('.png') || src.includes('.webp')) {
+          addImage(src);
+        }
+      }
+    }
+  }
+
+  // 5d. background-image: url(...) - some galleries use CSS
+  const bgMatches = html.matchAll(/background(?:-image)?\s*:\s*url\(["']?([^"')]+)["']?\)/gi);
+  for (const m of bgMatches) {
+    if (m[1].includes('.jpg') || m[1].includes('.png') || m[1].includes('.webp')) addImage(m[1]);
+  }
+
+  // Limit images but keep more (up to 50 for imported listings)
+  out.images = out.images.slice(0, 50);
 
   // 6. Features from description / amenities
   const searchText = (out.description || html);

@@ -83,7 +83,7 @@ After deployment, test the following:
    - Run `supabase-migration-leads-seller-columns.sql` for seller fields.
    - Run `supabase-migration-leads-location.sql` for city/location matching.
    - Run `supabase-migration-viewings.sql` for viewing appointments (so viewings sync to the database).
-   - Run `supabase-migration-properties.sql` for listed properties (so properties appear on the search page on all browsers).
+   - Run `supabase-migration-properties.sql` for listed properties (so properties appear on the search page on all browsers). **Agents must click "Publish" on each property** for it to appear on the properties/search page.
    - If `agent_id` was NOT NULL: `ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;`
    - If inserts are blocked by RLS, run:
      ```sql

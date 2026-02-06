@@ -72,7 +72,7 @@ export default function SearchPage() {
             });
             let apiProperties: Property[] = [];
             try {
-                const res = await fetch('/api/properties', { cache: 'no-store' });
+                const res = await fetch(`/api/properties?_=${Date.now()}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
                 const data = await res.json().catch(() => ({}));
                 if (res.ok && Array.isArray(data.properties)) {
                     apiProperties = data.properties
