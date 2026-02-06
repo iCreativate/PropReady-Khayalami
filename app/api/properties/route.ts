@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 function toPropertyRow(p: Record<string, unknown>) {
     return {
@@ -110,18 +110,28 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const row = toPropertyRow(body);
 
-        if (!row.id || !row.title || !row.address || !row.type) {
+        if (!row.id) {
             return NextResponse.json(
-                { success: false, error: 'Invalid property data' },
+                { success: false, error: 'Invalid property data: missing id' },
                 { status: 400 }
             );
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // Apply defaults for required fields (DB has NOT NULL)
+        const dbRow = {
+            ...row,
+            title: (row.title && String(row.title).trim()) || 'Untitled Property',
+            address: (row.address && String(row.address).trim()) || 'Address not specified',
+            type: (row.type && String(row.type).trim()) || 'Property',
+            images: Array.isArray(row.images) ? row.images : [],
+            features: Array.isArray(row.features) ? row.features : [],
+            updated_at: new Date().toISOString(),
+        };
 
+        const supabase = createClient(supabaseUrl, supabaseKey);
         const { error } = await supabase
             .from('listed_properties')
-            .upsert([{ ...row, updated_at: new Date().toISOString() }], { onConflict: 'id' });
+            .upsert([dbRow], { onConflict: 'id' });
 
         if (error) {
             console.error('Supabase properties POST error:', error);

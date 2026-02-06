@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 /**
  * GET /api/properties/debug
  * Call this to see if the database is configured and if the listed_properties table works.
+ *
+ * GET /api/properties/debug?testWrite=1
+ * Tests if inserts work - creates a temporary row and deletes it.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
     const configured = !!(supabaseUrl && supabaseKey);
 
     if (!configured) {
@@ -18,8 +21,45 @@ export async function GET() {
         });
     }
 
+    const { searchParams } = new URL(request.url);
+    const testWrite = searchParams.get('testWrite') === '1';
+
     try {
         const supabase = createClient(supabaseUrl, supabaseKey);
+
+        if (testWrite) {
+            const testId = `test-${Date.now()}`;
+            const { error: insertError } = await supabase.from('listed_properties').insert({
+                id: testId,
+                agent_id: 'test',
+                title: 'Test Property',
+                address: 'Test Address',
+                type: 'House',
+                price: 1000000,
+                published: false,
+            });
+            if (insertError) {
+                return NextResponse.json({
+                    configured: true,
+                    tableOk: true,
+                    testWrite: false,
+                    testWriteError: insertError.message,
+                    testWriteCode: insertError.code,
+                    hint: insertError.code === '42501'
+                        ? 'RLS is blocking inserts. Run in Supabase SQL: DROP POLICY IF EXISTS "Allow all operations on listed_properties" ON listed_properties; CREATE POLICY "Allow all operations on listed_properties" ON listed_properties FOR ALL USING (true) WITH CHECK (true);'
+                        : insertError.code === '42P01'
+                            ? 'Table does not exist. Run supabase-migration-properties.sql in Supabase SQL Editor.'
+                            : undefined,
+                });
+            }
+            await supabase.from('listed_properties').delete().eq('id', testId);
+            return NextResponse.json({
+                configured: true,
+                tableOk: true,
+                testWrite: true,
+                message: 'Insert and delete test passed. Database is writable.',
+            });
+        }
 
         const { count: totalCount, error: countError } = await supabase
             .from('listed_properties')

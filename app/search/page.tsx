@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Home, Search, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
+import { getProxiedImageUrl } from '@/lib/image-proxy';
 
 type FilterType = 'all' | 'houses' | 'apartments' | 'townhouses' | 'under-1m';
 
@@ -335,7 +336,7 @@ export default function SearchPage() {
                                                 <div className="h-48 bg-charcoal/10 relative overflow-hidden">
                                                     {property.images?.length && property.images[0] ? (
                                                         <img
-                                                            src={property.images[0]}
+                                                            src={getProxiedImageUrl(property.images[0])}
                                                             alt={property.title}
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
@@ -414,7 +415,7 @@ export default function SearchPage() {
                                                 <div className="h-48 bg-charcoal/10 relative overflow-hidden">
                                                     {property.images?.length && property.images[0] ? (
                                                         <img
-                                                            src={property.images[0]}
+                                                            src={getProxiedImageUrl(property.images[0])}
                                                             alt={property.title}
                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}

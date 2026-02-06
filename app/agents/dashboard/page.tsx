@@ -6,6 +6,7 @@ import imageCompression from 'browser-image-compression';
 import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit, AlertCircle } from 'lucide-react';
 import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
+import { getProxiedImageUrl } from '@/lib/image-proxy';
 
 interface Lead {
     id: string;
@@ -1071,7 +1072,7 @@ export default function AgentsDashboardPage() {
                                         {property.images?.length && property.images[0] ? (
                                             <div className="relative w-full aspect-[16/10] bg-charcoal/10">
                                                 <img
-                                                    src={property.images[0]}
+                                                    src={getProxiedImageUrl(property.images[0])}
                                                     alt={property.title}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
@@ -2405,7 +2406,7 @@ export default function AgentsDashboardPage() {
                                                 }`}
                                             >
                                                 <img
-                                                    src={url}
+                                                    src={getProxiedImageUrl(url)}
                                                     alt={`${showViewPropertyModal.title} - ${i + 1}`}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Home, MapPin, Bed, Bath, Square, Video, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
+import { getProxiedImageUrl } from '@/lib/image-proxy';
 
 interface Property {
     id: string;
@@ -145,7 +146,7 @@ export default function PropertyDetailPage() {
                                             }`}
                                         >
                                             <img
-                                                src={url}
+                                                src={getProxiedImageUrl(url)}
                                                 alt={`${property.title} - ${i + 1}`}
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

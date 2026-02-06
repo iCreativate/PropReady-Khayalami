@@ -1,5 +1,8 @@
 -- Run this in Supabase SQL Editor to store listed properties in the database.
 -- Properties will then appear on the search page across all browsers/devices.
+--
+-- IMPORTANT: In Supabase Table Editor, look for "listed_properties" (not "properties").
+-- After running, test at: https://your-site.netlify.app/api/properties/debug?testWrite=1
 
 CREATE TABLE IF NOT EXISTS listed_properties (
     id TEXT PRIMARY KEY,
