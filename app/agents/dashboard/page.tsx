@@ -7,6 +7,7 @@ import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Cal
 import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
+import ViewingChat from '@/components/ViewingChat';
 
 interface Lead {
     id: string;
@@ -68,6 +69,8 @@ interface ViewingAppointment {
     propertyId: string;
     propertyTitle: string;
     propertyAddress: string;
+    propertyPrice?: number;
+    chatMessages?: { id: string; sender: string; text: string; timestamp: string }[];
     contactName: string;
     contactEmail: string;
     contactPhone: string;
@@ -275,7 +278,11 @@ export default function AgentsDashboardPage() {
             }
             const ids = new Set(apiViewings.map((v: ViewingAppointment) => v.id));
             const localOnly = storedViewings.filter((v: ViewingAppointment) => !ids.has(v.id));
-            const merged = [...apiViewings, ...localOnly];
+            const merged = [...apiViewings, ...localOnly].map((v: ViewingAppointment) => {
+                const price = v.propertyPrice ?? listedProperties.find(p => p.id === v.propertyId)?.price;
+                const chat = v.chatMessages ?? (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`propReady_viewingChat_${v.id}`) || '[]') : []);
+                return { ...v, propertyPrice: price ?? v.propertyPrice ?? 0, chatMessages: chat };
+            });
             const agentViewings = listedProperties.length > 0
                 ? merged.filter((v: ViewingAppointment) => listedProperties.some(p => p.id === v.propertyId))
                 : merged;
@@ -891,6 +898,7 @@ export default function AgentsDashboardPage() {
             propertyId: property?.id || viewingForm.propertyId,
             propertyTitle: property?.title || 'Unknown Property',
             propertyAddress: property?.address || 'Unknown Address',
+            propertyPrice: property?.price ?? selectedViewing?.propertyPrice ?? 0,
             ...viewingFormWithoutPropertyId,
             date: viewingForm.date,
             time: viewingForm.time,
@@ -1769,6 +1777,7 @@ export default function AgentsDashboardPage() {
                                         <thead>
                                             <tr className="border-b border-charcoal/20">
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Property</th>
+                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Price</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Contact</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date & Time</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Type</th>
@@ -1784,6 +1793,9 @@ export default function AgentsDashboardPage() {
                                                             <p className="text-charcoal font-semibold">{viewing.propertyTitle}</p>
                                                             <p className="text-charcoal/60 text-sm">{viewing.propertyAddress}</p>
                                                         </div>
+                                                    </td>
+                                                    <td className="py-4 px-4">
+                                                        <p className="text-gold font-semibold">{(viewing.propertyPrice ?? 0) > 0 ? formatCurrency(viewing.propertyPrice!) : '—'}</p>
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <div className="space-y-1">
@@ -2975,6 +2987,12 @@ export default function AgentsDashboardPage() {
                                     </div>
                                 </div>
 
+                                {(selectedViewing.propertyPrice ?? 0) > 0 && (
+                                    <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
+                                        <p className="text-gold font-bold text-xl">{formatCurrency(selectedViewing.propertyPrice!)}</p>
+                                    </div>
+                                )}
+
                                 <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
                                     <p className="text-charcoal/70 text-sm mb-2 font-semibold">Appointment Details</p>
                                     <div className="space-y-2 text-sm">
@@ -3012,7 +3030,20 @@ export default function AgentsDashboardPage() {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                                <ViewingChat
+                                    viewingId={selectedViewing.id}
+                                    messages={selectedViewing.chatMessages ?? []}
+                                    currentUserRole="agent"
+                                    onMessagesChange={(msgs) => {
+                                        setSelectedViewing({ ...selectedViewing, chatMessages: msgs });
+                                        setViewingAppointments((prev) =>
+                                            prev.map((v) => (v.id === selectedViewing.id ? { ...v, chatMessages: msgs } : v))
+                                        );
+                                    }}
+                                    className="mt-4"
+                                />
+
+                                <div className="space-y-3 mt-6">
                                 <div className="border-t border-charcoal/20 pt-4">
                                     <h4 className="text-charcoal font-semibold mb-3">Update Status</h4>
                                     <select

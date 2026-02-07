@@ -10,6 +10,7 @@ function toViewingRow(v: Record<string, unknown>) {
         property_id: v.propertyId ?? v.property_id,
         property_title: v.propertyTitle ?? v.property_title ?? '',
         property_address: v.propertyAddress ?? v.property_address ?? null,
+        property_price: v.propertyPrice ?? v.property_price ?? null,
         agent_id: v.agentId ?? v.agent_id ?? null,
         contact_name: v.contactName ?? v.contact_name ?? '',
         contact_email: v.contactEmail ?? v.contact_email ?? '',
@@ -28,6 +29,7 @@ function fromViewingRow(row: Record<string, unknown>) {
         propertyId: row.property_id,
         propertyTitle: row.property_title,
         propertyAddress: row.property_address ?? '',
+        propertyPrice: row.property_price != null ? Number(row.property_price) : 0,
         contactName: row.contact_name,
         contactEmail: row.contact_email,
         contactPhone: row.contact_phone ?? '',
@@ -36,6 +38,7 @@ function fromViewingRow(row: Record<string, unknown>) {
         time: row.viewing_time,
         status: row.status ?? 'scheduled',
         notes: row.notes ?? '',
+        chatMessages: Array.isArray(row.chat_messages) ? row.chat_messages : [],
         timestamp: row.created_at ?? row.updated_at,
     };
 }

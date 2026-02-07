@@ -430,6 +430,9 @@ export default function DashboardPage() {
                                                     <MapPin className="w-4 h-4" />
                                                     <span>{viewing.propertyAddress}</span>
                                                 </div>
+                                                {(viewing.propertyPrice ?? 0) > 0 && (
+                                                    <p className="text-gold font-bold text-lg mb-2">{formatCurrency(viewing.propertyPrice!)}</p>
+                                                )}
                                                 <div className="flex items-center gap-4 text-sm text-charcoal/70">
                                                     <div className="flex items-center gap-2">
                                                         <Calendar className="w-4 h-4" />

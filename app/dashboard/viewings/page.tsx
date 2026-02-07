@@ -3,16 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 import { formatCurrency } from '@/lib/currency';
+import ViewingChat from '@/components/ViewingChat';
 
 interface Viewing {
     id: string;
     propertyTitle: string;
     propertyAddress: string;
     propertyPrice: number;
+    chatMessages?: { id: string; sender: string; text: string; timestamp: string }[];
     agentName: string;
     agentCompany: string;
     agentPhone: string;
@@ -29,6 +31,7 @@ export default function ViewingsPage() {
     const [activeTab, setActiveTab] = useState<'confirmed' | 'scheduled' | 'completed' | 'cancelled'>('scheduled');
     const [isLoading, setIsLoading] = useState(true);
     const [viewingAppointments, setViewingAppointments] = useState<Viewing[]>([]);
+    const [chatViewing, setChatViewing] = useState<Viewing | null>(null);
     const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id?: string } | null>(null);
 
     useEffect(() => {
@@ -78,7 +81,8 @@ export default function ViewingsPage() {
                     id: v.id,
                     propertyTitle: v.propertyTitle,
                     propertyAddress: v.propertyAddress,
-                    propertyPrice: 0, // Price not stored in viewing appointments
+                    propertyPrice: v.propertyPrice ?? v.property_price ?? 0,
+                    chatMessages: v.chatMessages ?? v.chat_messages ?? [],
                     agentName: 'Agent', // Could be enhanced to store agent info
                     agentCompany: 'PropReady',
                     agentPhone: '',
@@ -554,7 +558,7 @@ export default function ViewingsPage() {
                                                             <MapPin className="w-4 h-4" />
                                                             {viewing.propertyAddress}
                                                         </p>
-                                                        <p className="text-gold font-bold text-xl">{formatCurrency(viewing.propertyPrice)}</p>
+                                                        <p className="text-gold font-bold text-xl">{(viewing.propertyPrice ?? 0) > 0 ? formatCurrency(viewing.propertyPrice) : '—'}</p>
                                                     </div>
                                                     {getStatusBadge(viewing.status)}
                                                 </div>
@@ -587,9 +591,17 @@ export default function ViewingsPage() {
                                                     </div>
                                                     <p className="text-charcoal font-bold text-base mb-1">{viewing.agentName}</p>
                                                     <p className="text-charcoal/50 text-sm">{viewing.agentCompany}</p>
-                                                    <div className="flex items-center gap-2 mt-4">
+                                                    <div className="flex items-center gap-2 mt-4 flex-wrap">
+                                                        <button
+                                                            onClick={() => setChatViewing(viewing)}
+                                                            className="p-2.5 rounded-lg bg-gold/20 border border-gold/40 text-gold hover:bg-gold/30 transition-all shadow-sm font-semibold text-sm flex items-center gap-2"
+                                                            title="Chat"
+                                                        >
+                                                            <MessageCircle className="w-4 h-4" />
+                                                            Chat
+                                                        </button>
                                                         <a
-                                                            href={`tel:${viewing.agentPhone.replace(/\s/g, '')}`}
+                                                            href={`tel:${(viewing.agentPhone || '').replace(/\s/g, '')}`}
                                                             className="p-2.5 rounded-lg bg-white border border-charcoal/10 text-charcoal hover:bg-gold/10 hover:border-gold/30 transition-all shadow-sm"
                                                             title="Call Agent"
                                                         >
@@ -602,15 +614,17 @@ export default function ViewingsPage() {
                                                         >
                                                             <Mail className="w-4 h-4" />
                                                         </a>
-                                                        <a
-                                                            href={`https://wa.me/${viewing.agentPhone.replace(/\s/g, '')}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="p-2.5 rounded-lg bg-white border border-charcoal/10 text-charcoal hover:bg-green-50 hover:border-green-200 transition-all shadow-sm"
-                                                            title="WhatsApp Agent"
-                                                        >
-                                                            <MessageCircle className="w-4 h-4" />
-                                                        </a>
+                                                        {(viewing.agentPhone || '').replace(/\s/g, '').length > 0 && (
+                                                            <a
+                                                                href={`https://wa.me/${(viewing.agentPhone || '').replace(/\D/g, '').replace(/^0/, '27')}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-2.5 rounded-lg bg-white border border-charcoal/10 text-charcoal hover:bg-green-50 hover:border-green-200 transition-all shadow-sm"
+                                                                title="WhatsApp Agent"
+                                                            >
+                                                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 </div>
 
@@ -671,6 +685,40 @@ export default function ViewingsPage() {
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
                 </div>
             </main>
+
+            {/* Chat Modal */}
+            {chatViewing && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+                    <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[85vh] overflow-hidden flex flex-col">
+                        <div className="px-6 py-4 border-b border-charcoal/10 flex items-center justify-between">
+                            <div>
+                                <h3 className="font-bold text-charcoal">Chat - {chatViewing.propertyTitle}</h3>
+                                <p className="text-charcoal/60 text-sm">{chatViewing.propertyAddress}</p>
+                            </div>
+                            <button
+                                onClick={() => setChatViewing(null)}
+                                className="p-2 rounded-lg hover:bg-charcoal/10 text-charcoal"
+                                aria-label="Close"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 min-h-0 p-4">
+                            <ViewingChat
+                                viewingId={chatViewing.id}
+                                messages={chatViewing.chatMessages ?? []}
+                                currentUserRole="contact"
+                                onMessagesChange={(msgs) => {
+                                    setViewingAppointments((prev) =>
+                                        prev.map((v) => (v.id === chatViewing.id ? { ...v, chatMessages: msgs } : v))
+                                    );
+                                    setChatViewing((prev) => (prev ? { ...prev, chatMessages: msgs } : null));
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
