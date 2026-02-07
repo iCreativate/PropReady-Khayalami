@@ -7,7 +7,7 @@ import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Cal
 import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
-import ViewingChat from '@/components/ViewingChat';
+import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
 
 interface Lead {
     id: string;
@@ -70,7 +70,7 @@ interface ViewingAppointment {
     propertyTitle: string;
     propertyAddress: string;
     propertyPrice?: number;
-    chatMessages?: { id: string; sender: string; text: string; timestamp: string }[];
+    chatMessages?: ChatMessage[];
     contactName: string;
     contactEmail: string;
     contactPhone: string;
@@ -280,7 +280,7 @@ export default function AgentsDashboardPage() {
             const localOnly = storedViewings.filter((v: ViewingAppointment) => !ids.has(v.id));
             const merged = [...apiViewings, ...localOnly].map((v: ViewingAppointment) => {
                 const price = v.propertyPrice ?? listedProperties.find(p => p.id === v.propertyId)?.price;
-                const chat = v.chatMessages ?? (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`propReady_viewingChat_${v.id}`) || '[]') : []);
+                const chat = (v.chatMessages ?? (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`propReady_viewingChat_${v.id}`) || '[]') : [])) as ChatMessage[];
                 return { ...v, propertyPrice: price ?? v.propertyPrice ?? 0, chatMessages: chat };
             });
             const agentViewings = listedProperties.length > 0

@@ -7,14 +7,14 @@ import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckC
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 import { formatCurrency } from '@/lib/currency';
-import ViewingChat from '@/components/ViewingChat';
+import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
 
 interface Viewing {
     id: string;
     propertyTitle: string;
     propertyAddress: string;
     propertyPrice: number;
-    chatMessages?: { id: string; sender: string; text: string; timestamp: string }[];
+    chatMessages?: ChatMessage[];
     agentName: string;
     agentCompany: string;
     agentPhone: string;
@@ -82,7 +82,7 @@ export default function ViewingsPage() {
                     propertyTitle: v.propertyTitle,
                     propertyAddress: v.propertyAddress,
                     propertyPrice: v.propertyPrice ?? v.property_price ?? 0,
-                    chatMessages: v.chatMessages ?? v.chat_messages ?? [],
+                    chatMessages: (v.chatMessages ?? v.chat_messages ?? []) as ChatMessage[],
                     agentName: 'Agent', // Could be enhanced to store agent info
                     agentCompany: 'PropReady',
                     agentPhone: '',
