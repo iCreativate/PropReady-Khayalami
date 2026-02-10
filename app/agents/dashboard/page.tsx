@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import imageCompression from 'browser-image-compression';
-import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit, AlertCircle } from 'lucide-react';
+import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit, AlertCircle, BookOpen } from 'lucide-react';
 import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
@@ -189,7 +189,16 @@ export default function AgentsDashboardPage() {
             const ids = new Set(apiLeads.map(l => l.id));
             const localBuyersOnly = buyersWithType.filter(l => !ids.has(l.id));
             const localSellersOnly = sellersWithType.filter(s => !ids.has(s.id));
-            const merged = [...apiLeads, ...localBuyersOnly, ...localSellersOnly].sort((a, b) =>
+            const localById = new Map([...buyersWithType, ...sellersWithType].map(l => [l.id, l]));
+            const merged = [...apiLeads, ...localBuyersOnly, ...localSellersOnly].map((lead) => {
+                const local = localById.get(lead.id);
+                if (local && (lead.score == null || lead.score === 0) && (local.score != null && local.score > 0)) {
+                    const enriched = { ...lead, score: local.score, preQualAmount: lead.preQualAmount ?? local.preQualAmount };
+                    fetch('/api/leads', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: lead.id, score: local.score, preQualAmount: enriched.preQualAmount }) }).catch(() => {});
+                    return enriched;
+                }
+                return lead;
+            }).sort((a, b) =>
                 new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
             );
             const allBuyers = merged.filter(l => (l as Lead).leadType !== 'seller' && (l as Lead).leadType !== 'investor') as Lead[];
@@ -977,6 +986,9 @@ export default function AgentsDashboardPage() {
                             <Link href="/agents/dashboard" className="text-gold font-semibold">
                                 Dashboard
                             </Link>
+                            <Link href="/agents/learn" className="text-charcoal/90 hover:text-charcoal transition">
+                                Learning Hub
+                            </Link>
                             <Link href="/agents/settings" className="text-charcoal/90 hover:text-charcoal transition">
                                 Settings
                             </Link>
@@ -1022,7 +1034,7 @@ export default function AgentsDashboardPage() {
                     </div>
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                         <button
                             onClick={() => {
                                 setShowSuccessfulLeadsModal(true);
@@ -1100,6 +1112,20 @@ export default function AgentsDashboardPage() {
                                 <Calendar className="w-10 h-10 text-gold/50" />
                             </div>
                         </button>
+                        <Link
+                            href="/agents/learn"
+                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-charcoal/70 text-sm mb-1">Learning Hub</p>
+                                    <p className="text-charcoal font-semibold group-hover:text-gold transition-colors">
+                                        Learn more →
+                                    </p>
+                                </div>
+                                <BookOpen className="w-10 h-10 text-gold/50 group-hover:text-gold/80 transition-colors" />
+                            </div>
+                        </Link>
                     </div>
 
                     {/* Listed Properties Section */}
@@ -1446,7 +1472,7 @@ export default function AgentsDashboardPage() {
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-2">
                                                         <TrendingUp className="w-4 h-4 text-gold" />
-                                                            <span className="text-charcoal font-semibold">{lead.score}%</span>
+                                                            <span className="text-charcoal font-semibold">{lead.score != null ? `${lead.score}%` : '—'}</span>
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
@@ -1917,7 +1943,7 @@ export default function AgentsDashboardPage() {
                                     <div className="grid grid-cols-2 gap-2 text-sm">
                                         <div>
                                             <p className="text-charcoal/60">Score</p>
-                                            <p className="text-charcoal font-semibold">{(showActionsModal as Lead).score}%</p>
+                                            <p className="text-charcoal font-semibold">{(showActionsModal as Lead).score != null ? `${(showActionsModal as Lead).score}%` : '—'}</p>
                                         </div>
                                         <div>
                                             <p className="text-charcoal/60">Status</p>
@@ -3190,7 +3216,7 @@ export default function AgentsDashboardPage() {
                                                                 <TrendingUp className="w-4 h-4" />
                                                                 <span>Pre-Qual: {formatCurrency(lead.preQualAmount ?? 0)}</span>
                                                                 <span className="text-charcoal/40">•</span>
-                                                                <span>Score: {lead.score}%</span>
+                                                                <span>Score: {lead.score != null ? `${lead.score}%` : '—'}</span>
                                                             </div>
                                                         </div>
                                                     </div>

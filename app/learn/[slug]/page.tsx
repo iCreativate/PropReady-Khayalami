@@ -181,6 +181,73 @@ export default async function LearningModulePage({
                 }
             ]
         },
+        prequalification: {
+            title: 'Getting Prequalified & Why It Matters',
+            icon: 'BookOpen',
+            content: (
+                <div className="space-y-6 text-charcoal/90">
+                    <p className="text-lg">
+                        Before you fall in love with a home, it&apos;s crucial to understand what you can actually afford.
+                        Getting prequalified (or pre-approved) gives you a clear budget, saves time, and makes your offers
+                        much stronger.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. What Does Prequalification Mean?</h3>
+                    <p>
+                        Prequalification is an initial assessment by a bank or bond originator of how much they&apos;re likely
+                        to lend you. They look at your income, expenses, debts, and credit profile to estimate an affordable
+                        loan amount and monthly repayment.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. What Information Is Used?</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li>Gross and net monthly income</li>
+                        <li>Existing debts (credit cards, car finance, loans)</li>
+                        <li>Living expenses (rent, transport, childcare, etc.)</li>
+                        <li>Credit behaviour and score</li>
+                    </ul>
+                    <p className="mt-4">
+                        You don&apos;t always need full documents for a prequalification, but the more accurate your
+                        information, the more accurate your prequalification result will be.
+                    </p>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Why Getting Prequalified First Is So Important</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                        <li>
+                            <strong>Set a realistic budget:</strong> You avoid &quot;shopping blind&quot; and only view homes
+                            in a price range that banks are likely to approve.
+                        </li>
+                        <li>
+                            <strong>Stronger offers:</strong> Sellers and agents take you more seriously when you can show
+                            you&apos;ve already been prequalified.
+                        </li>
+                        <li>
+                            <strong>Faster bond approval:</strong> You&apos;ve already done a lot of the groundwork, so the
+                            formal application is smoother and quicker.
+                        </li>
+                        <li>
+                            <strong>Avoid disappointment:</strong> You won&apos;t waste time on homes that are outside your
+                            realistic reach.
+                        </li>
+                    </ul>
+
+                    <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. How PropReady Helps You Get Prequalified</h3>
+                    <p>
+                        PropReady&apos;s quiz and tools help you understand affordability before you start viewing. By answering
+                        a few questions about your income, expenses, and deposit, you can get an estimated price range and
+                        connect with a bond originator who can secure formal pre-approval from multiple banks.
+                    </p>
+
+                    <div className="premium-card p-6 rounded-xl bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20 mt-4">
+                        <h4 className="text-xl font-bold text-gold mb-3">Tip</h4>
+                        <p className="text-charcoal/80">
+                            Do your prequalification before you start making offers. It doesn&apos;t lock you into a specific bank,
+                            but it gives you a powerful head start when you find the right home.
+                        </p>
+                    </div>
+                </div>
+            ),
+        },
         'buying-process': {
             title: 'The Buying Process',
             icon: 'FileText',

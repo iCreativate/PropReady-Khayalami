@@ -63,6 +63,25 @@ export default function LearnPage() {
                             </div>
                         </Link>
 
+                        {/* New Module - Getting Prequalified */}
+                        <Link href="/learn/prequalification" className="block">
+                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
+                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
+                                    <ShieldCheck className="w-8 h-8 text-gold" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-gold mb-4">
+                                    Getting Prequalified
+                                </h3>
+                                <p className="text-charcoal/60 mb-6 leading-relaxed">
+                                    Why getting prequalified early matters, how it works, and how it helps you shop with confidence and stronger offers.
+                                </p>
+                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
+                                    <span>Start Learning</span>
+                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                                </div>
+                            </div>
+                        </Link>
+
                         {/* Module 2 */}
                         <Link href="/learn/buying-process" className="block">
                             <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">

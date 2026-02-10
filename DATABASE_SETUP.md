@@ -83,6 +83,7 @@ After deployment, test the following:
    - Run the full `supabase-schema.sql` to create all tables.
    - Run `supabase-migration-leads-seller-columns.sql` for seller fields.
    - Run `supabase-migration-leads-location.sql` for city/location matching.
+   - Run `supabase-migration-leads-score.sql` so PropReady scores appear for buyers.
    - Run `supabase-migration-viewings.sql` for viewing appointments (so viewings sync to the database).
    - Run `supabase-migration-properties.sql` for listed properties (creates the **`listed_properties`** table – not the `properties` table). Properties will then sync across all browsers. **Agents must click "Publish"** on each property for it to appear on the search page.
    - If `agent_id` was NOT NULL: `ALTER TABLE leads ALTER COLUMN agent_id DROP NOT NULL;`

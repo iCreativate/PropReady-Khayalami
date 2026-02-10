@@ -273,6 +273,9 @@ export default function AgentSettingsPage() {
                             <Link href="/agents/dashboard" className="text-charcoal/90 hover:text-charcoal transition">
                                 Dashboard
                             </Link>
+                            <Link href="/agents/learn" className="text-charcoal/90 hover:text-charcoal transition">
+                                Learning Hub
+                            </Link>
                             <Link href="/agents/settings" className="text-gold font-semibold">
                                 Settings
                             </Link>

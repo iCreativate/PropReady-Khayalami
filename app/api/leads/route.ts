@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
                         : result.error.code === '42501'
                             ? ' RLS blocking insert. Run in Supabase SQL: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
                                 : /column.*does not exist|undefined column|Could not find.*column/i.test(msg)
-                                ? ' Run supabase-migration-leads-seller-columns.sql and supabase-migration-leads-location.sql in Supabase SQL Editor.'
+                                ? ' Run supabase-migration-leads-seller-columns.sql, supabase-migration-leads-location.sql, and supabase-migration-leads-score.sql in Supabase SQL Editor.'
                                 : '';
             return NextResponse.json(
                 { success: false, error: result.error.message + hint, code: result.error.code },
@@ -185,5 +185,34 @@ export async function POST(request: NextRequest) {
             { success: false, error: 'Server error' },
             { status: 500 }
         );
+    }
+}
+
+export async function PATCH(request: NextRequest) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
+    }
+    try {
+        const body = await request.json();
+        const { id, ...updates } = body;
+        if (!id) {
+            return NextResponse.json({ success: false, error: 'id required' }, { status: 400 });
+        }
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const dbUpdates: Record<string, unknown> = {};
+        if (updates.status != null) dbUpdates.status = updates.status;
+        if (updates.score != null) dbUpdates.score = updates.score;
+        if (updates.preQualAmount != null) dbUpdates.pre_qual_amount = updates.preQualAmount ?? updates.pre_qual_amount;
+        dbUpdates.updated_at = new Date().toISOString();
+
+        const { error } = await supabase.from('leads').update(dbUpdates).eq('id', id);
+        if (error) {
+            console.error('Supabase leads PATCH error:', error);
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+        return NextResponse.json({ success: true });
+    } catch (err) {
+        console.error('API leads PATCH error:', err);
+        return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
     }
 }
