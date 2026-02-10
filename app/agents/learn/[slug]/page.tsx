@@ -479,9 +479,9 @@ export default async function AgentLearnArticlePage({
     params: Promise<{ slug: string }>;
 }) {
     const { slug } = await params;
-    const module = AGENT_MODULES[slug];
+    const agentModule = AGENT_MODULES[slug];
 
-    if (!module) {
+    if (!agentModule) {
         notFound();
     }
 
@@ -530,12 +530,12 @@ export default async function AgentLearnArticlePage({
                             <span className="text-gold font-semibold text-sm">Learning Hub – Agents</span>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-bold text-charcoal mb-4">
-                            {module.title}
+                            {agentModule.title}
                         </h1>
                     </div>
 
                     <article className="prose prose-lg max-w-none">
-                        {module.content}
+                        {agentModule.content}
                     </article>
 
                     <div className="mt-12 pt-8 border-t border-charcoal/20">

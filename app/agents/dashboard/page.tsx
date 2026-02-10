@@ -1439,7 +1439,6 @@ export default function AgentsDashboardPage() {
                                             <tr className="border-b border-charcoal/20">
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Buyer</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Contact</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Pre-Qual Amount</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Score</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Status</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date</th>
@@ -1465,9 +1464,6 @@ export default function AgentsDashboardPage() {
                                                         <p className="text-charcoal/80 text-sm">{lead.email}</p>
                                                         <p className="text-charcoal/60 text-sm">{lead.phone}</p>
                                                     </div>
-                                                </td>
-                                                <td className="py-4 px-4">
-                                                    <p className="text-gold font-bold">{formatCurrency(lead.preQualAmount ?? 0)}</p>
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <div className="flex items-center gap-2">
@@ -1913,16 +1909,6 @@ export default function AgentsDashboardPage() {
 
                         {/* Content area */}
                         <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-                            <div className="mb-6">
-                                <div className="text-center mb-6">
-                                    {activeTab === 'buyers' && 'preQualAmount' in showActionsModal && (
-                                        <p className="text-charcoal/70 text-sm mb-4">
-                                            Pre-Qual Amount: {formatCurrency((showActionsModal as Lead).preQualAmount ?? 0)}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
                             <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
                                 <p className="text-charcoal/70 text-sm mb-2 font-semibold">Contact Information</p>
                                 <div className="space-y-2">
@@ -3214,8 +3200,6 @@ export default function AgentsDashboardPage() {
                                                             </div>
                                                             <div className="flex items-center gap-2">
                                                                 <TrendingUp className="w-4 h-4" />
-                                                                <span>Pre-Qual: {formatCurrency(lead.preQualAmount ?? 0)}</span>
-                                                                <span className="text-charcoal/40">•</span>
                                                                 <span>Score: {lead.score != null ? `${lead.score}%` : '—'}</span>
                                                             </div>
                                                         </div>
