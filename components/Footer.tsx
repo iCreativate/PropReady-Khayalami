@@ -19,30 +19,42 @@ export default function Footer() {
                         </p>
                         <div className="flex items-center space-x-4">
                             <a
-                                href="#"
+                                href="https://facebook.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-gold hover:bg-gold/20 transition"
                                 aria-label="Facebook"
+                                title="Facebook (update URL when social accounts are live)"
                             >
                                 <Facebook className="w-4 h-4" />
                             </a>
                             <a
-                                href="#"
+                                href="https://twitter.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-gold hover:bg-gold/20 transition"
                                 aria-label="Twitter"
+                                title="Twitter (update URL when social accounts are live)"
                             >
                                 <Twitter className="w-4 h-4" />
                             </a>
                             <a
-                                href="#"
+                                href="https://instagram.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-gold hover:bg-gold/20 transition"
                                 aria-label="Instagram"
+                                title="Instagram (update URL when social accounts are live)"
                             >
                                 <Instagram className="w-4 h-4" />
                             </a>
                             <a
-                                href="#"
+                                href="https://linkedin.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/70 hover:text-gold hover:bg-gold/20 transition"
                                 aria-label="LinkedIn"
+                                title="LinkedIn (update URL when social accounts are live)"
                             >
                                 <Linkedin className="w-4 h-4" />
                             </a>

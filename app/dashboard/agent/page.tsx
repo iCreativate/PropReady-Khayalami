@@ -139,12 +139,20 @@ export default function MyAgentPage() {
                             <p className="text-charcoal/70 mb-6 max-w-xl mx-auto">
                                 Once you choose an agent, their details will appear here.
                             </p>
-                            <Link
-                                href="/search"
-                                className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gold text-charcoal font-semibold hover:bg-gold/90 transition"
-                            >
-                                Browse Properties
-                            </Link>
+                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                <Link
+                                    href="/sellers/dashboard"
+                                    className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-gold text-charcoal font-semibold hover:bg-gold/90 transition"
+                                >
+                                    Find an Agent
+                                </Link>
+                                <Link
+                                    href="/search"
+                                    className="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-charcoal/20 text-charcoal font-semibold hover:bg-charcoal/5 transition"
+                                >
+                                    Browse Properties
+                                </Link>
+                            </div>
                         </div>
                     ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

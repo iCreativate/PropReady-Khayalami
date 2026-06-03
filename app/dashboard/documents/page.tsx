@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { Home, FileText, Download, Upload, CheckCircle, AlertCircle, Calendar, X, Building2, Star, Phone, ExternalLink, Trophy, Briefcase, Clipboard, Send } from 'lucide-react';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import { useToast } from '@/components/providers/ToastProvider';
+import { logActivity } from '@/lib/activity';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 interface Document {
     id: string;
@@ -18,6 +21,7 @@ interface Document {
 
 export default function DocumentsPage() {
     const router = useRouter();
+    const { success, error: toastError } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [documents, setDocuments] = useState<Document[]>([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -155,7 +159,12 @@ export default function DocumentsPage() {
         if (newDocs.length > 0) {
             const updatedDocs = [...documents, ...newDocs];
             setDocuments(updatedDocs);
-            localStorage.setItem('propReady_documents', JSON.stringify(updatedDocs));
+            localStorage.setItem(STORAGE_KEYS.documents, JSON.stringify(updatedDocs));
+            const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || '{}');
+            if (user?.id) {
+                logActivity(`Uploaded ${newDocs.length} document(s)`, user.id);
+            }
+            success(`${newDocs.length} file(s) uploaded successfully`);
         }
     };
 
@@ -228,16 +237,17 @@ export default function DocumentsPage() {
                 userId: userData.id
             };
 
-            localStorage.setItem('propReady_documentsSent', JSON.stringify(sentData));
+            localStorage.setItem(STORAGE_KEYS.documentsSent, JSON.stringify(sentData));
+            logActivity(`Documents sent to ${originator?.name || 'bond originator'}`, userData.id);
             setSendSuccess(true);
+            success(`Documents sent to ${originator?.name}. Bond originator API integration pending.`);
             
-            // Clear success message after 5 seconds
             setTimeout(() => {
                 setSendSuccess(false);
             }, 5000);
-        } catch (error) {
-            console.error('Error sending documents:', error);
+        } catch {
             setSendError('Failed to send documents. Please try again.');
+            toastError('Failed to send documents. Please try again.');
         } finally {
             setIsSending(false);
         }

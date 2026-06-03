@@ -4,24 +4,44 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
+import {
+    getCurrentAgent,
+    getRememberedAgentEmail,
+    setRememberedAgentEmail,
+} from '@/lib/auth';
 
 export default function AgentLoginPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
-        password: ''
+        password: '',
     });
+
+    useEffect(() => {
+        if (getCurrentAgent()) {
+            router.replace('/agents/dashboard');
+            return;
+        }
+        const remembered = getRememberedAgentEmail();
+        if (remembered) {
+            setFormData((prev) => ({ ...prev, email: remembered }));
+            setRememberMe(true);
+        }
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+        setRememberedAgentEmail(formData.email.trim(), rememberMe);
 
         try {
-            // Try database via server API first (uses server env vars)
             const loginRes = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -38,15 +58,15 @@ export default function AgentLoginPage() {
                     email: loginJson.user.email,
                     company: loginJson.user.company,
                     city: loginJson.user.city,
-                    plan: loginJson.user.plan || 'free'
+                    plan: loginJson.user.plan || 'free',
                 };
             }
 
-            // Fallback to localStorage if database not configured or agent not in DB
             if (!authenticatedAgent && typeof window !== 'undefined') {
                 const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-                const localAgent = agents.find((a: any) =>
-                    a.email === formData.email && a.password === formData.password
+                const localAgent = agents.find(
+                    (a: { email: string; password: string }) =>
+                        a.email === formData.email && a.password === formData.password
                 );
                 if (localAgent) {
                     authenticatedAgent = {
@@ -55,7 +75,7 @@ export default function AgentLoginPage() {
                         email: localAgent.email,
                         company: localAgent.company,
                         city: localAgent.city,
-                        plan: localAgent.plan || 'free'
+                        plan: localAgent.plan || 'free',
                     };
                 }
             }
@@ -68,8 +88,7 @@ export default function AgentLoginPage() {
             } else {
                 setError('Invalid email or password. Please try again.');
             }
-        } catch (err) {
-            console.error('Login error:', err);
+        } catch {
             setError('An error occurred during login. Please try again.');
         } finally {
             setIsLoading(false);
@@ -78,7 +97,6 @@ export default function AgentLoginPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
                 <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
                     <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
@@ -95,25 +113,17 @@ export default function AgentLoginPage() {
                 </nav>
             </header>
 
-            {/* Main Content */}
             <main className="relative min-h-screen flex items-center justify-center px-4 pt-24">
                 <div className="container mx-auto max-w-md relative z-10">
-                    {/* Login Card */}
                     <div className="glass-effect rounded-2xl p-8 md:p-10 shadow-2xl">
-                        {/* Badge */}
                         <div className="text-center mb-8">
                             <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
                                 <span className="text-gold font-semibold">Agent Portal</span>
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2">
-                                Welcome Back
-                            </h1>
-                            <p className="text-charcoal/80">
-                                Sign in to access your agent dashboard
-                            </p>
+                            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2">Welcome Back</h1>
+                            <p className="text-charcoal/80">Sign in to access your agent dashboard</p>
                         </div>
 
-                        {/* Login Form */}
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {error && (
                                 <div className="p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-lg">
@@ -123,7 +133,7 @@ export default function AgentLoginPage() {
                                     </p>
                                 </div>
                             )}
-                            {/* Email Input */}
+
                             <div>
                                 <label htmlFor="agent-login-email" className="block text-charcoal font-semibold mb-2">
                                     Email Address
@@ -144,7 +154,6 @@ export default function AgentLoginPage() {
                                 </div>
                             </div>
 
-                            {/* Password Input */}
                             <div>
                                 <label htmlFor="agent-login-password" className="block text-charcoal font-semibold mb-2">
                                     Password
@@ -173,23 +182,27 @@ export default function AgentLoginPage() {
                                 </div>
                             </div>
 
-                            {/* Remember Me & Forgot Password */}
                             <div className="flex items-center justify-between">
                                 <label htmlFor="agent-remember-me" className="flex items-center space-x-2 cursor-pointer">
                                     <input
                                         id="agent-remember-me"
                                         name="rememberMe"
                                         type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
                                         className="w-4 h-4 rounded border-white/20 bg-white/10 text-gold focus:ring-gold"
                                     />
                                     <span className="text-charcoal/80 text-sm">Remember me</span>
                                 </label>
-                                <button type="button" className="text-gold hover:text-gold-600 text-sm font-semibold">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForgotPassword(true)}
+                                    className="text-gold hover:text-gold-600 text-sm font-semibold"
+                                >
                                     Forgot Password?
                                 </button>
                             </div>
 
-                            {/* Login Button */}
                             <button
                                 type="submit"
                                 disabled={isLoading}
@@ -199,7 +212,6 @@ export default function AgentLoginPage() {
                             </button>
                         </form>
 
-                        {/* Divider */}
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-charcoal/20"></div>
@@ -211,11 +223,8 @@ export default function AgentLoginPage() {
                             </div>
                         </div>
 
-                        {/* Register Link */}
                         <div className="text-center">
-                            <p className="text-charcoal/80 mb-4">
-                                Join our network of verified agents
-                            </p>
+                            <p className="text-charcoal/80 mb-4">Join our network of verified agents</p>
                             <Link
                                 href="/agents/register"
                                 className="block w-full py-3 border border-charcoal/30 text-charcoal font-semibold rounded-lg hover:bg-charcoal/10 transition-all"
@@ -224,7 +233,6 @@ export default function AgentLoginPage() {
                             </Link>
                         </div>
 
-                        {/* Trust Badge */}
                         <div className="mt-8 pt-6 border-t border-charcoal/20">
                             <div className="flex items-center justify-center space-x-2 text-charcoal/70 text-sm">
                                 <div className="w-6 h-6 rounded-full bg-gold/20 flex items-center justify-center">
@@ -235,7 +243,6 @@ export default function AgentLoginPage() {
                         </div>
                     </div>
 
-                    {/* Additional Info */}
                     <div className="mt-12 mb-6 text-center">
                         <p className="text-charcoal/60 text-sm">
                             By signing in, you agree to our{' '}
@@ -250,12 +257,20 @@ export default function AgentLoginPage() {
                     </div>
                 </div>
 
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+                    <div
+                        className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float"
+                        style={{ animationDelay: '2s' }}
+                    ></div>
                 </div>
             </main>
+
+            <ForgotPasswordModal
+                open={showForgotPassword}
+                onClose={() => setShowForgotPassword(false)}
+                portalLabel="agent account"
+            />
         </div>
     );
 }

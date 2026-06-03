@@ -4,24 +4,34 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import ForgotPasswordModal from '@/components/ForgotPasswordModal';
+import {
+    getCurrentUser,
+    getRememberedUserEmail,
+    setRememberedUserEmail,
+} from '@/lib/auth';
 
 export default function LoginPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
-        password: ''
+        password: '',
     });
 
     useEffect(() => {
-        // Check if user is already logged in
-        if (typeof window !== 'undefined') {
-            const currentUser = localStorage.getItem('propReady_currentUser');
-            if (currentUser) {
-                router.push('/dashboard');
-            }
+        if (getCurrentUser()) {
+            router.replace('/dashboard');
+            return;
+        }
+        const remembered = getRememberedUserEmail();
+        if (remembered) {
+            setFormData((prev) => ({ ...prev, email: remembered }));
+            setRememberMe(true);
         }
     }, [router]);
 
@@ -29,9 +39,9 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+        setRememberedUserEmail(formData.email.trim(), rememberMe);
 
         try {
-            // Try database via server API first (uses server env vars)
             const loginRes = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -45,21 +55,21 @@ export default function LoginPage() {
                 authenticatedUser = {
                     id: loginJson.user.id,
                     fullName: loginJson.user.fullName,
-                    email: loginJson.user.email
+                    email: loginJson.user.email,
                 };
             }
 
-            // Fallback to localStorage if database not configured or user not in DB
             if (!authenticatedUser && typeof window !== 'undefined') {
                 const users = JSON.parse(localStorage.getItem('propReady_users') || '[]');
-                const localUser = users.find((u: any) =>
-                    u.email === formData.email && u.password === formData.password
+                const localUser = users.find(
+                    (u: { email: string; password: string }) =>
+                        u.email === formData.email && u.password === formData.password
                 );
                 if (localUser) {
                     authenticatedUser = {
                         id: localUser.id,
                         fullName: localUser.fullName,
-                        email: localUser.email
+                        email: localUser.email,
                     };
                 }
             }
@@ -72,8 +82,7 @@ export default function LoginPage() {
             } else {
                 setError('Invalid email or password. Please try again.');
             }
-        } catch (err) {
-            console.error('Login error:', err);
+        } catch {
             setError('An error occurred during login. Please try again.');
         } finally {
             setIsLoading(false);
@@ -82,7 +91,6 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
                 <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
                     <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
@@ -99,112 +107,105 @@ export default function LoginPage() {
                 </nav>
             </header>
 
-            {/* Main Content */}
             <main className="relative min-h-screen flex items-center justify-center px-4 pt-24">
                 <div className="container mx-auto max-w-md relative z-10">
-                    {/* Login Card */}
                     <div className="glass-effect rounded-2xl p-8 md:p-10 shadow-2xl">
-                        {/* Badge */}
                         <div className="text-center mb-8">
                             <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
                                 <span className="text-gold font-semibold">Buyer Portal</span>
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2">
-                                Welcome Back
-                            </h1>
-                            <p className="text-charcoal/80">
-                                Sign in to access your dashboard
-                            </p>
+                            <h1 className="text-3xl md:text-4xl font-bold text-charcoal mb-2">Welcome Back</h1>
+                            <p className="text-charcoal/80">Sign in to access your dashboard</p>
                         </div>
 
-                        {/* Login Form */}
                         <form onSubmit={handleSubmit} className="space-y-6">
-                                {error && (
-                                    <div className="p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-lg">
-                                        <p className="text-red-600 text-sm flex items-center gap-2">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {error}
-                                        </p>
-                                    </div>
-                                )}
-
-                                {/* Email Input */}
-                                <div>
-                                    <label htmlFor="login-email" className="block text-charcoal font-semibold mb-2">
-                                        Email Address
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                        <input
-                                            id="login-email"
-                                            name="email"
-                                            type="email"
-                                            placeholder="Enter your email"
-                                            value={formData.email}
-                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            required
-                                            autoComplete="email"
-                                            className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                    </div>
+                            {error && (
+                                <div className="p-3 bg-gradient-to-r from-red-500/10 to-red-500/5 border border-red-500/30 rounded-lg">
+                                    <p className="text-red-600 text-sm flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {error}
+                                    </p>
                                 </div>
+                            )}
 
-                                {/* Password Input */}
-                                <div>
-                                    <label htmlFor="login-password" className="block text-charcoal font-semibold mb-2">
-                                        Password
-                                    </label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                        <input
-                                            id="login-password"
-                                            name="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder="Enter your password"
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            required
-                                            autoComplete="current-password"
-                                            className="w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
-                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
+                            <div>
+                                <label htmlFor="login-email" className="block text-charcoal font-semibold mb-2">
+                                    Email Address
+                                </label>
+                                <div className="relative">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <input
+                                        id="login-email"
+                                        name="email"
+                                        type="email"
+                                        placeholder="Enter your email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        required
+                                        autoComplete="email"
+                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    />
                                 </div>
+                            </div>
 
-                                {/* Remember Me & Forgot Password */}
-                                <div className="flex items-center justify-between">
-                                    <label htmlFor="remember-me" className="flex items-center space-x-2 cursor-pointer">
-                                        <input
-                                            id="remember-me"
-                                            name="rememberMe"
-                                            type="checkbox"
-                                            className="w-4 h-4 rounded border-charcoal/20 bg-white/10 text-gold focus:ring-gold"
-                                        />
-                                        <span className="text-charcoal/80 text-sm">Remember me</span>
-                                    </label>
-                                    <button type="button" className="text-gold hover:text-gold-600 text-sm font-semibold">
-                                        Forgot Password?
+                            <div>
+                                <label htmlFor="login-password" className="block text-charcoal font-semibold mb-2">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <input
+                                        id="login-password"
+                                        name="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="Enter your password"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        required
+                                        autoComplete="current-password"
+                                        className="w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
                                 </div>
+                            </div>
 
-                                {/* Login Button */}
+                            <div className="flex items-center justify-between">
+                                <label htmlFor="remember-me" className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        id="remember-me"
+                                        name="rememberMe"
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="w-4 h-4 rounded border-charcoal/20 bg-white/10 text-gold focus:ring-gold"
+                                    />
+                                    <span className="text-charcoal/80 text-sm">Remember me</span>
+                                </label>
                                 <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                    type="button"
+                                    onClick={() => setShowForgotPassword(true)}
+                                    className="text-gold hover:text-gold-600 text-sm font-semibold"
                                 >
-                                    {isLoading ? 'Signing In...' : 'Sign In'}
+                                    Forgot Password?
                                 </button>
-                            </form>
+                            </div>
 
-                        {/* Divider */}
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            >
+                                {isLoading ? 'Signing In...' : 'Sign In'}
+                            </button>
+                        </form>
+
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-charcoal/20"></div>
@@ -216,11 +217,8 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Register Link */}
                         <div className="text-center">
-                            <p className="text-charcoal/80 mb-4">
-                                Complete the quiz to create your account
-                            </p>
+                            <p className="text-charcoal/80 mb-4">Complete the quiz to create your account</p>
                             <Link
                                 href="/quiz"
                                 className="block w-full py-3 border border-charcoal/30 text-charcoal font-semibold rounded-lg hover:bg-charcoal/10 transition-all"
@@ -230,7 +228,6 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* Additional Info */}
                     <div className="mt-12 mb-6 text-center">
                         <p className="text-charcoal/60 text-sm">
                             By signing in, you agree to our{' '}
@@ -245,12 +242,20 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+                    <div
+                        className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float"
+                        style={{ animationDelay: '2s' }}
+                    ></div>
                 </div>
             </main>
+
+            <ForgotPasswordModal
+                open={showForgotPassword}
+                onClose={() => setShowForgotPassword(false)}
+                portalLabel="buyer account"
+            />
         </div>
     );
 }

@@ -1,0 +1,21 @@
+/** Central localStorage keys for PropReady session and data */
+export const STORAGE_KEYS = {
+    users: 'propReady_users',
+    currentUser: 'propReady_currentUser',
+    rememberUserEmail: 'propReady_rememberUserEmail',
+    quizResult: 'propReady_quizResult',
+    leads: 'propReady_leads',
+    sellerInfo: 'propReady_sellerInfo',
+    sellers: 'propReady_sellers',
+    propertyQuizzes: 'propReady_propertyQuizzes',
+    agents: 'propReady_agents',
+    currentAgent: 'propReady_currentAgent',
+    rememberAgentEmail: 'propReady_rememberAgentEmail',
+    listedProperties: 'propReady_listedProperties',
+    viewingAppointments: 'propReady_viewingAppointments',
+    documents: 'propReady_documents',
+    selectedOriginator: 'propReady_selectedOriginator',
+    documentsSent: 'propReady_documentsSent',
+    activity: 'propReady_activity',
+    selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
+} as const;
