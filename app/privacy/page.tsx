@@ -132,7 +132,7 @@ export default function PrivacyPolicyPage() {
                                     <li><strong>Withdraw Consent:</strong> Withdraw consent for processing where consent is the legal basis</li>
                                 </ul>
                                 <p className="text-charcoal/80 leading-relaxed mt-4">
-                                    To exercise these rights, please contact us at <a href="mailto:info@propready.co.za" className="text-gold hover:text-gold-600">info@propready.co.za</a>.
+                                    To exercise these rights, please contact us at <a href="mailto:info@prop-ready.co.za" className="text-gold hover:text-gold-600">info@prop-ready.co.za</a>.
                                 </p>
                             </section>
 
@@ -177,7 +177,7 @@ export default function PrivacyPolicyPage() {
                                     If you have any questions about this Privacy Policy or wish to exercise your rights under POPIA, please contact us at:
                                 </p>
                                 <p className="text-charcoal/80 leading-relaxed">
-                                    Email: <a href="mailto:info@propready.co.za" className="text-gold hover:text-gold-600">info@propready.co.za</a>
+                                    Email: <a href="mailto:info@prop-ready.co.za" className="text-gold hover:text-gold-600">info@prop-ready.co.za</a>
                                 </p>
                             </section>
                         </div>

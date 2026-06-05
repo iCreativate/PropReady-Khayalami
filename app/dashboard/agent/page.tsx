@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Home, Users, Phone, Mail, MessageCircle, MapPin, Building2, CheckCircle, Star, Calendar, X } from 'lucide-react';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import PpraTrustSection from '@/components/PpraTrustSection';
+import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
 
 export default function MyAgentPage() {
     const router = useRouter();
@@ -33,22 +35,37 @@ export default function MyAgentPage() {
                 setAgent(selected);
 
                 const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-                const mappedAgents = storedAgents.map((a: any) => ({
-                    id: a.id,
-                    name: a.fullName || a.name || 'Agent',
-                    company: a.company || a.brandName || 'Agency',
-                    email: a.email || '',
-                    phone: a.phone || '',
-                    rating: typeof a.rating === 'number' ? a.rating : 4.8,
-                    totalSales: typeof a.totalSales === 'number' ? a.totalSales : 0,
-                    experience: a.experience || '—',
-                    specialties: Array.isArray(a.specialties) ? a.specialties : [],
-                    bio: a.bio,
-                    location: a.location || 'South Africa',
-                    eaabNumber: a.eaabNumber,
-                    verified: a.status ? a.status === 'approved' : !!a.verified
-                }));
-                setOtherAgents(mappedAgents.filter((a: any) => !selected || a.id !== selected.id));
+                const mappedAgents = filterPublicAgents(
+                    storedAgents.map((a: Record<string, unknown>) => {
+                        const m = mapAgentRecord(a);
+                        return {
+                            id: m.id,
+                            name: m.fullName || 'Agent',
+                            company: m.company || 'Agency',
+                            email: m.email || '',
+                            phone: m.phone || '',
+                            rating: typeof a.rating === 'number' ? (a.rating as number) : 4.8,
+                            totalSales: typeof a.totalSales === 'number' ? (a.totalSales as number) : 0,
+                            experience: (a.experience as string) || '—',
+                            specialties: Array.isArray(a.specialties) ? (a.specialties as string[]) : [],
+                            bio: a.bio as string | undefined,
+                            location: (a.location as string) || m.city || 'South Africa',
+                            eaabNumber: m.ppraNumber || m.eaabNumber,
+                            ppraNumber: m.ppraNumber,
+                            ffcNumber: m.ffcNumber,
+                            ffcDocumentUrl: m.ffcDocumentUrl,
+                            verificationStatus: m.verificationStatus,
+                            verified: m.verified,
+                        };
+                    })
+                );
+                if (selected) {
+                    const found = mappedAgents.find((a) => a.id === selected.id);
+                    setAgent(found || selected);
+                } else {
+                    setAgent(null);
+                }
+                setOtherAgents(mappedAgents.filter((a) => !selected || a.id !== selected.id));
                 setRecentActivity([]);
                 setIsLoading(false);
             }
@@ -569,7 +586,10 @@ export default function MyAgentPage() {
                                         )}
                                     </div>
                                     <p className="text-charcoal/60 text-lg mb-1">{showAgentDetails.company}</p>
-                                    <div className="flex items-center gap-2 mb-3">
+                                    <div className="mt-4">
+                                        <PpraTrustSection agent={showAgentDetails} />
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-3 mt-4">
                                         <div className="flex items-center gap-1">
                                             {[...Array(5)].map((_, i) => (
                                                 <Star

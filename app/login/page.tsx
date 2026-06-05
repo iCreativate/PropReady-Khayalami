@@ -51,6 +51,13 @@ export default function LoginPage() {
 
             let authenticatedUser = null;
 
+            if (loginRes.status === 403 && loginJson.needsVerification) {
+                router.push(
+                    `/verify-email?email=${encodeURIComponent(formData.email)}&type=user`
+                );
+                return;
+            }
+
             if (loginRes.ok && loginJson.success && loginJson.user) {
                 authenticatedUser = {
                     id: loginJson.user.id,
@@ -66,6 +73,12 @@ export default function LoginPage() {
                         u.email === formData.email && u.password === formData.password
                 );
                 if (localUser) {
+                    if (localUser.emailVerified === false) {
+                        router.push(
+                            `/verify-email?email=${encodeURIComponent(formData.email)}&type=user`
+                        );
+                        return;
+                    }
                     authenticatedUser = {
                         id: localUser.id,
                         fullName: localUser.fullName,

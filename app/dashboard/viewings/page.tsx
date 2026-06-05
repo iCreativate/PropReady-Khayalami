@@ -8,6 +8,7 @@ import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 import { formatCurrency } from '@/lib/currency';
 import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
+import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 
 interface Viewing {
     id: string;
@@ -33,6 +34,7 @@ export default function ViewingsPage() {
     const [viewingAppointments, setViewingAppointments] = useState<Viewing[]>([]);
     const [chatViewing, setChatViewing] = useState<Viewing | null>(null);
     const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id?: string } | null>(null);
+    const [confirmRefreshKey, setConfirmRefreshKey] = useState(0);
 
     useEffect(() => {
         async function load() {
@@ -51,15 +53,17 @@ export default function ViewingsPage() {
                 const sellerInfo = JSON.parse(localStorage.getItem('propReady_sellerInfo') || '{}');
                 const quizPhone = (quizResult.phone || '').replace(/\s/g, '');
                 const sellerPhone = (sellerInfo?.phone || '').replace(/\s/g, '');
+                const userEmail = user.email?.toLowerCase() || '';
                 const matchViewing = (v: any) => {
+                    if (v.buyerEmail && v.buyerEmail.toLowerCase() === userEmail) return true;
                     const matchesBuyer = v.contactType === 'buyer' && (
                         (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                        (v.contactEmail && userEmail && v.contactEmail.toLowerCase() === userEmail) ||
                         (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
                     );
                     const matchesSeller = v.contactType === 'seller' && (
                         (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                        (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
+                        (v.contactEmail && userEmail && v.contactEmail.toLowerCase() === userEmail) ||
                         (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
                     );
                     return matchesBuyer || matchesSeller;
@@ -83,21 +87,29 @@ export default function ViewingsPage() {
                     propertyAddress: v.propertyAddress,
                     propertyPrice: v.propertyPrice ?? v.property_price ?? 0,
                     chatMessages: (v.chatMessages ?? v.chat_messages ?? []) as ChatMessage[],
-                    agentName: 'Agent', // Could be enhanced to store agent info
+                    agentName: 'Agent',
                     agentCompany: 'PropReady',
                     agentPhone: '',
                     agentEmail: '',
                     date: v.date ?? v.viewing_date,
                     time: v.time ?? v.viewing_time,
                     status: v.status,
-                    notes: v.notes
+                    notes: v.notes,
+                    buyerEmail: v.buyerEmail ?? v.buyer_email,
+                    sellerEmail: v.sellerEmail ?? v.seller_email,
+                    buyerName: v.buyerName ?? v.buyer_name,
+                    sellerName: v.sellerName ?? v.seller_name,
+                    buyerConfirmedAt: v.buyerConfirmedAt ?? v.buyer_confirmed_at,
+                    sellerConfirmedAt: v.sellerConfirmedAt ?? v.seller_confirmed_at,
+                    contactEmail: v.contactEmail,
+                    contactType: v.contactType,
                 }));
                 
                 setViewingAppointments(userViewings);
             setIsLoading(false);
         }
         load();
-    }, [router]);
+    }, [router, confirmRefreshKey]);
 
     if (isLoading) {
         return (
@@ -296,6 +308,15 @@ export default function ViewingsPage() {
                             Manage your property viewing appointments with agents
                         </p>
                     </div>
+
+                    {currentUser && (
+                        <AppointmentConfirmPanel
+                            viewings={viewingAppointments}
+                            userEmail={currentUser.email}
+                            party="buyer"
+                            onConfirmed={() => setConfirmRefreshKey((k) => k + 1)}
+                        />
+                    )}
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">

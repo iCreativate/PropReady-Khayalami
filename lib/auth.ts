@@ -55,9 +55,12 @@ export function logoutAgent() {
 }
 
 export function loginUser(email: string, password: string): UserSession | null {
-    const users = readJson<Array<UserSession & { password: string }>>(STORAGE_KEYS.users) || [];
-    const user = users.find((u) => u.email === email && (u as { password?: string }).password === password);
+    const users =
+        readJson<Array<UserSession & { password: string; emailVerified?: boolean }>>(STORAGE_KEYS.users) ||
+        [];
+    const user = users.find((u) => u.email === email && u.password === password);
     if (!user) return null;
+    if (user.emailVerified === false) return null;
     const session: UserSession = { id: user.id, fullName: user.fullName, email: user.email };
     setCurrentUser(session);
     return session;
@@ -65,9 +68,12 @@ export function loginUser(email: string, password: string): UserSession | null {
 
 export function loginAgent(email: string, password: string): AgentSession | null {
     const agents =
-        readJson<Array<AgentSession & { password: string; company?: string }>>(STORAGE_KEYS.agents) || [];
+        readJson<Array<AgentSession & { password: string; company?: string; emailVerified?: boolean }>>(
+            STORAGE_KEYS.agents
+        ) || [];
     const agent = agents.find((a) => a.email === email && a.password === password);
     if (!agent) return null;
+    if (agent.emailVerified === false) return null;
     const session: AgentSession = {
         id: agent.id,
         fullName: agent.fullName,

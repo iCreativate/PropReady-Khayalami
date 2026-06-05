@@ -1,13 +1,27 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import imageCompression from 'browser-image-compression';
-import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit, AlertCircle, BookOpen } from 'lucide-react';
-import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
-import { getLeadLimit, AGENT_PLANS } from '@/lib/agent-plans';
-import { getProxiedImageUrl } from '@/lib/image-proxy';
-import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
+import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, MapPin, BookOpen } from 'lucide-react';
+import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import { getBuyerLeadLimit, getPlanDisplay, normalizeBuyerPlan } from '@/lib/agent-plans';
+import AgentPortalLayout from '@/components/AgentPortalLayout';
+import type { ListedProperty } from '@/lib/listed-property';
+import type { ViewingAppointment } from '@/lib/agent-viewing';
+import AgentAiSuggestions from '@/components/AgentAiSuggestions';
+import PpraVerificationGate from '@/components/PpraVerificationGate';
+import { isAgentPpraVerified } from '@/lib/ppra';
+import { mergeDemoLeadsIntoStorage } from '@/lib/demo-leads';
+import { DEMO_AGENT } from '@/lib/demo-agent';
+import { bondOriginatorLabel } from '@/lib/bond-originators';
+import {
+    getLeadVerificationStatus,
+    verificationStatusLabel,
+    verificationStatusClasses,
+    countVerifiedLeads,
+    type LeadVerificationStatus,
+} from '@/lib/lead-verification';
+import AgentLeadDetailModal from '@/components/AgentLeadDetailModal';
 
 interface Lead {
     id: string;
@@ -22,7 +36,10 @@ interface Lead {
     creditScore?: string;
     score?: number;
     preQualAmount?: number;
+    bondOriginator?: string | null;
+    prequalifiedWithOriginator?: boolean;
     status: 'new' | 'contacted' | 'qualified' | 'not-interested';
+    appointmentVerified?: boolean;
     timestamp: string;
     contactedAt: string | null;
 }
@@ -43,45 +60,6 @@ interface Seller extends Lead {
     bondBalance?: string;
 }
 
-interface ListedProperty {
-    id: string;
-    title: string;
-    address: string;
-    type: string;
-    price: number;
-    bedrooms: number;
-    bathrooms: number;
-    size: number;
-    description: string;
-    agentId: string;
-    timestamp: string;
-    images?: string[];
-    features?: string[];
-    listingScore?: number;
-    videoUrl?: string;
-    published?: boolean;
-}
-
-const PROPERTY_FEATURES = ['Parking', 'Garden', 'Security', 'Pet Friendly', 'Pool', 'Garage', 'Borehole', 'Solar', 'Fibre'];
-
-interface ViewingAppointment {
-    id: string;
-    propertyId: string;
-    propertyTitle: string;
-    propertyAddress: string;
-    propertyPrice?: number;
-    chatMessages?: ChatMessage[];
-    contactName: string;
-    contactEmail: string;
-    contactPhone: string;
-    contactType: 'buyer' | 'seller';
-    date: string;
-    time: string;
-    notes: string;
-    status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
-    timestamp: string;
-}
-
 export default function AgentsDashboardPage() {
     const [activeTab, setActiveTab] = useState<'buyers' | 'sellers'>('buyers');
     const [leads, setLeads] = useState<Lead[]>([]);
@@ -91,64 +69,25 @@ export default function AgentsDashboardPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [locationFilter, setLocationFilter] = useState<'all' | 'nearby'>('all');
-    const [currentAgent, setCurrentAgent] = useState<{ fullName: string; email: string; company?: string; id?: string; plan?: string; city?: string } | null>(null);
+    const [currentAgent, setCurrentAgent] = useState<{
+        fullName: string;
+        email: string;
+        company?: string;
+        id?: string;
+        plan?: string;
+        sellerPlan?: string;
+        city?: string;
+        ppraNumber?: string;
+        ffcNumber?: string;
+        ffcDocumentUrl?: string;
+        verificationStatus?: string;
+        status?: string;
+    } | null>(null);
     const [showActionsModal, setShowActionsModal] = useState<Lead | Seller | null>(null);
-    const [showPropertyModal, setShowPropertyModal] = useState(false);
-    const [showViewPropertyModal, setShowViewPropertyModal] = useState<ListedProperty | null>(null);
-    const [viewPropertyImageIndex, setViewPropertyImageIndex] = useState(0);
-    const [showViewingModal, setShowViewingModal] = useState(false);
     const [showSuccessfulLeadsModal, setShowSuccessfulLeadsModal] = useState(false);
-    const [selectedPropertyForViewing, setSelectedPropertyForViewing] = useState<ListedProperty | null>(null);
-    const [selectedViewing, setSelectedViewing] = useState<ViewingAppointment | null>(null);
     const [listedProperties, setListedProperties] = useState<ListedProperty[]>([]);
     const [viewingAppointments, setViewingAppointments] = useState<ViewingAppointment[]>([]);
-    const [viewingViewMode, setViewingViewMode] = useState<'list' | 'calendar'>('list');
-    const [viewingSearchTerm, setViewingSearchTerm] = useState('');
-    const [viewingStatusFilter, setViewingStatusFilter] = useState<string>('all');
-    const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
     const [leadsRefreshKey, setLeadsRefreshKey] = useState(0);
-    const [propertiesRefreshKey, setPropertiesRefreshKey] = useState(0);
-    
-    const [propertyForm, setPropertyForm] = useState({
-        title: '',
-        address: '',
-        type: '',
-        price: '',
-        bedrooms: '',
-        bathrooms: '',
-        size: '',
-        description: '',
-        images: [] as string[],
-        features: [] as string[],
-        videoUrl: '',
-    });
-    const [improveLoading, setImproveLoading] = useState(false);
-    const [improveResult, setImproveResult] = useState<{ listingScore: number; feedback: string[] } | null>(null);
-    const [bulkImageUrls, setBulkImageUrls] = useState('');
-    const [singleImageUrl, setSingleImageUrl] = useState('');
-    const [imageUploading, setImageUploading] = useState(false);
-    const [imageUploadError, setImageUploadError] = useState<string | null>(null);
-    const imageInputRef = useRef<HTMLInputElement>(null);
-
-    // Add property: 'choice' = pick method, 'import' = paste URL & fetch, 'manual' = traditional form
-    const [addPropertyMode, setAddPropertyMode] = useState<'choice' | 'import' | 'manual'>('choice');
-    const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
-    const [importUrl, setImportUrl] = useState('');
-    const [importLoading, setImportLoading] = useState(false);
-    const [importError, setImportError] = useState<string | null>(null);
-
-    const [viewingForm, setViewingForm] = useState({
-        propertyId: '',
-        contactName: '',
-        contactEmail: '',
-        contactPhone: '',
-        contactType: 'buyer' as 'buyer' | 'seller',
-        date: '',
-        time: '',
-        notes: ''
-    });
-    // When scheduling a viewing, selected contact key (e.g. 'buyer-{id}' or 'seller-{id}') or '' for manual entry
-    const [selectedViewingContactKey, setSelectedViewingContactKey] = useState<string>('');
 
     useEffect(() => {
         // Load current agent info
@@ -157,18 +96,19 @@ export default function AgentsDashboardPage() {
             if (agentData) {
                 const agent = JSON.parse(agentData);
                 setCurrentAgent(agent);
+                if (agent.id === DEMO_AGENT.id) {
+                    mergeDemoLeadsIntoStorage(agent.id);
+                }
             }
         }
     }, []);
 
     useEffect(() => {
-        // Load all leads (buyers + sellers + investors) from one API, merge with localStorage, split by type. Apply plan limit (Free = 3 leads per type).
+        // Apply buyer and seller plan limits separately
         async function loadLeads() {
             if (typeof window === 'undefined') return;
             const agentData = localStorage.getItem('propReady_currentAgent');
-            const plan = agentData ? (JSON.parse(agentData).plan || 'free') : 'free';
-            const leadLimit = getLeadLimit(plan);
-
+            const parsed = agentData ? JSON.parse(agentData) : {};
             const storedBuyers: Lead[] = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
             const storedSellers: (Seller & { leadType?: string })[] = JSON.parse(localStorage.getItem('propReady_sellers') || '[]');
             const buyersWithType = storedBuyers.map(l => ({ ...l, leadType: 'buyer' as const }));
@@ -203,12 +143,10 @@ export default function AgentsDashboardPage() {
             );
             const allBuyers = merged.filter(l => (l as Lead).leadType !== 'seller' && (l as Lead).leadType !== 'investor') as Lead[];
             const allSellers = merged.filter(l => (l as Lead).leadType === 'seller' || (l as Lead).leadType === 'investor') as Seller[];
-            const buyers = allBuyers.slice(0, leadLimit);
-            const sellersList = allSellers.slice(0, leadLimit);
-            setLeads(buyers);
-            setFilteredLeads(buyers);
-            setSellers(sellersList);
-            setFilteredSellers(sellersList);
+            setLeads(allBuyers);
+            setFilteredLeads(allBuyers);
+            setSellers(allSellers);
+            setFilteredSellers(allSellers);
         }
         loadLeads();
     }, [leadsRefreshKey]);
@@ -268,7 +206,7 @@ export default function AgentsDashboardPage() {
             setListedProperties(merged.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()));
         }
         loadProperties();
-    }, [currentAgent, propertiesRefreshKey]);
+    }, [currentAgent]);
 
     useEffect(() => {
         // Load viewing appointments from API and localStorage
@@ -289,8 +227,7 @@ export default function AgentsDashboardPage() {
             const localOnly = storedViewings.filter((v: ViewingAppointment) => !ids.has(v.id));
             const merged = [...apiViewings, ...localOnly].map((v: ViewingAppointment) => {
                 const price = v.propertyPrice ?? listedProperties.find(p => p.id === v.propertyId)?.price;
-                const chat = (v.chatMessages ?? (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`propReady_viewingChat_${v.id}`) || '[]') : [])) as ChatMessage[];
-                return { ...v, propertyPrice: price ?? v.propertyPrice ?? 0, chatMessages: chat };
+                return { ...v, propertyPrice: price ?? v.propertyPrice ?? 0 };
             });
             const agentViewings = listedProperties.length > 0
                 ? merged.filter((v: ViewingAppointment) => listedProperties.some(p => p.id === v.propertyId))
@@ -298,67 +235,7 @@ export default function AgentsDashboardPage() {
             setViewingAppointments(agentViewings.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()));
         }
         loadViewings();
-    }, [currentAgent, listedProperties, leadsRefreshKey]);
-
-    // Initialize viewing form when editing
-    useEffect(() => {
-        if (selectedViewing && showViewingModal) {
-            setViewingForm({
-                propertyId: selectedViewing.propertyId,
-                contactName: selectedViewing.contactName,
-                contactEmail: selectedViewing.contactEmail,
-                contactPhone: selectedViewing.contactPhone,
-                contactType: selectedViewing.contactType,
-                date: selectedViewing.date,
-                time: selectedViewing.time,
-                notes: selectedViewing.notes
-            });
-        }
-    }, [selectedViewing, showViewingModal]);
-
-    // Scheduling viewings is only possible for properties actually listed by this agent
-    const allAvailableProperties = listedProperties;
-
-    // Filter viewings
-    const filteredViewings = viewingAppointments.filter(viewing => {
-        const matchesSearch = !viewingSearchTerm || 
-            viewing.propertyTitle.toLowerCase().includes(viewingSearchTerm.toLowerCase()) ||
-            viewing.propertyAddress.toLowerCase().includes(viewingSearchTerm.toLowerCase()) ||
-            viewing.contactName.toLowerCase().includes(viewingSearchTerm.toLowerCase());
-        
-        const matchesStatus = viewingStatusFilter === 'all' || viewing.status === viewingStatusFilter;
-        
-        return matchesSearch && matchesStatus;
-    });
-
-    // Calendar helper functions
-    const getCalendarDays = (date: Date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const daysInPrevMonth = new Date(year, month, 0).getDate();
-        
-        const days: (number | null)[] = [];
-        
-        // Previous month days
-        for (let i = firstDay - 1; i >= 0; i--) {
-            days.push(null);
-        }
-        
-        // Current month days
-        for (let i = 1; i <= daysInMonth; i++) {
-            days.push(i);
-        }
-        
-        // Fill remaining cells
-        const remaining = 42 - days.length;
-        for (let i = 1; i <= remaining; i++) {
-            days.push(null);
-        }
-        
-        return days;
-    };
+    }, [currentAgent, listedProperties]);
 
     const getViewingStatusBadge = (status: string) => {
         const badges = {
@@ -377,41 +254,6 @@ export default function AgentsDashboardPage() {
                 {badge.label}
             </span>
         );
-    };
-
-    const updateViewingStatus = (viewingId: string, status: ViewingAppointment['status']) => {
-        const updatedViewings = viewingAppointments.map(viewing => {
-            if (viewing.id === viewingId) {
-                return { ...viewing, status };
-            }
-            return viewing;
-        });
-
-        setViewingAppointments(updatedViewings);
-        if (typeof window !== 'undefined') {
-            const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-            const updatedStored = storedViewings.map((v: ViewingAppointment) => 
-                v.id === viewingId ? { ...v, status } : v
-            );
-            localStorage.setItem('propReady_viewingAppointments', JSON.stringify(updatedStored));
-        }
-        fetch('/api/viewings', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: viewingId, status }),
-        }).catch((e) => console.warn('Viewing status sync failed', e));
-    };
-
-    const deleteViewing = (viewingId: string) => {
-        const updatedViewings = viewingAppointments.filter(v => v.id !== viewingId);
-        setViewingAppointments(updatedViewings);
-        if (typeof window !== 'undefined') {
-            const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-            const filtered = storedViewings.filter((v: ViewingAppointment) => v.id !== viewingId);
-            localStorage.setItem('propReady_viewingAppointments', JSON.stringify(filtered));
-        }
-        setSelectedViewing(null);
-        fetch(`/api/viewings?id=${encodeURIComponent(viewingId)}`, { method: 'DELETE' }).catch((e) => console.warn('Viewing delete sync failed', e));
     };
 
     useEffect(() => {
@@ -473,6 +315,10 @@ export default function AgentsDashboardPage() {
     }, [searchTerm, statusFilter, locationFilter, leads, sellers, activeTab, currentAgent?.city]);
 
     const handleContact = (contact: Lead | Seller, method: 'phone' | 'email' | 'whatsapp') => {
+        if (!isAgentPpraVerified(currentAgent)) {
+            alert('Complete your PPRA verification to access leads and appear on PropReady.');
+            return;
+        }
         if (method === 'phone') {
             window.location.href = `tel:${contact.phone}`;
         } else if (method === 'email') {
@@ -486,7 +332,11 @@ export default function AgentsDashboardPage() {
     };
 
     const updateContactStatus = async (contactId: string, status: 'new' | 'contacted' | 'qualified' | 'not-interested') => {
-        if (activeTab === 'buyers') {
+        const isBuyerLead = leads.some((l) => l.id === contactId);
+        const isSellerLead = sellers.some((s) => s.id === contactId);
+        const updateBuyers = isBuyerLead || (!isSellerLead && activeTab === 'buyers');
+
+        if (updateBuyers) {
             const newContactedAt = status === 'contacted' ? new Date().toISOString() : null;
             try {
                 const res = await fetch(`/api/leads/${contactId}`, {
@@ -586,443 +436,114 @@ export default function AgentsDashboardPage() {
         );
     };
 
-    const handleImproveWithAI = async () => {
-        setImproveLoading(true);
-        setImproveResult(null);
-        try {
-            const res = await fetch('/api/property/improve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: propertyForm.title,
-                    type: propertyForm.type,
-                    bedrooms: propertyForm.bedrooms,
-                    bathrooms: propertyForm.bathrooms,
-                    size: propertyForm.size,
-                    description: propertyForm.description,
-                    features: Array.isArray(propertyForm.features) ? propertyForm.features : [],
-                    imageCount: propertyForm.images?.length ?? 0,
-                }),
-            });
-            let data: Record<string, unknown> = {};
-            try {
-                data = await res.json();
-            } catch {
-                throw new Error('Invalid response from server');
-            }
-            if (!res.ok) {
-                const errMsg = typeof data?.error === 'string' ? data.error : 'Failed to improve listing';
-                throw new Error(errMsg);
-            }
-            const improvedDesc = data.improvedDescription;
-            const score = typeof data.listingScore === 'number' ? data.listingScore : (typeof data.listingScore === 'string' ? parseInt(data.listingScore, 10) : 0);
-            const feedback = Array.isArray(data.feedback) ? data.feedback.map(String) : [];
-            if (typeof improvedDesc === 'string' && improvedDesc) {
-                setPropertyForm(prev => ({ ...prev, description: improvedDesc }));
-            }
-            setImproveResult({ listingScore: isNaN(score) ? 0 : Math.min(100, Math.max(0, score)), feedback });
-        } catch (e) {
-            const msg = e instanceof Error ? e.message : 'Could not improve listing. Check your connection or try again.';
-            setImproveResult({ listingScore: 0, feedback: [msg] });
-            alert(msg);
-        } finally {
-            setImproveLoading(false);
-        }
-    };
-
-    const compressionOptions = {
-        maxSizeMB: 1.5,
-        initialQuality: 0.92,
-        maxWidthOrHeight: 1920,
-        useWebWorker: false, // Disabled to avoid CSP violations (eval/Function in worker creation)
-    };
-
-    const handleUploadImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files?.length) return;
-        setImageUploading(true);
-        setImageUploadError(null);
-        const existing = propertyForm.images?.length ? propertyForm.images : [];
-        const newUrls: string[] = [];
-        try {
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (!file.type.startsWith('image/')) continue;
-                const compressed = await imageCompression(file, compressionOptions);
-                const form = new FormData();
-                form.append('file', compressed, compressed.name || file.name);
-                const res = await fetch('/api/property/upload-image', { method: 'POST', body: form });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok && data.url) {
-                    newUrls.push(data.url);
-                } else {
-                    const msg = data?.error || (res.status === 503 ? 'Storage not configured' : `Upload failed (${res.status})`);
-                    setImageUploadError(msg);
-                    break;
-                }
-            }
-            if (newUrls.length) {
-                setPropertyForm(prev => ({ ...prev, images: [...existing, ...newUrls] }));
-            }
-        } catch (err) {
-            console.error('Upload error:', err);
-            setImageUploadError(err instanceof Error ? err.message : 'Upload failed');
-        } finally {
-            setImageUploading(false);
-            e.target.value = '';
-        }
-    };
-
-    const handleImportFromUrl = async () => {
-        const url = importUrl.trim();
-        if (!url) {
-            setImportError('Please paste a property listing URL');
-            return;
-        }
-        setImportLoading(true);
-        setImportError(null);
-        try {
-            const res = await fetch('/api/property/import-from-url', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                setImportError(data?.error || `Import failed (${res.status})`);
-                return;
-            }
-            setPropertyForm({
-                title: data.title || '',
-                address: data.address || '',
-                type: data.type || '',
-                price: data.price || '',
-                bedrooms: data.bedrooms || '',
-                bathrooms: data.bathrooms || '',
-                size: data.size || '',
-                description: data.description || '',
-                images: Array.isArray(data.images) ? data.images : [],
-                features: Array.isArray(data.features) ? data.features : [],
-                videoUrl: data.videoUrl || '',
-            });
-            setAddPropertyMode('manual');
-        } catch (err) {
-            setImportError(err instanceof Error ? err.message : 'Import failed');
-        } finally {
-            setImportLoading(false);
-        }
-    };
-
-    const handleAddProperty = async () => {
-        if (!currentAgent?.id) return;
-
-        const isEditing = !!editingPropertyId;
-        const existing = listedProperties.find(p => p.id === editingPropertyId);
-
-        const propertyData: ListedProperty = {
-            id: isEditing ? editingPropertyId! : `property-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: propertyForm.title,
-            address: propertyForm.address,
-            type: propertyForm.type,
-            price: parseAmountForDisplay(propertyForm.price) || 0,
-            bedrooms: parseInt(propertyForm.bedrooms, 10) || 0,
-            bathrooms: parseInt(propertyForm.bathrooms, 10) || 0,
-            size: parseFloat(propertyForm.size) || 0,
-            description: propertyForm.description,
-            images: propertyForm.images?.length ? propertyForm.images : undefined,
-            features: propertyForm.features?.length ? propertyForm.features : undefined,
-            listingScore: isEditing ? (existing?.listingScore ?? improveResult?.listingScore) : improveResult?.listingScore,
-            videoUrl: propertyForm.videoUrl?.trim() || undefined,
-            agentId: currentAgent.id,
-            timestamp: isEditing ? (existing?.timestamp ?? new Date().toISOString()) : new Date().toISOString(),
-            published: isEditing ? (existing?.published ?? false) : false,
-        };
-
-        const storedProperties = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-        if (isEditing) {
-            const updated = storedProperties.map((p: ListedProperty) =>
-                p.id === editingPropertyId ? propertyData : p
-            );
-            localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
-            setListedProperties(prev => prev.map(p => p.id === editingPropertyId ? propertyData : p));
-            try {
-                const res = await fetch('/api/properties', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: editingPropertyId,
-                        title: propertyData.title,
-                        address: propertyData.address,
-                        type: propertyData.type,
-                        price: propertyData.price,
-                        bedrooms: propertyData.bedrooms,
-                        bathrooms: propertyData.bathrooms,
-                        size: propertyData.size,
-                        description: propertyData.description,
-                        images: propertyData.images,
-                        features: propertyData.features,
-                        videoUrl: propertyData.videoUrl,
-                    }),
-                });
-                if (!res.ok) console.warn('Property update sync failed:', res.status);
-            } catch (e) {
-                console.warn('Property update API sync failed', e);
-            }
-        } else {
-            storedProperties.push(propertyData);
-            localStorage.setItem('propReady_listedProperties', JSON.stringify(storedProperties));
-            setListedProperties([...listedProperties, propertyData]);
-            try {
-                const res = await fetch('/api/properties', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(propertyData),
-                });
-                if (!res.ok) {
-                    const err = await res.json().catch(() => ({}));
-                    console.warn('Property save to database failed:', res.status, err);
-                    const msg = res.status === 503
-                        ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify environment variables, then redeploy.'
-                        : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
-                            ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table. See DATABASE_SETUP.md.'
-                            : err?.error || `Save failed (${res.status})`;
-                    alert(`Property saved locally but could not sync to database.\n\n${msg}\n\nProperties will only appear on this browser until the database is set up.`);
-                }
-            } catch (e) {
-                console.warn('Property API sync failed', e);
-                alert('Property saved locally but could not sync to database. Check your connection and Netlify environment variables. Properties will only appear on this browser.');
-            }
-        }
-
-        setPropertyForm({
-            title: '',
-            address: '',
-            type: '',
-            price: '',
-            bedrooms: '',
-            bathrooms: '',
-            size: '',
-            description: '',
-            images: [],
-            features: [],
-            videoUrl: '',
-        });
-        setSingleImageUrl('');
-        setBulkImageUrls('');
-        setImproveResult(null);
-        setEditingPropertyId(null);
-        setShowPropertyModal(false);
-    };
-
-    const handlePublishProperty = async (property: ListedProperty) => {
-        const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-        const updated = stored.map((p: ListedProperty) =>
-            p.id === property.id ? { ...p, published: true } : p
+    const getVerificationBadge = (lead: Lead | Seller) => {
+        const leadType =
+            (lead as Seller).leadType === 'seller' || (lead as Seller).leadType === 'investor'
+                ? 'seller'
+                : 'buyer';
+        const status: LeadVerificationStatus = getLeadVerificationStatus(
+            { id: lead.id, email: lead.email, leadType, appointmentVerified: lead.appointmentVerified },
+            viewingAppointments
         );
-        localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
-        setListedProperties(prev => prev.map(p => p.id === property.id ? { ...p, published: true } : p));
-        setShowViewPropertyModal(prev => prev?.id === property.id ? { ...prev, published: true } : prev);
-        try {
-            const res = await fetch('/api/properties', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: property.id, published: true }),
-            });
-            if (!res.ok) console.warn('Property publish sync failed:', res.status);
-        } catch (e) {
-            console.warn('Property publish API sync failed', e);
-        }
-    };
-
-    const handleUnpublishProperty = async (property: ListedProperty) => {
-        const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-        const updated = stored.map((p: ListedProperty) =>
-            p.id === property.id ? { ...p, published: false } : p
+        return (
+            <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${verificationStatusClasses(status)}`}
+            >
+                {status === 'verified' && <CheckCircle className="w-3 h-3" />}
+                {verificationStatusLabel(status)}
+            </span>
         );
-        localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
-        setListedProperties(prev => prev.map(p => p.id === property.id ? { ...p, published: false } : p));
-        setShowViewPropertyModal(prev => prev?.id === property.id ? { ...prev, published: false } : prev);
-        try {
-            const res = await fetch('/api/properties', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: property.id, published: false }),
-            });
-            if (!res.ok) console.warn('Property unpublish sync failed:', res.status);
-        } catch (e) {
-            console.warn('Property unpublish API sync failed', e);
-        }
     };
 
-    const handleEditProperty = (property: ListedProperty) => {
-        setPropertyForm({
-            title: property.title || '',
-            address: property.address || '',
-            type: property.type || '',
-            price: property.price ? String(property.price) : '',
-            bedrooms: property.bedrooms ? String(property.bedrooms) : '',
-            bathrooms: property.bathrooms ? String(property.bathrooms) : '',
-            size: property.size ? String(property.size) : '',
-            description: property.description || '',
-            images: Array.isArray(property.images) ? [...property.images] : [],
-            features: Array.isArray(property.features) ? [...property.features] : [],
-            videoUrl: property.videoUrl || '',
-        });
-        setSingleImageUrl('');
-        setBulkImageUrls('');
-        setEditingPropertyId(property.id);
-        setAddPropertyMode('manual');
-        setShowViewPropertyModal(null);
-        setShowPropertyModal(true);
-    };
 
-    const handleDeleteProperty = async (property: ListedProperty) => {
-        if (!confirm(`Delete "${property.title}"? This cannot be undone.`)) return;
-        const stored = JSON.parse(localStorage.getItem('propReady_listedProperties') || '[]');
-        const updated = stored.filter((p: ListedProperty) => p.id !== property.id);
-        localStorage.setItem('propReady_listedProperties', JSON.stringify(updated));
-        setListedProperties(prev => prev.filter(p => p.id !== property.id));
-        setShowViewPropertyModal(null);
-        if (selectedPropertyForViewing?.id === property.id) {
-            setSelectedPropertyForViewing(null);
-            setShowViewingModal(false);
-        }
-        try {
-            await fetch(`/api/properties?id=${encodeURIComponent(property.id)}`, { method: 'DELETE' });
-        } catch (e) {
-            console.warn('Property delete API sync failed', e);
-        }
-    };
+    const verifiedBuyerCount = useMemo(
+        () =>
+            countVerifiedLeads(
+                leads.map((l) => ({
+                    id: l.id,
+                    email: l.email,
+                    leadType: 'buyer' as const,
+                    appointmentVerified: l.appointmentVerified,
+                })),
+                viewingAppointments
+            ),
+        [leads, viewingAppointments]
+    );
 
-    const handleScheduleViewing = async () => {
-        const property = selectedPropertyForViewing || allAvailableProperties.find(p => p.id === viewingForm.propertyId);
-        if (!property && !viewingForm.propertyId) {
-            alert('Please select a property');
-            return;
-        }
+    const verifiedSellerCount = useMemo(
+        () =>
+            countVerifiedLeads(
+                sellers.map((s) => ({
+                    id: s.id,
+                    email: s.email,
+                    leadType: 'seller' as const,
+                    appointmentVerified: s.appointmentVerified,
+                })),
+                viewingAppointments
+            ),
+        [sellers, viewingAppointments]
+    );
 
-        const { propertyId: _, ...viewingFormWithoutPropertyId } = viewingForm;
-        const newViewing: ViewingAppointment = {
-            id: selectedViewing?.id || `viewing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            propertyId: property?.id || viewingForm.propertyId,
-            propertyTitle: property?.title || 'Unknown Property',
-            propertyAddress: property?.address || 'Unknown Address',
-            propertyPrice: property?.price ?? selectedViewing?.propertyPrice ?? 0,
-            ...viewingFormWithoutPropertyId,
-            date: viewingForm.date,
-            time: viewingForm.time,
-            status: selectedViewing?.status || 'scheduled',
-            timestamp: selectedViewing?.timestamp || new Date().toISOString()
-        };
+    const pendingVerificationCount = useMemo(() => {
+        const all = [
+            ...leads.map((l) => ({
+                id: l.id,
+                email: l.email,
+                leadType: 'buyer' as const,
+                appointmentVerified: l.appointmentVerified,
+            })),
+            ...sellers.map((s) => ({
+                id: s.id,
+                email: s.email,
+                leadType: 'seller' as const,
+                appointmentVerified: s.appointmentVerified,
+            })),
+        ];
+        return all.filter(
+            (l) => getLeadVerificationStatus(l, viewingAppointments) === 'pending_confirmation'
+        ).length;
+    }, [leads, sellers, viewingAppointments]);
 
-        const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-        
-        if (selectedViewing) {
-            const updated = storedViewings.map((v: ViewingAppointment) => 
-                v.id === selectedViewing.id ? newViewing : v
-            );
-            localStorage.setItem('propReady_viewingAppointments', JSON.stringify(updated));
-            setViewingAppointments(viewingAppointments.map(v => v.id === selectedViewing.id ? newViewing : v));
-        } else {
-            storedViewings.push(newViewing);
-            localStorage.setItem('propReady_viewingAppointments', JSON.stringify(storedViewings));
-            setViewingAppointments([...viewingAppointments, newViewing]);
-        }
+    const buyerPlanLimit = getBuyerLeadLimit(normalizeBuyerPlan(currentAgent?.plan));
 
-        // Sync to database
-        try {
-            const res = await fetch('/api/viewings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...newViewing, agentId: currentAgent?.id }),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                console.warn('Viewing save to database failed:', res.status, err);
-            }
-        } catch (e) {
-            console.warn('Viewing API sync failed', e);
-        }
-        
-        setViewingForm({
-            propertyId: '',
-            contactName: '',
-            contactEmail: '',
-            contactPhone: '',
-            contactType: 'buyer',
-            date: '',
-            time: '',
-            notes: ''
-        });
-        setSelectedViewingContactKey('');
-        setSelectedPropertyForViewing(null);
-        setSelectedViewing(null);
-        setShowViewingModal(false);
-    };
+    const aiContext = useMemo(
+        () => ({
+            newBuyers: leads.filter((l) => l.status === 'new').length,
+            newSellers: sellers.filter((s) => s.status === 'new').length,
+            pendingVerifications: pendingVerificationCount,
+            verifiedBuyers: verifiedBuyerCount,
+            verifiedSellers: verifiedSellerCount,
+            upcomingViewings: viewingAppointments.filter((v) => v.status === 'scheduled' || v.status === 'confirmed').length,
+            uncontactedLeads: leads.filter((l) => l.status === 'new').length + sellers.filter((s) => s.status === 'new').length,
+            planName: getPlanDisplay(currentAgent?.plan || 'free'),
+            buyerLimit: buyerPlanLimit,
+        }),
+        [
+            leads,
+            sellers,
+            pendingVerificationCount,
+            verifiedBuyerCount,
+            verifiedSellerCount,
+            viewingAppointments,
+            currentAgent?.plan,
+            buyerPlanLimit,
+        ]
+    );
 
     const stats = {
-        totalBuyers: leads.filter(l => l.status === 'contacted' || l.status === 'qualified').length, // Successful leads contacted
+        totalBuyers: leads.filter(l => l.status === 'contacted' || l.status === 'qualified').length,
         newBuyers: leads.filter(l => l.status === 'new').length,
         totalSellers: sellers.length,
         newSellers: sellers.filter(s => s.status === 'new').length,
         totalProperties: listedProperties.length,
-        totalViewings: viewingAppointments.length
+        totalViewings: viewingAppointments.length,
+        verifiedBuyers: verifiedBuyerCount,
+        verifiedSellers: verifiedSellerCount,
     };
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/agents/dashboard" className="text-gold font-semibold">
-                                Dashboard
-                            </Link>
-                            <Link href="/agents/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Hub
-                            </Link>
-                            <Link href="/agents/settings" className="text-charcoal/90 hover:text-charcoal transition">
-                                Settings
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                            <p className="text-charcoal/70 text-sm">Agent</p>
-                            <p className="text-charcoal font-semibold">
-                                {currentAgent?.fullName || 'John Agent'}
-                            </p>
-                            {currentAgent?.company && (
-                                <p className="text-charcoal/60 text-xs">{currentAgent.company}</p>
-                            )}
-                        </div>
-                        <button 
-                            onClick={() => {
-                                if (typeof window !== 'undefined') {
-                                    localStorage.removeItem('propReady_currentAgent');
-                                    window.location.href = '/agents/login';
-                                }
-                            }}
-                            className="px-4 py-2 rounded-lg border border-charcoal/30 text-charcoal hover:bg-charcoal/10 transition-all"
-                        >
-                            Sign Out
-                        </button>
-                    </div>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-8">
-                <div className="container mx-auto max-w-7xl relative z-10">
+        <AgentPortalLayout activePage="dashboard" agent={currentAgent} title="Dashboard">
+            <div className="max-w-7xl mx-auto relative z-10">
                     {/* Welcome Section */}
                     <div className="mb-8">
                         <h1 className="text-4xl font-bold text-charcoal mb-2">
@@ -1032,6 +553,8 @@ export default function AgentsDashboardPage() {
                             Manage your properties, leads, and appointments
                         </p>
                     </div>
+
+                    <PpraVerificationGate agent={currentAgent} />
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
@@ -1072,46 +595,30 @@ export default function AgentsDashboardPage() {
                                 <Building2 className="w-10 h-10 text-gold/50" />
                             </div>
                         </button>
-                        <button
-                            onClick={() => {
-                                // Scroll to properties section
-                                setTimeout(() => {
-                                    const propertiesSection = document.getElementById('properties-section');
-                                    if (propertiesSection) {
-                                        propertiesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }
-                                }, 100);
-                            }}
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left"
+                        <Link
+                            href="/agents/properties"
+                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
                         >
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-charcoal/70 text-sm mb-1">Listed Properties</p>
                                     <p className="text-charcoal font-bold text-2xl">{stats.totalProperties}</p>
                                 </div>
-                                <Home className="w-10 h-10 text-gold/50" />
+                                <Home className="w-10 h-10 text-gold/50 group-hover:text-gold/80 transition-colors" />
                             </div>
-                        </button>
-                        <button
-                            onClick={() => {
-                                // Scroll to viewings section
-                                setTimeout(() => {
-                                    const viewingsSection = document.getElementById('viewings-section');
-                                    if (viewingsSection) {
-                                        viewingsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }
-                                }, 100);
-                            }}
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left"
+                        </Link>
+                        <Link
+                            href="/agents/viewings"
+                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
                         >
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-charcoal/70 text-sm mb-1">Viewings</p>
                                     <p className="text-charcoal font-bold text-2xl">{stats.totalViewings}</p>
                                 </div>
-                                <Calendar className="w-10 h-10 text-gold/50" />
+                                <Calendar className="w-10 h-10 text-gold/50 group-hover:text-gold/80 transition-colors" />
                             </div>
-                        </button>
+                        </Link>
                         <Link
                             href="/agents/learn"
                             className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
@@ -1128,223 +635,11 @@ export default function AgentsDashboardPage() {
                         </Link>
                     </div>
 
-                    {/* Listed Properties Section */}
-                    <div id="properties-section" className="glass-effect rounded-xl p-6 mb-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-charcoal">My Listed Properties</h2>
-                            <button
-                                onClick={() => {
-                                setImproveResult(null);
-                                setBulkImageUrls('');
-                                setSingleImageUrl('');
-                                setImageUploadError(null);
-                                setAddPropertyMode('choice');
-                                setEditingPropertyId(null);
-                                setImportUrl('');
-                                setImportError(null);
-                                setPropertyForm({ title: '', address: '', type: '', price: '', bedrooms: '', bathrooms: '', size: '', description: '', images: [], features: [], videoUrl: '' });
-                                setShowPropertyModal(true);
-                            }}
-                                className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Add Property
-                            </button>
-                        </div>
+                    <AgentAiSuggestions context={aiContext} />
 
-                        {listedProperties.length === 0 ? (
-                            <div className="text-center py-12">
-                                <Building2 className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                                <p className="text-charcoal/70 text-lg">No properties listed yet</p>
-                                <p className="text-charcoal/50 text-sm mt-2">
-                                    Add your first property to start connecting with buyers and sellers
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {listedProperties.map((property) => (
-                                    <div key={property.id} className="bg-white/10 rounded-lg overflow-hidden border border-charcoal/20 flex flex-col">
-                                        {property.images?.length && property.images[0] ? (
-                                            <div className="relative w-full aspect-[16/10] bg-charcoal/10">
-                                                <img
-                                                    src={getProxiedImageUrl(property.images[0])}
-                                                    alt={property.title}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                />
-                                                {property.images.length > 1 && (
-                                                    <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
-                                                        {property.images.length} photos
-                                                    </span>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="w-full aspect-[16/10] bg-charcoal/10 flex items-center justify-center">
-                                                <ImageIcon className="w-12 h-12 text-charcoal/30" />
-                                            </div>
-                                        )}
-                                        <div className="p-4 flex-1 flex flex-col">
-                                            <div className="flex items-start justify-between gap-2 mb-2">
-                                                <h3 className="text-charcoal font-semibold">{property.title}</h3>
-                                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                    {!property.published && (
-                                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-700">
-                                                            Draft
-                                                        </span>
-                                                    )}
-                                                    {property.listingScore != null && (
-                                                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gold/20 text-gold">
-                                                            {property.listingScore}/100
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1 text-sm text-charcoal/70 mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="w-4 h-4 flex-shrink-0" />
-                                                    <span className="truncate">{property.address}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <DollarSign className="w-4 h-4" />
-                                                    <span>{formatCurrency(property.price)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <div className="flex items-center gap-1">
-                                                        <Bed className="w-4 h-4" />
-                                                        <span>{property.bedrooms}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Bath className="w-4 h-4" />
-                                                        <span>{property.bathrooms}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Square className="w-4 h-4" />
-                                                        <span>{property.size}m²</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {property.features?.length ? (
-                                                <div className="flex flex-wrap gap-1 mb-3">
-                                                    {property.features.slice(0, 5).map((f) => (
-                                                        <span key={f} className="px-2 py-0.5 rounded bg-charcoal/10 text-charcoal/80 text-xs">
-                                                            {f}
-                                                        </span>
-                                                    ))}
-                                                    {property.features.length > 5 && (
-                                                        <span className="text-charcoal/50 text-xs">+{property.features.length - 5}</span>
-                                                    )}
-                                                </div>
-                                            ) : null}
-                                            {property.videoUrl ? (
-                                                <a
-                                                    href={property.videoUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 text-sm text-gold font-semibold hover:underline mb-3"
-                                                >
-                                                    <Video className="w-4 h-4" />
-                                                    Watch video
-                                                </a>
-                                            ) : null}
-                                            <div className="flex items-center gap-2 mt-auto">
-                                                <button
-                                                    onClick={() => { setShowViewPropertyModal(property); setViewPropertyImageIndex(0); }}
-                                                    className="flex-1 px-3 py-2 border border-charcoal/20 text-charcoal rounded-lg hover:bg-charcoal/5 transition text-sm flex items-center justify-center gap-1.5"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                    View
-                                                </button>
-                                                {!property.published && (
-                                                    <button
-                                                        onClick={() => handleEditProperty(property)}
-                                                        className="px-3 py-2 bg-gold/20 text-gold border border-gold/40 rounded-lg hover:bg-gold/30 transition text-sm font-semibold"
-                                                        title="Edit draft"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={() => handleDeleteProperty(property)}
-                                                    className="p-2 border border-red-500/30 text-red-600 rounded-lg hover:bg-red-500/10 transition"
-                                                    title="Delete property"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                                {property.published ? (
-                                                    <button
-                                                        onClick={() => handleUnpublishProperty(property)}
-                                                        className="flex-1 px-3 py-2 bg-charcoal/10 text-charcoal rounded-lg hover:bg-charcoal/20 transition text-sm text-xs font-medium"
-                                                    >
-                                                        Unpublish
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => handlePublishProperty(property)}
-                                                        className="flex-1 px-3 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-1.5"
-                                                    >
-                                                        Publish
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedPropertyForViewing(property);
-                                                    setViewingForm(prev => ({ ...prev, propertyId: property.id }));
-                                                    setShowViewingModal(true);
-                                                }}
-                                                className="w-full px-4 py-2 bg-gold/20 text-gold border border-gold/40 rounded-lg hover:bg-gold/30 transition text-sm flex items-center justify-center gap-2 mt-2"
-                                            >
-                                                <CalendarIcon className="w-4 h-4" />
-                                                Schedule Viewing
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Plan tiers / upgrade banner for Free plan */}
-                    {currentAgent && (currentAgent.plan === 'free' || !currentAgent.plan) && (
-                        <div className="mb-6 rounded-xl border border-gold/30 bg-gradient-to-r from-gold/10 to-gold/5 p-6">
-                            <h3 className="text-lg font-bold text-charcoal mb-2">Your plan: Free — up to {AGENT_PLANS.free.leadLimit} leads</h3>
-                            <p className="text-charcoal/70 text-sm mb-4">Want more leads? Click a plan to upgrade.</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="rounded-lg bg-white/80 border border-charcoal/10 p-4 opacity-90">
-                                    <p className="font-bold text-charcoal">Free</p>
-                                    <p className="text-charcoal/70 text-sm">{AGENT_PLANS.free.leadLimit} leads</p>
-                                    <p className="text-charcoal/50 text-xs mt-1">Your current plan</p>
-                                </div>
-                                <a
-                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady Plan Upgrade - 10 leads (R120)')}&body=${encodeURIComponent(`Hi,\n\nI would like to upgrade my PropReady agent plan to 10 leads (R120).\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
-                                    className="rounded-lg bg-gold/10 border border-gold/30 p-4 block transition-all hover:bg-gold/20 hover:border-gold/50 hover:shadow-md cursor-pointer group"
-                                >
-                                    <p className="font-bold text-gold">10 leads</p>
-                                    <p className="text-charcoal/70 text-sm font-semibold">R120</p>
-                                    <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to upgrade →</p>
-                                </a>
-                                <a
-                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady Plan Upgrade - 25 leads (R250)')}&body=${encodeURIComponent(`Hi,\n\nI would like to upgrade my PropReady agent plan to 25 leads (R250).\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
-                                    className="rounded-lg bg-gold/10 border border-gold/30 p-4 block transition-all hover:bg-gold/20 hover:border-gold/50 hover:shadow-md cursor-pointer group"
-                                >
-                                    <p className="font-bold text-gold">25 leads</p>
-                                    <p className="text-charcoal/70 text-sm font-semibold">R250</p>
-                                    <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to upgrade →</p>
-                                </a>
-                                <a
-                                    href={`mailto:info@propready.co.za?subject=${encodeURIComponent('PropReady - Book a consultation (Unlimited leads)')}&body=${encodeURIComponent(`Hi,\n\nI would like to book a consultation for the Unlimited leads plan.\n\nAgent name: ${currentAgent?.fullName || ''}\nAgent email: ${currentAgent?.email || ''}\n\nThank you.`)}`}
-                                    className="rounded-lg bg-white/80 border border-charcoal/10 p-4 block transition-all hover:bg-gold/10 hover:border-gold/30 hover:shadow-md cursor-pointer group"
-                                >
-                                    <p className="font-bold text-charcoal group-hover:text-gold">Unlimited leads</p>
-                                    <p className="text-charcoal/70 text-sm font-semibold">Book a consultation</p>
-                                    <p className="text-charcoal/50 text-xs mt-1 group-hover:text-gold">Click to request →</p>
-                                </a>
-                            </div>
-                            <p className="text-charcoal/60 text-sm mt-4">Or email <a href="mailto:info@propready.co.za" className="text-gold hover:underline">info@propready.co.za</a> to upgrade.</p>
-                        </div>
-                    )}
 
                     {/* Leads Section with Tabs */}
+                    <PpraVerificationGate agent={currentAgent} block={!isAgentPpraVerified(currentAgent)}>
                     <div id="leads-section" className="glass-effect rounded-xl p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-2xl font-bold text-charcoal">Prequalified Leads</h2>
@@ -1440,14 +735,29 @@ export default function AgentsDashboardPage() {
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Buyer</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Contact</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Score</th>
+                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Bond pre-qual</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Status</th>
+                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Verified</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date</th>
                                             <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredLeads.map((lead) => (
-                                                <tr key={lead.id} className="border-b border-charcoal/10 hover:bg-charcoal/5 transition">
+                                                <tr
+                                                    key={lead.id}
+                                                    className="border-b border-charcoal/10 hover:bg-gold/5 transition cursor-pointer"
+                                                    onClick={() => setShowActionsModal(lead)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            setShowActionsModal(lead);
+                                                        }
+                                                    }}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    aria-label={`View details for ${lead.fullName}`}
+                                                >
                                                 <td className="py-4 px-4">
                                                     <div>
                                                             <p className="text-charcoal font-semibold">{lead.fullName || 'N/A'}</p>
@@ -1472,20 +782,33 @@ export default function AgentsDashboardPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-4 px-4">
+                                                    {lead.prequalifiedWithOriginator && lead.bondOriginator ? (
+                                                        <span className="text-xs font-medium text-gold">
+                                                            {bondOriginatorLabel(lead.bondOriginator)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-charcoal/40 text-sm">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 px-4">
                                                     {getStatusBadge(lead.status)}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    {getVerificationBadge(lead)}
                                                 </td>
                                                 <td className="py-4 px-4">
                                                     <p className="text-charcoal/70 text-sm">
                                                         {new Date(lead.timestamp).toLocaleDateString()}
                                                     </p>
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
                                                     <button
+                                                        type="button"
                                                         onClick={() => setShowActionsModal(lead)}
-                                                            className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
+                                                        className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
                                                     >
                                                         <MoreVertical className="w-4 h-4" />
-                                                        <span className="text-sm">Actions</span>
+                                                        <span className="text-sm">View</span>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -1516,13 +839,27 @@ export default function AgentsDashboardPage() {
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Estimated Value</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Timeline</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Status</th>
+                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Verified</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date</th>
                                                 <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filteredSellers.map((seller) => (
-                                                <tr key={seller.id} className="border-b border-charcoal/10 hover:bg-charcoal/5 transition">
+                                                <tr
+                                                    key={seller.id}
+                                                    className="border-b border-charcoal/10 hover:bg-gold/5 transition cursor-pointer"
+                                                    onClick={() => setShowActionsModal(seller)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            setShowActionsModal(seller);
+                                                        }
+                                                    }}
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    aria-label={`View details for ${seller.fullName}`}
+                                                >
                                                     <td className="py-4 px-4">
                                                         <div>
                                                             <p className="text-charcoal font-semibold">{seller.fullName || 'N/A'}</p>
@@ -1569,17 +906,21 @@ export default function AgentsDashboardPage() {
                                                         {getStatusBadge(seller.status)}
                                                     </td>
                                                     <td className="py-4 px-4">
+                                                        {getVerificationBadge(seller)}
+                                                    </td>
+                                                    <td className="py-4 px-4">
                                                         <p className="text-charcoal/70 text-sm">
                                                             {new Date(seller.timestamp).toLocaleDateString()}
                                                         </p>
                                                     </td>
-                                                    <td className="py-4 px-4">
+                                                    <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
                                                         <button
+                                                            type="button"
                                                             onClick={() => setShowActionsModal(seller)}
                                                             className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
                                                         >
                                                             <MoreVertical className="w-4 h-4" />
-                                                            <span className="text-sm">Actions</span>
+                                                            <span className="text-sm">View</span>
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -1589,1538 +930,34 @@ export default function AgentsDashboardPage() {
                                 </div>
                             )
                         )}
+                        <p className="text-charcoal/45 text-xs mt-3">Click any lead row to view full details and attached documents.</p>
                     </div>
-
-                    {/* Viewings Section */}
-                    <div id="viewings-section" className="glass-effect rounded-xl p-6 mt-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-charcoal">Viewing Appointments</h2>
-                            <button
-                                onClick={() => {
-                                    setShowViewingModal(true);
-                                    setSelectedPropertyForViewing(null);
-                                    setSelectedViewingContactKey('');
-                                    setViewingForm({
-                                        propertyId: '',
-                                        contactName: '',
-                                        contactEmail: '',
-                                        contactPhone: '',
-                                        contactType: 'buyer',
-                                        date: '',
-                                        time: '',
-                                        notes: ''
-                                    });
-                                }}
-                                className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Schedule Viewing
-                            </button>
-                        </div>
-
-                        {/* View Toggle */}
-                        <div className="flex gap-2 mb-6">
-                            <button
-                                onClick={() => setViewingViewMode('list')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                    viewingViewMode === 'list'
-                                        ? 'bg-gold text-white'
-                                        : 'bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5'
-                                }`}
-                            >
-                                List View
-                            </button>
-                            <button
-                                onClick={() => setViewingViewMode('calendar')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                    viewingViewMode === 'calendar'
-                                        ? 'bg-gold text-white'
-                                        : 'bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5'
-                                }`}
-                            >
-                                Calendar View
-                            </button>
-                        </div>
-
-                        {/* Filters and Search */}
-                        <div className="mb-6">
-                            <div className="flex flex-col md:flex-row gap-4">
-                                <div className="flex-1 relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search by property, contact name, or address..."
-                                        value={viewingSearchTerm}
-                                        onChange={(e) => setViewingSearchTerm(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Filter className="w-5 h-5 text-charcoal/50" />
-                                    <select
-                                        value={viewingStatusFilter}
-                                        onChange={(e) => setViewingStatusFilter(e.target.value)}
-                                        className="px-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                    >
-                                        <option value="all">All Status</option>
-                                        <option value="scheduled">Scheduled</option>
-                                        <option value="confirmed">Confirmed</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="cancelled">Cancelled</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Calendar View */}
-                        {viewingViewMode === 'calendar' && (
-                            <div className="rounded-3xl shadow-2xl border border-charcoal/10 bg-white/90 backdrop-blur-xl overflow-hidden">
-                                {/* Calendar Header */}
-                                <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-6 md:px-8 py-5 md:py-6 border-b border-gold/20">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                                    <div className="relative flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                                                <CalendarIcon className="w-5 h-5 text-white" />
-                                            </div>
-                                            <h2 className="text-xl md:text-2xl font-bold text-white">
-                                                {currentCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                                            </h2>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => {
-                                                    const newDate = new Date(currentCalendarDate);
-                                                    newDate.setMonth(newDate.getMonth() - 1);
-                                                    setCurrentCalendarDate(newDate);
-                                                }}
-                                                className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                            >
-                                                <ChevronLeft className="w-5 h-5" />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const newDate = new Date(currentCalendarDate);
-                                                    newDate.setMonth(newDate.getMonth() + 1);
-                                                    setCurrentCalendarDate(newDate);
-                                                }}
-                                                className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                            >
-                                                <ChevronRight className="w-5 h-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Calendar Body */}
-                                <div className="px-6 md:px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-                                    <div className="grid grid-cols-7 gap-2 mb-3">
-                                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                            <div key={day} className="text-center text-charcoal/70 font-semibold text-sm py-2">
-                                                {day}
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="grid grid-cols-7 gap-2">
-                                    {getCalendarDays(currentCalendarDate).map((day, index) => {
-                                        const dayViewings = day !== null ? filteredViewings.filter(v => {
-                                            if (!v.date) return false;
-                                            const viewingDate = new Date(v.date);
-                                            if (isNaN(viewingDate.getTime())) return false;
-                                            return viewingDate.getDate() === day && 
-                                                   viewingDate.getMonth() === currentCalendarDate.getMonth() &&
-                                                   viewingDate.getFullYear() === currentCalendarDate.getFullYear();
-                                        }) : [];
-                                        const isToday = day !== null && day === new Date().getDate() && 
-                                                       currentCalendarDate.getMonth() === new Date().getMonth() &&
-                                                       currentCalendarDate.getFullYear() === new Date().getFullYear();
-                                        const isCurrentMonth = day !== null;
-
-                                        return (
-                                            <div
-                                                key={index}
-                                                className={`min-h-[80px] p-2 rounded-xl border transition-all ${
-                                                    isToday 
-                                                        ? 'bg-gradient-to-br from-gold/20 to-gold/10 border-gold/30 shadow-md' 
-                                                        : isCurrentMonth 
-                                                        ? 'bg-white border-charcoal/10 hover:border-charcoal/20' 
-                                                        : 'bg-charcoal/5 border-charcoal/5'
-                                                }`}
-                                            >
-                                                {day && (
-                                                    <>
-                                                        <div className={`text-sm font-semibold mb-1 ${isToday ? 'text-gold font-bold' : 'text-charcoal/70'}`}>
-                                                            {day}
-                                                        </div>
-                                                        {dayViewings.slice(0, 2).map(viewing => (
-                                                            <div
-                                                                key={viewing.id}
-                                                                onClick={() => setSelectedViewing(viewing)}
-                                                                className={`text-xs p-1.5 rounded-lg mb-1 cursor-pointer hover:opacity-80 transition shadow-sm ${
-                                                                    viewing.status === 'completed' ? 'bg-green-500/20 text-green-600 border border-green-500/30' :
-                                                                    viewing.status === 'confirmed' ? 'bg-blue-500/20 text-blue-600 border border-blue-500/30' :
-                                                                    viewing.status === 'cancelled' ? 'bg-gradient-to-r from-red-500/20 to-red-500/10 text-red-600 border border-red-500/30' :
-                                                                    'bg-gradient-to-r from-gold/20 to-gold/10 text-gold border border-gold/30'
-                                                                }`}
-                                                            >
-                                                                {viewing.time} - {viewing.contactName}
-                                                            </div>
-                                                        ))}
-                                                        {dayViewings.length > 2 && (
-                                                            <div className="text-xs text-charcoal/50 font-medium">
-                                                                +{dayViewings.length - 2} more
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* List View */}
-                        {viewingViewMode === 'list' && (
-                            filteredViewings.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <Calendar className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                                    <p className="text-charcoal/70 text-lg">No viewings found</p>
-                                    <p className="text-charcoal/50 text-sm mt-2">
-                                        {viewingSearchTerm || viewingStatusFilter !== 'all' 
-                                            ? 'Try adjusting your filters' 
-                                            : 'Schedule your first viewing appointment'}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-charcoal/20">
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Property</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Price</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Contact</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date & Time</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Type</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Status</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredViewings.map((viewing) => (
-                                                <tr key={viewing.id} className="border-b border-charcoal/10 hover:bg-charcoal/5 transition">
-                                                    <td className="py-4 px-4">
-                                                        <div>
-                                                            <p className="text-charcoal font-semibold">{viewing.propertyTitle}</p>
-                                                            <p className="text-charcoal/60 text-sm">{viewing.propertyAddress}</p>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        <p className="text-gold font-semibold">{(viewing.propertyPrice ?? 0) > 0 ? formatCurrency(viewing.propertyPrice!) : '—'}</p>
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        <div className="space-y-1">
-                                                            <p className="text-charcoal/80 text-sm">{viewing.contactName}</p>
-                                                            <p className="text-charcoal/60 text-sm">{viewing.contactPhone}</p>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        <div className="space-y-1">
-                                                            <p className="text-charcoal/80 text-sm">
-                                                                {new Date(viewing.date).toLocaleDateString()}
-                                                            </p>
-                                                            <p className="text-charcoal/60 text-sm">{viewing.time}</p>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                                            viewing.contactType === 'buyer' 
-                                                                ? 'bg-blue-500/20 text-blue-400' 
-                                                                : 'bg-purple-500/20 text-purple-400'
-                                                        }`}>
-                                                            {viewing.contactType === 'buyer' ? 'Buyer' : 'Seller'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        {getViewingStatusBadge(viewing.status)}
-                                                    </td>
-                                                    <td className="py-4 px-4">
-                                                        <button
-                                                            onClick={() => setSelectedViewing(viewing)}
-                                                            className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
-                                                        >
-                                                            <MoreVertical className="w-4 h-4" />
-                                                            <span className="text-sm">Manage</span>
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )
-                        )}
-                    </div>
+                    </PpraVerificationGate>
                 </div>
 
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-5 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
-                </div>
-            </main>
-
-            {/* Actions Modal */}
             {showActionsModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    {/* Decorative background elements */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                                            <User className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                                                {showActionsModal.fullName}
-                                            </h2>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowActionsModal(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                    aria-label="Close"
-                                >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content area */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-                            <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
-                                <p className="text-charcoal/70 text-sm mb-2 font-semibold">Contact Information</p>
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4 text-charcoal/50" />
-                                        <p className="text-charcoal text-sm break-all">{showActionsModal.email}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Phone className="w-4 h-4 text-charcoal/50" />
-                                        <p className="text-charcoal text-sm">{showActionsModal.phone}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {activeTab === 'buyers' && 'score' in showActionsModal && (
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
-                                    <p className="text-charcoal/70 text-sm mb-2 font-semibold">Lead Details</p>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
-                                        <div>
-                                            <p className="text-charcoal/60">Score</p>
-                                            <p className="text-charcoal font-semibold">{(showActionsModal as Lead).score != null ? `${(showActionsModal as Lead).score}%` : '—'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-charcoal/60">Status</p>
-                                            <div className="mt-1">{getStatusBadge(showActionsModal.status)}</div>
-                                        </div>
-                                        <div>
-                                            <p className="text-charcoal/60">Employment</p>
-                                            <p className="text-charcoal font-semibold capitalize">{(showActionsModal as Lead).employmentStatus}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-charcoal/60">Deposit</p>
-                                            <p className="text-charcoal font-semibold">{formatCurrency(parseAmountForDisplay((showActionsModal as Lead).depositSaved))}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'sellers' && 'propertyAddress' in showActionsModal && (
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
-                                    <p className="text-charcoal/70 text-sm mb-2 font-semibold">Property Details</p>
-                                    <div className="space-y-2 text-sm">
-                                        <div>
-                                            <p className="text-charcoal/60">Address</p>
-                                            <p className="text-charcoal font-semibold">
-                                                {(showActionsModal as Seller).propertyAddress
-                                                    ? String((showActionsModal as Seller).propertyAddress).split(',').map((s: string) => s.trim()).filter(Boolean).join(', ')
-                                                    : 'N/A'}
-                                            </p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <p className="text-charcoal/60">Type</p>
-                                                <p className="text-charcoal font-semibold capitalize">{(showActionsModal as Seller).propertyType}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-charcoal/60">Value</p>
-                                                <p className="text-charcoal font-semibold">
-                                                    {formatCurrency(parseAmountForDisplay((showActionsModal as Seller).currentValue))}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="text-charcoal/60">Land size</p>
-                                                <p className="text-charcoal font-semibold">{(showActionsModal as Seller).landSize ? `${(showActionsModal as Seller).landSize} m²` : 'N/A'}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-charcoal/60">Building size</p>
-                                                <p className="text-charcoal font-semibold">{(showActionsModal as Seller).buildingSize ? `${(showActionsModal as Seller).buildingSize} m²` : 'N/A'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="space-y-3 mt-6">
-                                <h4 className="text-charcoal font-semibold mb-2">Contact {activeTab === 'buyers' ? 'Buyer' : 'Seller'}</h4>
-                                <div className="grid grid-cols-3 gap-2 mb-4">
-                                    <button
-                                        onClick={() => {
-                                            handleContact(showActionsModal, 'phone');
-                                            setShowActionsModal(null);
-                                        }}
-                                        className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition"
-                                        title="Call"
-                                    >
-                                        <Phone className="w-5 h-5" />
-                                        <span className="text-xs">Call</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            handleContact(showActionsModal, 'email');
-                                            setShowActionsModal(null);
-                                        }}
-                                        className="flex flex-col items-center gap-2 p-3 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition"
-                                        title="Email"
-                                    >
-                                        <Mail className="w-5 h-5" />
-                                        <span className="text-xs">Email</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            handleContact(showActionsModal, 'whatsapp');
-                                            setShowActionsModal(null);
-                                        }}
-                                        className="flex flex-col items-center gap-2 p-3 rounded-lg bg-green-600/20 text-green-300 hover:bg-green-600/30 transition"
-                                        title="WhatsApp"
-                                    >
-                                        <MessageCircle className="w-5 h-5" />
-                                        <span className="text-xs">WhatsApp</span>
-                                    </button>
-                                </div>
-
-                                <div className="border-t border-charcoal/20 pt-4">
-                                    <h4 className="text-charcoal font-semibold mb-3">Update Status</h4>
-                                    <select
-                                        value={showActionsModal.status}
-                                        onChange={(e) => {
-                                            updateContactStatus(showActionsModal.id, e.target.value as 'new' | 'contacted' | 'qualified' | 'not-interested');
-                                            setShowActionsModal({ ...showActionsModal, status: e.target.value as 'new' | 'contacted' | 'qualified' | 'not-interested' });
-                                        }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                    >
-                                        <option value="new">New</option>
-                                        <option value="contacted">Contacted</option>
-                                        <option value="qualified">Qualified</option>
-                                        <option value="not-interested">Not Interested</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
-                            <button
-                                onClick={() => setShowActionsModal(null)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
-                            >
-                                <span>Done</span>
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <AgentLeadDetailModal
+                    lead={showActionsModal}
+                    leadKind={
+                        (showActionsModal as Seller).leadType === 'seller' ||
+                        (showActionsModal as Seller).leadType === 'investor' ||
+                        Boolean((showActionsModal as Seller).propertyAddress)
+                            ? 'seller'
+                            : 'buyer'
+                    }
+                    onClose={() => setShowActionsModal(null)}
+                    onContact={handleContact}
+                    onStatusChange={(leadId, status) => {
+                        updateContactStatus(leadId, status);
+                        setShowActionsModal((prev) =>
+                            prev && prev.id === leadId ? { ...prev, status } : prev
+                        );
+                    }}
+                    getStatusBadge={getStatusBadge}
+                    getVerificationBadge={getVerificationBadge}
+                />
             )}
 
-            {/* Add Property Modal */}
-            {showPropertyModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    {/* Decorative background elements */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                                        {editingPropertyId ? 'Edit Property' : 'Add Property to PropReady'}
-                                    </h2>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setShowPropertyModal(false);
-                                        setAddPropertyMode('choice');
-                                        setEditingPropertyId(null);
-                                    }}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                    aria-label="Close"
-                                >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content area */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-
-                        {/* Step 1: Choose how to add */}
-                        {addPropertyMode === 'choice' && (
-                            <div className="space-y-6">
-                                <p className="text-charcoal/70 text-center">How would you like to add this property?</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setAddPropertyMode('import')}
-                                        className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/50 transition-all text-left"
-                                    >
-                                        <Link2 className="w-12 h-12 text-gold" />
-                                        <div>
-                                            <h3 className="font-semibold text-charcoal">Import from link</h3>
-                                            <p className="text-sm text-charcoal/60 mt-1">Paste a URL from Property24, Private Property, or other listing sites. We&apos;ll extract images, description, features and more.</p>
-                                        </div>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAddPropertyMode('manual')}
-                                        className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-charcoal/20 bg-white hover:bg-charcoal/5 hover:border-charcoal/30 transition-all text-left"
-                                    >
-                                        <FileEdit className="w-12 h-12 text-charcoal/60" />
-                                        <div>
-                                            <h3 className="font-semibold text-charcoal">Add manually</h3>
-                                            <p className="text-sm text-charcoal/60 mt-1">Enter property details yourself. Best when you have your own photos and description.</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Step 2a: Import from URL */}
-                        {addPropertyMode === 'import' && (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setAddPropertyMode('choice'); setImportError(null); }}
-                                        className="text-charcoal/60 hover:text-charcoal text-sm font-medium"
-                                    >
-                                        ← Back
-                                    </button>
-                                </div>
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Paste property listing URL</label>
-                                    <p className="text-charcoal/60 text-sm mb-2">Works with Property24, Private Property, RE/MAX, and most property listing websites.</p>
-                                    <input
-                                        type="url"
-                                        value={importUrl}
-                                        onChange={(e) => { setImportUrl(e.target.value); setImportError(null); }}
-                                        placeholder="https://www.property24.co.za/..."
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                        onKeyDown={(e) => e.key === 'Enter' && handleImportFromUrl()}
-                                    />
-                                </div>
-                                {importError && (
-                                    <p className="text-red-600 text-sm flex items-center gap-1" role="alert">
-                                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                        {importError}
-                                    </p>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={handleImportFromUrl}
-                                    disabled={importLoading || !importUrl.trim()}
-                                    className="w-full px-6 py-3.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-                                >
-                                    {importLoading ? (
-                                        <>Fetching listing…</>
-                                    ) : (
-                                        <>Import property data</>
-                                    )}
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Step 2b/3: Manual form (or edit after import) */}
-                        {addPropertyMode === 'manual' && (
-                        <>
-                        <div className="flex items-center gap-2 mb-4">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (editingPropertyId) {
-                                        setShowPropertyModal(false);
-                                        setEditingPropertyId(null);
-                                    } else {
-                                        setAddPropertyMode('choice');
-                                    }
-                                }}
-                                className="text-charcoal/60 hover:text-charcoal text-sm font-medium"
-                            >
-                                ← Back
-                            </button>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2">Property Title</label>
-                                <input
-                                    type="text"
-                                    value={propertyForm.title}
-                                    onChange={(e) => setPropertyForm({ ...propertyForm, title: e.target.value })}
-                                    placeholder="e.g., Modern 3-Bedroom House"
-                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2">Address</label>
-                                <input
-                                    type="text"
-                                    value={propertyForm.address}
-                                    onChange={(e) => setPropertyForm({ ...propertyForm, address: e.target.value })}
-                                    placeholder="e.g., 123 Main Street, Sandton"
-                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Type</label>
-                                    <select
-                                        value={propertyForm.type}
-                                        onChange={(e) => setPropertyForm({ ...propertyForm, type: e.target.value })}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                    >
-                                        <option value="">Select type</option>
-                                        <option value="House">House</option>
-                                        <option value="Apartment">Apartment</option>
-                                        <option value="Townhouse">Townhouse</option>
-                                        <option value="Duplex">Duplex</option>
-                                        <option value="Vacant Land">Vacant Land</option>
-                                        <option value="Commercial">Commercial</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Price (R)</label>
-                                    <input
-                                        type="text"
-                                        inputMode="numeric"
-                                        value={propertyForm.price ? formatNumber(parseAmountForDisplay(propertyForm.price)) : ''}
-                                        onChange={(e) => {
-                                            const digits = e.target.value.replace(/\D/g, '');
-                                            setPropertyForm(prev => ({ ...prev, price: digits }));
-                                        }}
-                                        placeholder="e.g., 1,500,000"
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Bedrooms</label>
-                                    <input
-                                        type="number"
-                                        value={propertyForm.bedrooms}
-                                        onChange={(e) => setPropertyForm({ ...propertyForm, bedrooms: e.target.value })}
-                                        placeholder="3"
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Bathrooms</label>
-                                    <input
-                                        type="number"
-                                        value={propertyForm.bathrooms}
-                                        onChange={(e) => setPropertyForm({ ...propertyForm, bathrooms: e.target.value })}
-                                        placeholder="2"
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Size (m²)</label>
-                                    <input
-                                        type="number"
-                                        value={propertyForm.size}
-                                        onChange={(e) => setPropertyForm({ ...propertyForm, size: e.target.value })}
-                                        placeholder="120"
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
-                                    <ImageIcon className="w-4 h-4" />
-                                    Images
-                                    {(propertyForm.images?.length ?? 0) > 0 && (
-                                        <span className="text-charcoal/60 font-normal text-sm">({propertyForm.images?.length} images)</span>
-                                    )}
-                                </label>
-                                <p className="text-charcoal/60 text-sm mb-3">Add or remove images. Upload files, paste URLs, or manage imported images below.</p>
-
-                                {/* Thumbnail grid with delete */}
-                                {(propertyForm.images?.length ?? 0) > 0 && (
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
-                                        {(propertyForm.images || []).map((url, idx) => (
-                                            <div key={`${idx}-${url.slice(0, 30)}`} className="relative group aspect-square rounded-lg overflow-hidden border border-charcoal/20 bg-charcoal/5">
-                                                <img
-                                                    src={getProxiedImageUrl(url)}
-                                                    alt={`Property image ${idx + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext x="50" y="50" fill="%23999" text-anchor="middle" dy=".3em" font-size="12"%3EFailed%3C/text%3E%3C/svg%3E'; }}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        const next = (propertyForm.images || []).filter((_, i) => i !== idx);
-                                                        setPropertyForm({ ...propertyForm, images: next });
-                                                    }}
-                                                    className="absolute top-1 right-1 p-1.5 rounded-full bg-red-500/90 text-white hover:bg-red-600 transition opacity-90 hover:opacity-100"
-                                                    aria-label="Remove image"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Add images: upload + single URL + bulk */}
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                    <input
-                                        ref={imageInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp,image/gif"
-                                        multiple
-                                        className="hidden"
-                                        onChange={handleUploadImages}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => imageInputRef.current?.click()}
-                                        disabled={imageUploading}
-                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50"
-                                    >
-                                        <Upload className="w-4 h-4" />
-                                        {imageUploading ? 'Compressing & uploading…' : 'Upload images'}
-                                    </button>
-                                    <div className="flex gap-2 flex-1 min-w-0 max-w-md">
-                                        <input
-                                            type="url"
-                                            value={singleImageUrl}
-                                            onChange={(e) => setSingleImageUrl(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    const u = singleImageUrl.trim();
-                                                    if (u) {
-                                                        const existing = propertyForm.images?.length ? propertyForm.images : [];
-                                                        setPropertyForm({ ...propertyForm, images: [...existing, u] });
-                                                        setSingleImageUrl('');
-                                                    }
-                                                }
-                                            }}
-                                            placeholder="Paste image URL and press Enter or Add"
-                                            className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const u = singleImageUrl.trim();
-                                                if (u) {
-                                                    const existing = propertyForm.images?.length ? propertyForm.images : [];
-                                                    setPropertyForm({ ...propertyForm, images: [...existing, u] });
-                                                    setSingleImageUrl('');
-                                                }
-                                            }}
-                                            disabled={!singleImageUrl.trim()}
-                                            className="px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50 shrink-0"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                </div>
-                                {imageUploadError && (
-                                    <p className="text-red-600 text-sm mb-2" role="alert">{imageUploadError}</p>
-                                )}
-                                <details className="mt-2">
-                                    <summary className="text-sm text-charcoal/70 cursor-pointer hover:text-charcoal">Paste multiple URLs (one per line)</summary>
-                                    <div className="mt-2 space-y-2">
-                                        <textarea
-                                            placeholder="Paste multiple image URLs here (one per line or comma-separated)"
-                                            rows={2}
-                                            value={bulkImageUrls}
-                                            onChange={(e) => setBulkImageUrls(e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const urls = bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-                                                if (urls.length > 0) {
-                                                    const existing = propertyForm.images?.length ? propertyForm.images : [];
-                                                    setPropertyForm({ ...propertyForm, images: [...existing, ...urls] });
-                                                    setBulkImageUrls('');
-                                                }
-                                            }}
-                                            disabled={!bulkImageUrls.trim()}
-                                            className="text-sm text-gold font-semibold hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
-                                        >
-                                            <Plus className="w-4 h-4" /> Add these URLs ({bulkImageUrls.split(/[\n,]+/).map(s => s.trim()).filter(Boolean).length || 0})
-                                        </button>
-                                    </div>
-                                </details>
-                            </div>
-
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
-                                    <Video className="w-4 h-4" />
-                                    Video URL
-                                </label>
-                                <p className="text-charcoal/60 text-sm mb-2">YouTube, Vimeo or any other video hosting link (optional)</p>
-                                <input
-                                    type="url"
-                                    value={propertyForm.videoUrl}
-                                    onChange={(e) => setPropertyForm({ ...propertyForm, videoUrl: e.target.value })}
-                                    placeholder="e.g. https://www.youtube.com/watch?v=... or https://vimeo.com/..."
-                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2">Features & amenities</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {PROPERTY_FEATURES.map((f) => (
-                                        <label key={f} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-charcoal/20 bg-white cursor-pointer hover:border-gold/50 transition">
-                                            <input
-                                                type="checkbox"
-                                                checked={(propertyForm.features || []).includes(f)}
-                                                onChange={(e) => {
-                                                    const next = e.target.checked
-                                                        ? [...(propertyForm.features || []), f]
-                                                        : (propertyForm.features || []).filter(x => x !== f);
-                                                    setPropertyForm({ ...propertyForm, features: next });
-                                                }}
-                                                className="rounded border-charcoal/30 text-gold focus:ring-gold"
-                                            />
-                                            <span className="text-sm text-charcoal">{f}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex items-center justify-between mb-2">
-                                    <label className="block text-charcoal font-semibold">Description</label>
-                                    <button
-                                        type="button"
-                                        onClick={handleImproveWithAI}
-                                        disabled={improveLoading}
-                                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/30 hover:bg-gold/20 transition text-sm font-semibold disabled:opacity-50"
-                                    >
-                                        <Sparkles className="w-4 h-4" />
-                                        {improveLoading ? 'Improving…' : 'Improve with AI'}
-                                    </button>
-                                </div>
-                                {improveResult && (
-                                    <div className="mb-3 p-3 rounded-lg bg-charcoal/5 border border-charcoal/10">
-                                        <p className="text-sm font-semibold text-charcoal mb-1">
-                                            Listing score: <span className="text-gold">{improveResult.listingScore}/100</span>
-                                        </p>
-                                        {improveResult.feedback.length > 0 && (
-                                            <ul className="text-sm text-charcoal/70 list-disc list-inside space-y-0.5">
-                                                {improveResult.feedback.map((tip, i) => (
-                                                    <li key={i}>{tip}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                )}
-                                <textarea
-                                    value={propertyForm.description}
-                                    onChange={(e) => setPropertyForm({ ...propertyForm, description: e.target.value })}
-                                    placeholder="Describe the property..."
-                                    rows={4}
-                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                />
-                            </div>
-                        </div>
-                        </>
-                        )}
-
-                        </div>
-
-                        {/* Footer - only show when in manual form */}
-                        {addPropertyMode === 'manual' && (
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
-                            <button
-                                onClick={() => setShowPropertyModal(false)}
-                                className="px-6 py-3 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleAddProperty}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                            >
-                                {editingPropertyId ? 'Save changes' : 'Save as Draft'}
-                            </button>
-                        </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* View Property Modal */}
-            {showViewPropertyModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <h2 className="text-2xl font-bold text-white mb-1">{showViewPropertyModal.title}</h2>
-                                    <p className="text-white/90 text-sm flex items-center gap-1">
-                                        <MapPin className="w-4 h-4" />
-                                        {showViewPropertyModal.address}
-                                    </p>
-                                    <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${showViewPropertyModal.published ? 'bg-white/20 text-white' : 'bg-amber-500/30 text-amber-100'}`}>
-                                        {showViewPropertyModal.published ? 'Published' : 'Draft'}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => setShowViewPropertyModal(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 border border-white/30 text-white hover:bg-white/30 transition flex items-center justify-center"
-                                    aria-label="Close"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
-                            {showViewPropertyModal.images?.length ? (
-                                <div className="rounded-xl overflow-hidden border border-charcoal/10 relative">
-                                    <div className="relative aspect-[16/10] bg-charcoal/10 overflow-hidden">
-                                        {showViewPropertyModal.images.map((url, i) => (
-                                            <div
-                                                key={i}
-                                                className={`absolute inset-0 transition-transform duration-300 ease-out ${
-                                                    i === viewPropertyImageIndex ? 'translate-x-0 z-10' : i < viewPropertyImageIndex ? '-translate-x-full' : 'translate-x-full'
-                                                }`}
-                                            >
-                                                <img
-                                                    src={getProxiedImageUrl(url)}
-                                                    alt={`${showViewPropertyModal.title} - ${i + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {showViewPropertyModal.images.length > 1 && (
-                                        <>
-                                            <button
-                                                type="button"
-                                                onClick={() => setViewPropertyImageIndex((prev) => (prev === 0 ? showViewPropertyModal.images!.length - 1 : prev - 1))}
-                                                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
-                                                aria-label="Previous image"
-                                            >
-                                                <ChevronLeft className="w-5 h-5" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setViewPropertyImageIndex((prev) => (prev === showViewPropertyModal.images!.length - 1 ? 0 : prev + 1))}
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
-                                                aria-label="Next image"
-                                            >
-                                                <ChevronRight className="w-5 h-5" />
-                                            </button>
-                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
-                                                {showViewPropertyModal.images.map((_, i) => (
-                                                    <button
-                                                        key={i}
-                                                        type="button"
-                                                        onClick={() => setViewPropertyImageIndex(i)}
-                                                        className={`w-2 h-2 rounded-full transition-colors ${
-                                                            i === viewPropertyImageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/70'
-                                                        }`}
-                                                        aria-label={`Go to image ${i + 1}`}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <span className="absolute top-2 right-2 z-20 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
-                                                {viewPropertyImageIndex + 1} / {showViewPropertyModal.images.length}
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="aspect-video bg-charcoal/10 rounded-xl flex items-center justify-center">
-                                    <ImageIcon className="w-16 h-16 text-charcoal/30" />
-                                </div>
-                            )}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Price</p>
-                                    <p className="text-charcoal font-bold">{formatCurrency(showViewPropertyModal.price)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Type</p>
-                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.type || '—'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Bedrooms</p>
-                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.bedrooms}</p>
-                                </div>
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Bathrooms</p>
-                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.bathrooms}</p>
-                                </div>
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-1">Size</p>
-                                    <p className="text-charcoal font-semibold">{showViewPropertyModal.size} m²</p>
-                                </div>
-                                {showViewPropertyModal.listingScore != null && (
-                                    <div>
-                                        <p className="text-charcoal/50 text-xs font-medium mb-1">Listing Score</p>
-                                        <p className="text-gold font-bold">{showViewPropertyModal.listingScore}/100</p>
-                                    </div>
-                                )}
-                            </div>
-                            {showViewPropertyModal.description && (
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2">Description</p>
-                                    <p className="text-charcoal/80 text-sm leading-relaxed whitespace-pre-wrap">{showViewPropertyModal.description}</p>
-                                </div>
-                            )}
-                            {showViewPropertyModal.features?.length ? (
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2">Features</p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {showViewPropertyModal.features.map((f) => (
-                                            <span key={f} className="px-3 py-1 rounded-full bg-gold/10 text-gold text-sm font-medium">{f}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : null}
-                            {showViewPropertyModal.videoUrl && (
-                                <a href={showViewPropertyModal.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-gold font-semibold hover:underline">
-                                    <Video className="w-4 h-4" />
-                                    Watch video
-                                </a>
-                            )}
-                        </div>
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex flex-wrap items-center justify-between gap-4">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => handleEditProperty(showViewPropertyModal)}
-                                    className="px-4 py-2 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition text-sm font-semibold flex items-center gap-2"
-                                >
-                                    <Edit className="w-4 h-4" />
-                                    Edit
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteProperty(showViewPropertyModal)}
-                                    className="px-4 py-2 border border-red-500/30 text-red-600 rounded-xl hover:bg-red-500/10 transition text-sm font-semibold"
-                                >
-                                    Delete
-                                </button>
-                                {showViewPropertyModal.published ? (
-                                    <button
-                                        onClick={() => handleUnpublishProperty(showViewPropertyModal)}
-                                        className="px-4 py-2 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition text-sm font-semibold"
-                                    >
-                                        Unpublish
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => handlePublishProperty(showViewPropertyModal)}
-                                        className="px-6 py-2 bg-gold text-white rounded-xl hover:bg-gold-600 transition text-sm font-semibold"
-                                    >
-                                        Publish
-                                    </button>
-                                )}
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setSelectedPropertyForViewing(showViewPropertyModal);
-                                    setViewingForm(prev => ({ ...prev, propertyId: showViewPropertyModal.id }));
-                                    setShowViewPropertyModal(null);
-                                    setShowViewingModal(true);
-                                }}
-                                className="px-6 py-2 bg-gold/20 text-gold border border-gold/40 rounded-xl hover:bg-gold/30 transition text-sm font-semibold flex items-center gap-2"
-                            >
-                                <CalendarIcon className="w-4 h-4" />
-                                Schedule Viewing
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Schedule Viewing Modal */}
-            {showViewingModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    {/* Decorative background elements */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                                        {selectedViewing ? 'Edit Viewing' : 'Schedule Viewing'}
-                                    </h2>
-                                    {selectedPropertyForViewing && (
-                                        <p className="text-white/90 text-sm">{selectedPropertyForViewing.title}</p>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        setShowViewingModal(false);
-                                        setSelectedPropertyForViewing(null);
-                                        setSelectedViewing(null);
-                                        setSelectedViewingContactKey('');
-                                        setViewingForm({
-                                            propertyId: '',
-                                            contactName: '',
-                                            contactEmail: '',
-                                            contactPhone: '',
-                                            contactType: 'buyer',
-                                            date: '',
-                                            time: '',
-                                            notes: ''
-                                        });
-                                    }}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                    aria-label="Close"
-                                >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content area */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-                            <div className="space-y-4">
-                                {!selectedPropertyForViewing && (
-                                    <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Property <span className="text-red-600">*</span></label>
-                                        <select
-                                            value={viewingForm.propertyId}
-                                            onChange={(e) => {
-                                                setViewingForm({ ...viewingForm, propertyId: e.target.value });
-                                            }}
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                            disabled={allAvailableProperties.length === 0}
-                                        >
-                                            {allAvailableProperties.length === 0 ? (
-                                                <option value="">No listed properties yet (list a property first)</option>
-                                            ) : (
-                                                <>
-                                                    <option value="">Select a property</option>
-                                                    {allAvailableProperties.map(property => (
-                                                        <option key={property.id} value={property.id}>
-                                                            {property.title} - {property.address} ({formatCurrency(property.price)})
-                                                        </option>
-                                                    ))}
-                                                </>
-                                            )}
-                                        </select>
-                                    </div>
-                                )}
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Contact Type</label>
-                                    <select
-                                        value={viewingForm.contactType}
-                                        onChange={(e) => {
-                                            const newType = e.target.value as 'buyer' | 'seller';
-                                            setViewingForm({ ...viewingForm, contactType: newType });
-                                            setSelectedViewingContactKey('');
-                                        }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                    >
-                                        <option value="buyer">Buyer</option>
-                                        <option value="seller">Seller</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Contact Name</label>
-                                    <select
-                                        value={selectedViewingContactKey}
-                                        onChange={(e) => {
-                                            const key = e.target.value;
-                                            setSelectedViewingContactKey(key);
-                                            if (key === '') {
-                                                setViewingForm(prev => ({ ...prev, contactName: '', contactEmail: '', contactPhone: '' }));
-                                                return;
-                                            }
-                                            const dashIdx = key.indexOf('-');
-                                            const type = key.slice(0, dashIdx);
-                                            const id = key.slice(dashIdx + 1);
-                                            if (type === 'buyer') {
-                                                const lead = leads.find(l => l.id === id);
-                                                if (lead) {
-                                                    setViewingForm(prev => ({
-                                                        ...prev,
-                                                        contactName: lead.fullName || '',
-                                                        contactEmail: lead.email || '',
-                                                        contactPhone: lead.phone || ''
-                                                    }));
-                                                }
-                                            } else {
-                                                const seller = sellers.find(s => s.id === id);
-                                                if (seller) {
-                                                    setViewingForm(prev => ({
-                                                        ...prev,
-                                                        contactName: seller.fullName || '',
-                                                        contactEmail: seller.email || '',
-                                                        contactPhone: seller.phone || ''
-                                                    }));
-                                                }
-                                            }
-                                        }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                    >
-                                        <option value="">
-                                            {viewingForm.contactType === 'buyer'
-                                                ? (leads.length === 0 ? 'No buyers in your leads yet' : 'Select a buyer or enter manually')
-                                                : (sellers.length === 0 ? 'No sellers in your leads yet' : 'Select a seller or enter manually')}
-                                        </option>
-                                        {viewingForm.contactType === 'buyer'
-                                            ? leads.map(lead => (
-                                                <option key={lead.id} value={`buyer-${lead.id}`}>
-                                                    {lead.fullName}{lead.email ? ` (${lead.email})` : ''}
-                                                </option>
-                                            ))
-                                            : sellers.map(seller => (
-                                                <option key={seller.id} value={`seller-${seller.id}`}>
-                                                    {seller.fullName}{seller.email ? ` (${seller.email})` : ''}
-                                                </option>
-                                            ))}
-                                    </select>
-                                    {(selectedViewingContactKey === '' || viewingForm.contactName) && (
-                                        <input
-                                            type="text"
-                                            value={viewingForm.contactName}
-                                            onChange={(e) => setViewingForm({ ...viewingForm, contactName: e.target.value })}
-                                            placeholder="Or type full name manually"
-                                            className="w-full mt-2 px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Email</label>
-                                        <input
-                                            type="email"
-                                            value={viewingForm.contactEmail}
-                                            onChange={(e) => setViewingForm({ ...viewingForm, contactEmail: e.target.value })}
-                                            placeholder="email@example.com"
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Phone</label>
-                                        <input
-                                            type="tel"
-                                            value={viewingForm.contactPhone}
-                                            onChange={(e) => setViewingForm({ ...viewingForm, contactPhone: e.target.value })}
-                                            placeholder="082 123 4567"
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Date</label>
-                                        <input
-                                            type="date"
-                                            value={viewingForm.date}
-                                            onChange={(e) => setViewingForm({ ...viewingForm, date: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Time</label>
-                                        <input
-                                            type="time"
-                                            value={viewingForm.time}
-                                            onChange={(e) => setViewingForm({ ...viewingForm, time: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Notes (Optional)</label>
-                                    <textarea
-                                        value={viewingForm.notes}
-                                        onChange={(e) => setViewingForm({ ...viewingForm, notes: e.target.value })}
-                                        placeholder="Any additional notes..."
-                                        rows={3}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
-                            <button
-                                onClick={() => {
-                                    setShowViewingModal(false);
-                                    setSelectedPropertyForViewing(null);
-                                    setSelectedViewing(null);
-                                    setSelectedViewingContactKey('');
-                                    setViewingForm({
-                                        propertyId: '',
-                                        contactName: '',
-                                        contactEmail: '',
-                                        contactPhone: '',
-                                        contactType: 'buyer',
-                                        date: '',
-                                        time: '',
-                                        notes: ''
-                                    });
-                                }}
-                                className="px-6 py-3 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleScheduleViewing}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                            >
-                                {selectedViewing ? 'Update Viewing' : 'Schedule Viewing'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Viewing Management Modal */}
-            {selectedViewing && !showViewingModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    {/* Decorative background elements */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                                            <Calendar className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                                                {selectedViewing.propertyTitle}
-                                            </h2>
-                                            <p className="text-white/90 text-sm">{selectedViewing.propertyAddress}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedViewing(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                    aria-label="Close"
-                                >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content area */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-                            <div className="mb-6">
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
-                                    <p className="text-charcoal/70 text-sm mb-2 font-semibold">Contact Information</p>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <User className="w-4 h-4 text-charcoal/50" />
-                                            <p className="text-charcoal text-sm">{selectedViewing.contactName}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Mail className="w-4 h-4 text-charcoal/50" />
-                                            <p className="text-charcoal text-sm break-all">{selectedViewing.contactEmail}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Phone className="w-4 h-4 text-charcoal/50" />
-                                            <p className="text-charcoal text-sm">{selectedViewing.contactPhone}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {(selectedViewing.propertyPrice ?? 0) > 0 && (
-                                    <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
-                                        <p className="text-gold font-bold text-xl">{formatCurrency(selectedViewing.propertyPrice!)}</p>
-                                    </div>
-                                )}
-
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
-                                    <p className="text-charcoal/70 text-sm mb-2 font-semibold">Appointment Details</p>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-charcoal/60">Date:</span>
-                                            <span className="text-charcoal font-semibold">
-                                                {new Date(selectedViewing.date).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-charcoal/60">Time:</span>
-                                            <span className="text-charcoal font-semibold">{selectedViewing.time}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-charcoal/60">Type:</span>
-                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                                selectedViewing.contactType === 'buyer' 
-                                                    ? 'bg-blue-500/20 text-blue-400' 
-                                                    : 'bg-purple-500/20 text-purple-400'
-                                            }`}>
-                                                {selectedViewing.contactType === 'buyer' ? 'Buyer' : 'Seller'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-start">
-                                            <span className="text-charcoal/60">Status:</span>
-                                            <div className="mt-1">{getViewingStatusBadge(selectedViewing.status)}</div>
-                                        </div>
-                                        {selectedViewing.notes && (
-                                            <div className="mt-2 pt-2 border-t border-charcoal/10">
-                                                <p className="text-charcoal/60 mb-1">Notes:</p>
-                                                <p className="text-charcoal text-sm">{selectedViewing.notes}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                                <ViewingChat
-                                    viewingId={selectedViewing.id}
-                                    messages={selectedViewing.chatMessages ?? []}
-                                    currentUserRole="agent"
-                                    onMessagesChange={(msgs) => {
-                                        setSelectedViewing({ ...selectedViewing, chatMessages: msgs });
-                                        setViewingAppointments((prev) =>
-                                            prev.map((v) => (v.id === selectedViewing.id ? { ...v, chatMessages: msgs } : v))
-                                        );
-                                    }}
-                                    className="mt-4"
-                                />
-
-                                <div className="space-y-3 mt-6">
-                                <div className="border-t border-charcoal/20 pt-4">
-                                    <h4 className="text-charcoal font-semibold mb-3">Update Status</h4>
-                                    <select
-                                        value={selectedViewing.status}
-                                        onChange={(e) => {
-                                            updateViewingStatus(selectedViewing.id, e.target.value as ViewingAppointment['status']);
-                                            setSelectedViewing({ ...selectedViewing, status: e.target.value as ViewingAppointment['status'] });
-                                        }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                    >
-                                        <option value="scheduled">Scheduled</option>
-                                        <option value="confirmed">Confirmed</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="cancelled">Cancelled</option>
-                                    </select>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        onClick={() => {
-                                            setViewingForm({
-                                                propertyId: selectedViewing.propertyId,
-                                                contactName: selectedViewing.contactName,
-                                                contactEmail: selectedViewing.contactEmail,
-                                                contactPhone: selectedViewing.contactPhone,
-                                                contactType: selectedViewing.contactType,
-                                                date: selectedViewing.date,
-                                                time: selectedViewing.time,
-                                                notes: selectedViewing.notes
-                                            });
-                                            setShowViewingModal(true);
-                                        }}
-                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition"
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                        <span>Edit</span>
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm('Are you sure you want to delete this viewing?')) {
-                                                deleteViewing(selectedViewing.id);
-                                            }
-                                        }}
-                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500/20 to-red-500/10 text-red-600 rounded-xl hover:from-red-500/30 hover:to-red-500/20 transition border border-red-500/30"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                        <span>Delete</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
-                            <button
-                                onClick={() => setSelectedViewing(null)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
-                            >
-                                <span>Done</span>
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Successful Leads Contacted Modal */}
             {showSuccessfulLeadsModal && (
@@ -3250,15 +1087,13 @@ export default function AgentsDashboardPage() {
                                                                             <p className="text-charcoal text-sm">{viewing.notes}</p>
                                                                         </div>
                                                                     )}
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedViewing(viewing);
-                                                                            setShowSuccessfulLeadsModal(false);
-                                                                        }}
-                                                                        className="mt-3 text-gold text-sm hover:underline"
+                                                                    <Link
+                                                                        href="/agents/viewings"
+                                                                        onClick={() => setShowSuccessfulLeadsModal(false)}
+                                                                        className="mt-3 inline-block text-gold text-sm hover:underline"
                                                                     >
                                                                         Manage Viewing
-                                                                    </button>
+                                                                    </Link>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -3266,26 +1101,18 @@ export default function AgentsDashboardPage() {
                                                 ) : (
                                                     <div className="mt-4 pt-4 border-t border-charcoal/10">
                                                         <p className="text-charcoal/50 text-sm italic">No viewing appointments scheduled yet</p>
-                                                        <button
+                                                        <Link
+                                                            href="/agents/viewings"
                                                             onClick={() => {
-                                                                setShowViewingModal(true);
-                                                                setSelectedViewingContactKey(`buyer-${lead.id}`);
-                                                                setViewingForm({
-                                                                    propertyId: '',
-                                                                    contactName: lead.fullName || '',
-                                                                    contactEmail: lead.email || '',
-                                                                    contactPhone: lead.phone || '',
-                                                                    contactType: 'buyer',
-                                                                    date: '',
-                                                                    time: '',
-                                                                    notes: ''
-                                                                });
+                                                                if (typeof window !== 'undefined') {
+                                                                    sessionStorage.setItem('propReady_scheduleBuyerLeadId', lead.id);
+                                                                }
                                                                 setShowSuccessfulLeadsModal(false);
                                                             }}
-                                                            className="mt-2 text-gold text-sm hover:underline"
+                                                            className="mt-2 inline-block text-gold text-sm hover:underline"
                                                         >
                                                             Schedule a viewing for this lead
-                                                        </button>
+                                                        </Link>
                                                     </div>
                                                 )}
                                             </div>
@@ -3308,6 +1135,6 @@ export default function AgentsDashboardPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </AgentPortalLayout>
     );
 }

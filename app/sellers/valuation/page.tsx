@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Search, Filter, Star, Building2, CheckCircle, TrendingUp, MapPin, Phone, Mail, MessageCircle, X, Users, ChevronRight } from 'lucide-react';
+import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
 
 interface Agent {
     id: string;
@@ -58,21 +59,29 @@ export default function ValuationBookingPage() {
         // Load real registered agents
         if (typeof window !== 'undefined') {
             const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const mapped: Agent[] = storedAgents.map((a: any) => ({
-                id: a.id,
-                name: a.fullName || a.name || 'Agent',
-                company: a.company || a.brandName || 'Agency',
-                brandName: a.brandName || a.company,
-                email: a.email || '',
-                phone: a.phone || '',
-                rating: typeof a.rating === 'number' ? a.rating : 4.8,
-                totalSales: typeof a.totalSales === 'number' ? a.totalSales : 0,
-                experience: a.experience || '—',
-                location: a.location || 'South Africa',
-                listingQualityScore: typeof a.listingQualityScore === 'number' ? a.listingQualityScore : 85,
-                specialties: Array.isArray(a.specialties) ? a.specialties : [],
-                verified: a.status ? a.status === 'approved' : !!a.verified
-            }));
+            const mapped: Agent[] = filterPublicAgents(
+                storedAgents.map((a: Record<string, unknown>) => {
+                    const m = mapAgentRecord(a);
+                    return {
+                        id: m.id,
+                        name: m.fullName || 'Agent',
+                        company: m.company || 'Agency',
+                        brandName: (a.brandName as string) || m.company,
+                        email: m.email || '',
+                        phone: m.phone || '',
+                        rating: typeof a.rating === 'number' ? (a.rating as number) : 4.8,
+                        totalSales: typeof a.totalSales === 'number' ? (a.totalSales as number) : 0,
+                        experience: (a.experience as string) || '—',
+                        location: (a.location as string) || m.city || 'South Africa',
+                        listingQualityScore:
+                            typeof a.listingQualityScore === 'number'
+                                ? (a.listingQualityScore as number)
+                                : 85,
+                        specialties: Array.isArray(a.specialties) ? (a.specialties as string[]) : [],
+                        verified: m.verified,
+                    };
+                })
+            ) as Agent[];
             setAgents(mapped);
         }
     }, []);

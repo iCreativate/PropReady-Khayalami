@@ -35,6 +35,11 @@ function toLeadRow(lead: Record<string, unknown>) {
         city: lead.city ?? null,
         latitude: lead.latitude ?? null,
         longitude: lead.longitude ?? null,
+        bond_originator: lead.bondOriginator ?? lead.bond_originator ?? null,
+        prequalified_with_originator:
+            lead.prequalifiedWithOriginator ?? lead.prequalified_with_originator ?? false,
+        appointment_verified: lead.appointmentVerified ?? lead.appointment_verified ?? false,
+        verified_viewing_id: lead.verifiedViewingId ?? lead.verified_viewing_id ?? null,
     };
 }
 
@@ -53,11 +58,15 @@ function fromLeadRow(row: Record<string, unknown>) {
         score: row.score ?? null,
         preQualAmount: row.pre_qual_amount ?? null,
         status: row.status ?? 'new',
+        appointmentVerified: row.appointment_verified === true,
+        verifiedViewingId: row.verified_viewing_id ?? null,
         timestamp: row.created_at,
         contactedAt: row.updated_at && (row.status === 'contacted' || row.status === 'qualified') ? row.updated_at : null,
         city: row.city ?? null,
         latitude: row.latitude ?? null,
         longitude: row.longitude ?? null,
+        bondOriginator: row.bond_originator ?? null,
+        prequalifiedWithOriginator: row.prequalified_with_originator === true,
     };
     if (leadType === 'seller' || leadType === 'investor') {
         return {
@@ -203,6 +212,12 @@ export async function PATCH(request: NextRequest) {
         if (updates.status != null) dbUpdates.status = updates.status;
         if (updates.score != null) dbUpdates.score = updates.score;
         if (updates.preQualAmount != null) dbUpdates.pre_qual_amount = updates.preQualAmount ?? updates.pre_qual_amount;
+        if (updates.appointmentVerified != null) dbUpdates.appointment_verified = updates.appointmentVerified;
+        if (updates.verifiedViewingId != null) dbUpdates.verified_viewing_id = updates.verifiedViewingId;
+        if (updates.bondOriginator != null) dbUpdates.bond_originator = updates.bondOriginator;
+        if (updates.prequalifiedWithOriginator != null) {
+            dbUpdates.prequalified_with_originator = updates.prequalifiedWithOriginator;
+        }
         dbUpdates.updated_at = new Date().toISOString();
 
         const { error } = await supabase.from('leads').update(dbUpdates).eq('id', id);

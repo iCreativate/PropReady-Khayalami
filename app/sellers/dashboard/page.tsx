@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, FileText, Building2, Calendar, ArrowLeft, Phone, Mail, MapPin, DollarSign, Users, CheckCircle, X, Search, Star, Clock } from 'lucide-react';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
+import PpraTrustSection from '@/components/PpraTrustSection';
+import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
 
 interface Agent {
     id: string;
@@ -19,6 +22,10 @@ interface Agent {
     listingQualityScore: number;
     specialties: string[];
     verified: boolean;
+    ppraNumber?: string;
+    ffcNumber?: string;
+    ffcDocumentUrl?: string;
+    verificationStatus?: string;
 }
 
 export default function SellerDashboardPage() {
@@ -32,6 +39,7 @@ export default function SellerDashboardPage() {
     const [viewingAppointments, setViewingAppointments] = useState<any[]>([]);
     const [availableAgents, setAvailableAgents] = useState<Agent[]>([]);
     const [showSyncFailedBanner, setShowSyncFailedBanner] = useState(false);
+    const [confirmRefreshKey, setConfirmRefreshKey] = useState(0);
 
     useEffect(() => {
         async function load() {
@@ -57,11 +65,15 @@ export default function SellerDashboardPage() {
             const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
             const parsedSeller = storedSellerInfo ? JSON.parse(storedSellerInfo) : null;
             const sellerPhone = parsedSeller?.phone?.replace(/\s/g, '') || '';
-            const matchSeller = (v: any) => v.contactType === 'seller' && (
-                (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
-                (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
-            );
+            const userEmail = user.email?.toLowerCase() || '';
+            const matchSeller = (v: any) => {
+                if (v.sellerEmail && v.sellerEmail.toLowerCase() === userEmail) return true;
+                return v.contactType === 'seller' && (
+                    (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
+                    (v.contactEmail && userEmail && v.contactEmail.toLowerCase() === userEmail) ||
+                    (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
+                );
+            };
             let apiViewings: any[] = [];
             try {
                 const res = await fetch(`/api/viewings?contactEmail=${encodeURIComponent(user.email)}`, { cache: 'no-store' });
@@ -83,26 +95,38 @@ export default function SellerDashboardPage() {
             setIsLoading(false);
         }
         load();
-    }, [router]);
+    }, [router, confirmRefreshKey]);
 
     useEffect(() => {
         // Load real registered agents
         if (typeof window !== 'undefined') {
             const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const mapped: Agent[] = storedAgents.map((a: any) => ({
-                id: a.id,
-                name: a.fullName || a.name || 'Agent',
-                company: a.company || a.brandName || 'Agency',
-                email: a.email || '',
-                phone: a.phone || '',
-                rating: typeof a.rating === 'number' ? a.rating : 4.8,
-                totalSales: typeof a.totalSales === 'number' ? a.totalSales : 0,
-                experience: a.experience || '—',
-                location: a.location || 'South Africa',
-                listingQualityScore: typeof a.listingQualityScore === 'number' ? a.listingQualityScore : 85,
-                specialties: Array.isArray(a.specialties) ? a.specialties : [],
-                verified: a.status ? a.status === 'approved' : !!a.verified
-            }));
+            const mapped: Agent[] = filterPublicAgents(
+                storedAgents.map((a: Record<string, unknown>) => {
+                    const m = mapAgentRecord(a);
+                    return {
+                        id: m.id,
+                        name: m.fullName || 'Agent',
+                        company: m.company || 'Agency',
+                        email: m.email || '',
+                        phone: m.phone || '',
+                        rating: typeof a.rating === 'number' ? (a.rating as number) : 4.8,
+                        totalSales: typeof a.totalSales === 'number' ? (a.totalSales as number) : 0,
+                        experience: (a.experience as string) || '—',
+                        location: (a.location as string) || m.city || 'South Africa',
+                        listingQualityScore:
+                            typeof a.listingQualityScore === 'number'
+                                ? (a.listingQualityScore as number)
+                                : 85,
+                        specialties: Array.isArray(a.specialties) ? (a.specialties as string[]) : [],
+                        verified: m.verified,
+                        ppraNumber: m.ppraNumber,
+                        ffcNumber: m.ffcNumber,
+                        ffcDocumentUrl: m.ffcDocumentUrl,
+                        verificationStatus: m.verificationStatus,
+                    };
+                })
+            ) as Agent[];
             setAvailableAgents(mapped);
         }
     }, []);
@@ -190,6 +214,15 @@ export default function SellerDashboardPage() {
             {/* Main Content */}
             <main className="relative px-4 pt-24 pb-8">
                 <div className="container mx-auto max-w-7xl relative z-10">
+                    {currentUser && (
+                        <AppointmentConfirmPanel
+                            viewings={viewingAppointments}
+                            userEmail={currentUser.email}
+                            party="seller"
+                            onConfirmed={() => setConfirmRefreshKey((k) => k + 1)}
+                        />
+                    )}
+
                     {showSyncFailedBanner && (
                         <div className="mb-6 flex items-center justify-between gap-4 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-amber-900">
                             <p className="text-sm">
@@ -410,9 +443,13 @@ export default function SellerDashboardPage() {
                                     {selectedAgent.verified && (
                                         <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-semibold flex items-center gap-1">
                                             <CheckCircle className="w-3 h-3" />
-                                            Verified
+                                            PPRA Verified
                                         </span>
                                     )}
+                                </div>
+
+                                <div className="mb-4">
+                                    <PpraTrustSection agent={selectedAgent} />
                                 </div>
 
                                 <div className="space-y-3 mb-4">

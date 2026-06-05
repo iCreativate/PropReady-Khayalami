@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { validatePassword, formatPasswordErrors } from '@/lib/password';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -23,6 +24,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const passwordCheck = validatePassword(userData.password || '');
+        if (!passwordCheck.valid) {
+            return NextResponse.json(
+                { success: false, error: formatPasswordErrors(passwordCheck) },
+                { status: 400 }
+            );
+        }
+
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         const dbUser = {
@@ -31,6 +40,7 @@ export async function POST(request: NextRequest) {
             email: userData.email,
             phone: userData.phone || null,
             password: userData.password,
+            email_verified: false,
             created_at: userData.timestamp || new Date().toISOString(),
             updated_at: userData.timestamp || new Date().toISOString(),
         };

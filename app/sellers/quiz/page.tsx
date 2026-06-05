@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Calendar, TrendingUp, DollarSign, MapPin, Home as HomeIcon, Mail, Phone, User, Lock, Eye, EyeOff } from 'lucide-react';
@@ -126,8 +127,9 @@ export default function SellersQuizPage() {
             case 6:
                 if (!formData.password) {
                     newErrors.password = 'Password is required';
-                } else if (formData.password.length < 8) {
-                    newErrors.password = 'Password must be at least 8 characters';
+                } else {
+                    const pw = validatePassword(formData.password);
+                    if (!pw.valid) newErrors.password = formatPasswordErrors(pw);
                 }
                 if (!formData.confirmPassword) {
                     newErrors.confirmPassword = 'Please confirm your password';
@@ -168,21 +170,22 @@ export default function SellersQuizPage() {
             const existingUsers = JSON.parse(localStorage.getItem('propReady_users') || '[]');
             const existingUser = existingUsers.find((u: any) => u.email === formData.email);
             
+            const isNewAccount = !existingUser;
+
             if (existingUser) {
-                // User already exists (buyer account), update it
                 existingUser.isSeller = true;
                 localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
             } else {
-                // Create new user account
                 const userAccount = {
                     id: userId,
                     fullName: formData.fullName,
                     email: formData.email,
                     phone: formData.phone,
-                    password: formData.password, // In production, this should be hashed
+                    password: formData.password,
+                    emailVerified: false,
                     isSeller: true,
                     isBuyer: false,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
                 };
                 existingUsers.push(userAccount);
                 localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
@@ -242,11 +245,28 @@ export default function SellersQuizPage() {
             filteredSellers.push({ ...sellerLead, ...sellerInfo });
             localStorage.setItem('propReady_sellers', JSON.stringify(filteredSellers));
 
-            // Store current user session
+            if (isNewAccount) {
+                try {
+                    await fetch('/api/auth/send-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: formData.email,
+                            accountType: 'user',
+                            fullName: formData.fullName,
+                        }),
+                    });
+                } catch {
+                    /* non-blocking */
+                }
+                router.push(`/verify-email?email=${encodeURIComponent(formData.email)}&type=user`);
+                return;
+            }
+
             localStorage.setItem('propReady_currentUser', JSON.stringify({
                 id: existingUser?.id || userId,
                 fullName: formData.fullName,
-                email: formData.email
+                email: formData.email,
             }));
         }
 
@@ -752,6 +772,7 @@ export default function SellersQuizPage() {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
+                            <p className="text-charcoal/50 text-xs mt-2">{getPasswordRequirementsText()}</p>
                             {errors.password && (
                                 <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
                                     <AlertCircle className="w-4 h-4" />

@@ -82,8 +82,8 @@ export default function TermsOfServicePage() {
                                 <h2 className="text-2xl font-bold text-charcoal mb-4">6. Contact</h2>
                                 <p className="text-charcoal/80 leading-relaxed">
                                     Questions about these terms:{' '}
-                                    <a href="mailto:info@propready.co.za" className="text-gold hover:text-gold-600">
-                                        info@propready.co.za
+                                    <a href="mailto:info@prop-ready.co.za" className="text-gold hover:text-gold-600">
+                                        info@prop-ready.co.za
                                     </a>
                                 </p>
                             </section>

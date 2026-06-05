@@ -136,8 +136,8 @@ export default function Footer() {
                         <ul className="space-y-3">
                             <li className="flex items-center space-x-2 text-white/70 text-sm">
                                 <Mail className="w-4 h-4 text-gold" />
-                                <a href="mailto:info@propready.co.za" className="hover:text-gold transition">
-                                    info@propready.co.za
+                                <a href="mailto:info@prop-ready.co.za" className="hover:text-gold transition">
+                                    info@prop-ready.co.za
                                 </a>
                             </li>
                         </ul>

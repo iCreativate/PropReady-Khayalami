@@ -95,14 +95,14 @@ export default function POPIActPage() {
                                         <li>Lodge a complaint with the Information Regulator of South Africa</li>
                                     </ul>
                                     <p className="text-charcoal/80 leading-relaxed mb-0">
-                                        To exercise these rights, contact us at <a href="mailto:info@propready.co.za" className="text-gold hover:text-gold-600 font-medium">info@propready.co.za</a>.
+                                        To exercise these rights, contact us at <a href="mailto:info@prop-ready.co.za" className="text-gold hover:text-gold-600 font-medium">info@prop-ready.co.za</a>.
                                     </p>
                                 </section>
 
                                 <section className="premium-card rounded-xl p-6 bg-white/60 border border-charcoal/10">
                                     <h2 className="text-xl font-bold text-gold mb-3">5. Contact Us</h2>
                                     <p className="text-charcoal/80 leading-relaxed mb-0">
-                                        For any questions about our POPI Act compliance or your personal information: <a href="mailto:info@propready.co.za" className="text-gold hover:text-gold-600 font-medium">info@propready.co.za</a>
+                                        For any questions about our POPI Act compliance or your personal information: <a href="mailto:info@prop-ready.co.za" className="text-gold hover:text-gold-600 font-medium">info@prop-ready.co.za</a>
                                     </p>
                                 </section>
                             </div>

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
 import { getLocationFromBrowser } from '@/lib/geolocation';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
 
 interface Originator {
     name: string;
@@ -153,8 +154,9 @@ export default function QuizPage() {
             case 7:
                 if (!formData.password) {
                     newErrors.password = 'Password is required';
-                } else if (formData.password.length < 8) {
-                    newErrors.password = 'Password must be at least 8 characters';
+                } else {
+                    const pw = validatePassword(formData.password);
+                    if (!pw.valid) newErrors.password = formatPasswordErrors(pw);
                 }
                 if (!formData.confirmPassword) {
                     newErrors.confirmPassword = 'Please confirm your password';
@@ -294,7 +296,8 @@ export default function QuizPage() {
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
-                password: formData.password, // In production, this should be hashed
+                password: formData.password,
+                emailVerified: false,
                 timestamp: new Date().toISOString()
             };
 
@@ -330,21 +333,19 @@ export default function QuizPage() {
                 localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
             }
 
-            // Send welcome email
+            // Send email verification code (required before sign-in)
             try {
-                await fetch('/api/send-welcome-email', {
+                await fetch('/api/auth/send-verification', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: formData.email,
-                        fullName: formData.fullName
+                        accountType: 'user',
+                        fullName: formData.fullName,
                     }),
                 });
             } catch (err) {
-                console.error('Error sending welcome email:', err);
-                // Don't block registration if email fails
+                console.error('Error sending verification email:', err);
             }
 
             // Store as a lead for agents (database + localStorage)
@@ -379,15 +380,9 @@ export default function QuizPage() {
             existingLeads.push(lead);
             localStorage.setItem('propReady_leads', JSON.stringify(existingLeads));
 
-            // Store current user session
-            localStorage.setItem('propReady_currentUser', JSON.stringify({
-                id: userId,
-                fullName: formData.fullName,
-                email: formData.email
-            }));
         }
 
-        router.push('/dashboard');
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}&type=user`);
     };
 
     // Render step content based on currentStep
@@ -805,6 +800,7 @@ export default function QuizPage() {
                                             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                         </button>
                                     </div>
+                                    <p className="text-charcoal/50 text-xs mt-2">{getPasswordRequirementsText()}</p>
                                     {errors.password && (
                                         <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
                                             <AlertCircle className="w-4 h-4" />

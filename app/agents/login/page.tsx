@@ -10,7 +10,6 @@ import {
     getRememberedAgentEmail,
     setRememberedAgentEmail,
 } from '@/lib/auth';
-
 export default function AgentLoginPage() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
@@ -51,6 +50,13 @@ export default function AgentLoginPage() {
 
             let authenticatedAgent = null;
 
+            if (loginRes.status === 403 && loginJson.needsVerification) {
+                router.push(
+                    `/verify-email?email=${encodeURIComponent(formData.email)}&type=agent`
+                );
+                return;
+            }
+
             if (loginRes.ok && loginJson.success && loginJson.user) {
                 authenticatedAgent = {
                     id: loginJson.user.id,
@@ -69,6 +75,12 @@ export default function AgentLoginPage() {
                         a.email === formData.email && a.password === formData.password
                 );
                 if (localAgent) {
+                    if (localAgent.emailVerified === false) {
+                        router.push(
+                            `/verify-email?email=${encodeURIComponent(formData.email)}&type=agent`
+                        );
+                        return;
+                    }
                     authenticatedAgent = {
                         id: localAgent.id,
                         fullName: localAgent.fullName,
@@ -82,7 +94,18 @@ export default function AgentLoginPage() {
 
             if (authenticatedAgent) {
                 if (typeof window !== 'undefined') {
-                    localStorage.setItem('propReady_currentAgent', JSON.stringify(authenticatedAgent));
+                    const u = loginJson.user || {};
+                    const merged = {
+                        ...authenticatedAgent,
+                        plan: u.plan || authenticatedAgent.plan || 'free',
+                        sellerPlan: u.sellerPlan || 'none',
+                        ppraNumber: u.ppraNumber,
+                        ffcNumber: u.ffcNumber,
+                        ffcDocumentUrl: u.ffcDocumentUrl,
+                        verificationStatus: u.verificationStatus || 'pending',
+                        status: u.status,
+                    };
+                    localStorage.setItem('propReady_currentAgent', JSON.stringify(merged));
                 }
                 router.push('/agents/dashboard');
             } else {

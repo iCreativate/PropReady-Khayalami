@@ -4,6 +4,17 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Mail, Lock, Eye, EyeOff, User, Phone, Building2, FileText, CheckCircle, AlertCircle, ArrowRight, MapPin } from 'lucide-react';
+import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
+import {
+    validatePpraNumber,
+    validateFfcNumber,
+    normalizePpraNumber,
+    normalizeFfcNumber,
+    PPRA_NUMBER_ERROR,
+    FFC_NUMBER_ERROR,
+    FFC_DOCUMENT_MAX_BYTES,
+} from '@/lib/ppra';
+import { PRICING_SUMMARY } from '@/lib/agent-plans';
 
 interface AgentRegistration {
     id: string;
@@ -11,9 +22,14 @@ interface AgentRegistration {
     email: string;
     phone: string;
     eaabNumber: string;
+    ppraNumber: string;
+    ffcNumber?: string;
+    ffcDocumentUrl?: string;
+    verificationStatus?: string;
     company: string;
     city?: string;
     password: string;
+    emailVerified?: boolean;
     timestamp: string;
     status: 'pending' | 'approved' | 'rejected';
 }
@@ -24,12 +40,14 @@ export default function AgentRegisterPage() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [ffcFile, setFfcFile] = useState<File | null>(null);
+    const [registerStep, setRegisterStep] = useState(1);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
         phone: '',
-        eaabNumber: '',
-        confirmFFCNumber: '',
+        ppraNumber: '',
+        ffcNumber: '',
         company: '',
         city: '',
         password: '',
@@ -56,23 +74,16 @@ export default function AgentRegisterPage() {
             newErrors.phone = 'Please enter a valid South African phone number';
         }
 
-        const cleanedFFC = formData.eaabNumber.replace(/\D/g, '');
-        const cleanedConfirm = formData.confirmFFCNumber.replace(/\D/g, '');
-        if (!formData.eaabNumber.trim()) {
-            newErrors.eaabNumber = 'A valid FFC number (Fidelity Fund Certificate) is required';
-        } else if (cleanedFFC.length !== 7) {
-            newErrors.eaabNumber = 'FFC number must be exactly 7 digits';
-        } else if (/^0+$/.test(cleanedFFC)) {
-            newErrors.eaabNumber = 'Enter your valid 7-digit PPRA FFC number (cannot be all zeros)';
+        if (!validatePpraNumber(formData.ppraNumber)) {
+            newErrors.ppraNumber = PPRA_NUMBER_ERROR;
         }
-        if (!formData.confirmFFCNumber.trim()) {
-            newErrors.confirmFFCNumber = 'Please confirm your FFC number';
-        } else if (cleanedConfirm.length !== 7) {
-            newErrors.confirmFFCNumber = 'FFC number must be exactly 7 digits';
-        } else if (cleanedFFC !== cleanedConfirm) {
-            newErrors.confirmFFCNumber = 'FFC numbers do not match. Please re-enter to confirm.';
-        } else if (/^0+$/.test(cleanedConfirm)) {
-            newErrors.confirmFFCNumber = 'Enter your valid 7-digit PPRA FFC number';
+        if (formData.ffcNumber.trim() && !validateFfcNumber(formData.ffcNumber)) {
+            newErrors.ffcNumber = FFC_NUMBER_ERROR;
+        }
+        if (!ffcFile) {
+            newErrors.ffcFile = 'Upload your Fidelity Fund Certificate (PDF, JPG, or PNG)';
+        } else if (ffcFile.size > FFC_DOCUMENT_MAX_BYTES) {
+            newErrors.ffcFile = 'File must be 10MB or smaller';
         }
 
         if (!formData.company.trim()) {
@@ -81,8 +92,9 @@ export default function AgentRegisterPage() {
 
         if (!formData.password) {
             newErrors.password = 'Password is required';
-        } else if (formData.password.length < 8) {
-            newErrors.password = 'Password must be at least 8 characters';
+        } else {
+            const pw = validatePassword(formData.password);
+            if (!pw.valid) newErrors.password = formatPasswordErrors(pw);
         }
 
         if (!formData.confirmPassword) {
@@ -119,21 +131,42 @@ export default function AgentRegisterPage() {
                 return;
             }
 
-            // Create agent registration
+            const agentId = `agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const ppra = normalizePpraNumber(formData.ppraNumber);
+
+            let ffcDocumentUrl: string | undefined;
+            if (ffcFile) {
+                const fd = new FormData();
+                fd.append('file', ffcFile);
+                fd.append('agentId', agentId);
+                const upRes = await fetch('/api/agents/ppra/upload', { method: 'POST', body: fd });
+                const upJson = await upRes.json().catch(() => ({}));
+                if (!upRes.ok || !upJson.storagePath) {
+                    setErrors({ ffcFile: upJson.error || 'Could not upload FFC document' });
+                    setIsSubmitting(false);
+                    return;
+                }
+                ffcDocumentUrl = upJson.storagePath;
+            }
+
             const agent: AgentRegistration = {
-                id: `agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: agentId,
                 fullName: formData.fullName,
                 email: formData.email,
                 phone: formData.phone,
-                eaabNumber: formData.eaabNumber.replace(/\D/g, ''),
+                eaabNumber: ppra,
+                ppraNumber: ppra,
+                ffcNumber: formData.ffcNumber.trim() ? normalizeFfcNumber(formData.ffcNumber) : undefined,
+                ffcDocumentUrl,
+                verificationStatus: 'pending',
                 company: formData.company,
                 city: formData.city?.trim() || undefined,
-                password: formData.password, // In production, this should be hashed
+                password: formData.password,
+                emailVerified: false,
                 timestamp: new Date().toISOString(),
-                status: 'pending' // Would be approved by admin in production
+                status: 'pending',
             };
 
-            // Save to database via server API (uses server env vars)
             const registerRes = await fetch('/api/agents/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -156,49 +189,34 @@ export default function AgentRegisterPage() {
                 localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
             }
 
-            // Send welcome email
             try {
-                await fetch('/api/send-welcome-email', {
+                await fetch('/api/auth/send-verification', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         email: formData.email,
-                        fullName: formData.fullName
+                        accountType: 'agent',
+                        fullName: formData.fullName,
                     }),
                 });
             } catch (err) {
-                console.error('Error sending welcome email:', err);
-                // Don't block registration if email fails
+                console.error('Error sending verification email:', err);
             }
-
-            // Also store as logged in agent for demo purposes
-            localStorage.setItem('propReady_currentAgent', JSON.stringify({
-                id: agent.id,
-                fullName: agent.fullName,
-                email: agent.email,
-                city: agent.city,
-                company: agent.company,
-                plan: 'free'
-            }));
         }
 
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
         setIsSubmitting(false);
-        
-        // Redirect to dashboard
-        router.push('/agents/dashboard');
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}&type=agent`);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
         let finalValue: string | boolean = type === 'checkbox' ? checked : value;
         // Restrict FFC fields to digits only
-        if (name === 'eaabNumber' || name === 'confirmFFCNumber') {
+        if (name === 'ppraNumber') {
             finalValue = (value as string).replace(/\D/g, '').slice(0, 7);
+        }
+        if (name === 'ffcNumber') {
+            finalValue = (value as string).replace(/\D/g, '').slice(0, 15);
         }
         setFormData(prev => ({
             ...prev,
@@ -210,8 +228,9 @@ export default function AgentRegisterPage() {
             setErrors(prev => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
-                if (name === 'eaabNumber' || name === 'confirmFFCNumber') {
-                    delete newErrors[name === 'eaabNumber' ? 'confirmFFCNumber' : 'eaabNumber'];
+                if (name === 'ppraNumber' || name === 'ffcNumber') {
+                    delete newErrors.ppraNumber;
+                    delete newErrors.ffcNumber;
                 }
                 return newErrors;
             });
@@ -254,7 +273,7 @@ export default function AgentRegisterPage() {
                                 Register as a verified PropReady agent — 100% free.
                             </p>
                             <p className="text-charcoal/60 text-sm mt-1">
-                                Free: 3 leads. Upgrade to 10 leads (R120), 25 leads (R250), or unlimited (book a consultation).
+                                {PRICING_SUMMARY}
                             </p>
                         </div>
 
@@ -332,64 +351,95 @@ export default function AgentRegisterPage() {
                                 )}
                             </div>
 
-                            {/* Valid FFC Number (Fidelity Fund Certificate) */}
-                            <div>
-                                <label className="block text-charcoal font-semibold mb-2">
-                                    Valid FFC Number (Fidelity Fund Certificate) <span className="text-red-600">*</span>
-                                </label>
-                                <div className="relative">
-                                    <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                    <input
-                                        type="text"
-                                        name="eaabNumber"
-                                        placeholder="e.g. 1234567 (7 digits only)"
-                                        value={formData.eaabNumber}
-                                        onChange={handleInputChange}
-                                        maxLength={7}
-                                        inputMode="numeric"
-                                        autoComplete="off"
-                                        pattern="[0-9]{7}"
-                                        title="Enter your 7-digit PPRA FFC number"
-                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.eaabNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
-                                    />
+                            <div className="rounded-xl border border-gold/30 bg-gold/5 p-4 mb-2">
+                                <p className="text-sm font-semibold text-charcoal mb-3">PPRA verification (required)</p>
+                                <div className="flex gap-2 flex-wrap text-xs mb-4">
+                                    {['Details', 'PPRA & FFC', 'Submit'].map((label, i) => (
+                                        <span
+                                            key={label}
+                                            className={`px-3 py-1 rounded-full ${
+                                                registerStep >= i + 1 ? 'bg-gold text-white' : 'bg-white text-charcoal/50 border border-charcoal/20'
+                                            }`}
+                                        >
+                                            {i + 1}. {label}
+                                        </span>
+                                    ))}
                                 </div>
-                                {errors.eaabNumber && (
-                                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {errors.eaabNumber}
-                                    </p>
-                                )}
-                                <p className="text-charcoal/60 text-sm mt-1">Enter your valid 7-digit PPRA Fidelity Fund Certificate number. You can verify your FFC at theppra.org.za</p>
                             </div>
 
-                            {/* Confirm FFC Number */}
                             <div>
                                 <label className="block text-charcoal font-semibold mb-2">
-                                    Confirm FFC Number <span className="text-red-600">*</span>
+                                    PPRA Practitioner Number <span className="text-red-600">*</span>
                                 </label>
                                 <div className="relative">
                                     <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                     <input
                                         type="text"
-                                        name="confirmFFCNumber"
-                                        placeholder="Re-enter your 7-digit FFC"
-                                        value={formData.confirmFFCNumber}
-                                        onChange={handleInputChange}
+                                        name="ppraNumber"
+                                        placeholder="7-digit practitioner number"
+                                        value={formData.ppraNumber}
+                                        onChange={(e) => {
+                                            handleInputChange(e);
+                                            setRegisterStep(2);
+                                        }}
                                         maxLength={7}
                                         inputMode="numeric"
-                                        autoComplete="off"
-                                        pattern="[0-9]{7}"
-                                        title="Re-enter your 7-digit FFC number"
-                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.confirmFFCNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                        className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.ppraNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
                                     />
                                 </div>
-                                {errors.confirmFFCNumber && (
+                                {errors.ppraNumber && (
                                     <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
                                         <AlertCircle className="w-4 h-4" />
-                                        {errors.confirmFFCNumber}
+                                        {errors.ppraNumber}
                                     </p>
                                 )}
-                                <p className="text-charcoal/60 text-sm mt-1">Re-enter your FFC number to confirm it is correct</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-charcoal font-semibold mb-2">
+                                    FFC Certificate Number{' '}
+                                    <span className="text-charcoal/50 font-normal">(optional)</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="ffcNumber"
+                                    placeholder="15 digits starting with 20"
+                                    value={formData.ffcNumber}
+                                    onChange={handleInputChange}
+                                    maxLength={15}
+                                    inputMode="numeric"
+                                    className={`w-full px-4 py-3 rounded-lg bg-white/10 border ${errors.ffcNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal font-mono`}
+                                />
+                                {errors.ffcNumber && (
+                                    <p className="text-red-600 text-sm mt-1">{errors.ffcNumber}</p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-charcoal font-semibold mb-2">
+                                    Upload Fidelity Fund Certificate <span className="text-red-600">*</span>
+                                </label>
+                                <p className="text-charcoal/60 text-sm mb-2">PDF, JPG, JPEG or PNG — max 10MB. Stored securely.</p>
+                                <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gold/40 rounded-xl cursor-pointer hover:bg-gold/5">
+                                    <span className="text-sm text-charcoal/70">
+                                        {ffcFile ? ffcFile.name : 'Click to upload'}
+                                    </span>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            setFfcFile(e.target.files?.[0] || null);
+                                            setRegisterStep(2);
+                                        }}
+                                    />
+                                </label>
+                                {errors.ffcFile && (
+                                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                                        <AlertCircle className="w-4 h-4" />
+                                        {errors.ffcFile}
+                                    </p>
+                                )}
                             </div>
 
                             {/* Company/Agency */}
@@ -458,6 +508,7 @@ export default function AgentRegisterPage() {
                                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                     </button>
                                 </div>
+                                <p className="text-charcoal/50 text-xs mt-1">{getPasswordRequirementsText()}</p>
                                 {errors.password && (
                                     <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
                                         <AlertCircle className="w-4 h-4" />

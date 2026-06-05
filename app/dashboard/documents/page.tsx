@@ -9,6 +9,7 @@ import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 import { useToast } from '@/components/providers/ToastProvider';
 import { logActivity } from '@/lib/activity';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { saveLeadDocumentsLocally, type LeadDocument } from '@/lib/lead-documents';
 
 interface Document {
     id: string;
@@ -162,6 +163,7 @@ export default function DocumentsPage() {
             localStorage.setItem(STORAGE_KEYS.documents, JSON.stringify(updatedDocs));
             const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || '{}');
             if (user?.id) {
+                saveLeadDocumentsLocally(user.id, updatedDocs as LeadDocument[]);
                 logActivity(`Uploaded ${newDocs.length} document(s)`, user.id);
             }
             success(`${newDocs.length} file(s) uploaded successfully`);
@@ -192,7 +194,11 @@ export default function DocumentsPage() {
     const handleDelete = (docId: string) => {
         const updatedDocs = documents.filter(doc => doc.id !== docId);
         setDocuments(updatedDocs);
-        localStorage.setItem('propReady_documents', JSON.stringify(updatedDocs));
+        localStorage.setItem(STORAGE_KEYS.documents, JSON.stringify(updatedDocs));
+        const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || '{}');
+        if (user?.id) {
+            saveLeadDocumentsLocally(user.id, updatedDocs as LeadDocument[]);
+        }
     };
 
     const handleOriginatorSelect = (originatorId: string) => {

@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
     listedProperties: 'propReady_listedProperties',
     viewingAppointments: 'propReady_viewingAppointments',
     documents: 'propReady_documents',
+    leadDocuments: 'propReady_leadDocuments',
     selectedOriginator: 'propReady_selectedOriginator',
     documentsSent: 'propReady_documentsSent',
     activity: 'propReady_activity',

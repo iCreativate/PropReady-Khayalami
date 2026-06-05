@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
 import {
     ArrowLeft,
     BookOpen,
-    Home,
     UserPlus,
     ShieldCheck,
     Megaphone,
@@ -20,13 +20,16 @@ import {
 
 export default function AgentLearnPage() {
     const router = useRouter();
+    const [currentAgent, setCurrentAgent] = useState<AgentPortalAgent | null>(null);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const agent = localStorage.getItem('propReady_currentAgent');
             if (!agent) {
                 router.push('/agents/login');
+                return;
             }
+            setCurrentAgent(JSON.parse(agent));
         }
     }, [router]);
 
@@ -97,44 +100,8 @@ export default function AgentLearnPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/agents/dashboard" className="text-charcoal/90 hover:text-charcoal transition">
-                                Dashboard
-                            </Link>
-                            <Link href="/agents/learn" className="text-gold font-semibold">
-                                Learning Hub
-                            </Link>
-                            <Link href="/agents/settings" className="text-charcoal/90 hover:text-charcoal transition">
-                                Settings
-                            </Link>
-                        </div>
-                    </div>
-
-                    <Link
-                        href="/agents/dashboard"
-                        className="flex items-center space-x-2 text-charcoal hover:text-gold transition"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Dashboard</span>
-                    </Link>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative min-h-screen px-4 pt-28 pb-16">
-                <div className="container mx-auto max-w-6xl relative z-10">
+        <AgentPortalLayout activePage="learn" agent={currentAgent} title="Learning Hub">
+            <div className="max-w-6xl mx-auto relative z-10">
                     {/* Hero Section */}
                     <div className="text-center mb-16">
                         <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
@@ -192,17 +159,7 @@ export default function AgentLearnPage() {
                             <ArrowLeft className="w-5 h-5 rotate-180" />
                         </Link>
                     </div>
-                </div>
-
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float" />
-                    <div
-                        className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float"
-                        style={{ animationDelay: '2s' }}
-                    />
-                </div>
-            </main>
-        </div>
+            </div>
+        </AgentPortalLayout>
     );
 }

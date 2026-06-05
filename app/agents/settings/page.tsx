@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, Mail, Phone, Building2, FileText, User, Save, ArrowLeft, CheckCircle, AlertCircle, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
+import { Mail, Phone, Building2, FileText, User, Save, CheckCircle, AlertCircle, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
+import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
+import AgentProfileSummary from '@/components/AgentProfileSummary';
 
 interface AgentData {
     id: string;
@@ -39,6 +41,7 @@ export default function AgentSettingsPage() {
         newPassword: '',
         confirmPassword: ''
     });
+    const [portalAgent, setPortalAgent] = useState<AgentPortalAgent | null>(null);
 
     useEffect(() => {
         // Load current agent data
@@ -48,6 +51,10 @@ export default function AgentSettingsPage() {
             
             if (currentAgent) {
                 const agentInfo = JSON.parse(currentAgent);
+                setPortalAgent({
+                    ...agentInfo,
+                    ppraNumber: agentInfo.ppraNumber || agentInfo.eaabNumber,
+                });
                 const agent = agents.find((a: AgentData) => a.id === agentInfo.id || a.email === agentInfo.email);
                 
                 if (agent) {
@@ -257,44 +264,8 @@ export default function AgentSettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/agents/dashboard" className="text-charcoal/90 hover:text-charcoal transition">
-                                Dashboard
-                            </Link>
-                            <Link href="/agents/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Hub
-                            </Link>
-                            <Link href="/agents/settings" className="text-gold font-semibold">
-                                Settings
-                            </Link>
-                        </div>
-                    </div>
-
-                    <Link
-                        href="/agents/dashboard"
-                        className="flex items-center space-x-2 text-charcoal/90 hover:text-charcoal transition"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Dashboard</span>
-                    </Link>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-8">
-                <div className="container mx-auto max-w-4xl relative z-10">
+        <AgentPortalLayout activePage="settings" agent={portalAgent} title="Settings">
+            <div className="max-w-4xl mx-auto relative z-10">
                     {/* Page Header */}
                     <div className="mb-8">
                         <h1 className="text-4xl font-bold text-charcoal mb-2">
@@ -313,28 +284,52 @@ export default function AgentSettingsPage() {
                         </div>
                     )}
 
+                    {portalAgent && (
+                        <AgentProfileSummary
+                            agent={{
+                                ...portalAgent,
+                                phone: formData.phone || portalAgent.phone,
+                                city: formData.city || portalAgent.city,
+                                email: formData.email || portalAgent.email,
+                                fullName: formData.fullName || portalAgent.fullName,
+                                company: formData.company || portalAgent.company,
+                                ppraNumber:
+                                    portalAgent.ppraNumber || formData.eaabNumber || undefined,
+                            }}
+                        />
+                    )}
+
                     {/* Profile Settings */}
-                    <div className="glass-effect rounded-2xl p-8 mb-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <User className="w-6 h-6 text-gold" />
-                            <h2 className="text-2xl font-bold text-charcoal">Profile Information</h2>
+                    <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm mb-6 overflow-hidden">
+                        <div className="px-6 md:px-8 py-5 border-b border-charcoal/10 bg-charcoal/[0.02]">
+                            <div className="flex items-center gap-3">
+                                <span className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
+                                    <User className="w-5 h-5 text-gold" />
+                                </span>
+                                <div>
+                                    <h2 className="text-xl font-bold text-charcoal">Edit profile</h2>
+                                    <p className="text-charcoal/60 text-sm">
+                                        Update your contact details and service area
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        <form onSubmit={handleSaveProfile} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <form onSubmit={handleSaveProfile} className="p-6 md:p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 {/* Full Name */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        Full Name <span className="text-red-600">*</span>
+                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
+                                        Full Name <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                         <input
                                             type="text"
                                             name="fullName"
                                             value={formData.fullName}
                                             onChange={handleInputChange}
-                                            className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.fullName ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.fullName ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
                                         />
                                     </div>
                                     {errors.fullName && (
@@ -347,17 +342,17 @@ export default function AgentSettingsPage() {
 
                                 {/* Email */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        Email Address <span className="text-red-600">*</span>
+                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
+                                        Email Address <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                         <input
                                             type="email"
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.email ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.email ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
                                         />
                                     </div>
                                     {errors.email && (
@@ -370,18 +365,18 @@ export default function AgentSettingsPage() {
 
                                 {/* Phone */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        Phone Number <span className="text-red-600">*</span>
+                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
+                                        Phone Number <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                         <input
                                             type="tel"
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleInputChange}
                                             placeholder="082 123 4567"
-                                            className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.phone ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.phone ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
                                         />
                                     </div>
                                     {errors.phone && (
@@ -394,23 +389,23 @@ export default function AgentSettingsPage() {
 
                                 {/* Valid FFC Number (Fidelity Fund Certificate) */}
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        Valid FFC Number (Fidelity Fund Certificate) <span className="text-red-600">*</span>
+                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
+                                        PPRA Practitioner Number <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                         <input
                                             type="text"
                                             name="eaabNumber"
-                                            placeholder="e.g. 1234567 (7 digits only)"
+                                            placeholder="e.g. 1234567 (7 digits)"
                                             value={formData.eaabNumber}
                                             onChange={handleInputChange}
                                             maxLength={7}
                                             inputMode="numeric"
                                             autoComplete="off"
                                             pattern="[0-9]{7}"
-                                            title="Enter your 7-digit PPRA FFC number"
-                                            className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.eaabNumber ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            title="Enter your 7-digit PPRA practitioner number"
+                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.eaabNumber ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
                                         />
                                     </div>
                                     {errors.eaabNumber && (
@@ -424,17 +419,17 @@ export default function AgentSettingsPage() {
 
                                 {/* Company */}
                                 <div className="md:col-span-2">
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        Company/Agency Name <span className="text-red-600">*</span>
+                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
+                                        Company / Agency <span className="text-red-500">*</span>
                                     </label>
                                     <div className="relative">
-                                        <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                         <input
                                             type="text"
                                             name="company"
                                             value={formData.company}
                                             onChange={handleInputChange}
-                                            className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border ${errors.company ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.company ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
                                         />
                                     </div>
                                     {errors.company && (
@@ -447,41 +442,52 @@ export default function AgentSettingsPage() {
 
                                 {/* City / Service Area */}
                                 <div className="md:col-span-2">
-                                    <label className="block text-charcoal font-semibold mb-2">
+                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
                                         City or service area
                                     </label>
-                                    <p className="text-charcoal/60 text-sm mb-2">Leads near you will be prioritized. Leave blank to see all leads.</p>
+                                    <p className="text-charcoal/50 text-xs mb-2">Leads near you are prioritised. Leave blank to see all leads.</p>
                                     <div className="relative">
-                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                         <input
                                             type="text"
                                             name="city"
                                             value={formData.city || ''}
                                             onChange={handleInputChange}
-                                            placeholder="e.g., Johannesburg, Sandton, Cape Town"
-                                            className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                            placeholder="e.g. Johannesburg, Sandton, Cape Town"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border border-charcoal/15 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition"
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={isSaving}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                            >
-                                <Save className="w-5 h-5" />
-                                {isSaving ? 'Saving...' : 'Save Changes'}
-                            </button>
+                            <div className="pt-2 border-t border-charcoal/10">
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    {isSaving ? 'Saving…' : 'Save changes'}
+                                </button>
+                            </div>
                         </form>
                     </div>
 
                     {/* Password Settings */}
-                    <div className="glass-effect rounded-2xl p-8">
-                        <div className="flex items-center gap-3 mb-6">
-                            <Lock className="w-6 h-6 text-gold" />
-                            <h2 className="text-2xl font-bold text-charcoal">Change Password</h2>
+                    <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm overflow-hidden">
+                        <div className="px-6 md:px-8 py-5 border-b border-charcoal/10 bg-charcoal/[0.02]">
+                            <div className="flex items-center gap-3">
+                                <span className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
+                                    <Lock className="w-5 h-5 text-gold" />
+                                </span>
+                                <div>
+                                    <h2 className="text-xl font-bold text-charcoal">Security</h2>
+                                    <p className="text-charcoal/60 text-sm">Change your account password</p>
+                                </div>
+                            </div>
                         </div>
+
+                        <div className="p-6 md:p-8">
 
                         <form onSubmit={handleChangePassword} className="space-y-6">
                             {/* Current Password */}
@@ -585,16 +591,10 @@ export default function AgentSettingsPage() {
                                 {isSaving ? 'Updating...' : 'Change Password'}
                             </button>
                         </form>
+                        </div>
                     </div>
-                </div>
-
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-5 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
-                </div>
-            </main>
-        </div>
+            </div>
+        </AgentPortalLayout>
     );
 }
 

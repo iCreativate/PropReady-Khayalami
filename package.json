@@ -8,11 +8,14 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "seed:demo-agent": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-agent | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
+        "seed:demo-leads": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-leads | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\""
     },
     "dependencies": {
         "@auth/supabase-adapter": "^1.7.0",
-        "@supabase/supabase-js": "^2.39.0",
+        "@supabase/ssr": "^0.10.3",
+        "@supabase/supabase-js": "^2.107.0",
         "browser-image-compression": "^2.0.2",
         "class-variance-authority": "^0.7.0",
         "clsx": "^2.1.0",
