@@ -1,11 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Mail, Phone, Building2, FileText, User, Save, CheckCircle, AlertCircle, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
+import {
+    Mail,
+    Phone,
+    Building2,
+    FileText,
+    User,
+    Save,
+    CheckCircle,
+    AlertCircle,
+    Lock,
+    Eye,
+    EyeOff,
+    MapPin,
+} from 'lucide-react';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
 import AgentProfileSummary from '@/components/AgentProfileSummary';
+import AgentPageHeader from '@/components/AgentPageHeader';
+import {
+    AGENT_PAGE_CONTAINER,
+    AGENT_FORM_SECTION,
+    AGENT_FORM_SECTION_HEADER,
+    AGENT_FORM_LABEL,
+    AGENT_FORM_HINT,
+    AGENT_FORM_FOOTER,
+    AGENT_PRIMARY_BTN,
+    AGENT_CARD_SOFT,
+    agentFormInput,
+} from '@/lib/agent-portal-ui';
 
 interface AgentData {
     id: string;
@@ -18,8 +41,16 @@ interface AgentData {
     password?: string;
 }
 
+function FieldError({ message }: { message: string }) {
+    return (
+        <p className="text-red-600 text-sm mt-1.5 flex items-center gap-1.5">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {message}
+        </p>
+    );
+}
+
 export default function AgentSettingsPage() {
-    const router = useRouter();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -34,29 +65,30 @@ export default function AgentSettingsPage() {
         phone: '',
         eaabNumber: '',
         company: '',
-        city: ''
+        city: '',
     });
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
     });
     const [portalAgent, setPortalAgent] = useState<AgentPortalAgent | null>(null);
 
     useEffect(() => {
-        // Load current agent data
         if (typeof window !== 'undefined') {
             const currentAgent = localStorage.getItem('propReady_currentAgent');
             const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            
+
             if (currentAgent) {
                 const agentInfo = JSON.parse(currentAgent);
                 setPortalAgent({
                     ...agentInfo,
                     ppraNumber: agentInfo.ppraNumber || agentInfo.eaabNumber,
                 });
-                const agent = agents.find((a: AgentData) => a.id === agentInfo.id || a.email === agentInfo.email);
-                
+                const agent = agents.find(
+                    (a: AgentData) => a.id === agentInfo.id || a.email === agentInfo.email
+                );
+
                 if (agent) {
                     setFormData({
                         id: agent.id,
@@ -65,10 +97,9 @@ export default function AgentSettingsPage() {
                         phone: agent.phone,
                         eaabNumber: agent.eaabNumber,
                         company: agent.company,
-                        city: agent.city || ''
+                        city: agent.city || '',
                     });
                 } else {
-                    // If agent not found in agents list, use current agent info
                     setFormData({
                         id: agentInfo.id || '',
                         fullName: agentInfo.fullName || '',
@@ -76,7 +107,7 @@ export default function AgentSettingsPage() {
                         phone: '',
                         eaabNumber: '',
                         company: agentInfo.company || '',
-                        city: agentInfo.city || ''
+                        city: agentInfo.city || '',
                     });
                 }
             }
@@ -87,15 +118,13 @@ export default function AgentSettingsPage() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         let finalValue = value;
-        // Restrict FFC field to digits only, max 7
         if (name === 'eaabNumber') {
             finalValue = value.replace(/\D/g, '').slice(0, 7);
         }
-        setFormData(prev => ({ ...prev, [name]: finalValue }));
-        
-        // Clear error when user starts typing
+        setFormData((prev) => ({ ...prev, [name]: finalValue }));
+
         if (errors[name]) {
-            setErrors(prev => {
+            setErrors((prev) => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
                 return newErrors;
@@ -105,11 +134,10 @@ export default function AgentSettingsPage() {
 
     const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setPasswordData(prev => ({ ...prev, [name]: value }));
-        
-        // Clear error when user starts typing
+        setPasswordData((prev) => ({ ...prev, [name]: value }));
+
         if (errors[name]) {
-            setErrors(prev => {
+            setErrors((prev) => {
                 const newErrors = { ...prev };
                 delete newErrors[name];
                 return newErrors;
@@ -142,7 +170,8 @@ export default function AgentSettingsPage() {
         } else if (cleanedFFC.length !== 7) {
             newErrors.eaabNumber = 'FFC number must be exactly 7 digits';
         } else if (/^0+$/.test(cleanedFFC)) {
-            newErrors.eaabNumber = 'Enter your valid 7-digit PPRA FFC number (cannot be all zeros)';
+            newErrors.eaabNumber =
+                'Enter your valid 7-digit PPRA FFC number (cannot be all zeros)';
         }
 
         if (!formData.company.trim()) {
@@ -178,7 +207,7 @@ export default function AgentSettingsPage() {
 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!validateProfile()) {
             return;
         }
@@ -186,24 +215,23 @@ export default function AgentSettingsPage() {
         setIsSaving(true);
         setSuccessMessage('');
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (typeof window !== 'undefined') {
-            // Update agent in agents list
             const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const agentIndex = agents.findIndex((a: AgentData) => a.id === formData.id || a.email === formData.email);
-            
+            const agentIndex = agents.findIndex(
+                (a: AgentData) => a.id === formData.id || a.email === formData.email
+            );
+
             if (agentIndex !== -1) {
                 agents[agentIndex] = {
                     ...agents[agentIndex],
                     ...formData,
-                    eaabNumber: formData.eaabNumber.replace(/\D/g, '')
+                    eaabNumber: formData.eaabNumber.replace(/\D/g, ''),
                 };
                 localStorage.setItem('propReady_agents', JSON.stringify(agents));
             }
 
-            // Update current agent info
             const existing = JSON.parse(localStorage.getItem('propReady_currentAgent') || '{}');
             const currentAgent = {
                 id: formData.id,
@@ -211,9 +239,20 @@ export default function AgentSettingsPage() {
                 email: formData.email,
                 company: formData.company,
                 city: formData.city,
-                plan: existing.plan || agents[agentIndex]?.plan
+                plan: existing.plan || agents[agentIndex]?.plan,
             };
             localStorage.setItem('propReady_currentAgent', JSON.stringify(currentAgent));
+            setPortalAgent((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          fullName: formData.fullName,
+                          email: formData.email,
+                          company: formData.company,
+                          city: formData.city,
+                      }
+                    : prev
+            );
         }
 
         setIsSaving(false);
@@ -223,7 +262,7 @@ export default function AgentSettingsPage() {
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!validatePassword()) {
             return;
         }
@@ -231,16 +270,16 @@ export default function AgentSettingsPage() {
         setIsSaving(true);
         setSuccessMessage('');
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
 
         if (typeof window !== 'undefined') {
-            // Update password in agents list
             const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const agentIndex = agents.findIndex((a: AgentData) => a.id === formData.id || a.email === formData.email);
-            
+            const agentIndex = agents.findIndex(
+                (a: AgentData) => a.id === formData.id || a.email === formData.email
+            );
+
             if (agentIndex !== -1) {
-                agents[agentIndex].password = passwordData.newPassword; // In production, this should be hashed
+                agents[agentIndex].password = passwordData.newPassword;
                 localStorage.setItem('propReady_agents', JSON.stringify(agents));
             }
         }
@@ -250,351 +289,335 @@ export default function AgentSettingsPage() {
         setPasswordData({
             currentPassword: '',
             newPassword: '',
-            confirmPassword: ''
+            confirmPassword: '',
         });
         setTimeout(() => setSuccessMessage(''), 3000);
     };
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <p className="text-white">Loading...</p>
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+                <p className="text-charcoal/45 text-sm font-medium">Loading…</p>
             </div>
         );
     }
 
     return (
-        <AgentPortalLayout activePage="settings" agent={portalAgent} title="Settings">
-            <div className="max-w-4xl mx-auto relative z-10">
-                    {/* Page Header */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-charcoal mb-2">
-                            Agent Settings
-                        </h1>
-                        <p className="text-charcoal/80 text-lg">
-                            Manage your profile and account preferences
-                        </p>
+        <AgentPortalLayout
+            activePage="settings"
+            agent={portalAgent}
+            title="Settings"
+            pageHeader={
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow="Account"
+                    title="Agent Settings"
+                    description="Manage your profile, service area, and account security"
+                />
+            }
+        >
+            <div className={`${AGENT_PAGE_CONTAINER} relative z-10`}>
+                {successMessage && (
+                    <div
+                        className={`${AGENT_CARD_SOFT} mb-6 p-4 flex items-center gap-3 border-emerald-500/15 bg-emerald-500/[0.04]`}
+                    >
+                        <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <p className="text-emerald-800 font-medium text-sm">{successMessage}</p>
                     </div>
+                )}
 
-                    {/* Success Message */}
-                    {successMessage && (
-                        <div className="mb-6 bg-green-500/20 border border-green-500/50 rounded-lg p-4 flex items-center gap-3">
-                            <CheckCircle className="w-5 h-5 text-green-400" />
-                            <p className="text-green-400 font-semibold">{successMessage}</p>
-                        </div>
-                    )}
+                {portalAgent && (
+                    <AgentProfileSummary
+                        agent={{
+                            ...portalAgent,
+                            phone: formData.phone || portalAgent.phone,
+                            city: formData.city || portalAgent.city,
+                            email: formData.email || portalAgent.email,
+                            fullName: formData.fullName || portalAgent.fullName,
+                            company: formData.company || portalAgent.company,
+                            ppraNumber:
+                                portalAgent.ppraNumber || formData.eaabNumber || undefined,
+                        }}
+                    />
+                )}
 
-                    {portalAgent && (
-                        <AgentProfileSummary
-                            agent={{
-                                ...portalAgent,
-                                phone: formData.phone || portalAgent.phone,
-                                city: formData.city || portalAgent.city,
-                                email: formData.email || portalAgent.email,
-                                fullName: formData.fullName || portalAgent.fullName,
-                                company: formData.company || portalAgent.company,
-                                ppraNumber:
-                                    portalAgent.ppraNumber || formData.eaabNumber || undefined,
-                            }}
-                        />
-                    )}
-
-                    {/* Profile Settings */}
-                    <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm mb-6 overflow-hidden">
-                        <div className="px-6 md:px-8 py-5 border-b border-charcoal/10 bg-charcoal/[0.02]">
-                            <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                                    <User className="w-5 h-5 text-gold" />
-                                </span>
-                                <div>
-                                    <h2 className="text-xl font-bold text-charcoal">Edit profile</h2>
-                                    <p className="text-charcoal/60 text-sm">
-                                        Update your contact details and service area
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <form onSubmit={handleSaveProfile} className="p-6 md:p-8 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                {/* Full Name */}
-                                <div>
-                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
-                                        Full Name <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
-                                        <input
-                                            type="text"
-                                            name="fullName"
-                                            value={formData.fullName}
-                                            onChange={handleInputChange}
-                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.fullName ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
-                                        />
-                                    </div>
-                                    {errors.fullName && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.fullName}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Email */}
-                                <div>
-                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
-                                        Email Address <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.email ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
-                                        />
-                                    </div>
-                                    {errors.email && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.email}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Phone */}
-                                <div>
-                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
-                                        Phone Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
-                                        <input
-                                            type="tel"
-                                            name="phone"
-                                            value={formData.phone}
-                                            onChange={handleInputChange}
-                                            placeholder="082 123 4567"
-                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.phone ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
-                                        />
-                                    </div>
-                                    {errors.phone && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.phone}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* Valid FFC Number (Fidelity Fund Certificate) */}
-                                <div>
-                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
-                                        PPRA Practitioner Number <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
-                                        <input
-                                            type="text"
-                                            name="eaabNumber"
-                                            placeholder="e.g. 1234567 (7 digits)"
-                                            value={formData.eaabNumber}
-                                            onChange={handleInputChange}
-                                            maxLength={7}
-                                            inputMode="numeric"
-                                            autoComplete="off"
-                                            pattern="[0-9]{7}"
-                                            title="Enter your 7-digit PPRA practitioner number"
-                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.eaabNumber ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
-                                        />
-                                    </div>
-                                    {errors.eaabNumber && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.eaabNumber}
-                                        </p>
-                                    )}
-                                    <p className="text-charcoal/60 text-sm mt-1">Your valid 7-digit PPRA Fidelity Fund Certificate number. Verify at theppra.org.za</p>
-                                </div>
-
-                                {/* Company */}
-                                <div className="md:col-span-2">
-                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
-                                        Company / Agency <span className="text-red-500">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
-                                        <input
-                                            type="text"
-                                            name="company"
-                                            value={formData.company}
-                                            onChange={handleInputChange}
-                                            className={`w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border ${errors.company ? 'border-red-400 ring-1 ring-red-400/30' : 'border-charcoal/15'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition`}
-                                        />
-                                    </div>
-                                    {errors.company && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.company}
-                                        </p>
-                                    )}
-                                </div>
-
-                                {/* City / Service Area */}
-                                <div className="md:col-span-2">
-                                    <label className="block text-charcoal/80 text-sm font-semibold mb-1.5">
-                                        City or service area
-                                    </label>
-                                    <p className="text-charcoal/50 text-xs mb-2">Leads near you are prioritised. Leave blank to see all leads.</p>
-                                    <div className="relative">
-                                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
-                                        <input
-                                            type="text"
-                                            name="city"
-                                            value={formData.city || ''}
-                                            onChange={handleInputChange}
-                                            placeholder="e.g. Johannesburg, Sandton, Cape Town"
-                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-charcoal/[0.03] border border-charcoal/15 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/40 transition"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-2 border-t border-charcoal/10">
-                                <button
-                                    type="submit"
-                                    disabled={isSaving}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    {isSaving ? 'Saving…' : 'Save changes'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    {/* Password Settings */}
-                    <div className="rounded-2xl border border-charcoal/10 bg-white shadow-sm overflow-hidden">
-                        <div className="px-6 md:px-8 py-5 border-b border-charcoal/10 bg-charcoal/[0.02]">
-                            <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-xl bg-gold/10 flex items-center justify-center">
-                                    <Lock className="w-5 h-5 text-gold" />
-                                </span>
-                                <div>
-                                    <h2 className="text-xl font-bold text-charcoal">Security</h2>
-                                    <p className="text-charcoal/60 text-sm">Change your account password</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-6 md:p-8">
-
-                        <form onSubmit={handleChangePassword} className="space-y-6">
-                            {/* Current Password */}
+                <div className={AGENT_FORM_SECTION}>
+                    <div className={AGENT_FORM_SECTION_HEADER}>
+                        <div className="flex items-center gap-3">
+                            <span className="w-11 h-11 rounded-2xl bg-gold/[0.08] border border-gold/10 flex items-center justify-center">
+                                <User className="w-5 h-5 text-gold" />
+                            </span>
                             <div>
-                                <label className="block text-charcoal font-semibold mb-2">
-                                    Current Password <span className="text-red-600">*</span>
+                                <h2 className="text-xl font-semibold text-charcoal tracking-tight">
+                                    Edit profile
+                                </h2>
+                                <p className="text-charcoal/45 text-sm mt-1 leading-relaxed">
+                                    Update your contact details and service area
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSaveProfile} className="p-6 md:p-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                            <div>
+                                <label className={AGENT_FORM_LABEL}>
+                                    Full Name <span className="text-red-500">*</span>
                                 </label>
                                 <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
                                     <input
-                                        type={showPassword ? 'text' : 'password'}
-                                        name="currentPassword"
-                                        value={passwordData.currentPassword}
-                                        onChange={handlePasswordChange}
-                                        className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border ${errors.currentPassword ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                        type="text"
+                                        name="fullName"
+                                        value={formData.fullName}
+                                        onChange={handleInputChange}
+                                        className={agentFormInput(!!errors.fullName)}
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
-                                    >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                    </button>
                                 </div>
-                                {errors.currentPassword && (
-                                    <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                        <AlertCircle className="w-4 h-4" />
-                                        {errors.currentPassword}
-                                    </p>
-                                )}
+                                {errors.fullName && <FieldError message={errors.fullName} />}
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* New Password */}
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        New Password <span className="text-red-600">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                        <input
-                                            type={showNewPassword ? 'text' : 'password'}
-                                            name="newPassword"
-                                            value={passwordData.newPassword}
-                                            onChange={handlePasswordChange}
-                                            className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border ${errors.newPassword ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowNewPassword(!showNewPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
-                                        >
-                                            {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                    {errors.newPassword && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.newPassword}
-                                        </p>
-                                    )}
+                            <div>
+                                <label className={AGENT_FORM_LABEL}>
+                                    Email Address <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        className={agentFormInput(!!errors.email)}
+                                    />
                                 </div>
-
-                                {/* Confirm Password */}
-                                <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
-                                        Confirm New Password <span className="text-red-600">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                        <input
-                                            type={showConfirmPassword ? 'text' : 'password'}
-                                            name="confirmPassword"
-                                            value={passwordData.confirmPassword}
-                                            onChange={handlePasswordChange}
-                                            className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white/10 border ${errors.confirmPassword ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold`}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-charcoal/50 hover:text-charcoal transition"
-                                        >
-                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                    {errors.confirmPassword && (
-                                        <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
-                                            <AlertCircle className="w-4 h-4" />
-                                            {errors.confirmPassword}
-                                        </p>
-                                    )}
-                                </div>
+                                {errors.email && <FieldError message={errors.email} />}
                             </div>
 
+                            <div>
+                                <label className={AGENT_FORM_LABEL}>
+                                    Phone Number <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                        placeholder="082 123 4567"
+                                        className={agentFormInput(!!errors.phone)}
+                                    />
+                                </div>
+                                {errors.phone && <FieldError message={errors.phone} />}
+                            </div>
+
+                            <div>
+                                <label className={AGENT_FORM_LABEL}>
+                                    PPRA Practitioner Number <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <FileText className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type="text"
+                                        name="eaabNumber"
+                                        placeholder="e.g. 1234567"
+                                        value={formData.eaabNumber}
+                                        onChange={handleInputChange}
+                                        maxLength={7}
+                                        inputMode="numeric"
+                                        autoComplete="off"
+                                        pattern="[0-9]{7}"
+                                        title="Enter your 7-digit PPRA practitioner number"
+                                        className={`${agentFormInput(!!errors.eaabNumber)} font-mono tracking-wide`}
+                                    />
+                                </div>
+                                {errors.eaabNumber && <FieldError message={errors.eaabNumber} />}
+                                <p className={AGENT_FORM_HINT}>
+                                    Your valid 7-digit PPRA Fidelity Fund Certificate number. Verify
+                                    at theppra.org.za
+                                </p>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className={AGENT_FORM_LABEL}>
+                                    Company / Agency <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type="text"
+                                        name="company"
+                                        value={formData.company}
+                                        onChange={handleInputChange}
+                                        className={agentFormInput(!!errors.company)}
+                                    />
+                                </div>
+                                {errors.company && <FieldError message={errors.company} />}
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className={AGENT_FORM_LABEL}>City or service area</label>
+                                <p className={`${AGENT_FORM_HINT} mb-2 mt-0`}>
+                                    Leads near you are prioritised. Leave blank to see all leads.
+                                </p>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={formData.city || ''}
+                                        onChange={handleInputChange}
+                                        placeholder="e.g. Johannesburg, Sandton, Cape Town"
+                                        className={agentFormInput()}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={AGENT_FORM_FOOTER}>
                             <button
                                 type="submit"
                                 disabled={isSaving}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-bold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                                className={`${AGENT_PRIMARY_BTN} disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
-                                <Lock className="w-5 h-5" />
-                                {isSaving ? 'Updating...' : 'Change Password'}
+                                <Save className="w-4 h-4" />
+                                {isSaving ? 'Saving…' : 'Save changes'}
                             </button>
-                        </form>
+                        </div>
+                    </form>
+                </div>
+
+                <div className={`${AGENT_FORM_SECTION} mb-0`}>
+                    <div className={AGENT_FORM_SECTION_HEADER}>
+                        <div className="flex items-center gap-3">
+                            <span className="w-11 h-11 rounded-2xl bg-gold/[0.08] border border-gold/10 flex items-center justify-center">
+                                <Lock className="w-5 h-5 text-gold" />
+                            </span>
+                            <div>
+                                <h2 className="text-xl font-semibold text-charcoal tracking-tight">
+                                    Security
+                                </h2>
+                                <p className="text-charcoal/45 text-sm mt-1 leading-relaxed">
+                                    Change your account password
+                                </p>
+                            </div>
                         </div>
                     </div>
+
+                    <form onSubmit={handleChangePassword} className="p-6 md:p-8 space-y-5">
+                        <div>
+                            <label className={AGENT_FORM_LABEL}>
+                                Current Password <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="currentPassword"
+                                    value={passwordData.currentPassword}
+                                    onChange={handlePasswordChange}
+                                    className={`${agentFormInput(!!errors.currentPassword)} pr-12`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-charcoal/35 hover:text-charcoal transition"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-5 h-5" />
+                                    ) : (
+                                        <Eye className="w-5 h-5" />
+                                    )}
+                                </button>
+                            </div>
+                            {errors.currentPassword && (
+                                <FieldError message={errors.currentPassword} />
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                            <div>
+                                <label className={AGENT_FORM_LABEL}>
+                                    New Password <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type={showNewPassword ? 'text' : 'password'}
+                                        name="newPassword"
+                                        value={passwordData.newPassword}
+                                        onChange={handlePasswordChange}
+                                        className={`${agentFormInput(!!errors.newPassword)} pr-12`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-charcoal/35 hover:text-charcoal transition"
+                                        aria-label={
+                                            showNewPassword ? 'Hide password' : 'Show password'
+                                        }
+                                    >
+                                        {showNewPassword ? (
+                                            <EyeOff className="w-5 h-5" />
+                                        ) : (
+                                            <Eye className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.newPassword && <FieldError message={errors.newPassword} />}
+                            </div>
+
+                            <div>
+                                <label className={AGENT_FORM_LABEL}>
+                                    Confirm New Password <span className="text-red-500">*</span>
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
+                                    <input
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        name="confirmPassword"
+                                        value={passwordData.confirmPassword}
+                                        onChange={handlePasswordChange}
+                                        className={`${agentFormInput(!!errors.confirmPassword)} pr-12`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowConfirmPassword(!showConfirmPassword)
+                                        }
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-charcoal/35 hover:text-charcoal transition"
+                                        aria-label={
+                                            showConfirmPassword ? 'Hide password' : 'Show password'
+                                        }
+                                    >
+                                        {showConfirmPassword ? (
+                                            <EyeOff className="w-5 h-5" />
+                                        ) : (
+                                            <Eye className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
+                                {errors.confirmPassword && (
+                                    <FieldError message={errors.confirmPassword} />
+                                )}
+                            </div>
+                        </div>
+
+                        <div className={AGENT_FORM_FOOTER}>
+                            <button
+                                type="submit"
+                                disabled={isSaving}
+                                className={`${AGENT_PRIMARY_BTN} disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                                <Lock className="w-4 h-4" />
+                                {isSaving ? 'Updating…' : 'Change Password'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </AgentPortalLayout>
     );
 }
-

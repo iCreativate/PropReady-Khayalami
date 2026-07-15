@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, MapPin, BookOpen } from 'lucide-react';
+import { Home, Phone, Mail, MessageCircle, Search, Filter, User, TrendingUp, Calendar, CheckCircle, Clock, XCircle, MoreVertical, X, Building2, MapPin, BookOpen, RefreshCw } from 'lucide-react';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import { getBuyerLeadLimit, getPlanDisplay, normalizeBuyerPlan } from '@/lib/agent-plans';
 import AgentPortalLayout from '@/components/AgentPortalLayout';
 import type { ListedProperty } from '@/lib/listed-property';
 import type { ViewingAppointment } from '@/lib/agent-viewing';
+import AgentPageHeader from '@/components/AgentPageHeader';
 import AgentAiSuggestions from '@/components/AgentAiSuggestions';
 import PpraVerificationGate from '@/components/PpraVerificationGate';
 import { isAgentPpraVerified } from '@/lib/ppra';
@@ -22,6 +23,25 @@ import {
     type LeadVerificationStatus,
 } from '@/lib/lead-verification';
 import AgentLeadDetailModal from '@/components/AgentLeadDetailModal';
+import {
+    AGENT_PAGE_CONTAINER,
+    AGENT_STAT_CARD,
+    AGENT_STAT_ICON,
+    AGENT_BADGE,
+    AGENT_TABLE_HEAD,
+    AGENT_TABLE_CELL,
+    AGENT_VIEW_BTN,
+    AGENT_CARD,
+    AGENT_CARD_HEADER,
+    AGENT_CARD_TOOLBAR,
+    AGENT_CARD_BODY,
+    AGENT_CARD_FOOTER,
+    AGENT_SEARCH_INPUT,
+    AGENT_SELECT,
+    AGENT_SEGMENT_WRAP,
+    agentSegmentBtn,
+    AGENT_REFRESH_BTN,
+} from '@/lib/agent-portal-ui';
 
 interface Lead {
     id: string;
@@ -249,8 +269,8 @@ export default function AgentsDashboardPage() {
         const Icon = badge.icon;
 
         return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg} ${badge.text}`}>
-                <Icon className="w-3 h-3" />
+            <span className={`${AGENT_BADGE} ${badge.bg} ${badge.text}`}>
+                <Icon className="w-3 h-3 shrink-0" />
                 {badge.label}
             </span>
         );
@@ -422,15 +442,15 @@ export default function AgentsDashboardPage() {
             new: { bg: 'bg-green-500/20', text: 'text-green-400', icon: Clock, label: 'New' },
             contacted: { bg: 'bg-blue-500/20', text: 'text-blue-400', icon: Phone, label: 'Contacted' },
             qualified: { bg: 'bg-gold/20', text: 'text-gold', icon: CheckCircle, label: 'Qualified' },
-            'not-interested': { bg: 'bg-gradient-to-r from-red-500/20 to-red-500/10', text: 'text-red-600', icon: XCircle, label: 'Not Interested' }
+            'not-interested': { bg: 'bg-red-500/10', text: 'text-red-700', icon: XCircle, label: 'Not Interested' }
         };
 
         const badge = badges[status as keyof typeof badges] || badges.new;
         const Icon = badge.icon;
 
         return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg} ${badge.text}`}>
-                <Icon className="w-3 h-3" />
+            <span className={`${AGENT_BADGE} ${badge.bg} ${badge.text}`}>
+                <Icon className="w-3 h-3 shrink-0" />
                 {badge.label}
             </span>
         );
@@ -447,9 +467,9 @@ export default function AgentsDashboardPage() {
         );
         return (
             <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${verificationStatusClasses(status)}`}
+                className={`${AGENT_BADGE} border ${verificationStatusClasses(status)}`}
             >
-                {status === 'verified' && <CheckCircle className="w-3 h-3" />}
+                {status === 'verified' && <CheckCircle className="w-3 h-3 shrink-0" />}
                 {verificationStatusLabel(status)}
             </span>
         );
@@ -542,34 +562,38 @@ export default function AgentsDashboardPage() {
     };
 
     return (
-        <AgentPortalLayout activePage="dashboard" agent={currentAgent} title="Dashboard">
-            <div className="max-w-7xl mx-auto relative z-10">
-                    {/* Welcome Section */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-charcoal mb-2">
-                            Agent Dashboard 👋
-                        </h1>
-                        <p className="text-charcoal/80 text-lg">
-                            Manage your properties, leads, and appointments
-                        </p>
-                    </div>
-
+        <AgentPortalLayout
+            activePage="dashboard"
+            agent={currentAgent}
+            title="Dashboard"
+            pageHeader={
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow={`Welcome back${currentAgent?.fullName ? `, ${currentAgent.fullName.split(' ')[0]}` : ''}`}
+                    title={<>Agent Dashboard <span aria-hidden="true">👋</span></>}
+                    description="Manage your properties, leads, and appointments"
+                />
+            }
+        >
+            <div className={`${AGENT_PAGE_CONTAINER} relative z-10`}>
                     <PpraVerificationGate agent={currentAgent} />
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5 sm:gap-6 mb-10 sm:mb-12">
                         <button
                             onClick={() => {
                                 setShowSuccessfulLeadsModal(true);
                             }}
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left"
+                            className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/70 text-sm mb-1">Successful Leads Contacted</p>
-                                    <p className="text-charcoal font-bold text-2xl">{stats.totalBuyers}</p>
+                            <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="min-w-0">
+                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2 leading-snug">Successful Leads Contacted</p>
+                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalBuyers}</p>
                                 </div>
-                                <User className="w-10 h-10 text-gold/50" />
+                                <div className={AGENT_STAT_ICON}>
+                                    <User className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
+                                </div>
                             </div>
                         </button>
                         <button
@@ -577,7 +601,6 @@ export default function AgentsDashboardPage() {
                                 setActiveTab('sellers');
                                 setSearchTerm('');
                                 setStatusFilter('all');
-                                // Scroll to leads section
                                 setTimeout(() => {
                                     const leadsSection = document.getElementById('leads-section');
                                     if (leadsSection) {
@@ -585,52 +608,60 @@ export default function AgentsDashboardPage() {
                                     }
                                 }, 100);
                             }}
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left"
+                            className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/70 text-sm mb-1">Total Sellers</p>
-                                    <p className="text-charcoal font-bold text-2xl">{stats.totalSellers}</p>
+                            <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="min-w-0">
+                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Total Sellers</p>
+                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalSellers}</p>
                                 </div>
-                                <Building2 className="w-10 h-10 text-gold/50" />
+                                <div className={AGENT_STAT_ICON}>
+                                    <Building2 className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
+                                </div>
                             </div>
                         </button>
                         <Link
                             href="/agents/properties"
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
+                            className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/70 text-sm mb-1">Listed Properties</p>
-                                    <p className="text-charcoal font-bold text-2xl">{stats.totalProperties}</p>
+                            <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="min-w-0">
+                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Listed Properties</p>
+                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalProperties}</p>
                                 </div>
-                                <Home className="w-10 h-10 text-gold/50 group-hover:text-gold/80 transition-colors" />
+                                <div className={AGENT_STAT_ICON}>
+                                    <Home className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
+                                </div>
                             </div>
                         </Link>
                         <Link
                             href="/agents/viewings"
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
+                            className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/70 text-sm mb-1">Viewings</p>
-                                    <p className="text-charcoal font-bold text-2xl">{stats.totalViewings}</p>
+                            <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="min-w-0">
+                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Viewings</p>
+                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalViewings}</p>
                                 </div>
-                                <Calendar className="w-10 h-10 text-gold/50 group-hover:text-gold/80 transition-colors" />
+                                <div className={AGENT_STAT_ICON}>
+                                    <Calendar className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
+                                </div>
                             </div>
                         </Link>
                         <Link
                             href="/agents/learn"
-                            className="glass-effect rounded-xl p-6 hover:bg-white/20 transition cursor-pointer text-left group"
+                            className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/70 text-sm mb-1">Learning Hub</p>
-                                    <p className="text-charcoal font-semibold group-hover:text-gold transition-colors">
+                            <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="min-w-0">
+                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Learning Hub</p>
+                                    <p className="text-charcoal font-medium text-base sm:text-lg group-hover:text-gold transition-colors duration-200">
                                         Learn more →
                                     </p>
                                 </div>
-                                <BookOpen className="w-10 h-10 text-gold/50 group-hover:text-gold/80 transition-colors" />
+                                <div className={AGENT_STAT_ICON}>
+                                    <BookOpen className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
+                                </div>
                             </div>
                         </Link>
                     </div>
@@ -640,113 +671,120 @@ export default function AgentsDashboardPage() {
 
                     {/* Leads Section with Tabs */}
                     <PpraVerificationGate agent={currentAgent} block={!isAgentPpraVerified(currentAgent)}>
-                    <div id="leads-section" className="glass-effect rounded-xl p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-charcoal">Prequalified Leads</h2>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setActiveTab('buyers')}
-                                    className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                        activeTab === 'buyers'
-                                            ? 'bg-gold text-white'
-                                            : 'bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5'
-                                    }`}
-                                >
-                                    Buyers
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('sellers')}
-                                    className={`px-4 py-2 rounded-lg font-semibold transition ${
-                                        activeTab === 'sellers'
-                                            ? 'bg-gold text-white'
-                                            : 'bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5'
-                                    }`}
-                                >
-                                    Sellers
-                                </button>
-                                <button
-                                    onClick={() => setLeadsRefreshKey(k => k + 1)}
-                                    className="px-4 py-2 rounded-lg bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5 transition flex items-center gap-2"
-                                    title="Refresh leads from database"
-                                >
-                                    <TrendingUp className="w-4 h-4" />
-                                    Refresh
-                                </button>
-                            </div>
-                        </div>
-
-                    {/* Filters and Search */}
-                        <div className="mb-6">
-                        <div className="flex flex-col md:flex-row gap-4">
-                            <div className="flex-1 relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
-                                <input
-                                    type="text"
-                                        placeholder={`Search ${activeTab} by name, email, or phone...`}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
-                                />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Filter className="w-5 h-5 text-charcoal/50" />
-                                <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="px-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
-                                >
-                                    <option value="all">All Status</option>
-                                    <option value="new">New</option>
-                                    <option value="contacted">Contacted</option>
-                                    <option value="qualified">Qualified</option>
-                                    <option value="not-interested">Not Interested</option>
-                                </select>
-                                {currentAgent?.city && (
-                                    <select
-                                        value={locationFilter}
-                                        onChange={(e) => setLocationFilter(e.target.value as 'all' | 'nearby')}
-                                        className="px-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                    <div id="leads-section" className={AGENT_CARD}>
+                        <div className={AGENT_CARD_HEADER}>
+                            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8">
+                                <div className="min-w-0">
+                                    <h2 className="text-xl sm:text-2xl font-semibold text-charcoal tracking-tight">Prequalified Leads</h2>
+                                    <p className="text-charcoal/45 text-sm mt-2 leading-relaxed">
+                                        {activeTab === 'buyers'
+                                            ? `${filteredLeads.length} buyer${filteredLeads.length === 1 ? '' : 's'} · ${stats.newBuyers} new`
+                                            : `${filteredSellers.length} seller${filteredSellers.length === 1 ? '' : 's'} · ${stats.newSellers} new`}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+                                    <div className={`${AGENT_SEGMENT_WRAP} self-start sm:self-auto`}>
+                                        <button
+                                            onClick={() => setActiveTab('buyers')}
+                                            className={agentSegmentBtn(activeTab === 'buyers')}
+                                        >
+                                            Buyers
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab('sellers')}
+                                            className={agentSegmentBtn(activeTab === 'sellers')}
+                                        >
+                                            Sellers
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => setLeadsRefreshKey(k => k + 1)}
+                                        className={`${AGENT_REFRESH_BTN} self-start sm:self-auto`}
+                                        title="Refresh leads from database"
                                     >
-                                        <option value="all">All areas</option>
-                                        <option value="nearby">My area ({currentAgent.city})</option>
-                                    </select>
-                                )}
+                                        <RefreshCw className="w-4 h-4" />
+                                        Refresh
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                        {/* Table */}
+                        {/* Filters and Search */}
+                        <div className={AGENT_CARD_TOOLBAR}>
+                            <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
+                                <div className="flex-1 relative min-w-0">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35 pointer-events-none" />
+                                    <input
+                                        type="text"
+                                        placeholder={`Search ${activeTab} by name, email, or phone...`}
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className={AGENT_SEARCH_INPUT}
+                                    />
+                                </div>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 lg:shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <Filter className="w-4 h-4 text-charcoal/35 shrink-0 hidden sm:block" />
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            className={AGENT_SELECT}
+                                        >
+                                            <option value="all">All Status</option>
+                                            <option value="new">New</option>
+                                            <option value="contacted">Contacted</option>
+                                            <option value="qualified">Qualified</option>
+                                            <option value="not-interested">Not Interested</option>
+                                        </select>
+                                    </div>
+                                    {currentAgent?.city && (
+                                        <select
+                                            value={locationFilter}
+                                            onChange={(e) => setLocationFilter(e.target.value as 'all' | 'nearby')}
+                                            className={AGENT_SELECT}
+                                        >
+                                            <option value="all">All areas</option>
+                                            <option value="nearby">My area ({currentAgent.city})</option>
+                                        </select>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={AGENT_CARD_BODY}>
                         {activeTab === 'buyers' ? (
                             filteredLeads.length === 0 ? (
-                            <div className="text-center py-12">
-                                <User className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                                    <p className="text-charcoal/70 text-lg">No buyers found</p>
-                                <p className="text-charcoal/50 text-sm mt-2">
+                            <div className="text-center py-14 px-4">
+                                <div className="w-16 h-16 rounded-2xl bg-charcoal/5 flex items-center justify-center mx-auto mb-4">
+                                    <User className="w-8 h-8 text-charcoal/25" />
+                                </div>
+                                    <p className="text-charcoal font-medium text-lg">No buyers found</p>
+                                <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
                                     {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
                                         ? 'Try adjusting your filters (search, status, or area)'
                                         : 'Buyers will appear here once they complete the prequalification'}
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
+                            <div className="overflow-x-auto -mx-1">
+                                <table className="w-full min-w-[920px] border-collapse">
                                     <thead>
-                                            <tr className="border-b border-charcoal/20">
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Buyer</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Contact</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Score</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Bond pre-qual</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Status</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Verified</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date</th>
-                                            <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Actions</th>
+                                            <tr className="border-b border-charcoal/[0.06]">
+                                                <th className={AGENT_TABLE_HEAD}>Buyer</th>
+                                            <th className={AGENT_TABLE_HEAD}>Contact</th>
+                                            <th className={AGENT_TABLE_HEAD}>Score</th>
+                                            <th className={AGENT_TABLE_HEAD}>Bond pre-qual</th>
+                                            <th className={AGENT_TABLE_HEAD}>Status</th>
+                                            <th className={AGENT_TABLE_HEAD}>Verified</th>
+                                            <th className={AGENT_TABLE_HEAD}>Date</th>
+                                            <th className={`${AGENT_TABLE_HEAD} text-right`}>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="divide-y divide-charcoal/[0.05]">
                                         {filteredLeads.map((lead) => (
                                                 <tr
                                                     key={lead.id}
-                                                    className="border-b border-charcoal/10 hover:bg-gold/5 transition cursor-pointer"
+                                                    className="hover:bg-charcoal/[0.018] transition-colors duration-150 cursor-pointer group"
                                                     onClick={() => setShowActionsModal(lead)}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
@@ -758,57 +796,57 @@ export default function AgentsDashboardPage() {
                                                     tabIndex={0}
                                                     aria-label={`View details for ${lead.fullName}`}
                                                 >
-                                                <td className="py-4 px-4">
+                                                <td className={AGENT_TABLE_CELL}>
                                                     <div>
-                                                            <p className="text-charcoal font-semibold">{lead.fullName || 'N/A'}</p>
-                                                        <p className="text-charcoal/60 text-sm">{lead.employmentStatus || 'N/A'}</p>
+                                                            <p className="text-charcoal font-medium text-sm">{lead.fullName || 'N/A'}</p>
+                                                        <p className="text-charcoal/45 text-xs mt-1">{lead.employmentStatus || 'N/A'}</p>
                                                         {lead.city && (
-                                                            <p className="text-charcoal/50 text-xs flex items-center gap-1 mt-0.5">
-                                                                <MapPin className="w-3 h-3" />{lead.city}
+                                                            <p className="text-charcoal/40 text-xs flex items-center gap-1 mt-1.5">
+                                                                <MapPin className="w-3 h-3 shrink-0" />{lead.city}
                                                             </p>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4">
-                                                    <div className="space-y-1">
-                                                        <p className="text-charcoal/80 text-sm">{lead.email}</p>
-                                                        <p className="text-charcoal/60 text-sm">{lead.phone}</p>
+                                                <td className={AGENT_TABLE_CELL}>
+                                                    <div className="space-y-1 min-w-[150px]">
+                                                        <p className="text-charcoal font-medium text-sm truncate max-w-[220px]" title={lead.email}>{lead.email}</p>
+                                                        <p className="text-charcoal/45 text-xs tabular-nums">{lead.phone}</p>
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <TrendingUp className="w-4 h-4 text-gold" />
-                                                            <span className="text-charcoal font-semibold">{lead.score != null ? `${lead.score}%` : '—'}</span>
+                                                <td className={AGENT_TABLE_CELL}>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <TrendingUp className="w-3.5 h-3.5 text-gold/70 shrink-0" />
+                                                            <span className="text-charcoal font-medium text-sm tabular-nums">{lead.score != null ? `${lead.score}%` : '—'}</span>
                                                     </div>
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className={AGENT_TABLE_CELL}>
                                                     {lead.prequalifiedWithOriginator && lead.bondOriginator ? (
-                                                        <span className="text-xs font-medium text-gold">
+                                                        <span className={`${AGENT_BADGE} bg-gold/[0.08] text-gold border border-gold/10`}>
                                                             {bondOriginatorLabel(lead.bondOriginator)}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-charcoal/40 text-sm">—</span>
+                                                        <span className="text-charcoal/30 text-sm">—</span>
                                                     )}
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className={AGENT_TABLE_CELL}>
                                                     {getStatusBadge(lead.status)}
                                                 </td>
-                                                <td className="py-4 px-4">
+                                                <td className={AGENT_TABLE_CELL}>
                                                     {getVerificationBadge(lead)}
                                                 </td>
-                                                <td className="py-4 px-4">
-                                                    <p className="text-charcoal/70 text-sm">
+                                                <td className={`${AGENT_TABLE_CELL} whitespace-nowrap`}>
+                                                    <p className="text-charcoal/50 text-sm tabular-nums">
                                                         {new Date(lead.timestamp).toLocaleDateString()}
                                                     </p>
                                                 </td>
-                                                <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
+                                                <td className={`${AGENT_TABLE_CELL} text-right`} onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         type="button"
                                                         onClick={() => setShowActionsModal(lead)}
-                                                        className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
+                                                        className={AGENT_VIEW_BTN}
                                                     >
-                                                        <MoreVertical className="w-4 h-4" />
-                                                        <span className="text-sm">View</span>
+                                                        <MoreVertical className="w-3.5 h-3.5" />
+                                                        <span>View</span>
                                                     </button>
                                                 </td>
                                             </tr>
@@ -819,9 +857,11 @@ export default function AgentsDashboardPage() {
                             )
                         ) : (
                             filteredSellers.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <Building2 className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                                    <p className="text-charcoal/70 text-lg">No sellers found</p>
+                                <div className="text-center py-14 px-4">
+                                    <div className="w-16 h-16 rounded-2xl bg-charcoal/5 flex items-center justify-center mx-auto mb-4">
+                                        <Building2 className="w-8 h-8 text-charcoal/25" />
+                                    </div>
+                                    <p className="text-charcoal font-medium text-lg">No sellers found</p>
                                     <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
                                         {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
                                             ? 'Try adjusting your filters (search, status, or area)'
@@ -829,26 +869,26 @@ export default function AgentsDashboardPage() {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full">
+                                <div className="overflow-x-auto -mx-1">
+                                    <table className="w-full min-w-[1000px] border-collapse">
                                         <thead>
-                                            <tr className="border-b border-charcoal/20">
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Seller</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Contact</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Property</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Estimated Value</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Timeline</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Status</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Verified</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Date</th>
-                                                <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">Actions</th>
+                                            <tr className="border-b border-charcoal/[0.06]">
+                                                <th className={AGENT_TABLE_HEAD}>Seller</th>
+                                                <th className={AGENT_TABLE_HEAD}>Contact</th>
+                                                <th className={AGENT_TABLE_HEAD}>Property</th>
+                                                <th className={AGENT_TABLE_HEAD}>Estimated Value</th>
+                                                <th className={AGENT_TABLE_HEAD}>Timeline</th>
+                                                <th className={AGENT_TABLE_HEAD}>Status</th>
+                                                <th className={AGENT_TABLE_HEAD}>Verified</th>
+                                                <th className={AGENT_TABLE_HEAD}>Date</th>
+                                                <th className={`${AGENT_TABLE_HEAD} text-right`}>Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
+                                        <tbody className="divide-y divide-charcoal/[0.05]">
                                             {filteredSellers.map((seller) => (
                                                 <tr
                                                     key={seller.id}
-                                                    className="border-b border-charcoal/10 hover:bg-gold/5 transition cursor-pointer"
+                                                    className="hover:bg-charcoal/[0.018] transition-colors duration-150 cursor-pointer group"
                                                     onClick={() => setShowActionsModal(seller)}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
@@ -860,31 +900,31 @@ export default function AgentsDashboardPage() {
                                                     tabIndex={0}
                                                     aria-label={`View details for ${seller.fullName}`}
                                                 >
-                                                    <td className="py-4 px-4">
+                                                    <td className={AGENT_TABLE_CELL}>
                                                         <div>
-                                                            <p className="text-charcoal font-semibold">{seller.fullName || 'N/A'}</p>
-                                                            <p className="text-charcoal/60 text-sm capitalize">{seller.propertyType || 'N/A'}</p>
+                                                            <p className="text-charcoal font-medium text-sm">{seller.fullName || 'N/A'}</p>
+                                                            <p className="text-charcoal/45 text-xs mt-1 capitalize">{seller.propertyType || 'N/A'}</p>
                                                             {seller.city && (
-                                                                <p className="text-charcoal/50 text-xs flex items-center gap-1 mt-0.5">
-                                                                    <MapPin className="w-3 h-3" />{seller.city}
+                                                                <p className="text-charcoal/40 text-xs flex items-center gap-1 mt-1.5">
+                                                                    <MapPin className="w-3 h-3 shrink-0" />{seller.city}
                                                                 </p>
                                                             )}
                                                         </div>
                                                     </td>
-                                                    <td className="py-4 px-4">
-                                                        <div className="space-y-1">
-                                                            <p className="text-charcoal/80 text-sm">{seller.email}</p>
-                                                            <p className="text-charcoal/60 text-sm">{seller.phone}</p>
+                                                    <td className={AGENT_TABLE_CELL}>
+                                                        <div className="space-y-1 min-w-[150px]">
+                                                            <p className="text-charcoal font-medium text-sm truncate max-w-[220px]" title={seller.email}>{seller.email}</p>
+                                                            <p className="text-charcoal/45 text-xs tabular-nums">{seller.phone}</p>
                                                         </div>
                                                     </td>
-                                                    <td className="py-4 px-4">
+                                                    <td className={`${AGENT_TABLE_CELL} max-w-[240px]`}>
                                                         <div className="space-y-1">
-                                                            <p className="text-charcoal/80 text-sm">
+                                                            <p className="text-charcoal text-sm line-clamp-2 leading-relaxed">
                                                                 {seller.propertyAddress
                                                                     ? seller.propertyAddress.split(',').map((s: string) => s.trim()).filter(Boolean).join(', ')
                                                                     : 'N/A'}
                                                             </p>
-                                                            <p className="text-charcoal/60 text-sm">
+                                                            <p className="text-charcoal/45 text-xs">
                                                                 {seller.bedrooms} bed, {seller.bathrooms} bath
                                                                 {(seller.landSize || seller.buildingSize) && (
                                                                     <> · {[seller.landSize && `${seller.landSize} m² land`, seller.buildingSize && `${seller.buildingSize} m² building`].filter(Boolean).join(', ')}</>
@@ -892,35 +932,35 @@ export default function AgentsDashboardPage() {
                                                             </p>
                                                         </div>
                                                     </td>
-                                                    <td className="py-4 px-4">
-                                                        <p className="text-gold font-bold">
+                                                    <td className={`${AGENT_TABLE_CELL} whitespace-nowrap`}>
+                                                        <p className="text-gold font-semibold text-sm tabular-nums">
                                                             {formatCurrency(parseAmountForDisplay(seller.currentValue))}
                                                         </p>
                                                     </td>
-                                                    <td className="py-4 px-4">
-                                                        <p className="text-charcoal/70 text-sm capitalize">
+                                                    <td className={AGENT_TABLE_CELL}>
+                                                        <p className="text-charcoal/50 text-sm capitalize">
                                                             {seller.timeline ? seller.timeline.replace('-', ' to ') : 'N/A'}
                                                         </p>
                                                     </td>
-                                                    <td className="py-4 px-4">
+                                                    <td className={AGENT_TABLE_CELL}>
                                                         {getStatusBadge(seller.status)}
                                                     </td>
-                                                    <td className="py-4 px-4">
+                                                    <td className={AGENT_TABLE_CELL}>
                                                         {getVerificationBadge(seller)}
                                                     </td>
-                                                    <td className="py-4 px-4">
-                                                        <p className="text-charcoal/70 text-sm">
+                                                    <td className={`${AGENT_TABLE_CELL} whitespace-nowrap`}>
+                                                        <p className="text-charcoal/50 text-sm tabular-nums">
                                                             {new Date(seller.timestamp).toLocaleDateString()}
                                                         </p>
                                                     </td>
-                                                    <td className="py-4 px-4" onClick={(e) => e.stopPropagation()}>
+                                                    <td className={`${AGENT_TABLE_CELL} text-right`} onClick={(e) => e.stopPropagation()}>
                                                         <button
                                                             type="button"
                                                             onClick={() => setShowActionsModal(seller)}
-                                                            className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
+                                                            className={AGENT_VIEW_BTN}
                                                         >
-                                                            <MoreVertical className="w-4 h-4" />
-                                                            <span className="text-sm">View</span>
+                                                            <MoreVertical className="w-3.5 h-3.5" />
+                                                            <span>View</span>
                                                         </button>
                                                     </td>
                                                 </tr>
@@ -930,7 +970,10 @@ export default function AgentsDashboardPage() {
                                 </div>
                             )
                         )}
-                        <p className="text-charcoal/45 text-xs mt-3">Click any lead row to view full details and attached documents.</p>
+                        </div>
+                        <p className={AGENT_CARD_FOOTER}>
+                            Click any lead row to view full details and attached documents.
+                        </p>
                     </div>
                     </PpraVerificationGate>
                 </div>

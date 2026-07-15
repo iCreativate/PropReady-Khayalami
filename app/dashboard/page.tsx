@@ -3,97 +3,87 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, FileText, Heart, Users, TrendingUp, Download, Calendar, ArrowLeft, Building2, Phone, ExternalLink, CheckCircle, X, MapPin, Clock } from 'lucide-react';
-import MobileNav from '@/components/MobileNav';
-import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import { Home, FileText, Heart, Users, TrendingUp, Download, Calendar, Building2, Phone, ExternalLink, CheckCircle, X, MapPin, Clock, Upload, Eye } from 'lucide-react';
+import UserPortalLayout from '@/components/UserPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
+import BondOriginatorSlider from '@/components/BondOriginatorSlider';
+import BuyerDocumentPreviewModal from '@/components/BuyerDocumentPreviewModal';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import type { BondOriginator } from '@/lib/bond-originators';
+import { BUYER_DOCUMENT_SLOTS, readBuyerDocumentsLocal, refreshBuyerDocumentsFromApi, type BuyerDocument } from '@/lib/buyer-documents';
+import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
+import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
+import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_CALLOUT } from '@/lib/portal-ui';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 
-interface Originator {
-    name: string;
-    description: string;
-    rating: string;
-    features: string[];
-    phone: string;
-    website: string;
+function readSellerInfoForUser(user: { id?: string; email?: string }) {
+    if (typeof window === 'undefined') return null;
+    try {
+        const storedSellerInfo = localStorage.getItem(STORAGE_KEYS.sellerInfo);
+        if (!storedSellerInfo) return null;
+        const seller = JSON.parse(storedSellerInfo);
+        if (seller.id === user.id || seller.email === user.email) {
+            return seller;
+        }
+    } catch {
+        /* ignore */
+    }
+    return null;
+}
+
+function readQuizSummary(user: { id?: string; email?: string }) {
+    const result = resolveBuyerQuizResultSync(user);
+    if (!result) return null;
+    return {
+        score: result.score || 0,
+        preQualAmount: result.preQualAmount || 0,
+        monthlyIncome: result.monthlyIncome || '0',
+        depositSaved: result.depositSaved || '0',
+        fullName: result.fullName || 'User',
+    };
 }
 
 export default function DashboardPage() {
     const router = useRouter();
-    const [selectedOriginator, setSelectedOriginator] = useState<Originator | null>(null);
-    const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id?: string } | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [quizResult, setQuizResult] = useState<{
-        score: number;
-        preQualAmount: number;
-        monthlyIncome: string;
-        depositSaved: string;
-        fullName: string;
-    } | null>(null);
+    const { user: currentUser, isHydrated } = useHydratedBuyerPortalUser();
+    const [selectedOriginator, setSelectedOriginator] = useState<BondOriginator | null>(null);
+    const [quizResult, setQuizResult] = useState<ReturnType<typeof readQuizSummary> | null>(null);
     const [sellerInfo, setSellerInfo] = useState<any>(null);
     const [isSeller, setIsSeller] = useState(false);
     const [viewingAppointments, setViewingAppointments] = useState<any[]>([]);
+    const [buyerDocuments, setBuyerDocuments] = useState<BuyerDocument[]>([]);
+    const [previewDoc, setPreviewDoc] = useState<BuyerDocument | null>(null);
 
     useEffect(() => {
-        async function load() {
-            if (typeof window === 'undefined') return;
-            const userData = localStorage.getItem('propReady_currentUser');
-            if (!userData) {
-                router.push('/login');
-                return;
-            }
-            const user = JSON.parse(userData);
-            setCurrentUser(user);
+        if (!isHydrated) return;
 
-            const storedSellerInfo = localStorage.getItem('propReady_sellerInfo');
-            if (storedSellerInfo) {
-                const seller = JSON.parse(storedSellerInfo);
-                if (seller.id === user.id || seller.email === user.email) {
-                    setSellerInfo(seller);
-                    setIsSeller(true);
-                }
-            }
-
-            const storedQuizResult = localStorage.getItem('propReady_quizResult');
-            if (storedQuizResult) {
-                const result = JSON.parse(storedQuizResult);
-                if (result.id === user.id || result.email === user.email) {
-                    setQuizResult({
-                        score: result.score || 0,
-                        preQualAmount: result.preQualAmount || 0,
-                        monthlyIncome: result.monthlyIncome || '0',
-                        depositSaved: result.depositSaved || '0',
-                        fullName: result.fullName || 'User'
-                    });
-                }
-            }
-
-            const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-            const quizData = JSON.parse(localStorage.getItem('propReady_quizResult') || '{}');
-            const quizPhone = (quizData.phone || '').replace(/\s/g, '');
-            const matchBuyer = (v: any) => v.contactType === 'buyer' && (
-                (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                (v.contactEmail && user.email && v.contactEmail.toLowerCase() === user.email.toLowerCase()) ||
-                (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
-            );
-            let apiViewings: any[] = [];
-            try {
-                const res = await fetch(`/api/viewings?contactEmail=${encodeURIComponent(user.email)}`, { cache: 'no-store' });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok && Array.isArray(data.viewings)) {
-                    apiViewings = (data.viewings || []).filter(matchBuyer);
-                }
-            } catch (e) {
-                console.warn('Failed to load viewings from API', e);
-            }
-            const ids = new Set(apiViewings.map((v: any) => v.id));
-            const localOnly = storedViewings.filter((v: any) => matchBuyer(v) && !ids.has(v.id));
-            const userViewings = [...apiViewings, ...localOnly].sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
-            setViewingAppointments(userViewings);
-
-            setIsLoading(false);
+        if (!currentUser) {
+            router.push('/login');
+            return;
         }
-        load();
-    }, [router]);
+
+        setQuizResult(readQuizSummary(currentUser));
+
+        const seller = readSellerInfoForUser(currentUser);
+        setSellerInfo(seller);
+        setIsSeller(Boolean(seller));
+
+        setViewingAppointments(readLocalViewingsForUser(currentUser, { includeSeller: false }));
+        if (currentUser.id) {
+            setBuyerDocuments(readBuyerDocumentsLocal(currentUser.id));
+        }
+
+        void Promise.all([
+            refreshViewingsFromApi(currentUser, { includeSeller: false }).then(setViewingAppointments),
+            currentUser.id
+                ? refreshBuyerDocumentsFromApi(
+                      currentUser.id,
+                      readBuyerDocumentsLocal(currentUser.id)
+                  ).then(setBuyerDocuments)
+                : Promise.resolve(),
+        ]);
+    }, [router, isHydrated, currentUser]);
 
     const getScoreLabel = (score: number) => {
         if (score >= 80) return 'Excellent';
@@ -182,149 +172,75 @@ export default function DashboardPage() {
         return properties.sort((a, b) => b.matchScore - a.matchScore);
     };
 
-    // Show loading state while checking authentication
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-charcoal/70">Loading...</p>
-                </div>
-            </div>
-        );
+    if (!isHydrated || !currentUser) {
+        return null;
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/search" className="text-charcoal/90 hover:text-charcoal transition">
-                                Properties
-                            </Link>
-                            <LearningCenterDropdown />
-                            <Link
-                                href="/sellers"
-                                className="px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
-                            >
-                                For Sellers
-                            </Link>
-                            <Link href="/calculator" className="text-charcoal/90 hover:text-charcoal transition">
-                                Bond Calculator
-                            </Link>
-                            <Link href="/dashboard" className="text-gold font-semibold">
-                                Dashboard
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                        <MobileNav
-                            links={[
-                                { href: '/search', label: 'Properties' },
-                                { href: '/learn', label: 'Learning Center - Buyers' },
-                                { href: '/learn/investors', label: 'Learning Center - Investors' },
-                                { href: '/sellers', label: 'For Sellers', isButton: true },
-                                { href: '/calculator', label: 'Bond Calculator' },
-                                { href: '/dashboard', label: 'Dashboard' },
-                            ]}
-                        />
-                        {currentUser && (
-                            <div className="text-right">
-                                <p className="text-charcoal/70 text-sm">Welcome back</p>
-                                <p className="text-charcoal font-semibold">{currentUser.fullName}</p>
-                            </div>
-                        )}
-                        <button
-                            onClick={() => {
-                                if (typeof window !== 'undefined') {
-                                    localStorage.removeItem('propReady_currentUser');
-                                    router.push('/login');
-                                }
-                            }}
-                            className="px-4 py-2 rounded-lg border border-charcoal/30 text-charcoal hover:bg-charcoal/10 transition-all"
-                        >
-                            Sign Out
-                        </button>
-                    </div>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-8">
-                <div className="container mx-auto max-w-7xl relative z-10">
-                    {/* Welcome Section */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-charcoal mb-2">
-                            Welcome back, {quizResult?.fullName || currentUser?.fullName || 'User'}! 👋
-                        </h1>
-                        <p className="text-charcoal/80 text-lg">
-                            {isSeller && quizResult 
-                                ? "Here's your home buying and selling journey at a glance"
-                                : "Here's your home buying journey at a glance"
-                            }
-                        </p>
-                    </div>
-
+        <>
+            <UserPortalLayout
+                portal="buyer"
+                activePage="dashboard"
+                user={currentUser}
+                title="Dashboard"
+                pageHeader={
+                    <PortalPageHeader
+                        variant="premium"
+                        eyebrow={`Welcome back${currentUser?.fullName ? `, ${currentUser.fullName.split(' ')[0]}` : ''}`}
+                        title={<>Buyer Dashboard <span aria-hidden="true">👋</span></>}
+                        description={
+                            isSeller && quizResult
+                                ? "Your home buying and selling journey at a glance"
+                                : "Your home buying journey at a glance"
+                        }
+                    />
+                }
+            >
+                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Seller Information Section (if user is also a seller) */}
                     {isSeller && sellerInfo && (
-                        <div className="premium-card rounded-2xl p-8 mb-8 relative overflow-hidden border-2 border-gold/30">
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
-                                            <Building2 className="w-6 h-6 text-gold" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl font-bold text-charcoal mb-1">Your Property Listing</h2>
-                                            <p className="text-charcoal/50 text-sm">Selling your property</p>
-                                        </div>
+                        <div className="premium-card p-8 mb-8 sm:mb-10 overflow-hidden">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className={PORTAL_STAT_ICON}>
+                                        <Building2 className="w-6 h-6 text-gold" />
                                     </div>
-                                    <Link
-                                        href="/sellers/dashboard"
-                                        className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition"
-                                    >
-                                        Go to Seller Dashboard
-                                    </Link>
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-charcoal mb-1">Your Property Listing</h2>
+                                        <p className="text-charcoal/50 text-sm">Selling your property</p>
+                                    </div>
                                 </div>
+                                <Link href="/sellers/dashboard" className={PORTAL_PRIMARY_BTN}>
+                                    Go to Seller Dashboard
+                                </Link>
+                            </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                        <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Property Value</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+                                    <div className="portal-stat-inner">
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Property Value</p>
                                         <p className="text-charcoal font-bold text-xl">
                                             {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
                                         </p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                        <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Property Type</p>
+                                    <div className="portal-stat-inner">
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Property Type</p>
                                         <p className="text-charcoal font-bold text-xl capitalize">
                                             {sellerInfo.propertyType || 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                        <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Selling Timeline</p>
+                                    <div className="portal-stat-inner">
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Selling Timeline</p>
                                         <p className="text-charcoal font-bold text-sm capitalize">
                                             {sellerInfo.timeline ? sellerInfo.timeline.replace('-', ' to ') : 'N/A'}
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full blur-3xl opacity-50"></div>
                         </div>
                     )}
 
                     {/* PropReady Score Card */}
-                    <div className="premium-card rounded-2xl p-8 mb-8 relative overflow-hidden">
-                        <div className="relative z-10">
+                    <div className="premium-card p-8 mb-8 sm:mb-10 overflow-hidden">
+                        <div>
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h2 className="text-2xl font-bold text-charcoal mb-2">Your PropReady Score</h2>
@@ -340,56 +256,54 @@ export default function DashboardPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Pre-Qualification</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+                                <div className="portal-stat-inner">
+                                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Pre-Qualification</p>
                                     <p className="text-charcoal font-bold text-xl">
                                         {formatCurrency(quizResult?.preQualAmount ?? 0)}
                                     </p>
                                 </div>
-                                <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Monthly Budget</p>
+                                <div className="portal-stat-inner">
+                                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Monthly Budget</p>
                                     <p className="text-charcoal font-bold text-xl">
                                         {quizResult ? formatCurrency(calculateMonthlyBudget(quizResult.preQualAmount)) : 'R 0'}
                                     </p>
                                 </div>
-                                <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Deposit Saved</p>
+                                <div className="portal-stat-inner">
+                                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Deposit Saved</p>
                                     <p className="text-charcoal font-bold text-xl text-right whitespace-nowrap">
                                         {formatCurrency(quizResult ? parseNumberFromString(quizResult.depositSaved || '0') : 0)}
                                     </p>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full blur-3xl opacity-50"></div>
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                        <Link href="/search" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 mb-8 sm:mb-10">
+                        <Link href="/search" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Home className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Browse Properties</h3>
                         </Link>
 
-                        <Link href="/dashboard/documents" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                        <Link href="/dashboard/documents" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <FileText className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">My Documents</h3>
                         </Link>
 
-                        <Link href="/dashboard/agent" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                        <Link href="/dashboard/agent" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Users className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">My Agent</h3>
                         </Link>
 
-                        <Link href="/dashboard/viewings" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                        <Link href="/dashboard/viewings" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Calendar className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Viewings</h3>
@@ -398,10 +312,10 @@ export default function DashboardPage() {
 
                     {/* Viewing Appointments Section */}
                     {viewingAppointments.length > 0 && (
-                        <div className="premium-card rounded-2xl p-8 mb-8">
+                        <div className="premium-card p-8 mb-8 sm:mb-10">
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
+                                    <div className={PORTAL_STAT_ICON}>
                                         <Calendar className="w-6 h-6 text-gold" />
                                     </div>
                                     <div>
@@ -465,94 +379,24 @@ export default function DashboardPage() {
                     )}
 
                     {/* Bond Originators Section */}
-                    <div className="premium-card rounded-2xl p-8 mb-8">
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
-                                    <Building2 className="w-6 h-6 text-gold" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-charcoal mb-1">Recommended Bond Originators</h2>
-                                    <p className="text-charcoal/50 text-sm">Get help securing your home loan from trusted experts</p>
-                                </div>
-                            </div>
-                        </div>
+                    <div className={`${PORTAL_CARD} p-6 sm:p-8 mb-8 sm:mb-10`}>
+                        <PortalPageHeader
+                            variant="premium"
+                            eyebrow="Home loan partners"
+                            title="Recommended Bond Originators"
+                            description="Compare all originators and connect with a trusted expert to help secure your home loan."
+                            className="mb-6 sm:mb-8"
+                        />
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            {[
-                                {
-                                    name: 'BetterBond',
-                                    description: 'South Africa\'s leading bond originator',
-                                    rating: '4.8/5',
-                                    features: ['Free service', 'Multiple banks', 'Expert guidance'],
-                                    phone: '0800007111',
-                                    website: 'https://www.betterbond.co.za'
-                                },
-                                {
-                                    name: 'Ooba',
-                                    description: 'Compare deals from 20+ banks',
-                                    rating: '4.7/5',
-                                    features: ['No cost', 'Fast approval', 'Dedicated consultant'],
-                                    phone: '0860006622',
-                                    website: 'https://www.ooba.co.za'
-                                },
-                                {
-                                    name: 'MultiNET Home Loans',
-                                    description: 'Personalized solutions',
-                                    rating: '4.6/5',
-                                    features: ['Free pre-approval', 'Best rates', '24/7 support'],
-                                    phone: '0861545444',
-                                    website: 'https://www.multinet.co.za'
-                                }
-                            ].map((originator, index) => (
-                                <div
-                                    key={index}
-                                    className="premium-card rounded-xl p-6 group"
-                                >
-                                    <div className="mb-4">
-                                        <h3 className="text-charcoal font-bold text-lg mb-2">{originator.name}</h3>
-                                        <p className="text-charcoal/50 text-sm mb-3 leading-relaxed">{originator.description}</p>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-gold text-sm font-semibold">★</span>
-                                            <span className="text-charcoal/60 text-sm font-medium">{originator.rating}</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-wrap gap-1.5 mb-4">
-                                        {originator.features.map((feature, idx) => (
-                                            <span
-                                                key={idx}
-                                                className="px-2 py-0.5 rounded-full bg-gold/20 text-gold text-xs"
-                                            >
-                                                {feature}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => setSelectedOriginator(originator)}
-                                            className="flex-1 px-3 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-1.5"
-                                        >
-                                            <Phone className="w-3.5 h-3.5" />
-                                            Contact
-                                        </button>
-                                        <a 
-                                            href={originator.website}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-3 py-2 border border-charcoal/20 text-charcoal font-semibold rounded-lg hover:bg-charcoal/5 hover:border-gold transition text-sm flex items-center gap-1.5"
-                                        >
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                            Visit
-                                        </a>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <BondOriginatorSlider
+                            className="mb-4"
+                            onContact={setSelectedOriginator}
+                        />
 
-                        <div className="bg-gold/10 rounded-lg p-3 border border-gold/30">
-                            <p className="text-charcoal/90 text-sm text-center flex items-center justify-center gap-2">
-                                <CheckCircle className="w-4 h-4 text-gold" />
-                                Bond originators work for free - banks pay their commission, not you!
+                        <div className={PORTAL_CALLOUT}>
+                            <p className="text-charcoal/70 text-sm text-center flex items-center justify-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-gold shrink-0" />
+                                Bond originators work for free — banks pay their commission, not you!
                             </p>
                         </div>
                     </div>
@@ -615,7 +459,7 @@ export default function DashboardPage() {
                                         </p>
                                         <Link
                                             href="/quiz"
-                                            className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
+                                            className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-semibold rounded-full hover:bg-gold-600 transition"
                                         >
                                             Take the Quiz
                                         </Link>
@@ -650,35 +494,67 @@ export default function DashboardPage() {
 
                             {/* Documents */}
                             <div className="premium-card rounded-xl p-6">
-                                <h2 className="text-xl font-bold text-charcoal mb-5 flex items-center">
-                                    <Download className="w-5 h-5 mr-2 text-gold" />
-                                    My Documents
-                                </h2>
+                                <div className="flex items-center justify-between mb-5">
+                                    <h2 className="text-xl font-bold text-charcoal flex items-center">
+                                        <Download className="w-5 h-5 mr-2 text-gold" />
+                                        My Documents
+                                    </h2>
+                                    <Link
+                                        href="/dashboard/documents"
+                                        className="text-sm font-semibold text-gold hover:text-gold-600 transition"
+                                    >
+                                        Manage
+                                    </Link>
+                                </div>
                                 <div className="space-y-2">
-                                    <button className="w-full text-left px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-white text-sm flex items-center justify-between">
-                                        <span>Pre-Qualification Letter</span>
-                                        <Download className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-full text-left px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-white text-sm flex items-center justify-between">
-                                        <span>ID Document</span>
-                                        <Download className="w-4 h-4" />
-                                    </button>
-                                    <button className="w-full text-left px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-white text-sm flex items-center justify-between">
-                                        <span>Proof of Income</span>
-                                        <Download className="w-4 h-4" />
-                                    </button>
+                                    {BUYER_DOCUMENT_SLOTS.map(({ type, label }) => {
+                                        const uploaded = buyerDocuments.find((doc) => doc.type === type);
+                                        return (
+                                            <div
+                                                key={type}
+                                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-charcoal/5 hover:bg-charcoal/10 transition text-charcoal text-sm group"
+                                            >
+                                                <Link
+                                                    href={`/dashboard/documents?type=${type}`}
+                                                    className="flex items-center justify-between flex-1 min-w-0"
+                                                >
+                                                    <span className="flex items-center gap-2 min-w-0">
+                                                        {uploaded ? (
+                                                            <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
+                                                        ) : (
+                                                            <Upload className="w-4 h-4 text-charcoal/40 group-hover:text-gold shrink-0" />
+                                                        )}
+                                                        <span className="truncate">{label}</span>
+                                                    </span>
+                                                    <span className="text-xs font-medium text-charcoal/50 group-hover:text-gold shrink-0 ml-2">
+                                                        {uploaded ? 'Uploaded' : 'Upload'}
+                                                    </span>
+                                                </Link>
+                                                {uploaded && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPreviewDoc(uploaded)}
+                                                        className="p-1.5 rounded-lg bg-gold/[0.06] hover:bg-gold/10 text-gold border border-gold/10 shrink-0"
+                                                        title="Preview"
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </UserPortalLayout>
 
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-5 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
-                </div>
-            </main>
+            <BuyerDocumentPreviewModal
+                doc={previewDoc}
+                userId={currentUser?.id}
+                onClose={() => setPreviewDoc(null)}
+            />
 
             {/* Contact Modal */}
             {selectedOriginator && (
@@ -764,6 +640,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

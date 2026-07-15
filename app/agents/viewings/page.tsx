@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
+import AgentPageHeader from '@/components/AgentPageHeader';
 import AgentViewingsWorkspace from '@/components/AgentViewingsWorkspace';
+import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
 
 export default function AgentViewingsPage() {
     const router = useRouter();
@@ -26,16 +28,28 @@ export default function AgentViewingsPage() {
 
     if (!currentAgent) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
                 <p className="text-charcoal/60">Loading…</p>
             </div>
         );
     }
 
     return (
-        <AgentPortalLayout activePage="viewings" agent={currentAgent} title="Viewings">
-            <div className="max-w-7xl mx-auto">
-                <AgentViewingsWorkspace agent={currentAgent} showPageHeader />
+        <AgentPortalLayout
+            activePage="viewings"
+            agent={currentAgent}
+            title="Viewings"
+            pageHeader={
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow="Appointments"
+                    title="Viewing Appointments"
+                    description="Schedule and manage property viewings with buyers and sellers"
+                />
+            }
+        >
+            <div className={AGENT_PAGE_CONTAINER}>
+                <AgentViewingsWorkspace agent={currentAgent} showPageHeader={false} />
             </div>
         </AgentPortalLayout>
     );

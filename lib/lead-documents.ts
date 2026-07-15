@@ -20,40 +20,6 @@ export interface LeadDocument {
 }
 
 const DEMO_LEAD_DOCUMENTS: Record<string, LeadDocument[]> = {
-    'demo-buyer-thabo': [
-        {
-            id: 'demo-doc-thabo-id',
-            name: 'Thabo_Mokoena_ID.pdf',
-            type: 'id',
-            status: 'verified',
-            uploadedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
-            size: '1.2 MB',
-        },
-        {
-            id: 'demo-doc-thabo-income',
-            name: 'Payslip_March_2026.pdf',
-            type: 'income',
-            status: 'verified',
-            uploadedAt: new Date(Date.now() - 9 * 86400000).toISOString(),
-            size: '845 KB',
-        },
-        {
-            id: 'demo-doc-thabo-bank',
-            name: 'Bank_Statement_Feb_2026.pdf',
-            type: 'bank-statement',
-            status: 'uploaded',
-            uploadedAt: new Date(Date.now() - 8 * 86400000).toISOString(),
-            size: '2.1 MB',
-        },
-        {
-            id: 'demo-doc-thabo-prequal',
-            name: 'SA_Home_Loans_PreQualification.pdf',
-            type: 'pre-qualification',
-            status: 'verified',
-            uploadedAt: new Date(Date.now() - 7 * 86400000).toISOString(),
-            size: '512 KB',
-        },
-    ],
     'demo-buyer-lerato': [
         {
             id: 'demo-doc-lerato-id',
@@ -82,9 +48,9 @@ const DEMO_LEAD_DOCUMENTS: Record<string, LeadDocument[]> = {
             size: '1.1 MB',
         },
     ],
-    'demo-seller-patricia': [
+    'demo-seller-john': [
         {
-            id: 'demo-doc-patricia-title',
+            id: 'demo-doc-john-title',
             name: 'Title_Deed_Maple_Street.pdf',
             type: 'title-deed',
             status: 'uploaded',
@@ -92,7 +58,7 @@ const DEMO_LEAD_DOCUMENTS: Record<string, LeadDocument[]> = {
             size: '3.4 MB',
         },
         {
-            id: 'demo-doc-patricia-rates',
+            id: 'demo-doc-john-rates',
             name: 'Rates_Clearance_Certificate.pdf',
             type: 'rates',
             status: 'pending',
@@ -122,6 +88,13 @@ function normalizeDocument(doc: Record<string, unknown>): LeadDocument {
         size: doc.size ? String(doc.size) : undefined,
         url: doc.url ? String(doc.url) : null,
     };
+}
+
+export function readLeadDocumentsLocal(leadId: string): LeadDocument[] {
+    if (DEMO_LEAD_DOCUMENTS[leadId]) {
+        return DEMO_LEAD_DOCUMENTS[leadId];
+    }
+    return readLocalLeadDocuments(leadId);
 }
 
 function readLocalLeadDocuments(leadId: string): LeadDocument[] {
@@ -183,11 +156,7 @@ export function leadDocumentTypeLabel(type: LeadDocumentType): string {
 }
 
 export async function fetchLeadDocuments(leadId: string): Promise<LeadDocument[]> {
-    if (DEMO_LEAD_DOCUMENTS[leadId]) {
-        return DEMO_LEAD_DOCUMENTS[leadId];
-    }
-
-    const local = readLocalLeadDocuments(leadId);
+    const local = readLeadDocumentsLocal(leadId);
     if (local.length > 0) return local;
 
     try {

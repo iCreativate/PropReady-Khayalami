@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Home, Search, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Home, Search as SearchIcon, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
+import BuyerPortalShell from '@/components/BuyerPortalShell';
+import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 import { formatCurrency } from '@/lib/currency';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
 
@@ -184,41 +186,41 @@ export default function SearchPage() {
         return filtered;
     }, [propertiesWithScores, activeFilter, searchQuery]);
 
-    return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Home</span>
-                    </Link>
+    const searchPublicHeader = (
+        <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
+            <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
+                <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
+                    <ArrowLeft className="w-5 h-5" />
+                    <span>Back to Home</span>
+                </Link>
 
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
+                <div className="flex items-center space-x-2">
+                    <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
+                        <Home className="w-6 h-6 text-white" />
                     </div>
+                    <span className="text-charcoal text-xl font-bold">PropReady</span>
+                </div>
 
-                    <Link
-                        href="/dashboard"
-                        className="px-4 py-2 rounded-lg bg-gold text-white font-semibold hover:bg-gold-600 transition"
-                    >
-                        My Dashboard
-                    </Link>
-                </nav>
-            </header>
+                <Link
+                    href="/dashboard"
+                    className="px-4 py-2 rounded-lg bg-gold text-white font-semibold hover:bg-gold-600 transition"
+                >
+                    My Dashboard
+                </Link>
+            </nav>
+        </header>
+    );
 
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-8">
-                <div className="container mx-auto max-w-7xl relative z-10">
+    return (
+        <BuyerPortalShell activePage="properties" title="Properties" publicChrome={searchPublicHeader}>
+            <div className="relative">
+                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Search Bar */}
                     <div className="mb-8">
                         <div className="glass-effect rounded-xl p-6">
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="flex-1 relative">
-                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
                                     <input
                                         type="text"
                                         placeholder="Search by location, suburb, or property name..."
@@ -524,12 +526,11 @@ export default function SearchPage() {
                     </div>
                 </div>
 
-                {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-5 pointer-events-none">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </BuyerPortalShell>
     );
 }

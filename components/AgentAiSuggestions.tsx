@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
+import { AGENT_CARD } from '@/lib/agent-portal-ui';
 
 export interface AiSuggestionsContext {
     newBuyers?: number;
@@ -58,40 +59,60 @@ export default function AgentAiSuggestions({ context }: AgentAiSuggestionsProps)
     ]);
 
     return (
-        <div className="mb-8 rounded-xl border border-gold/30 bg-gradient-to-br from-gold/5 to-white p-6">
-            <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-gold" />
-                    <div>
-                        <h3 className="text-lg font-bold text-charcoal">AI suggestions</h3>
-                        <p className="text-charcoal/60 text-sm">
-                            Personalized tips for your pipeline
-                            {source === 'ai' ? ' (powered by AI)' : ''}
-                        </p>
+        <section className={`mb-10 sm:mb-12 ${AGENT_CARD}`}>
+            <div className="px-6 sm:px-8 pt-6 sm:pt-7 pb-5 border-b border-charcoal/[0.06] bg-gradient-to-r from-gold/[0.04] via-white to-white">
+                <div className="flex items-start justify-between gap-5">
+                    <div className="flex items-start gap-4 min-w-0">
+                        <div className="w-11 h-11 rounded-2xl bg-gold/[0.08] border border-gold/10 flex items-center justify-center shrink-0">
+                            <Sparkles className="w-5 h-5 text-gold" />
+                        </div>
+                        <div className="min-w-0 pt-0.5">
+                            <h3 className="text-lg font-semibold text-charcoal tracking-tight">
+                                AI insights
+                            </h3>
+                            <p className="text-charcoal/45 text-sm mt-1 leading-relaxed">
+                                Personalized recommendations for your pipeline
+                                {source === 'ai' ? ' · powered by AI' : ''}
+                            </p>
+                        </div>
                     </div>
+                    <button
+                        type="button"
+                        onClick={load}
+                        disabled={loading}
+                        className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/45 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-charcoal hover:border-charcoal/15 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] disabled:opacity-50 transition-all duration-200 shrink-0"
+                        title="Refresh suggestions"
+                        aria-label="Refresh suggestions"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    onClick={load}
-                    disabled={loading}
-                    className="p-2 rounded-lg border border-charcoal/20 text-charcoal/70 hover:bg-charcoal/5 disabled:opacity-50"
-                    title="Refresh suggestions"
-                >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                </button>
             </div>
-            {loading ? (
-                <p className="text-charcoal/50 text-sm">Generating suggestions…</p>
-            ) : (
-                <ul className="space-y-3">
-                    {suggestions.map((tip, i) => (
-                        <li key={i} className="flex gap-3 text-sm text-charcoal/90">
-                            <Lightbulb className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-                            <span>{tip}</span>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
+
+            <div className="px-6 sm:px-8 py-6 sm:py-7">
+                {loading ? (
+                    <div className="space-y-4">
+                        {[1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                className="h-[18px] rounded-full bg-charcoal/[0.05] animate-pulse"
+                                style={{ width: `${88 - i * 14}%` }}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <ul className="space-y-5">
+                        {suggestions.map((tip, i) => (
+                            <li key={i} className="flex gap-4 items-start">
+                                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold/[0.07] border border-gold/10">
+                                    <Lightbulb className="w-3.5 h-3.5 text-gold" />
+                                </span>
+                                <span className="text-[15px] text-charcoal/75 leading-[1.65] pt-1">{tip}</span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </section>
     );
 }

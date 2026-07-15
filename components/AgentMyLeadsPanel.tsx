@@ -28,10 +28,22 @@ import {
 } from '@/lib/lead-verification';
 import { mergeDemoLeadsIntoStorage } from '@/lib/demo-leads';
 import { DEMO_AGENT } from '@/lib/demo-agent';
+import AgentPageHeader from '@/components/AgentPageHeader';
+import {
+    AGENT_CARD,
+    AGENT_CARD_HEADER,
+    AGENT_CARD_BODY,
+    AGENT_BADGE,
+    AGENT_EMPTY_ICON,
+    AGENT_INNER_CARD,
+    AGENT_PRIMARY_BTN,
+    AGENT_CARD_SOFT,
+} from '@/lib/agent-portal-ui';
 
 interface AgentMyLeadsPanelProps {
     agentId?: string;
     showPageHeader?: boolean;
+    agentFirstName?: string;
 }
 
 async function loadAllLeads(): Promise<{
@@ -84,6 +96,7 @@ async function loadAllLeads(): Promise<{
 export default function AgentMyLeadsPanel({
     agentId,
     showPageHeader = true,
+    agentFirstName,
 }: AgentMyLeadsPanelProps) {
     const [buyers, setBuyers] = useState<AgentLeadRecord[]>([]);
     const [sellers, setSellers] = useState<AgentLeadRecord[]>([]);
@@ -118,40 +131,49 @@ export default function AgentMyLeadsPanel({
     return (
         <div>
             {showPageHeader && (
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-charcoal mb-2">My Leads</h1>
-                    <p className="text-charcoal/80 text-lg">
-                        Leads you have contacted with a scheduled viewing appointment
-                    </p>
-                    <p className="text-charcoal/50 text-sm mt-2">
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow={agentFirstName ? `Active pipeline, ${agentFirstName}` : 'Active pipeline'}
+                    title="My Leads"
+                    description="Leads you have contacted with a scheduled viewing appointment"
+                >
+                    <p className="text-charcoal/45 text-sm mt-3 max-w-2xl">
                         New prequalified leads stay on the{' '}
-                        <Link href="/agents/dashboard" className="text-gold hover:underline">
+                        <Link href="/agents/dashboard" className="text-gold font-medium hover:underline">
                             dashboard
                         </Link>
                         . They appear here after you make contact and schedule a viewing.
                     </p>
-                </div>
+                </AgentPageHeader>
             )}
 
             {loading ? (
-                <p className="text-charcoal/60">Loading leads…</p>
+                <div className={`${AGENT_CARD_SOFT} p-10 text-center`}>
+                    <p className="text-charcoal/45 text-sm">Loading leads…</p>
+                </div>
             ) : allMyLeads.length === 0 ? (
-                <div className="glass-effect rounded-xl p-12 text-center">
-                    <User className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                    <p className="text-charcoal/70 text-lg font-medium">No active leads yet</p>
-                    <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
+                <div className={`${AGENT_CARD_SOFT} p-12 sm:p-16 text-center`}>
+                    <div className={AGENT_EMPTY_ICON}>
+                        <User className="w-8 h-8 text-charcoal/25" />
+                    </div>
+                    <p className="text-charcoal font-semibold text-lg tracking-tight">No active leads yet</p>
+                    <p className="text-charcoal/45 text-sm mt-2 max-w-md mx-auto leading-relaxed">
                         Contact a prequalified lead from your dashboard, then schedule a viewing.
                         They will show up here automatically.
                     </p>
-                    <Link
-                        href="/agents/dashboard"
-                        className="inline-block mt-6 px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition"
-                    >
+                    <Link href="/agents/dashboard" className={`${AGENT_PRIMARY_BTN} mt-8`}>
                         Go to Prequalified Leads
                     </Link>
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className={AGENT_CARD}>
+                    <div className={AGENT_CARD_HEADER}>
+                        <p className="text-sm text-charcoal/45 leading-relaxed">
+                            <span className="font-semibold text-charcoal">{allMyLeads.length}</span> active lead
+                            {allMyLeads.length === 1 ? '' : 's'} with scheduled viewings
+                        </p>
+                    </div>
+                    <div className={`${AGENT_CARD_BODY} space-y-4 sm:space-y-5`}>
                     {allMyLeads.map((lead) => {
                         const isSeller =
                             lead.leadType === 'seller' || lead.leadType === 'investor';
@@ -163,59 +185,59 @@ export default function AgentMyLeadsPanel({
                         return (
                             <div
                                 key={lead.id}
-                                className="rounded-xl border border-charcoal/10 bg-white shadow-sm p-5 md:p-6 hover:border-gold/25 transition"
+                                className={AGENT_INNER_CARD}
                             >
                                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                                     <div className="flex gap-4 min-w-0">
                                         <div
-                                            className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                                            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
                                                 isSeller ? 'bg-charcoal/8' : 'bg-gold/10'
                                             }`}
                                         >
                                             {isSeller ? (
-                                                <Building2 className="w-6 h-6 text-charcoal/60" />
+                                                <Building2 className="w-5 h-5 text-charcoal/60" />
                                             ) : (
-                                                <User className="w-6 h-6 text-gold" />
+                                                <User className="w-5 h-5 text-gold" />
                                             )}
                                         </div>
                                         <div className="min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                <h3 className="text-lg font-bold text-charcoal">
+                                            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                                <h3 className="text-base font-bold text-charcoal">
                                                     {lead.fullName}
                                                 </h3>
-                                                <span className="text-xs font-semibold uppercase tracking-wide text-charcoal/50">
+                                                <span className="text-[11px] font-semibold uppercase tracking-wide text-charcoal/45 px-2 py-0.5 rounded-md bg-charcoal/5">
                                                     {isSeller ? 'Seller' : 'Buyer'}
                                                 </span>
                                                 <span
-                                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${verificationStatusClasses(verification)}`}
+                                                    className={`${AGENT_BADGE} border ${verificationStatusClasses(verification)}`}
                                                 >
                                                     {verification === 'verified' && (
-                                                        <CheckCircle className="w-3 h-3" />
+                                                        <CheckCircle className="w-3.5 h-3.5 shrink-0" />
                                                     )}
                                                     {verificationStatusLabel(verification)}
                                                 </span>
                                             </div>
-                                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-charcoal/70">
-                                                <span className="inline-flex items-center gap-1">
-                                                    <Mail className="w-3.5 h-3.5" />
-                                                    {lead.email}
+                                            <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+                                                <span className="inline-flex items-center gap-1.5 text-charcoal/70 min-w-0">
+                                                    <Mail className="w-3.5 h-3.5 shrink-0 text-charcoal/40" />
+                                                    <span className="truncate">{lead.email}</span>
                                                 </span>
                                                 {lead.phone && (
-                                                    <span className="inline-flex items-center gap-1">
-                                                        <Phone className="w-3.5 h-3.5" />
+                                                    <span className="inline-flex items-center gap-1.5 text-charcoal/55 tabular-nums">
+                                                        <Phone className="w-3.5 h-3.5 shrink-0 text-charcoal/40" />
                                                         {lead.phone}
                                                     </span>
                                                 )}
                                                 {lead.city && (
-                                                    <span className="inline-flex items-center gap-1">
-                                                        <MapPin className="w-3.5 h-3.5" />
+                                                    <span className="inline-flex items-center gap-1.5 text-charcoal/55">
+                                                        <MapPin className="w-3.5 h-3.5 shrink-0 text-charcoal/40" />
                                                         {lead.city}
                                                     </span>
                                                 )}
                                             </div>
                                             {!isSeller && lead.score != null && (
-                                                <p className="text-sm text-charcoal/60 mt-2 inline-flex items-center gap-1">
-                                                    <TrendingUp className="w-4 h-4 text-gold" />
+                                                <p className="text-sm text-charcoal/55 mt-2 inline-flex items-center gap-1.5">
+                                                    <TrendingUp className="w-3.5 h-3.5 text-gold" />
                                                     Score {lead.score}%
                                                     {lead.preQualAmount != null && (
                                                         <>
@@ -228,12 +250,12 @@ export default function AgentMyLeadsPanel({
                                             )}
                                             {originator && lead.prequalifiedWithOriginator && (
                                                 <p className="text-sm mt-2 inline-flex items-center gap-1.5 text-gold font-medium">
-                                                    <BadgeCheck className="w-4 h-4" />
+                                                    <BadgeCheck className="w-4 h-4 shrink-0" />
                                                     Pre-qualified with {originator}
                                                 </p>
                                             )}
                                             {isSeller && lead.propertyAddress && (
-                                                <p className="text-sm text-charcoal/60 mt-2">
+                                                <p className="text-sm text-charcoal/55 mt-2 leading-relaxed">
                                                     {lead.propertyAddress}
                                                     {lead.currentValue && (
                                                         <> · {lead.currentValue}</>
@@ -244,20 +266,20 @@ export default function AgentMyLeadsPanel({
                                     </div>
 
                                     {nextAppt && (
-                                        <div className="lg:text-right shrink-0 rounded-lg bg-gold/5 border border-gold/20 px-4 py-3">
-                                            <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/50 mb-1">
+                                        <div className="lg:text-right shrink-0 rounded-xl bg-gold/5 border border-gold/15 px-4 py-3">
+                                            <p className="text-[11px] font-semibold uppercase tracking-wide text-charcoal/45 mb-1">
                                                 Next appointment
                                             </p>
-                                            <p className="text-charcoal font-semibold inline-flex items-center gap-1.5 lg:justify-end">
-                                                <Calendar className="w-4 h-4 text-gold" />
+                                            <p className="text-charcoal font-semibold text-sm inline-flex items-center gap-1.5 lg:justify-end">
+                                                <Calendar className="w-4 h-4 text-gold shrink-0" />
                                                 {nextAppt.date} at {nextAppt.time}
                                             </p>
                                             {nextAppt.propertyTitle && (
-                                                <p className="text-charcoal/60 text-sm mt-1">
+                                                <p className="text-charcoal/55 text-sm mt-1">
                                                     {nextAppt.propertyTitle}
                                                 </p>
                                             )}
-                                            <p className="text-charcoal/50 text-xs mt-1 capitalize">
+                                            <p className="text-charcoal/45 text-xs mt-1 capitalize">
                                                 {nextAppt.status || 'scheduled'}
                                             </p>
                                         </div>
@@ -266,6 +288,7 @@ export default function AgentMyLeadsPanel({
                             </div>
                         );
                     })}
+                    </div>
                 </div>
             )}
         </div>

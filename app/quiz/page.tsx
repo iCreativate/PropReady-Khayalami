@@ -1,26 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
 import { getLocationFromBrowser } from '@/lib/geolocation';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
+import BondOriginatorSlider from '@/components/BondOriginatorSlider';
+import BuyerPreQualificationPanel from '@/components/BuyerPreQualificationPanel';
+import UserPortalLayout from '@/components/UserPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
+import type { BondOriginator } from '@/lib/bond-originators';
+import {
+    prefillQuizFormFromResult,
+    refreshBuyerQuizResultFromApi,
+    resolveBuyerQuizResultSync,
+    type BuyerQuizResult,
+    type PortalUser,
+} from '@/lib/quiz-result';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 
-interface Originator {
-    name: string;
-    description: string;
-    rating: string;
-    features: string[];
-    phone: string;
-    website: string;
+type QuizView = 'results' | 'wizard';
+
+function readPortalUser(): PortalUser | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        const userRaw = localStorage.getItem(STORAGE_KEYS.currentUser);
+        if (!userRaw) return null;
+        return JSON.parse(userRaw) as PortalUser;
+    } catch {
+        return null;
+    }
 }
 
 export default function QuizPage() {
     const router = useRouter();
+    const [isHydrated, setIsHydrated] = useState(false);
+    const [view, setView] = useState<QuizView>('wizard');
+    const [currentUser, setCurrentUser] = useState<PortalUser | null>(null);
+    const [savedResult, setSavedResult] = useState<BuyerQuizResult | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
-    const [selectedOriginator, setSelectedOriginator] = useState<Originator | null>(null);
+    const [selectedOriginator, setSelectedOriginator] = useState<BondOriginator | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState({
         fullName: '',
@@ -35,14 +57,55 @@ export default function QuizPage() {
         creditScore: '', // Optional/Self-reported
         employmentStatus: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
     });
 
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [locationLoading, setLocationLoading] = useState(false);
 
-    const totalSteps = 9;
+    const isLoggedIn = Boolean(currentUser?.id || currentUser?.email);
+    const totalSteps = isLoggedIn ? 8 : 9;
+
+    useEffect(() => {
+        const user = readPortalUser();
+        if (!user) {
+            setIsHydrated(true);
+            return;
+        }
+
+        setCurrentUser(user);
+
+        const result = resolveBuyerQuizResultSync(user);
+        if (result) {
+            setSavedResult(result);
+            setView('results');
+        } else {
+            setFormData((prev) => ({
+                ...prev,
+                fullName: user.fullName || prev.fullName,
+                email: user.email || prev.email,
+            }));
+            setView('wizard');
+        }
+
+        setIsHydrated(true);
+
+        void refreshBuyerQuizResultFromApi(user).then((apiResult) => {
+            if (!apiResult) return;
+            setCurrentUser(user);
+            setSavedResult(apiResult);
+            setView('results');
+        });
+    }, []);
+
+    const handleRetakeQuiz = () => {
+        if (savedResult) {
+            setFormData(prefillQuizFormFromResult(savedResult));
+        }
+        setCurrentStep(1);
+        setView('wizard');
+    };
 
     // Use comma-grouping explicitly (avoids locale NBSP grouping issues on some mobile browsers)
     const formatNumberInput = (value: string) => {
@@ -178,7 +241,12 @@ export default function QuizPage() {
         }
 
         if (currentStep < totalSteps) {
-            setCurrentStep(prev => prev + 1);
+            setCurrentStep((prev) => {
+                if (isLoggedIn && prev === 6) return 8;
+                return prev + 1;
+            });
+        } else if (isLoggedIn) {
+            void handleLoggedInQuizUpdate();
         } else {
             handleSubmit();
         }
@@ -186,7 +254,10 @@ export default function QuizPage() {
 
     const handlePrevious = () => {
         if (currentStep > 1) {
-            setCurrentStep(prev => prev - 1);
+            setCurrentStep((prev) => {
+                if (isLoggedIn && prev === 8) return 6;
+                return prev - 1;
+            });
         }
     };
 
@@ -279,6 +350,64 @@ export default function QuizPage() {
         loanAmount = Math.min(loanAmount, maxLoanAmount);
 
         return Math.round(loanAmount);
+    };
+
+    const handleLoggedInQuizUpdate = async () => {
+        const score = calculatePropReadyScore();
+        const preQualAmount = calculatePreQualAmount();
+        const userId = currentUser?.id;
+
+        if (!userId || typeof window === 'undefined') return;
+
+        const quizResult: BuyerQuizResult = {
+            ...formData,
+            score,
+            preQualAmount,
+            timestamp: new Date().toISOString(),
+            id: userId,
+            user_id: userId,
+            fullName: formData.fullName || currentUser?.fullName,
+            email: formData.email || currentUser?.email,
+        };
+
+        localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
+
+        const lead = {
+            id: userId,
+            leadType: 'buyer',
+            fullName: quizResult.fullName,
+            email: quizResult.email,
+            phone: formData.phone,
+            city: formData.city.trim(),
+            inMarketForProperty: formData.inMarketForProperty,
+            monthlyIncome: formData.monthlyIncome,
+            depositSaved: formData.depositSaved,
+            employmentStatus: formData.employmentStatus,
+            creditScore: formData.creditScore,
+            score,
+            preQualAmount,
+            status: 'new',
+            timestamp: new Date().toISOString(),
+            contactedAt: null,
+        };
+
+        try {
+            await fetch('/api/leads', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lead),
+            });
+        } catch {
+            /* keep local copy */
+        }
+
+        const existingLeads = JSON.parse(localStorage.getItem('propReady_leads') || '[]');
+        const filtered = existingLeads.filter((l: { id: string }) => l.id !== userId);
+        filtered.push(lead);
+        localStorage.setItem('propReady_leads', JSON.stringify(filtered));
+
+        setSavedResult(quizResult);
+        setView('results');
     };
 
     const handleSubmit = async () => {
@@ -894,77 +1023,7 @@ export default function QuizPage() {
                             </p>
                         </div>
 
-                        <div className="space-y-4">
-                            {[
-                                {
-                                    name: 'BetterBond',
-                                    description: 'South Africa\'s leading bond originator',
-                                    rating: '4.8/5',
-                                    features: ['Free service', 'Multiple bank comparisons', 'Expert guidance'],
-                                    phone: '0800007111',
-                                    website: 'https://www.betterbond.co.za'
-                                },
-                                {
-                                    name: 'Ooba',
-                                    description: 'Compare deals from 20+ banks',
-                                    rating: '4.7/5',
-                                    features: ['No cost to you', 'Fast approval', 'Dedicated consultant'],
-                                    phone: '0860006622',
-                                    website: 'https://www.ooba.co.za'
-                                },
-                                {
-                                    name: 'MultiNET Home Loans',
-                                    description: 'Personalized home loan solutions',
-                                    rating: '4.6/5',
-                                    features: ['Free pre-approval', 'Best rates guaranteed', '24/7 support'],
-                                    phone: '0861545444',
-                                    website: 'https://www.multinet.co.za'
-                                }
-                            ].map((originator, index) => (
-                                <div
-                                    key={index}
-                                    className="premium-card rounded-xl p-6 group"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex-1">
-                                            <h3 className="text-charcoal font-bold text-lg mb-1">{originator.name}</h3>
-                                            <p className="text-charcoal/50 text-sm mb-2">{originator.description}</p>
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <span className="text-gold text-sm font-semibold">★ {originator.rating}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {originator.features.map((feature, idx) => (
-                                            <span
-                                                key={idx}
-                                                className="px-2 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold"
-                                            >
-                                                {feature}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <button 
-                                            onClick={() => setSelectedOriginator(originator)}
-                                            className="flex-1 px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition flex items-center justify-center gap-2"
-                                        >
-                                            <Phone className="w-4 h-4" />
-                                            Contact
-                                        </button>
-                                        <a 
-                                            href={originator.website}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2 border border-charcoal/20 text-charcoal font-semibold rounded-lg hover:bg-charcoal/5 transition flex items-center gap-2"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                            Visit
-                                        </a>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <BondOriginatorSlider onContact={setSelectedOriginator} />
 
                         <div className="premium-card rounded-xl p-4 bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/20">
                             <p className="text-charcoal/70 text-sm text-center">
@@ -979,9 +1038,230 @@ export default function QuizPage() {
         }
     };
 
+    const renderWizard = () => (
+        <div className="relative min-h-[calc(100vh-4.25rem)] flex items-center justify-center">
+            <div className="container mx-auto max-w-4xl relative z-10 w-full">
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30">
+                        <span className="text-gold font-semibold">
+                            Step {isLoggedIn && currentStep >= 8 ? 7 : currentStep} of {totalSteps}
+                        </span>
+                    </div>
+                    <div className="w-full max-w-md mx-auto h-2 bg-charcoal/10 rounded-full mt-4 overflow-hidden">
+                        <div
+                            className="h-full bg-gold transition-all duration-500 ease-out"
+                            style={{
+                                width: `${((isLoggedIn && currentStep >= 8 ? 7 : currentStep) / totalSteps) * 100}%`,
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div className="premium-card rounded-2xl p-8 md:p-12 min-h-[500px] flex flex-col">
+                    <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2 text-center">
+                        {isLoggedIn ? 'Update Your Pre-Qualification' : "Let's Get You PropReady!"}
+                    </h1>
+                    <p className="text-charcoal/60 mb-8 text-center">
+                        {isLoggedIn
+                            ? 'Update your answers to refresh your PropReady score and pre-qualification amount.'
+                            : 'Answer a few questions to unlock your home buying power.'}
+                    </p>
+
+                    <div className="flex-grow">{renderStepContent()}</div>
+
+                    <div className="flex items-center justify-between mt-12 pt-6 border-t border-charcoal/10">
+                        <button
+                            type="button"
+                            onClick={handlePrevious}
+                            disabled={currentStep === 1}
+                            className={`px-6 py-3 rounded-lg border border-charcoal/20 text-charcoal font-semibold transition-all ${
+                                currentStep === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-charcoal/5'
+                            }`}
+                        >
+                            Previous
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleNext}
+                            className="inline-flex items-center space-x-2 px-8 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                        >
+                            <span>
+                                {currentStep === totalSteps
+                                    ? isLoggedIn
+                                        ? 'Save Pre-Qualification'
+                                        : 'Complete & View Dashboard'
+                                    : 'Next Step'}
+                            </span>
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="text-center mt-8">
+                    <p className="text-charcoal/70 text-sm flex items-center justify-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Your information is secure and encrypted
+                    </p>
+                </div>
+            </div>
+
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+                <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float" />
+                <div
+                    className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float"
+                    style={{ animationDelay: '2s' }}
+                />
+            </div>
+        </div>
+    );
+
+    const renderContactModal = () =>
+        selectedOriginator ? (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse" />
+                    <div
+                        className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse"
+                        style={{ animationDelay: '1s' }}
+                    />
+                </div>
+
+                <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
+                    <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+                        <div className="relative flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
+                                        <Phone className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                                            {selectedOriginator.name}
+                                        </h2>
+                                        <p className="text-white/90 text-sm">{selectedOriginator.description}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedOriginator(null)}
+                                className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                aria-label="Close"
+                            >
+                                <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                        <div className="text-center mb-6">
+                            <div className="bg-white rounded-lg p-4 border border-charcoal/10 shadow-sm">
+                                <p className="text-charcoal/50 text-sm mb-1 font-semibold">Contact Number</p>
+                                <p className="text-2xl font-bold text-gold">
+                                    {selectedOriginator.phone.length === 10
+                                        ? selectedOriginator.phone.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')
+                                        : selectedOriginator.phone.replace(/(\d{4})(\d{3})(\d{4})/, '$1 $2 $3')}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <a
+                                href={`tel:${selectedOriginator.phone}`}
+                                className="w-full px-6 py-3 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                            >
+                                <Phone className="w-5 h-5" />
+                                Call Now
+                            </a>
+                            <a
+                                href={selectedOriginator.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full px-6 py-3 border border-charcoal/20 text-charcoal font-semibold rounded-xl hover:bg-charcoal/5 transition flex items-center justify-center gap-2"
+                            >
+                                <ExternalLink className="w-5 h-5" />
+                                Visit Website
+                            </a>
+                        </div>
+                    </div>
+
+                    <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedOriginator(null)}
+                            className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                        >
+                            <span>Done</span>
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        ) : null;
+
+    if (!isHydrated) {
+        return null;
+    }
+
+    if (view === 'results' && savedResult && currentUser) {
+        return (
+            <>
+                <UserPortalLayout
+                    portal="buyer"
+                    activePage="quiz"
+                    user={{
+                        fullName: currentUser.fullName || savedResult.fullName || 'Buyer',
+                        email: currentUser.email,
+                        id: currentUser.id,
+                    }}
+                    title="Pre-Qualification"
+                    pageHeader={
+                        <PortalPageHeader
+                            variant="premium"
+                            eyebrow="Your PropReady assessment"
+                            title="Pre-Qualification"
+                            description="Review your score, documents, and bond originator options"
+                        />
+                    }
+                >
+                    <div className={PORTAL_PAGE_CONTAINER}>
+                        <BuyerPreQualificationPanel
+                            result={savedResult}
+                            userId={currentUser.id}
+                            onContactOriginator={setSelectedOriginator}
+                            onRetakeQuiz={handleRetakeQuiz}
+                        />
+                    </div>
+                </UserPortalLayout>
+                {renderContactModal()}
+            </>
+        );
+    }
+
+    if (isLoggedIn && currentUser) {
+        return (
+            <>
+                <UserPortalLayout
+                    portal="buyer"
+                    activePage="quiz"
+                    user={{
+                        fullName: currentUser.fullName || 'Buyer',
+                        email: currentUser.email,
+                        id: currentUser.id,
+                    }}
+                    title="Pre-Qualification"
+                >
+                    {renderWizard()}
+                </UserPortalLayout>
+                {renderContactModal()}
+            </>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
                 <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
                     <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
@@ -998,161 +1278,11 @@ export default function QuizPage() {
                 </nav>
             </header>
 
-            {/* Main Content */}
             <main className="relative min-h-screen flex items-center justify-center px-4 pt-24 pb-12">
-                <div className="container mx-auto max-w-4xl relative z-10">
-                    {/* Progress Badge */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30">
-                            <span className="text-gold font-semibold">Step {currentStep} of {totalSteps}</span>
-                        </div>
-                        {/* Progress Bar */}
-                        <div className="w-full max-w-md mx-auto h-2 bg-white/10 rounded-full mt-4 overflow-hidden">
-                            <div
-                                className="h-full bg-gold transition-all duration-500 ease-out"
-                                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                            ></div>
-                        </div>
-                    </div>
-
-                    {/* Quiz Card */}
-                    <div className="premium-card rounded-2xl p-8 md:p-12 min-h-[500px] flex flex-col">
-                        <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2 text-center">
-                            Let&apos;s Get You PropReady!
-                        </h1>
-
-                        <p className="text-charcoal/60 mb-8 text-center">
-                            Answer a few questions to unlock your home buying power.
-                        </p>
-
-                        {/* Dynamic Step Content */}
-                        <div className="flex-grow">
-                            {renderStepContent()}
-                        </div>
-
-                        {/* Navigation Buttons */}
-                        <div className="flex items-center justify-between mt-12 pt-6 border-t border-charcoal/10">
-                            <button
-                                onClick={handlePrevious}
-                                disabled={currentStep === 1}
-                                className={`px-6 py-3 rounded-lg border border-charcoal/20 text-charcoal font-semibold transition-all ${currentStep === 1
-                                        ? 'opacity-50 cursor-not-allowed'
-                                        : 'hover:bg-charcoal/5'
-                                    }`}
-                            >
-                                Previous
-                            </button>
-
-                            <button
-                                onClick={handleNext}
-                                className="inline-flex items-center space-x-2 px-8 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
-                            >
-                                <span>{currentStep === totalSteps ? 'Complete & View Dashboard' : 'Next Step'}</span>
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Trust Message */}
-                    <div className="text-center mt-8">
-                        <p className="text-charcoal/70 text-sm flex items-center justify-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Your information is secure and encrypted
-                        </p>
-                    </div>
-                </div>
-
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
-                </div>
+                {renderWizard()}
             </main>
 
-            {/* Contact Modal */}
-            {selectedOriginator && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    {/* Decorative background elements */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                                            <Phone className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
-                                                {selectedOriginator.name}
-                                            </h2>
-                                            <p className="text-white/90 text-sm">{selectedOriginator.description}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedOriginator(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
-                                    aria-label="Close"
-                                >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Content area */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
-                            <div className="text-center mb-6">
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 shadow-sm">
-                                    <p className="text-charcoal/50 text-sm mb-1 font-semibold">Contact Number</p>
-                                    <p className="text-2xl font-bold text-gold">
-                                        {selectedOriginator.phone.length === 10 
-                                            ? selectedOriginator.phone.replace(/(\d{4})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4')
-                                            : selectedOriginator.phone.replace(/(\d{4})(\d{3})(\d{4})/, '$1 $2 $3')
-                                        }
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <a
-                                    href={`tel:${selectedOriginator.phone}`}
-                                    className="w-full px-6 py-3 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
-                                >
-                                    <Phone className="w-5 h-5" />
-                                    Call Now
-                                </a>
-                                <a
-                                    href={selectedOriginator.website}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full px-6 py-3 border border-charcoal/20 text-charcoal font-semibold rounded-xl hover:bg-charcoal/5 transition flex items-center justify-center gap-2"
-                                >
-                                    <ExternalLink className="w-5 h-5" />
-                                    Visit Website
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
-                            <button
-                                onClick={() => setSelectedOriginator(null)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
-                            >
-                                <span>Done</span>
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {renderContactModal()}
         </div>
     );
 }

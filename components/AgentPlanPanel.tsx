@@ -16,6 +16,15 @@ import {
     isUnlimitedBuyerPlan,
     PRICING_SUMMARY,
 } from '@/lib/agent-plans';
+import {
+    AGENT_CARD,
+    AGENT_CARD_HEADER,
+    AGENT_CARD_BODY,
+    AGENT_PLAN_CARD,
+    AGENT_PLAN_CARD_CURRENT,
+    AGENT_SECTION_LABEL,
+    AGENT_CARD_SOFT,
+} from '@/lib/agent-portal-ui';
 
 interface AgentPlanPanelProps {
     agent: {
@@ -26,6 +35,30 @@ interface AgentPlanPanelProps {
     };
     verifiedBuyerCount?: number;
     verifiedSellerCount?: number;
+}
+
+function PlanCard({
+    isCurrent,
+    href,
+    children,
+    className = '',
+}: {
+    isCurrent: boolean;
+    href?: string;
+    children: React.ReactNode;
+    className?: string;
+}) {
+    const base = isCurrent ? AGENT_PLAN_CARD_CURRENT : AGENT_PLAN_CARD;
+
+    if (isCurrent || !href) {
+        return <div className={`${base} ${className}`}>{children}</div>;
+    }
+
+    return (
+        <a href={href} className={`${base} ${className}`}>
+            {children}
+        </a>
+    );
 }
 
 export default function AgentPlanPanel({
@@ -39,197 +72,201 @@ export default function AgentPlanPanel({
     const sellerPlanLimit = getSellerLeadLimit(normalizeSellerPlan(agent.sellerPlan));
 
     return (
-        <div className="rounded-xl border border-gold/30 bg-gradient-to-r from-gold/10 to-gold/5 p-6">
-            <h3 className="text-lg font-bold text-charcoal mb-1">Your buyer plan</h3>
-            <p className="text-charcoal/70 text-sm mb-2">{PRICING_SUMMARY}</p>
-            <p className="text-charcoal/70 text-sm mb-2">
-                Current: {getPlanDisplay(agent.plan)} —{' '}
-                {buyerPlanUnlimited
-                    ? 'unlimited verified buyer leads'
-                    : `up to ${buyerPlanLimitLabel} verified buyer leads`}
-                .
-            </p>
-            <p className="text-charcoal/80 text-sm mb-4">
-                Verified this period:{' '}
-                <strong>{verifiedBuyerCount}</strong>
-                {buyerPlanUnlimited ? ' buyer (unlimited)' : ` / ${buyerPlanLimitLabel} buyer`}
-                {sellerPlanLimit > 0 && (
-                    <>
-                        {' · '}
-                        <strong>{verifiedSellerCount}</strong> / {sellerPlanLimit} seller
-                    </>
-                )}
-                . Leads verify only after a viewing is booked and{' '}
-                <strong>both buyer and seller confirm</strong> the appointment.
-            </p>
+        <div className="space-y-6 sm:space-y-8">
+            <section className={AGENT_CARD}>
+                <div className="px-6 sm:px-8 py-6 sm:py-7 border-b border-charcoal/[0.06] bg-gradient-to-r from-gold/[0.04] via-white to-white">
+                    <h3 className="text-lg font-semibold text-charcoal tracking-tight mb-2">Your buyer plan</h3>
+                    <p className="text-charcoal/45 text-sm mb-4 leading-relaxed">{PRICING_SUMMARY}</p>
+                    <p className="text-charcoal/65 text-sm mb-2 leading-relaxed">
+                        Current: <span className="font-semibold text-charcoal">{getPlanDisplay(agent.plan)}</span> —{' '}
+                        {buyerPlanUnlimited
+                            ? 'unlimited verified buyer leads'
+                            : `up to ${buyerPlanLimitLabel} verified buyer leads`}
+                        .
+                    </p>
+                    <p className="text-charcoal/65 text-sm leading-relaxed">
+                        Verified this period:{' '}
+                        <strong className="text-charcoal">{verifiedBuyerCount}</strong>
+                        {buyerPlanUnlimited ? ' buyer (unlimited)' : ` / ${buyerPlanLimitLabel} buyer`}
+                        {sellerPlanLimit > 0 && (
+                            <>
+                                {' · '}
+                                <strong className="text-charcoal">{verifiedSellerCount}</strong> / {sellerPlanLimit}{' '}
+                                seller
+                            </>
+                        )}
+                        . Leads verify only after a viewing is booked and{' '}
+                        <strong className="text-charcoal">both buyer and seller confirm</strong> the appointment.
+                    </p>
+                </div>
+            </section>
 
-            <h4 className="text-sm font-bold text-charcoal mb-2 uppercase tracking-wide">
-                Buyer verified leads
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                {(['free', 'starter', 'growth', 'professional'] as const).map((planId) => {
-                    const plan = BUYER_PLANS[planId];
-                    const isCurrent = buyerPlanKey === planId;
-                    const CardTag = isCurrent ? 'div' : 'a';
-                    return (
-                        <CardTag
-                            key={planId}
-                            {...(!isCurrent && {
-                                href: buildUpgradeMailto(
+            <section className={AGENT_CARD}>
+                <div className={AGENT_CARD_HEADER}>
+                    <h4 className={AGENT_SECTION_LABEL}>Buyer verified leads</h4>
+                </div>
+                <div className={`${AGENT_CARD_BODY} sm:px-6 sm:py-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5`}>
+                    {(['free', 'starter', 'growth', 'professional'] as const).map((planId) => {
+                        const plan = BUYER_PLANS[planId];
+                        const isCurrent = buyerPlanKey === planId;
+                        return (
+                            <PlanCard
+                                key={planId}
+                                isCurrent={isCurrent}
+                                href={
+                                    isCurrent
+                                        ? undefined
+                                        : buildUpgradeMailto(
+                                              agent.fullName,
+                                              agent.email,
+                                              plan.name,
+                                              plan.priceLabel,
+                                              plan.isConsultation ? { isConsultation: true } : undefined
+                                          )
+                                }
+                            >
+                                <p className="font-semibold text-charcoal">{plan.name}</p>
+                                <p className="text-charcoal/50 text-sm mt-2 leading-relaxed">
+                                    {plan.isUnlimited
+                                        ? plan.priceLabel
+                                        : `${plan.leadLimit} leads · ${plan.priceLabel}`}
+                                </p>
+                                {plan.costPerLead != null && (
+                                    <p className="text-charcoal/40 text-xs mt-2">R{plan.costPerLead}/lead</p>
+                                )}
+                                {isCurrent && (
+                                    <p className="text-gold text-xs font-semibold mt-3">Current plan</p>
+                                )}
+                            </PlanCard>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section className={AGENT_CARD}>
+                <div className={AGENT_CARD_HEADER}>
+                    <h4 className={AGENT_SECTION_LABEL}>Seller lead packages</h4>
+                </div>
+                <div className={`${AGENT_CARD_BODY} sm:px-6 sm:py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5`}>
+                    {(['seller_starter', 'seller_growth', 'seller_professional'] as const).map((planId) => {
+                        const plan = SELLER_PLANS[planId];
+                        const isCurrent = normalizeSellerPlan(agent.sellerPlan) === planId;
+                        return (
+                            <PlanCard
+                                key={planId}
+                                isCurrent={isCurrent}
+                                href={
+                                    isCurrent
+                                        ? undefined
+                                        : buildUpgradeMailto(agent.fullName, agent.email, plan.name, plan.priceLabel)
+                                }
+                            >
+                                <p className="font-semibold text-charcoal">{plan.name}</p>
+                                <p className="text-charcoal/50 text-sm mt-2 leading-relaxed">
+                                    {plan.leadLimit} leads · {plan.priceLabel}
+                                </p>
+                                <p className="text-charcoal/40 text-xs mt-2">R{plan.costPerLead}/lead</p>
+                                {isCurrent && (
+                                    <p className="text-gold text-xs font-semibold mt-3">Active package</p>
+                                )}
+                            </PlanCard>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section className={AGENT_CARD}>
+                <div className={AGENT_CARD_HEADER}>
+                    <h4 className={AGENT_SECTION_LABEL}>Mixed leads (buyers + sellers)</h4>
+                </div>
+                <div className={`${AGENT_CARD_BODY} sm:px-6 sm:py-6 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5`}>
+                    {(['bronze', 'silver', 'gold'] as const).map((planId) => {
+                        const plan = MIXED_PLANS[planId];
+                        return (
+                            <PlanCard
+                                key={planId}
+                                isCurrent={false}
+                                href={buildUpgradeMailto(agent.fullName, agent.email, plan.name, plan.priceLabel)}
+                            >
+                                <p className="font-semibold text-charcoal">{plan.name}</p>
+                                <p className="text-charcoal/50 text-sm mt-2 leading-relaxed">
+                                    {plan.leadLimit} leads · {plan.priceLabel}
+                                </p>
+                                <p className="text-charcoal/40 text-xs mt-2 leading-relaxed">{plan.description}</p>
+                            </PlanCard>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section className={AGENT_CARD}>
+                <div className={`${AGENT_CARD_HEADER} flex flex-wrap items-center gap-2`}>
+                    <h4 className={AGENT_SECTION_LABEL}>Monthly subscriptions</h4>
+                    <span className={`inline-flex items-center h-6 px-2.5 rounded-full text-[10px] font-semibold uppercase bg-gold/[0.08] text-gold border border-gold/10`}>
+                        Recommended
+                    </span>
+                </div>
+                <p className="px-6 sm:px-8 pt-5 text-charcoal/45 text-sm leading-relaxed">
+                    Recurring packages for predictable lead flow each month.
+                </p>
+                <div className={`${AGENT_CARD_BODY} sm:px-6 sm:py-6 pt-2 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5`}>
+                    {(['agent_lite', 'agent_pro', 'agency_plus'] as const).map((planId) => {
+                        const plan = SUBSCRIPTION_PLANS[planId];
+                        return (
+                            <PlanCard
+                                key={planId}
+                                isCurrent={false}
+                                href={buildUpgradeMailto(
                                     agent.fullName,
                                     agent.email,
                                     plan.name,
                                     plan.priceLabel,
-                                    plan.isConsultation ? { isConsultation: true } : undefined
-                                ),
-                            })}
-                            className={`rounded-lg p-4 border block transition-all ${
-                                isCurrent
-                                    ? 'bg-white/90 border-gold/40'
-                                    : 'bg-gold/10 border-gold/30 hover:bg-gold/20 hover:shadow-md'
-                            }`}
-                        >
-                            <p className="font-bold text-charcoal">{plan.name}</p>
-                            <p className="text-charcoal/70 text-sm">
-                                {plan.isUnlimited
-                                    ? plan.priceLabel
-                                    : `${plan.leadLimit} leads · ${plan.priceLabel}`}
-                            </p>
-                            {plan.costPerLead != null && (
-                                <p className="text-charcoal/50 text-xs">R{plan.costPerLead}/lead</p>
-                            )}
-                            {isCurrent && (
-                                <p className="text-gold text-xs font-semibold mt-1">Current plan</p>
-                            )}
-                        </CardTag>
-                    );
-                })}
+                                    { isSubscription: true }
+                                )}
+                                className="bg-gold/[0.02] hover:bg-gold/[0.04]"
+                            >
+                                <p className="font-semibold text-charcoal">{plan.name}</p>
+                                <p className="text-charcoal/50 text-sm mt-2 leading-relaxed">
+                                    {plan.leadLimit} leads/mo · {plan.priceLabel}
+                                </p>
+                                <p className="text-charcoal/40 text-xs mt-2 leading-relaxed">{plan.description}</p>
+                            </PlanCard>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                <section className={`${AGENT_CARD_SOFT} p-6 sm:p-7`}>
+                    <p className="text-sm font-semibold text-charcoal mb-3">Recommended sweet-spot pricing</p>
+                    <p className="text-charcoal/55 text-sm leading-relaxed">
+                        {SWEET_SPOT_PRICING.map((tier, i) => (
+                            <span key={tier.leads}>
+                                {i > 0 && ' · '}
+                                {tier.leads} leads = {tier.priceLabel}
+                            </span>
+                        ))}
+                    </p>
+                </section>
+
+                <section className={`${AGENT_CARD_SOFT} p-6 sm:p-7`}>
+                    <p className="text-sm font-semibold text-charcoal mb-3">Appointment-based pricing</p>
+                    <ul className="text-charcoal/55 text-sm space-y-2 leading-relaxed">
+                        {APPOINTMENT_PRICING.map((item) => (
+                            <li key={item.label}>
+                                <strong className="text-charcoal font-medium">{item.label}:</strong> {item.range}
+                            </li>
+                        ))}
+                    </ul>
+                    <p className="text-charcoal/40 text-xs mt-4 leading-relaxed">
+                        Agents often value confirmed appointments over raw leads — contact us to discuss this model.
+                    </p>
+                </section>
             </div>
 
-            <h4 className="text-sm font-bold text-charcoal mb-2 uppercase tracking-wide">
-                Seller lead packages
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                {(['seller_starter', 'seller_growth', 'seller_professional'] as const).map((planId) => {
-                    const plan = SELLER_PLANS[planId];
-                    const isCurrent = normalizeSellerPlan(agent.sellerPlan) === planId;
-                    const SellerCard = isCurrent ? 'div' : 'a';
-                    return (
-                        <SellerCard
-                            key={planId}
-                            {...(!isCurrent && {
-                                href: buildUpgradeMailto(
-                                    agent.fullName,
-                                    agent.email,
-                                    plan.name,
-                                    plan.priceLabel
-                                ),
-                            })}
-                            className={`rounded-lg p-4 border block transition-all ${
-                                isCurrent
-                                    ? 'bg-white/90 border-gold/40'
-                                    : 'bg-white/80 border-charcoal/10 hover:border-gold/30'
-                            }`}
-                        >
-                            <p className="font-bold text-charcoal">{plan.name}</p>
-                            <p className="text-charcoal/70 text-sm">
-                                {plan.leadLimit} leads · {plan.priceLabel}
-                            </p>
-                            <p className="text-charcoal/50 text-xs">R{plan.costPerLead}/lead</p>
-                            {isCurrent && (
-                                <p className="text-gold text-xs font-semibold mt-1">Active package</p>
-                            )}
-                        </SellerCard>
-                    );
-                })}
-            </div>
-
-            <h4 className="text-sm font-bold text-charcoal mb-2 uppercase tracking-wide">
-                Mixed leads (buyers + sellers)
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                {(['bronze', 'silver', 'gold'] as const).map((planId) => {
-                    const plan = MIXED_PLANS[planId];
-                    return (
-                        <a
-                            key={planId}
-                            href={buildUpgradeMailto(agent.fullName, agent.email, plan.name, plan.priceLabel)}
-                            className="rounded-lg p-4 border bg-white/80 border-charcoal/10 hover:border-gold/30 block transition-all"
-                        >
-                            <p className="font-bold text-charcoal">{plan.name}</p>
-                            <p className="text-charcoal/70 text-sm">
-                                {plan.leadLimit} leads · {plan.priceLabel}
-                            </p>
-                            <p className="text-charcoal/50 text-xs">{plan.description}</p>
-                        </a>
-                    );
-                })}
-            </div>
-
-            <h4 className="text-sm font-bold text-charcoal mb-1 uppercase tracking-wide flex items-center gap-2">
-                Monthly subscriptions
-                <span className="text-[10px] font-semibold uppercase bg-gold/20 text-gold px-2 py-0.5 rounded-full normal-case tracking-normal">
-                    Recommended
-                </span>
-            </h4>
-            <p className="text-charcoal/60 text-xs mb-2">
-                Recurring packages for predictable lead flow each month.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                {(['agent_lite', 'agent_pro', 'agency_plus'] as const).map((planId) => {
-                    const plan = SUBSCRIPTION_PLANS[planId];
-                    return (
-                        <a
-                            key={planId}
-                            href={buildUpgradeMailto(
-                                agent.fullName,
-                                agent.email,
-                                plan.name,
-                                plan.priceLabel,
-                                { isSubscription: true }
-                            )}
-                            className="rounded-lg p-4 border bg-gold/10 border-gold/30 hover:bg-gold/20 block transition-all"
-                        >
-                            <p className="font-bold text-charcoal">{plan.name}</p>
-                            <p className="text-charcoal/70 text-sm">
-                                {plan.leadLimit} leads/mo · {plan.priceLabel}
-                            </p>
-                            <p className="text-charcoal/50 text-xs">{plan.description}</p>
-                        </a>
-                    );
-                })}
-            </div>
-
-            <div className="rounded-lg border border-charcoal/10 bg-white/60 p-4 mb-4">
-                <p className="text-sm font-semibold text-charcoal mb-2">Recommended sweet-spot pricing</p>
-                <p className="text-charcoal/70 text-sm">
-                    {SWEET_SPOT_PRICING.map((tier, i) => (
-                        <span key={tier.leads}>
-                            {i > 0 && ' · '}
-                            {tier.leads} leads = {tier.priceLabel}
-                        </span>
-                    ))}
-                </p>
-            </div>
-
-            <div className="rounded-lg border border-charcoal/10 bg-white/60 p-4 mb-4">
-                <p className="text-sm font-semibold text-charcoal mb-2">Appointment-based pricing</p>
-                <ul className="text-charcoal/70 text-sm space-y-1">
-                    {APPOINTMENT_PRICING.map((item) => (
-                        <li key={item.label}>
-                            <strong>{item.label}:</strong> {item.range}
-                        </li>
-                    ))}
-                </ul>
-                <p className="text-charcoal/50 text-xs mt-2">
-                    Agents often value confirmed appointments over raw leads — contact us to discuss this
-                    model.
-                </p>
-            </div>
-
-            <p className="text-charcoal/60 text-sm mt-4">
+            <p className="text-charcoal/45 text-sm px-1 leading-relaxed">
                 Upgrade via email to{' '}
-                <a href="mailto:info@prop-ready.co.za" className="text-gold hover:underline">
+                <a href="mailto:info@prop-ready.co.za" className="text-gold font-medium hover:underline">
                     info@prop-ready.co.za
                 </a>
             </p>

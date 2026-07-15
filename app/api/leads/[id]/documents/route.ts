@@ -22,7 +22,7 @@ export async function GET(
 
     const { data, error } = await supabase
         .from('documents')
-        .select('id, name, type, status, size, uploaded_at')
+        .select('id, name, type, status, size, uploaded_at, storage_path')
         .eq('user_id', leadId)
         .order('uploaded_at', { ascending: false });
 
@@ -38,6 +38,7 @@ export async function GET(
         status: row.status ?? 'uploaded',
         size: row.size ?? undefined,
         uploadedAt: row.uploaded_at,
+        url: row.storage_path ?? null,
     }));
 
     return NextResponse.json({ documents });

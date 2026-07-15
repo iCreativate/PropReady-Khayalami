@@ -6,6 +6,26 @@ import {
     Calendar as CalendarIcon, ChevronLeft, ChevronRight, Edit, Trash2, X, MoreVertical,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/currency';
+import AgentPageHeader from '@/components/AgentPageHeader';
+import {
+    AGENT_CARD,
+    AGENT_CARD_HEADER,
+    AGENT_CARD_BODY,
+    AGENT_CARD_TOOLBAR,
+    AGENT_SEARCH_INPUT,
+    AGENT_SELECT,
+    AGENT_SEGMENT_WRAP,
+    agentSegmentBtn,
+    AGENT_PRIMARY_BTN,
+    AGENT_TABLE_HEAD,
+    AGENT_TABLE_CELL,
+    AGENT_TABLE_ROW,
+    AGENT_VIEW_BTN,
+    AGENT_BADGE,
+    AGENT_EMPTY_ICON,
+    AGENT_PANEL_HEADER,
+    AGENT_PANEL_BODY,
+} from '@/lib/agent-portal-ui';
 import type { ListedProperty } from '@/lib/listed-property';
 import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
 import { mergeDemoLeadsIntoStorage } from '@/lib/demo-leads';
@@ -296,9 +316,9 @@ export default function AgentViewingsWorkspace({
         const Icon = badge.icon;
         return (
             <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badge.bg} ${badge.text}`}
+                className={`${AGENT_BADGE} ${badge.bg} ${badge.text}`}
             >
-                <Icon className="w-3 h-3" />
+                <Icon className="w-3 h-3 shrink-0" />
                 {badge.label}
             </span>
         );
@@ -524,67 +544,65 @@ export default function AgentViewingsWorkspace({
     return (
         <>
             {showPageHeader && (
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-charcoal mb-2">Viewing Appointments</h1>
-                    <p className="text-charcoal/80 text-lg">
-                        Schedule and manage property viewings with buyers and sellers
-                    </p>
-                </div>
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow="Appointments"
+                    title="Viewing Appointments"
+                    description="Schedule and manage property viewings with buyers and sellers"
+                />
             )}
 
-            <div id="viewings-section" className="glass-effect rounded-xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-charcoal">Viewing Appointments</h2>
-                    <button
-                        onClick={openNewViewingModal}
-                        className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Schedule Viewing
-                    </button>
+            <div id="viewings-section" className={AGENT_CARD}>
+                <div className={`${AGENT_CARD_HEADER} flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8`}>
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-semibold text-charcoal tracking-tight">Your viewings</h2>
+                        <p className="text-charcoal/45 text-sm mt-2 leading-relaxed">
+                            {filteredViewings.length} appointment{filteredViewings.length === 1 ? '' : 's'}
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+                        <div className={`${AGENT_SEGMENT_WRAP} self-start sm:self-auto`}>
+                            <button
+                                onClick={() => setViewingViewMode('list')}
+                                className={agentSegmentBtn(viewingViewMode === 'list')}
+                            >
+                                List View
+                            </button>
+                            <button
+                                onClick={() => setViewingViewMode('calendar')}
+                                className={agentSegmentBtn(viewingViewMode === 'calendar')}
+                            >
+                                Calendar View
+                            </button>
+                        </div>
+                        <button
+                            onClick={openNewViewingModal}
+                            className={`${AGENT_PRIMARY_BTN} self-start sm:self-auto`}
+                        >
+                            <Plus className="w-4 h-4" />
+                            Schedule Viewing
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex gap-2 mb-6">
-                    <button
-                        onClick={() => setViewingViewMode('list')}
-                        className={`px-4 py-2 rounded-lg font-semibold transition ${
-                            viewingViewMode === 'list'
-                                ? 'bg-gold text-white'
-                                : 'bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5'
-                        }`}
-                    >
-                        List View
-                    </button>
-                    <button
-                        onClick={() => setViewingViewMode('calendar')}
-                        className={`px-4 py-2 rounded-lg font-semibold transition ${
-                            viewingViewMode === 'calendar'
-                                ? 'bg-gold text-white'
-                                : 'bg-white/10 text-charcoal border border-charcoal/20 hover:bg-charcoal/5'
-                        }`}
-                    >
-                        Calendar View
-                    </button>
-                </div>
-
-                <div className="mb-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                <div className={AGENT_CARD_TOOLBAR}>
+                    <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
+                        <div className="flex-1 relative min-w-0">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35 pointer-events-none" />
                             <input
                                 type="text"
                                 placeholder="Search by property, contact name, or address..."
                                 value={viewingSearchTerm}
                                 onChange={(e) => setViewingSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                className={AGENT_SEARCH_INPUT}
                             />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <Filter className="w-5 h-5 text-charcoal/50" />
+                        <div className="flex items-center gap-2 lg:shrink-0">
+                            <Filter className="w-4 h-4 text-charcoal/35 shrink-0 hidden sm:block" />
                             <select
                                 value={viewingStatusFilter}
                                 onChange={(e) => setViewingStatusFilter(e.target.value)}
-                                className="px-4 py-3 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                className={AGENT_SELECT}
                             >
                                 <option value="all">All Status</option>
                                 <option value="scheduled">Scheduled</option>
@@ -596,16 +614,16 @@ export default function AgentViewingsWorkspace({
                     </div>
                 </div>
 
+                <div className={AGENT_CARD_BODY}>
                 {viewingViewMode === 'calendar' && (
-                    <div className="rounded-3xl shadow-2xl border border-charcoal/10 bg-white/90 backdrop-blur-xl overflow-hidden">
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-6 md:px-8 py-5 md:py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-                            <div className="relative flex items-center justify-between">
+                    <div className={`${AGENT_CARD} overflow-hidden`}>
+                        <div className={AGENT_PANEL_HEADER}>
+                            <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                                        <CalendarIcon className="w-5 h-5 text-white" />
+                                    <div className="w-10 h-10 bg-gold/[0.08] rounded-2xl flex items-center justify-center border border-gold/10">
+                                        <CalendarIcon className="w-5 h-5 text-gold" />
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-white">
+                                    <h2 className="text-xl md:text-2xl font-semibold text-charcoal tracking-tight">
                                         {currentCalendarDate.toLocaleDateString('en-US', {
                                             month: 'long',
                                             year: 'numeric',
@@ -619,7 +637,7 @@ export default function AgentViewingsWorkspace({
                                             newDate.setMonth(newDate.getMonth() - 1);
                                             setCurrentCalendarDate(newDate);
                                         }}
-                                        className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                        className="p-2 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200"
                                     >
                                         <ChevronLeft className="w-5 h-5" />
                                     </button>
@@ -629,7 +647,7 @@ export default function AgentViewingsWorkspace({
                                             newDate.setMonth(newDate.getMonth() + 1);
                                             setCurrentCalendarDate(newDate);
                                         }}
-                                        className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                        className="p-2 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200"
                                     >
                                         <ChevronRight className="w-5 h-5" />
                                     </button>
@@ -637,7 +655,7 @@ export default function AgentViewingsWorkspace({
                             </div>
                         </div>
 
-                        <div className="px-6 md:px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                        <div className={AGENT_PANEL_BODY}>
                             <div className="grid grid-cols-7 gap-2 mb-3">
                                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                                     <div key={day} className="text-center text-charcoal/70 font-semibold text-sm py-2">
@@ -719,9 +737,11 @@ export default function AgentViewingsWorkspace({
 
                 {viewingViewMode === 'list' &&
                     (filteredViewings.length === 0 ? (
-                        <div className="text-center py-12">
-                            <Calendar className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                            <p className="text-charcoal/70 text-lg">No viewings found</p>
+                        <div className="text-center py-16 px-4">
+                            <div className={AGENT_EMPTY_ICON}>
+                                <Calendar className="w-8 h-8 text-charcoal/25" />
+                            </div>
+                            <p className="text-charcoal font-medium text-lg">No viewings found</p>
                             <p className="text-charcoal/50 text-sm mt-2">
                                 {viewingSearchTerm || viewingStatusFilter !== 'all'
                                     ? 'Try adjusting your filters'
@@ -729,85 +749,68 @@ export default function AgentViewingsWorkspace({
                             </p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
+                        <div className="overflow-x-auto -mx-1">
+                            <table className="w-full min-w-[900px] border-collapse">
                                 <thead>
-                                    <tr className="border-b border-charcoal/20">
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Property
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Price
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Contact
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Date & Time
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Type
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Status
-                                        </th>
-                                        <th className="text-left py-3 px-4 text-charcoal/70 font-semibold text-sm">
-                                            Actions
-                                        </th>
+                                    <tr className="border-b border-charcoal/[0.06]">
+                                        <th className={AGENT_TABLE_HEAD}>Property</th>
+                                        <th className={AGENT_TABLE_HEAD}>Price</th>
+                                        <th className={AGENT_TABLE_HEAD}>Contact</th>
+                                        <th className={AGENT_TABLE_HEAD}>Date & Time</th>
+                                        <th className={AGENT_TABLE_HEAD}>Type</th>
+                                        <th className={AGENT_TABLE_HEAD}>Status</th>
+                                        <th className={`${AGENT_TABLE_HEAD} text-right`}>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-charcoal/[0.05]">
                                     {filteredViewings.map((viewing) => (
-                                        <tr
-                                            key={viewing.id}
-                                            className="border-b border-charcoal/10 hover:bg-charcoal/5 transition"
-                                        >
-                                            <td className="py-4 px-4">
+                                        <tr key={viewing.id} className={AGENT_TABLE_ROW}>
+                                            <td className={AGENT_TABLE_CELL}>
                                                 <div>
-                                                    <p className="text-charcoal font-semibold">{viewing.propertyTitle}</p>
-                                                    <p className="text-charcoal/60 text-sm">{viewing.propertyAddress}</p>
+                                                    <p className="text-charcoal font-medium text-sm">{viewing.propertyTitle}</p>
+                                                    <p className="text-charcoal/45 text-xs mt-1 line-clamp-1">{viewing.propertyAddress}</p>
                                                 </div>
                                             </td>
-                                            <td className="py-4 px-4">
-                                                <p className="text-gold font-semibold">
+                                            <td className={`${AGENT_TABLE_CELL} whitespace-nowrap`}>
+                                                <p className="text-gold font-semibold text-sm tabular-nums">
                                                     {(viewing.propertyPrice ?? 0) > 0
                                                         ? formatCurrency(viewing.propertyPrice!)
                                                         : '—'}
                                                 </p>
                                             </td>
-                                            <td className="py-4 px-4">
-                                                <div className="space-y-1">
-                                                    <p className="text-charcoal/80 text-sm">{viewing.contactName}</p>
-                                                    <p className="text-charcoal/60 text-sm">{viewing.contactPhone}</p>
+                                            <td className={AGENT_TABLE_CELL}>
+                                                <div className="space-y-1 min-w-[120px]">
+                                                    <p className="text-charcoal font-medium text-sm">{viewing.contactName}</p>
+                                                    <p className="text-charcoal/45 text-xs tabular-nums">{viewing.contactPhone}</p>
                                                 </div>
                                             </td>
-                                            <td className="py-4 px-4">
-                                                <div className="space-y-1">
-                                                    <p className="text-charcoal/80 text-sm">
+                                            <td className={`${AGENT_TABLE_CELL} whitespace-nowrap`}>
+                                                <div className="space-y-0.5">
+                                                    <p className="text-charcoal text-sm tabular-nums">
                                                         {new Date(viewing.date).toLocaleDateString()}
                                                     </p>
-                                                    <p className="text-charcoal/60 text-sm">{viewing.time}</p>
+                                                    <p className="text-charcoal/45 text-xs">{viewing.time}</p>
                                                 </div>
                                             </td>
-                                            <td className="py-4 px-4">
+                                            <td className={AGENT_TABLE_CELL}>
                                                 <span
-                                                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                    className={`${AGENT_BADGE} ${
                                                         viewing.contactType === 'buyer'
-                                                            ? 'bg-blue-500/20 text-blue-400'
-                                                            : 'bg-purple-500/20 text-purple-400'
+                                                            ? 'bg-blue-500/10 text-blue-700'
+                                                            : 'bg-purple-500/10 text-purple-700'
                                                     }`}
                                                 >
                                                     {viewing.contactType === 'buyer' ? 'Buyer' : 'Seller'}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-4">{getViewingStatusBadge(viewing.status)}</td>
-                                            <td className="py-4 px-4">
+                                            <td className={AGENT_TABLE_CELL}>{getViewingStatusBadge(viewing.status)}</td>
+                                            <td className={`${AGENT_TABLE_CELL} text-right`}>
                                                 <button
                                                     onClick={() => setSelectedViewing(viewing)}
-                                                    className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition flex items-center gap-2"
+                                                    className={AGENT_VIEW_BTN}
                                                 >
-                                                    <MoreVertical className="w-4 h-4" />
-                                                    <span className="text-sm">Manage</span>
+                                                    <MoreVertical className="w-3.5 h-3.5" />
+                                                    <span>Manage</span>
                                                 </button>
                                             </td>
                                         </tr>
@@ -816,6 +819,7 @@ export default function AgentViewingsWorkspace({
                             </table>
                         </div>
                     ))}
+                </div>
             </div>
 
             {showViewingModal && (
@@ -829,28 +833,27 @@ export default function AgentViewingsWorkspace({
                     </div>
 
                     <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-                            <div className="relative flex items-start justify-between gap-4">
+                        <div className={AGENT_PANEL_HEADER}>
+                            <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                                    <h2 className="text-xl md:text-2xl font-semibold text-charcoal tracking-tight leading-tight">
                                         {selectedViewing ? 'Edit Viewing' : 'Schedule Viewing'}
                                     </h2>
                                     {selectedPropertyForViewing && (
-                                        <p className="text-white/90 text-sm">{selectedPropertyForViewing.title}</p>
+                                        <p className="text-charcoal/45 text-sm mt-1">{selectedPropertyForViewing.title}</p>
                                     )}
                                 </div>
                                 <button
                                     onClick={closeScheduleModal}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                    className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
                                     aria-label="Close"
                                 >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                        <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY}`}>
                             <div className="space-y-4">
                                 {!selectedPropertyForViewing && (
                                     <div>
@@ -1035,33 +1038,32 @@ export default function AgentViewingsWorkspace({
                     </div>
 
                     <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-                            <div className="relative flex items-start justify-between gap-4">
+                        <div className={AGENT_PANEL_HEADER}>
+                            <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-                                            <Calendar className="w-6 h-6 text-white" />
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-11 h-11 bg-gold/[0.08] rounded-2xl flex items-center justify-center border border-gold/10">
+                                            <Calendar className="w-5 h-5 text-gold" />
                                         </div>
                                         <div>
-                                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                                            <h2 className="text-xl md:text-2xl font-semibold text-charcoal tracking-tight leading-tight">
                                                 {selectedViewing.propertyTitle}
                                             </h2>
-                                            <p className="text-white/90 text-sm">{selectedViewing.propertyAddress}</p>
+                                            <p className="text-charcoal/45 text-sm mt-0.5">{selectedViewing.propertyAddress}</p>
                                         </div>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setSelectedViewing(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                    className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
                                     aria-label="Close"
                                 >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                        <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY}`}>
                             <div className="mb-6">
                                 <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
                                     <p className="text-charcoal/70 text-sm mb-2 font-semibold">Contact Information</p>

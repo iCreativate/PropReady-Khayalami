@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
 import AgentPlanPanel from '@/components/AgentPlanPanel';
+import AgentPageHeader from '@/components/AgentPageHeader';
 import PpraVerificationGate from '@/components/PpraVerificationGate';
 import { isAgentPpraVerified } from '@/lib/ppra';
 import { countVerifiedLeads } from '@/lib/lead-verification';
+import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
 
 export default function AgentPlanPage() {
     const router = useRouter();
@@ -74,22 +76,27 @@ export default function AgentPlanPage() {
 
     if (!currentAgent) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
                 <p className="text-charcoal/60">Loading…</p>
             </div>
         );
     }
 
     return (
-        <AgentPortalLayout activePage="plan" agent={currentAgent} title="Your Plan">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-charcoal mb-2">Your Plan</h1>
-                    <p className="text-charcoal/80 text-lg">
-                        View your current package and upgrade options
-                    </p>
-                </div>
-
+        <AgentPortalLayout
+            activePage="plan"
+            agent={currentAgent}
+            title="Your Plan"
+            pageHeader={
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow="Subscription"
+                    title="Your Plan"
+                    description="View your current package and upgrade options"
+                />
+            }
+        >
+            <div className={AGENT_PAGE_CONTAINER}>
                 <PpraVerificationGate agent={currentAgent} />
 
                 {ppraVerified ? (

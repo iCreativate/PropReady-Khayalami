@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Home, Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import MobileNav from '@/components/MobileNav';
-import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import { Calendar, MapPin, Clock, User, Phone, Mail, MessageCircle, CheckCircle, XCircle, AlertCircle, Building2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import UserPortalLayout from '@/components/UserPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { formatCurrency } from '@/lib/currency';
 import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
 import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
+import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
+import { PORTAL_PAGE_CONTAINER, PORTAL_STAT_CARD, PORTAL_STAT_ICON } from '@/lib/portal-ui';
+import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 
 interface Viewing {
     id: string;
@@ -26,100 +29,56 @@ interface Viewing {
     notes?: string;
 }
 
+function mapRawViewings(raw: Record<string, unknown>[]): Viewing[] {
+    return raw.map((v) => ({
+        id: String(v.id),
+        propertyTitle: String(v.propertyTitle ?? ''),
+        propertyAddress: String(v.propertyAddress ?? ''),
+        propertyPrice: Number(v.propertyPrice ?? v.property_price ?? 0),
+        chatMessages: (v.chatMessages ?? v.chat_messages ?? []) as ChatMessage[],
+        agentName: 'Agent',
+        agentCompany: 'PropReady',
+        agentPhone: '',
+        agentEmail: '',
+        date: String(v.date ?? v.viewing_date ?? ''),
+        time: String(v.time ?? v.viewing_time ?? ''),
+        status: (v.status as Viewing['status']) ?? 'scheduled',
+        notes: v.notes ? String(v.notes) : undefined,
+        buyerEmail: v.buyerEmail ? String(v.buyerEmail) : v.buyer_email ? String(v.buyer_email) : undefined,
+        sellerEmail: v.sellerEmail ? String(v.sellerEmail) : v.seller_email ? String(v.seller_email) : undefined,
+        buyerName: v.buyerName ? String(v.buyerName) : v.buyer_name ? String(v.buyer_name) : undefined,
+        sellerName: v.sellerName ? String(v.sellerName) : v.seller_name ? String(v.seller_name) : undefined,
+        buyerConfirmedAt: v.buyerConfirmedAt ? String(v.buyerConfirmedAt) : v.buyer_confirmed_at ? String(v.buyer_confirmed_at) : undefined,
+        sellerConfirmedAt: v.sellerConfirmedAt ? String(v.sellerConfirmedAt) : v.seller_confirmed_at ? String(v.seller_confirmed_at) : undefined,
+        contactEmail: v.contactEmail ? String(v.contactEmail) : undefined,
+        contactType: v.contactType ? String(v.contactType) : undefined,
+    })) as Viewing[];
+}
+
 export default function ViewingsPage() {
     const router = useRouter();
+    const { user: currentUser, isHydrated } = useHydratedBuyerPortalUser();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [activeTab, setActiveTab] = useState<'confirmed' | 'scheduled' | 'completed' | 'cancelled'>('scheduled');
-    const [isLoading, setIsLoading] = useState(true);
     const [viewingAppointments, setViewingAppointments] = useState<Viewing[]>([]);
     const [chatViewing, setChatViewing] = useState<Viewing | null>(null);
-    const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id?: string } | null>(null);
     const [confirmRefreshKey, setConfirmRefreshKey] = useState(0);
 
     useEffect(() => {
-        async function load() {
-            if (typeof window === 'undefined') return;
-            const userData = localStorage.getItem('propReady_currentUser');
-            if (!userData) {
-                router.push('/login');
-                return;
-            }
-            const user = JSON.parse(userData);
-            setCurrentUser(user);
-                
-                // Load viewing appointments from API and localStorage
-                const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-                const quizResult = JSON.parse(localStorage.getItem('propReady_quizResult') || '{}');
-                const sellerInfo = JSON.parse(localStorage.getItem('propReady_sellerInfo') || '{}');
-                const quizPhone = (quizResult.phone || '').replace(/\s/g, '');
-                const sellerPhone = (sellerInfo?.phone || '').replace(/\s/g, '');
-                const userEmail = user.email?.toLowerCase() || '';
-                const matchViewing = (v: any) => {
-                    if (v.buyerEmail && v.buyerEmail.toLowerCase() === userEmail) return true;
-                    const matchesBuyer = v.contactType === 'buyer' && (
-                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                        (v.contactEmail && userEmail && v.contactEmail.toLowerCase() === userEmail) ||
-                        (quizPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === quizPhone)
-                    );
-                    const matchesSeller = v.contactType === 'seller' && (
-                        (v.contactName && user.fullName && v.contactName.toLowerCase() === user.fullName.toLowerCase()) ||
-                        (v.contactEmail && userEmail && v.contactEmail.toLowerCase() === userEmail) ||
-                        (sellerPhone && v.contactPhone && v.contactPhone.replace(/\s/g, '') === sellerPhone)
-                    );
-                    return matchesBuyer || matchesSeller;
-                };
-                let apiViewings: any[] = [];
-                try {
-                    const res = await fetch(`/api/viewings?contactEmail=${encodeURIComponent(user.email)}`, { cache: 'no-store' });
-                    const data = await res.json().catch(() => ({}));
-                    if (res.ok && Array.isArray(data.viewings)) {
-                        apiViewings = (data.viewings || []).filter(matchViewing);
-                    }
-                } catch (e) {
-                    console.warn('Failed to load viewings from API', e);
-                }
-                const ids = new Set(apiViewings.map((v: any) => v.id));
-                const localOnly = storedViewings.filter((v: any) => matchViewing(v) && !ids.has(v.id));
-                const merged = [...apiViewings, ...localOnly];
-                const userViewings = merged.map((v: any) => ({
-                    id: v.id,
-                    propertyTitle: v.propertyTitle,
-                    propertyAddress: v.propertyAddress,
-                    propertyPrice: v.propertyPrice ?? v.property_price ?? 0,
-                    chatMessages: (v.chatMessages ?? v.chat_messages ?? []) as ChatMessage[],
-                    agentName: 'Agent',
-                    agentCompany: 'PropReady',
-                    agentPhone: '',
-                    agentEmail: '',
-                    date: v.date ?? v.viewing_date,
-                    time: v.time ?? v.viewing_time,
-                    status: v.status,
-                    notes: v.notes,
-                    buyerEmail: v.buyerEmail ?? v.buyer_email,
-                    sellerEmail: v.sellerEmail ?? v.seller_email,
-                    buyerName: v.buyerName ?? v.buyer_name,
-                    sellerName: v.sellerName ?? v.seller_name,
-                    buyerConfirmedAt: v.buyerConfirmedAt ?? v.buyer_confirmed_at,
-                    sellerConfirmedAt: v.sellerConfirmedAt ?? v.seller_confirmed_at,
-                    contactEmail: v.contactEmail,
-                    contactType: v.contactType,
-                }));
-                
-                setViewingAppointments(userViewings);
-            setIsLoading(false);
-        }
-        load();
-    }, [router, confirmRefreshKey]);
+        if (!isHydrated) return;
 
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-charcoal/70">Loading...</p>
-                </div>
-            </div>
-        );
+        if (!currentUser) {
+            router.push('/login');
+            return;
+        }
+
+        setViewingAppointments(mapRawViewings(readLocalViewingsForUser(currentUser)));
+
+        void refreshViewingsFromApi(currentUser).then((raw) => setViewingAppointments(mapRawViewings(raw)));
+    }, [router, confirmRefreshKey, isHydrated, currentUser]);
+
+    if (!isHydrated || !currentUser) {
+        return null;
     }
     
     // Use only real viewing appointments from localStorage
@@ -241,92 +200,39 @@ export default function ViewingsPage() {
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/search" className="text-charcoal/90 hover:text-charcoal transition">
-                                Properties
-                            </Link>
-                            <Link href="/learn" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center | Buyers
-                            </Link>
-                            <Link
-                                href="/sellers"
-                                className="px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
-                            >
-                                For Sellers
-                            </Link>
-                            <Link href="/calculator" className="text-charcoal/90 hover:text-charcoal transition">
-                                Bond Calculator
-                            </Link>
-                            <Link href="/dashboard" className="text-charcoal/90 hover:text-charcoal transition">
-                                Dashboard
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                        <MobileNav
-                            links={[
-                                { href: '/search', label: 'Properties' },
-                                { href: '/learn', label: 'Learning Center - Buyers' },
-                                { href: '/learn/investors', label: 'Learning Center - Investors' },
-                                { href: '/sellers', label: 'For Sellers', isButton: true },
-                                { href: '/calculator', label: 'Bond Calculator' },
-                                { href: '/dashboard', label: 'Dashboard' },
-                            ]}
-                        />
-                        <Link
-                            href="/dashboard"
-                            className="hidden sm:flex items-center space-x-2 text-charcoal/90 hover:text-charcoal transition"
-                        >
-                            <span>Back to Dashboard</span>
-                        </Link>
-                    </div>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-8">
-                <div className="container mx-auto max-w-6xl relative z-10">
-                    {/* Page Header */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-charcoal mb-2">
-                            Viewing Appointments
-                        </h1>
-                        <p className="text-charcoal/80 text-lg">
-                            Manage your property viewing appointments with agents
-                        </p>
-                    </div>
-
+        <>
+            <UserPortalLayout
+                portal="buyer"
+                activePage="viewings"
+                user={currentUser}
+                title="Viewings"
+                pageHeader={
+                    <PortalPageHeader
+                        variant="premium"
+                        title="Viewing Appointments"
+                        description="Manage your property viewing appointments with agents"
+                    />
+                }
+            >
+                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {currentUser && (
                         <AppointmentConfirmPanel
                             viewings={viewingAppointments}
-                            userEmail={currentUser.email}
+                            userEmail={currentUser.email ?? ''}
                             party="buyer"
                             onConfirmed={() => setConfirmRefreshKey((k) => k + 1)}
                         />
                     )}
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-                        <div className="premium-card rounded-xl p-6">
-                            <div className="flex items-center justify-between">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6 mb-8 sm:mb-10">
+                        <div className={PORTAL_STAT_CARD}>
+                            <div className="flex items-start justify-between gap-4 w-full">
                                 <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Total Viewings</p>
-                                    <p className="text-charcoal font-bold text-3xl">{viewings.length}</p>
+                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Total Viewings</p>
+                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{viewings.length}</p>
                                 </div>
-                                <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
+                                <div className={PORTAL_STAT_ICON}>
                                     <Calendar className="w-6 h-6 text-gold" />
                                 </div>
                             </div>
@@ -705,7 +611,7 @@ export default function ViewingsPage() {
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
                 </div>
-            </main>
+            </UserPortalLayout>
 
             {/* Chat Modal */}
             {chatViewing && (
@@ -740,7 +646,7 @@ export default function ViewingsPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
 

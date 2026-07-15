@@ -16,6 +16,7 @@ import {
     Settings,
 } from 'lucide-react';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
+import { AGENT_PAGE_CONTAINER, AGENT_PAGE_HEADER_BAND } from '@/lib/agent-portal-ui';
 
 export type AgentPortalPage =
     | 'dashboard'
@@ -42,6 +43,7 @@ interface AgentPortalLayoutProps {
     activePage: AgentPortalPage;
     agent: AgentPortalAgent | null;
     title?: string;
+    pageHeader?: React.ReactNode;
     children: React.ReactNode;
 }
 
@@ -92,6 +94,7 @@ export default function AgentPortalLayout({
     activePage,
     agent,
     title,
+    pageHeader,
     children,
 }: AgentPortalLayoutProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -100,8 +103,8 @@ export default function AgentPortalLayout({
     return (
         <div className="min-h-screen bg-white">
             {/* Desktop sidebar */}
-            <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col border-r border-charcoal/10 bg-white/95 backdrop-blur-sm z-40">
-                <div className="px-5 py-5 border-b border-charcoal/10">
+            <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col border-r border-charcoal/[0.06] bg-white z-40">
+                <div className="px-5 py-6 border-b border-charcoal/[0.06]">
                     <Link href="/" className="flex items-center gap-2.5">
                         <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center shadow-sm">
                             <Home className="w-6 h-6 text-white" />
@@ -149,8 +152,8 @@ export default function AgentPortalLayout({
             )}
 
             {/* Top app bar */}
-            <header className="fixed top-0 right-0 left-0 lg:left-64 z-30 h-16 bg-white/90 backdrop-blur-md border-b border-charcoal/10 shadow-sm">
-                <div className="h-full px-4 sm:px-6 flex items-center justify-between gap-4">
+            <header className="fixed top-0 right-0 left-0 lg:left-64 z-30 h-[4.25rem] bg-white/95 backdrop-blur-md border-b border-charcoal/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+                <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                         <button
                             type="button"
@@ -177,7 +180,7 @@ export default function AgentPortalLayout({
                                     window.location.href = '/agents/login';
                                 }
                             }}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-charcoal/15 text-charcoal/80 hover:bg-charcoal/5 hover:text-charcoal transition-all text-sm font-medium"
+                            className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-charcoal/[0.08] text-charcoal/65 hover:bg-charcoal/[0.03] hover:text-charcoal hover:border-charcoal/12 transition-all duration-200 text-sm font-medium"
                             title="Sign out"
                         >
                             <LogOut className="w-4 h-4" />
@@ -187,8 +190,15 @@ export default function AgentPortalLayout({
                 </div>
             </header>
 
-            <main className="lg:pl-64 pt-16 min-h-screen">
-                <div className="px-4 sm:px-6 py-6 sm:py-8">{children}</div>
+            <main className="lg:pl-64 pt-[4.25rem] min-h-screen bg-[#fafafa]">
+                {pageHeader && (
+                    <div
+                        className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 lg:py-11`}
+                    >
+                        <div className={`${AGENT_PAGE_CONTAINER} !pb-0`}>{pageHeader}</div>
+                    </div>
+                )}
+                <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 lg:py-12">{children}</div>
             </main>
         </div>
     );

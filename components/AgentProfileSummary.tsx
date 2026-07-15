@@ -10,9 +10,15 @@ import {
     Sparkles,
     ChevronRight,
 } from 'lucide-react';
-import { getAgentPlanBadge, getPlanDisplay, isFreeBuyerPlan, normalizeBuyerPlan } from '@/lib/agent-plans';
+import {
+    getAgentPlanBadge,
+    getPlanDisplay,
+    isFreeBuyerPlan,
+    normalizeBuyerPlan,
+} from '@/lib/agent-plans';
 import { formatVerificationLabel, getAgentInitials } from '@/lib/agent-profile';
 import type { AgentPortalAgent } from '@/components/AgentPortalNav';
+import { AGENT_CARD, AGENT_BADGE } from '@/lib/agent-portal-ui';
 
 export interface AgentProfileDetails extends AgentPortalAgent {
     phone?: string;
@@ -34,10 +40,10 @@ function PlanBadge({ plan, sellerPlan }: { plan?: string; sellerPlan?: string })
     return (
         <Link
             href="/agents/plan"
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition hover:opacity-90 ${
+            className={`${AGENT_BADGE} transition hover:opacity-90 ${
                 isFree
-                    ? 'bg-charcoal/8 text-charcoal/70 border border-charcoal/15'
-                    : 'bg-gold/15 text-gold border border-gold/30'
+                    ? 'bg-charcoal/[0.04] text-charcoal/60 border border-charcoal/[0.08]'
+                    : 'bg-gold/[0.06] text-gold border border-gold/10'
             }`}
         >
             <Sparkles className={`w-3 h-3 ${isFree ? 'text-charcoal/50' : 'text-gold'}`} />
@@ -78,7 +84,7 @@ function VerificationPill({ status }: { status?: string }) {
 
     return (
         <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${styles}`}
+            className={`${AGENT_BADGE} border ${styles}`}
         >
             <ShieldCheck className="w-3 h-3" />
             {formatVerificationLabel(status)}
@@ -88,21 +94,23 @@ function VerificationPill({ status }: { status?: string }) {
 
 export function AgentProfileCompact({ agent }: { agent: AgentProfileDetails }) {
     return (
-        <Link
-            href="/agents/settings"
-            className="hidden sm:flex items-center gap-3 pl-3 pr-1 py-1.5 rounded-xl border border-charcoal/10 bg-white/60 hover:bg-white hover:border-gold/25 hover:shadow-sm transition-all group"
-        >
-            <Avatar name={agent.fullName} size="sm" />
-            <div className="text-left min-w-0 max-w-[160px] lg:max-w-[200px]">
-                <p className="text-charcoal font-semibold text-sm truncate leading-tight group-hover:text-gold transition-colors">
-                    {agent.fullName}
-                </p>
-                {agent.company && (
-                    <p className="text-charcoal/50 text-[11px] truncate leading-tight">{agent.company}</p>
-                )}
-            </div>
+        <div className="hidden sm:flex items-center gap-3 pl-3 pr-1 py-1.5 rounded-2xl border border-charcoal/[0.08] bg-white hover:border-charcoal/[0.12] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200">
+            <Link
+                href="/agents/settings"
+                className="flex items-center gap-3 min-w-0 flex-1 group"
+            >
+                <Avatar name={agent.fullName} size="sm" />
+                <div className="text-left min-w-0 max-w-[160px] lg:max-w-[200px]">
+                    <p className="text-charcoal font-semibold text-sm truncate leading-tight group-hover:text-gold transition-colors">
+                        {agent.fullName}
+                    </p>
+                    {agent.company && (
+                        <p className="text-charcoal/50 text-[11px] truncate leading-tight">{agent.company}</p>
+                    )}
+                </div>
+            </Link>
             <PlanBadge plan={agent.plan} sellerPlan={agent.sellerPlan} />
-        </Link>
+        </div>
     );
 }
 
@@ -118,10 +126,8 @@ export default function AgentProfileSummary({
     const isFree = buyerPlanKey === 'free';
 
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-gold/20 bg-gradient-to-br from-white via-gold/[0.04] to-gold/10 shadow-sm mb-8">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-gold/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-
-            <div className="relative p-6 md:p-8">
+        <div className={`${AGENT_CARD} mb-8`}>
+            <div className="p-6 md:p-8">
                 <div className="flex flex-col md:flex-row md:items-center gap-6">
                     <Avatar name={agent.fullName} size="lg" />
 
@@ -131,12 +137,12 @@ export default function AgentProfileSummary({
                             <PlanBadge plan={agent.plan} sellerPlan={agent.sellerPlan} />
                         </div>
 
-                        <h2 className="text-2xl md:text-3xl font-bold text-charcoal mb-1 truncate">
+                        <h2 className="text-2xl md:text-3xl font-semibold text-charcoal mb-1 truncate tracking-tight">
                             {agent.fullName}
                         </h2>
 
                         {agent.company && (
-                            <p className="text-charcoal/70 font-medium flex items-center gap-2 mb-4">
+                            <p className="text-charcoal/55 font-medium flex items-center gap-2 mb-4">
                                 <Building2 className="w-4 h-4 text-gold shrink-0" />
                                 {agent.company}
                             </p>
@@ -144,33 +150,33 @@ export default function AgentProfileSummary({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {agent.email && (
-                                <div className="flex items-center gap-2.5 text-sm text-charcoal/70 min-w-0">
-                                    <span className="w-8 h-8 rounded-lg bg-charcoal/5 flex items-center justify-center shrink-0">
-                                        <Mail className="w-4 h-4 text-charcoal/50" />
+                                <div className="flex items-center gap-2.5 text-sm text-charcoal/55 min-w-0">
+                                    <span className="w-8 h-8 rounded-xl bg-charcoal/[0.03] border border-charcoal/[0.06] flex items-center justify-center shrink-0">
+                                        <Mail className="w-4 h-4 text-charcoal/45" />
                                     </span>
                                     <span className="truncate">{agent.email}</span>
                                 </div>
                             )}
                             {agent.phone && (
-                                <div className="flex items-center gap-2.5 text-sm text-charcoal/70">
-                                    <span className="w-8 h-8 rounded-lg bg-charcoal/5 flex items-center justify-center shrink-0">
-                                        <Phone className="w-4 h-4 text-charcoal/50" />
+                                <div className="flex items-center gap-2.5 text-sm text-charcoal/55">
+                                    <span className="w-8 h-8 rounded-xl bg-charcoal/[0.03] border border-charcoal/[0.06] flex items-center justify-center shrink-0">
+                                        <Phone className="w-4 h-4 text-charcoal/45" />
                                     </span>
                                     <span>{agent.phone}</span>
                                 </div>
                             )}
                             {agent.city && (
-                                <div className="flex items-center gap-2.5 text-sm text-charcoal/70">
-                                    <span className="w-8 h-8 rounded-lg bg-charcoal/5 flex items-center justify-center shrink-0">
-                                        <MapPin className="w-4 h-4 text-charcoal/50" />
+                                <div className="flex items-center gap-2.5 text-sm text-charcoal/55">
+                                    <span className="w-8 h-8 rounded-xl bg-charcoal/[0.03] border border-charcoal/[0.06] flex items-center justify-center shrink-0">
+                                        <MapPin className="w-4 h-4 text-charcoal/45" />
                                     </span>
                                     <span>{agent.city}</span>
                                 </div>
                             )}
                             {agent.ppraNumber && (
-                                <div className="flex items-center gap-2.5 text-sm text-charcoal/70">
-                                    <span className="w-8 h-8 rounded-lg bg-charcoal/5 flex items-center justify-center shrink-0">
-                                        <ShieldCheck className="w-4 h-4 text-charcoal/50" />
+                                <div className="flex items-center gap-2.5 text-sm text-charcoal/55">
+                                    <span className="w-8 h-8 rounded-xl bg-charcoal/[0.03] border border-charcoal/[0.06] flex items-center justify-center shrink-0">
+                                        <ShieldCheck className="w-4 h-4 text-charcoal/45" />
                                     </span>
                                     <span>PPRA #{agent.ppraNumber}</span>
                                 </div>
@@ -179,10 +185,10 @@ export default function AgentProfileSummary({
                     </div>
 
                     <div className="md:text-right shrink-0">
-                        <p className="text-xs uppercase tracking-wider text-charcoal/50 font-semibold mb-1">
+                        <p className="text-[11px] uppercase tracking-[0.08em] text-charcoal/45 font-semibold mb-1">
                             Current plan
                         </p>
-                        <p className={`text-xl font-bold ${isFree ? 'text-charcoal/70' : 'text-gold'}`}>
+                        <p className={`text-xl font-semibold tracking-tight ${isFree ? 'text-charcoal/60' : 'text-gold'}`}>
                             {getPlanDisplay(agent.plan)}
                         </p>
                         <Link

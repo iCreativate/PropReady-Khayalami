@@ -1,29 +1,33 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeft, BookOpen, Home, FileText, Calculator, Users, Coins, Wallet, Building2, Scale, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
+import BuyerPortalShell from '@/components/BuyerPortalShell';
+import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 
 export default function LearnPage() {
-    return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-                    <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Home</span>
-                    </Link>
+    const learnPublicHeader = (
+        <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
+            <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
+                <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
+                    <ArrowLeft className="w-5 h-5" />
+                    <span>Back to Home</span>
+                </Link>
 
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
+                <div className="flex items-center space-x-2">
+                    <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
+                        <Home className="w-6 h-6 text-white" />
                     </div>
-                </nav>
-            </header>
+                    <span className="text-charcoal text-xl font-bold">PropReady</span>
+                </div>
+            </nav>
+        </header>
+    );
 
-            {/* Main Content */}
-            <main className="relative min-h-screen px-4 pt-32 pb-16">
-                <div className="container mx-auto max-w-6xl relative z-10">
+    return (
+        <BuyerPortalShell activePage="learn" title="Learning Center" publicChrome={learnPublicHeader}>
+            <div className="relative min-h-full">
+                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Hero Section */}
                     <div className="text-center mb-16">
                         <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
@@ -301,12 +305,14 @@ export default function LearnPage() {
                     </div>
                 </div>
 
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+                    <div
+                        className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float"
+                        style={{ animationDelay: '2s' }}
+                    ></div>
                 </div>
-            </main>
-        </div>
+            </div>
+        </BuyerPortalShell>
     );
 }

@@ -1,68 +1,84 @@
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import {
-    ArrowLeft,
-    BookOpen,
-    Home,
-    UserPlus,
-    ShieldCheck,
-    Megaphone,
-    Brain,
-    Handshake,
-    Smartphone,
-    Scale,
-    MessageSquare,
-    Target,
-} from 'lucide-react';
+'use client';
 
-const AGENT_MODULES: Record<string, { title: string; icon: string; content: React.ReactNode }> = {
+import Link from 'next/link';
+import { notFound, useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
+import AgentPageHeader from '@/components/AgentPageHeader';
+import AgentLearnArticleContent from '@/components/AgentLearnArticleContent';
+import AgentLearnCallout from '@/components/AgentLearnCallout';
+import AgentLearnSection, { AgentLearnBullets, AgentLearnInfo } from '@/components/AgentLearnSection';
+import { LEARN_MODULE_META } from '@/lib/agent-learn-meta';
+import { AGENT_PAGE_CONTAINER, AGENT_SECONDARY_BTN } from '@/lib/agent-portal-ui';
+
+import { GROWTH_LEARN_ARTICLES } from '@/lib/agent-learn-growth-articles';
+import { COMPLIANCE_LEARN_ARTICLES } from '@/lib/agent-learn-compliance-articles';
+import { PRACTICE_LEARN_ARTICLES } from '@/lib/agent-learn-practice-articles';
+
+const AGENT_MODULES_BASE: Record<string, { title: string; icon: string; content: React.ReactNode }> = {
     'lead-conversion': {
         title: 'Lead Conversion Best Practices',
         icon: 'UserPlus',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Prequalified leads from PropReady have already shown intent and affordability. Your job is to
                     convert that potential into viewings and offers. Here&apos;s how to do it consistently.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Speed Matters</h3>
-                <p>
-                    Contact new leads within the first 2 hours. Studies show that leads contacted within 5 minutes
-                    are 21x more likely to qualify than those contacted after 30 minutes. Check your PropReady
-                    dashboard regularly and prioritise &quot;new&quot; leads.
-                </p>
+                <AgentLearnSection title="1. Speed matters">
+                    <p>
+                        Contact new leads within the first 2 hours. Studies show that leads contacted within 5 minutes
+                        are 21× more likely to qualify than those contacted after 30 minutes.
+                    </p>
+                    <AgentLearnInfo variant="important">
+                        <p>
+                            Check your PropReady dashboard regularly and prioritise &quot;new&quot; leads first every
+                            morning.
+                        </p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Use the Pre-Qualification Data</h3>
-                <p>
-                    You have access to their budget, preferred areas, and property type. Reference this in your
-                    first message. &quot;I saw you&apos;re looking for a 3-bed around R2.5m in Sandton—I have two
-                    matches that just came on the market.&quot; Personalisation builds trust instantly.
-                </p>
+                <AgentLearnSection title="2. Use the pre-qualification data">
+                    <p>
+                        You have access to their budget, preferred areas, and property type. Reference this in your
+                        first message — personalisation builds trust instantly.
+                    </p>
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            'Open with their budget and area: "I saw you\'re looking for a 3-bed around R2.5m in Sandton…"',
+                            'Offer 2 specific matches in the first message — not a generic catalogue.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Qualify Further Before Viewings</h3>
-                <ul className="list-disc pl-6 space-y-2">
-                    <li>Confirm their timeline (buying now vs. in 6 months)</li>
-                    <li>Ask about finance: pre-approved or still with bond originator?</li>
-                    <li>Clarify non-negotiables: schools, commute, security</li>
-                </ul>
-                <p className="mt-4">
-                    This prevents wasted viewings and shows you respect their time.
-                </p>
+                <AgentLearnSection title="3. Qualify further before viewings">
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            'Confirm their timeline (buying now vs. in 6 months)',
+                            'Ask about finance: pre-approved or still with bond originator?',
+                            'Clarify non-negotiables: schools, commute, security',
+                        ]}
+                    />
+                    <p>This prevents wasted viewings and shows you respect their time.</p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Book Viewings Quickly</h3>
-                <p>
-                    PropReady helps you manage viewings. Offer 2–3 specific time slots rather than &quot;when are
-                    you free?&quot; This reduces back-and-forth and increases commitment.
-                </p>
+                <AgentLearnSection title="4. Book viewings quickly">
+                    <p>
+                        PropReady helps you manage viewings. Offer 2–3 specific time slots rather than &quot;when are
+                        you free?&quot; This reduces back-and-forth and increases commitment.
+                    </p>
+                </AgentLearnSection>
 
-                <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                    <h4 className="text-xl font-bold text-gold mb-3">Quick Win</h4>
-                    <p className="text-charcoal/80">
+                <AgentLearnCallout title="Quick Win">
+                    <p>
                         Mark leads as &quot;contacted&quot; or &quot;qualified&quot; in your dashboard so you
                         can track your pipeline and follow up on warm leads who haven&apos;t viewed yet.
                     </p>
-                </div>
+                </AgentLearnCallout>
             </div>
         ),
     },
@@ -70,53 +86,71 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'EAAB Compliance & Ethics',
         icon: 'ShieldCheck',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     The Estate Agency Affairs Board (EAAB) regulates estate agents in South Africa. Compliance
                     protects you, your clients, and your reputation.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Registration</h3>
-                <p>
-                    You must be registered with the EAAB to practice as an estate agent. Ensure your Fidelity
-                    Fund Certificate (FFC) is current and displayed where required. Operating without a valid
-                    FFC is illegal.
-                </p>
+                <AgentLearnSection title="1. Registration">
+                    <p>
+                        You must be registered with the EAAB to practice as an estate agent. Ensure your Fidelity
+                        Fund Certificate (FFC) is current and displayed where required.
+                    </p>
+                    <AgentLearnInfo variant="eaab">
+                        <p>Operating without a valid FFC is illegal.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Mandatory Disclosure</h3>
-                <p>
-                    Disclose your status as an estate agent in all dealings. Disclose any interest you have in
-                    a property (e.g. if you or a related party are the seller). Failure to disclose can lead
-                    to disciplinary action and civil claims.
-                </p>
+                <AgentLearnSection title="2. Mandatory disclosure">
+                    <AgentLearnBullets
+                        variant="compliance"
+                        items={[
+                            'Disclose your status as an estate agent in all dealings.',
+                            'Disclose any interest you have in a property (e.g. if you or a related party are the seller).',
+                        ]}
+                    />
+                    <AgentLearnInfo variant="warning">
+                        <p>Failure to disclose can lead to disciplinary action and civil claims.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Commission</h3>
-                <p>
-                    Commission must be agreed in writing (typically in the mandate or OTP). Avoid verbal
-                    agreements. The EAAB sets guidelines; ensure your agreements are clear and enforceable.
-                </p>
+                <AgentLearnSection title="3. Commission">
+                    <p>
+                        Commission must be agreed in writing (typically in the mandate or OTP). Avoid verbal
+                        agreements. The EAAB sets guidelines; ensure your agreements are clear and enforceable.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Handling Trust Money</h3>
-                <p>
-                    Deposit and other trust funds must be held in a designated trust account. Never mix
-                    trust money with operating funds. Keep meticulous records for audits.
-                </p>
+                <AgentLearnSection title="4. Handling trust money">
+                    <AgentLearnBullets
+                        variant="warning"
+                        items={[
+                            'Deposit and other trust funds must be held in a designated trust account.',
+                            'Never mix trust money with operating funds.',
+                            'Keep meticulous records for audits.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Ethical Conduct</h3>
-                <ul className="list-disc pl-6 space-y-2">
-                    <li>Act in the best interest of your client</li>
-                    <li>Do not misrepresent properties or withhold material facts</li>
-                    <li>Treat all parties fairly and avoid conflicts of interest</li>
-                    <li>Maintain confidentiality</li>
-                </ul>
+                <AgentLearnSection title="5. Ethical conduct">
+                    <AgentLearnBullets
+                        variant="compliance"
+                        items={[
+                            'Act in the best interest of your client',
+                            'Do not misrepresent properties or withhold material facts',
+                            'Treat all parties fairly and avoid conflicts of interest',
+                            'Maintain confidentiality',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                    <h4 className="text-xl font-bold text-gold mb-3">Stay Updated</h4>
-                    <p className="text-charcoal/80">
+                <AgentLearnCallout title="Stay updated">
+                    <p>
                         Visit the EAAB website regularly for updates on regulations, CPD requirements, and
                         industry notices.
                     </p>
-                </div>
+                </AgentLearnCallout>
             </div>
         ),
     },
@@ -124,52 +158,62 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Property Marketing & Listing Tips',
         icon: 'Megaphone',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Great listings attract more viewings and sell faster. Here&apos;s how to make your
                     properties stand out on PropReady and other portals.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Photos Matter Most</h3>
-                <p>
-                    Use high-quality, well-lit photos. Shoot during the golden hour for warmth. Include wide
-                    shots of each room, the kitchen, bathrooms, and outdoor space. Avoid clutter—tidy and
-                    stage before shooting. Consider a professional photographer for premium listings.
-                </p>
+                <AgentLearnSection title="1. Photos matter most">
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            'Use high-quality, well-lit photos — shoot during golden hour for warmth.',
+                            'Include wide shots of each room, kitchen, bathrooms, and outdoor space.',
+                            'Declutter and stage before shooting.',
+                            'Consider a professional photographer for premium listings.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Write Compelling Descriptions</h3>
-                <p>
-                    Lead with the best feature (view, location, finishes). Use bullet points for specs.
-                    Mention nearby schools, transport, and amenities. Avoid generic phrases like &quot;must
-                    see&quot;—be specific about why it&apos;s special.
-                </p>
+                <AgentLearnSection title="2. Write compelling descriptions">
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            'Lead with the best feature (view, location, finishes).',
+                            'Use bullet points for specs; mention schools, transport, and amenities.',
+                            'Avoid generic phrases like "must see" — be specific about why it\'s special.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Price Right</h3>
-                <p>
-                    Overpricing kills interest. Use comparables (similar sold properties in the area) to
-                    advise sellers. PropReady&apos;s listing score can help you see how your listing
-                    compares—use it to improve.
-                </p>
+                <AgentLearnSection title="3. Price right">
+                    <p>
+                        Overpricing kills interest. Use comparables to advise sellers. PropReady&apos;s listing
+                        score shows how your listing compares — use it to improve.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Add a Video</h3>
-                <p>
-                    Listings with video get more engagement. A simple walk-through on your phone is better
-                    than none. Add the video URL to your PropReady listing for extra impact.
-                </p>
+                <AgentLearnSection title="4. Add a video">
+                    <p>
+                        Listings with video get more engagement. A simple walk-through on your phone is better
+                        than none. Add the video URL to your PropReady listing for extra impact.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Features & Tags</h3>
-                <p>
-                    Tag all relevant features: pool, security, generator, etc. Buyers filter by these—missing
-                    tags mean missed matches.
-                </p>
+                <AgentLearnSection title="5. Features & tags">
+                    <p>
+                        Tag all relevant features: pool, security, generator, etc. Buyers filter by these —
+                        missing tags mean missed matches.
+                    </p>
+                </AgentLearnSection>
 
-                <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                    <h4 className="text-xl font-bold text-gold mb-3">PropReady Tip</h4>
-                    <p className="text-charcoal/80">
+                <AgentLearnCallout title="PropReady tip">
+                    <p>
                         Use the listing score in your dashboard to identify weak spots (e.g. missing photos,
                         short description) and improve before pushing to buyers.
                     </p>
-                </div>
+                </AgentLearnCallout>
             </div>
         ),
     },
@@ -177,45 +221,82 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Understanding Buyer Psychology',
         icon: 'Brain',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Buyers make emotional decisions and justify them logically. Understanding this helps you
                     communicate better and close more deals.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. The &quot;Home&quot; Feeling</h3>
-                <p>
-                    Most buyers are looking for more than square metres—they want to imagine their life in
-                    the space. Help them visualise: &quot;This is where you could have Sunday braais&quot; or
-                    &quot;Perfect for the kids to play safely.&quot;
-                </p>
+                <AgentLearnSection title='1. The "home" feeling'>
+                    <p>
+                        Most buyers want more than square metres — they want to imagine their life in the space.
+                        Help them visualise with specific, emotional language.
+                    </p>
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            '"This is where you could have Sunday braais."',
+                            '"Perfect for the kids to play safely."',
+                            '"Picture your morning coffee on this patio."',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Fear of Missing Out (FOMO)</h3>
-                <p>
-                    Genuine scarcity works: &quot;Another agent has a viewing this afternoon&quot; or
-                    &quot;We&apos;ve had a lot of interest.&quot; Use it ethically—never fabricate
-                    interest.
-                </p>
+                <AgentLearnSection title="2. Fear of missing out (FOMO)">
+                    <p>
+                        Genuine scarcity motivates action. Use real facts — never invent interest.
+                    </p>
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            '"Another agent has a viewing this afternoon."',
+                            '"We\'ve had a lot of interest this week."',
+                            '"This is the only unit at this price in the complex."',
+                        ]}
+                    />
+                    <AgentLearnInfo variant="warning" title="Ethics first">
+                        <p>Use FOMO ethically — never fabricate interest or invent competing offers.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Objection Handling</h3>
-                <ul className="list-disc pl-6 space-y-2">
-                    <li><strong>&quot;The price is too high&quot;</strong>—Show comparables, emphasise value and unique features.</li>
-                    <li><strong>&quot;We need to think about it&quot;</strong>—What specifically do they need to consider? Address those.</li>
-                    <li><strong>&quot;We&apos;re still looking&quot;</strong>—Stay in touch. Many buyers need 3–6 months and multiple viewings.</li>
-                </ul>
+                <AgentLearnSection title="3. Objection handling">
+                    <AgentLearnBullets
+                        variant="warning"
+                        items={[
+                            { text: <><strong>&quot;The price is too high&quot;</strong> — Show comparables, emphasise value and unique features.</> },
+                            { text: <><strong>&quot;We need to think about it&quot;</strong> — Ask what specifically they need to consider; address those points.</> },
+                            { text: <><strong>&quot;We&apos;re still looking&quot;</strong> — Stay in touch. Many buyers need 3–6 months and multiple viewings.</> },
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. First-Time Buyers</h3>
-                <p>
-                    They&apos;re nervous about the process. Educate them: bond process, transfer costs,
-                    timelines. Point them to PropReady&apos;s buyer learning centre if they need more detail.
-                    Being helpful builds loyalty.
-                </p>
+                <AgentLearnSection title="4. First-time buyers">
+                    <p>
+                        They&apos;re nervous about the process. Education builds trust and loyalty.
+                    </p>
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            'Walk them through the bond process and typical timelines.',
+                            'Explain transfer costs and what happens after OTP.',
+                            'Point them to PropReady\'s buyer learning centre for more detail.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Don&apos;t Push</h3>
-                <p>
-                    Aggressive tactics backfire. Listen more than you talk. Ask what they love and what
-                    concerns them. Adapt your approach to their style.
-                </p>
+                <AgentLearnSection title="5. Don&apos;t push">
+                    <p>
+                        Aggressive tactics backfire. Listen more than you talk.
+                    </p>
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            'Ask what they love and what concerns them.',
+                            'Adapt your pace to their decision style.',
+                            'A patient agent wins more referrals than a pushy one.',
+                        ]}
+                    />
+                </AgentLearnSection>
             </div>
         ),
     },
@@ -223,43 +304,58 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Working with Sellers Effectively',
         icon: 'Handshake',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Sellers want a quick sale at the best price. Your job is to manage expectations,
                     market effectively, and keep them informed.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. The Pricing Conversation</h3>
-                <p>
-                    Sellers often overvalue their property. Bring comparables: similar properties sold in the
-                    area. Explain that overpricing leads to fewer viewings and longer time on market. A
-                    realistic price often achieves a better net result.
-                </p>
+                <AgentLearnSection title="1. The pricing conversation">
+                    <p>
+                        Sellers often overvalue their property. Bring comparables and explain that overpricing
+                        leads to fewer viewings and longer time on market.
+                    </p>
+                    <AgentLearnInfo variant="tip">
+                        <p>A realistic price often achieves a better net result than an aspirational one.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Pre-Listing Preparation</h3>
-                <p>
-                    Advise on decluttering, minor repairs, and staging. A clean, bright home photographs
-                    better and shows better. Offer to connect them with handymen or stagers if needed.
-                </p>
+                <AgentLearnSection title="2. Pre-listing preparation">
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            'Advise on decluttering, minor repairs, and staging.',
+                            'A clean, bright home photographs and shows better.',
+                            'Offer to connect them with handymen or stagers if needed.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Communication Cadence</h3>
-                <p>
-                    Agree on how often you&apos;ll update them (e.g. weekly, or after every viewing).
-                    Nothing erodes trust like silence. Even &quot;no news this week&quot; is better than
-                    nothing.
-                </p>
+                <AgentLearnSection title="3. Communication cadence">
+                    <p>
+                        Agree on how often you&apos;ll update them (e.g. weekly, or after every viewing).
+                    </p>
+                    <AgentLearnInfo variant="important">
+                        <p>Nothing erodes trust like silence. Even &quot;no news this week&quot; is better than nothing.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Handling Offers</h3>
-                <p>
-                    Present all offers promptly and in writing. Explain the terms, not just the price:
-                    conditions, occupational rent, deposit. Help sellers compare holistically.
-                </p>
+                <AgentLearnSection title="4. Handling offers">
+                    <AgentLearnBullets
+                        items={[
+                            'Present all offers promptly and in writing.',
+                            'Explain the terms, not just the price: conditions, occupational rent, deposit.',
+                            'Help sellers compare offers holistically.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Long-Term Relationships</h3>
-                <p>
-                    A seller today may be a buyer tomorrow, or refer you to friends. Stay in touch after
-                    the sale. A simple &quot;how&apos;s the new home?&quot; goes a long way.
-                </p>
+                <AgentLearnSection title="5. Long-term relationships">
+                    <p>
+                        A seller today may be a buyer tomorrow, or refer you to friends. Stay in touch after
+                        the sale — a simple &quot;how&apos;s the new home?&quot; goes a long way.
+                    </p>
+                </AgentLearnSection>
             </div>
         ),
     },
@@ -267,51 +363,65 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Digital Marketing for Real Estate',
         icon: 'Smartphone',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Your online presence determines how many leads you attract. Here&apos;s how to leverage
                     digital channels effectively.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. PropReady as Your Base</h3>
-                <p>
-                    PropReady gives you prequalified leads and a place to manage properties and viewings.
-                    Ensure your profile is complete and your listed properties are optimised. When buyers
-                    prequalify, they&apos;re matched with agents like you—so a strong presence here pays off.
-                </p>
+                <AgentLearnSection title="1. PropReady as your base">
+                    <p>
+                        PropReady gives you prequalified leads and a place to manage properties and viewings.
+                        When buyers prequalify, they&apos;re matched with agents like you.
+                    </p>
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            'Complete your profile and keep service areas accurate.',
+                            'Optimise every listed property before pushing to buyers.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Property Portals</h3>
-                <p>
-                    List on Property24, Private Property, and others. Consistency matters: same photos,
-                    descriptions, and prices across platforms. Inconsistency erodes trust.
-                </p>
+                <AgentLearnSection title="2. Property portals">
+                    <p>
+                        List on Property24, Private Property, and others. Consistency across platforms builds trust.
+                    </p>
+                    <AgentLearnInfo variant="warning">
+                        <p>Same photos, descriptions, and prices everywhere — inconsistency erodes credibility.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Social Media</h3>
-                <p>
-                    LinkedIn for professional credibility. Facebook and Instagram for property showcases and
-                    local community. Share new listings, market insights, and tips—not just &quot;buy now&quot;
-                    posts.
-                </p>
+                <AgentLearnSection title="3. Social media">
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            'LinkedIn — professional credibility and market commentary.',
+                            'Facebook & Instagram — property showcases and local community.',
+                            'Share insights and tips — not just "buy now" posts.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Email Marketing</h3>
-                <p>
-                    Build a list of past clients and interested buyers. Send monthly market updates, new
-                    listings, and helpful content. Keep it valuable, not spammy.
-                </p>
+                <AgentLearnSection title="4. Email marketing">
+                    <p>
+                        Build a list of past clients and interested buyers. Send monthly market updates and new
+                        listings — keep it valuable, not spammy.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Response Time</h3>
-                <p>
-                    Reply to enquiries within minutes when possible. Speed signals professionalism and
-                    urgency.
-                </p>
+                <AgentLearnSection title="5. Response time">
+                    <p>
+                        Reply to enquiries within minutes when possible. Speed signals professionalism and urgency.
+                    </p>
+                </AgentLearnSection>
 
-                <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                    <h4 className="text-xl font-bold text-gold mb-3">Quick Win</h4>
-                    <p className="text-charcoal/80">
+                <AgentLearnCallout title="Quick win">
+                    <p>
                         When you get a new PropReady lead, share relevant listings from your portfolio in
                         your first message. It shows you&apos;re prepared and saves them time.
                     </p>
-                </div>
+                </AgentLearnCallout>
             </div>
         ),
     },
@@ -319,53 +429,64 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Legal Compliance Basics',
         icon: 'Scale',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Estate agents must navigate several legal frameworks. Here are the essentials you need
                     to know.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Offer to Purchase (OTP)</h3>
-                <p>
-                    The OTP is the contract between buyer and seller. It must be in writing and signed by
-                    both parties. Ensure all material terms are included: price, conditions, occupational
-                    rent, deposit, and deadlines. Recommend that both parties get legal advice before
-                    signing.
-                </p>
+                <AgentLearnSection title="1. Offer to Purchase (OTP)">
+                    <p>
+                        The OTP is the contract between buyer and seller. It must be in writing and signed by
+                        both parties.
+                    </p>
+                    <AgentLearnBullets
+                        variant="compliance"
+                        items={[
+                            'Include all material terms: price, conditions, occupational rent, deposit, deadlines.',
+                            'Recommend legal advice before signing for both parties.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. FICA (Financial Intelligence Centre Act)</h3>
-                <p>
-                    When handling deposits or facilitating transactions, you may need to verify the identity
-                    and address of clients. Keep FICA documents (ID, proof of address) on file. Non-compliance
-                    can result in fines and reputational damage.
-                </p>
+                <AgentLearnSection title="2. FICA (Financial Intelligence Centre Act)">
+                    <p>
+                        When handling deposits or facilitating transactions, verify client identity and address.
+                    </p>
+                    <AgentLearnInfo variant="warning">
+                        <p>Keep FICA documents (ID, proof of address) on file. Non-compliance can result in fines.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. POPIA (Protection of Personal Information)</h3>
-                <p>
-                    You collect names, IDs, contact details, and financial information. You must:
-                </p>
-                <ul className="list-disc pl-6 space-y-2">
-                    <li>Only collect what you need</li>
-                    <li>Use it only for the purpose it was collected</li>
-                    <li>Store it securely</li>
-                    <li>Allow clients to access or correct their data</li>
-                </ul>
-                <p className="mt-4">
-                    PropReady is designed with privacy in mind—ensure you handle leads&apos; data
-                    responsibly.
-                </p>
+                <AgentLearnSection title="3. POPIA (Protection of Personal Information)">
+                    <AgentLearnBullets
+                        variant="compliance"
+                        items={[
+                            'Only collect what you need for the transaction.',
+                            'Use data only for the purpose it was collected.',
+                            'Store it securely and allow access or correction on request.',
+                        ]}
+                    />
+                    <p>
+                        PropReady is designed with privacy in mind — ensure you handle leads&apos; data responsibly.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Mandate</h3>
-                <p>
-                    A mandate is the agreement between you and the seller (or buyer, in some cases). It
-                    should specify commission, duration, exclusivity, and scope. Get it in writing.
-                </p>
+                <AgentLearnSection title="4. Mandate">
+                    <p>
+                        A mandate is the agreement between you and the seller. It should specify commission,
+                        duration, exclusivity, and scope. Get it in writing.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. When in Doubt</h3>
-                <p>
-                    Refer to your principal or legal counsel. It&apos;s better to pause and confirm than to
-                    risk a void contract or disciplinary issue.
-                </p>
+                <AgentLearnSection title="5. When in doubt">
+                    <AgentLearnInfo variant="important">
+                        <p>
+                            Refer to your principal or legal counsel. It&apos;s better to pause and confirm than
+                            to risk a void contract or disciplinary issue.
+                        </p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
             </div>
         ),
     },
@@ -373,49 +494,63 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Negotiation Skills',
         icon: 'MessageSquare',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Every deal involves negotiation. Strong negotiation skills help you close more sales and
                     keep all parties satisfied.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Understand Both Sides</h3>
-                <p>
-                    Before negotiating, know what each party wants: price, occupation date, conditions,
-                    inclusions. The best deals create value for both—not just a win-lose on price.
-                </p>
+                <AgentLearnSection title="1. Understand both sides">
+                    <p>
+                        Before negotiating, know what each party wants: price, occupation date, conditions,
+                        inclusions. The best deals create value for both — not just a win-lose on price.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Anchor Carefully</h3>
-                <p>
-                    The first number sets the frame. If the buyer lowballs, counter with comparables and
-                    rationale. If the seller is unrealistic, show market data before the first offer.
-                </p>
+                <AgentLearnSection title="2. Anchor carefully">
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            'The first number sets the frame — use comparables to support your position.',
+                            'If the seller is unrealistic, show market data before the first offer arrives.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Use Concessions Strategically</h3>
-                <p>
-                    Don&apos;t give things away for free. &quot;If you can bring the deposit to 10%, we can
-                    look at reducing the price by R20k.&quot; Each concession should feel earned.
-                </p>
+                <AgentLearnSection title="3. Use concessions strategically">
+                    <p>
+                        Don&apos;t give things away for free. Each concession should feel earned.
+                    </p>
+                    <AgentLearnInfo variant="tip">
+                        <p>
+                            Example: &quot;If you can bring the deposit to 10%, we can look at reducing the
+                            price by R20k.&quot;
+                        </p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Deadlines Create Movement</h3>
-                <p>
-                    &quot;The offer is valid until 5pm tomorrow&quot; or &quot;Another party is viewing
-                    this afternoon&quot; can focus minds. Use deadlines ethically—never fabricate.
-                </p>
+                <AgentLearnSection title="4. Deadlines create movement">
+                    <p>
+                        &quot;The offer is valid until 5pm tomorrow&quot; can focus minds — use deadlines ethically.
+                    </p>
+                    <AgentLearnInfo variant="warning">
+                        <p>Never fabricate competing interest or false deadlines.</p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Stay Calm</h3>
-                <p>
-                    Emotions escalate. If things get tense, suggest a short break. Your role is to facilitate
-                    agreement, not to take sides or lose your cool.
-                </p>
+                <AgentLearnSection title="5. Stay calm">
+                    <p>
+                        Emotions escalate. If things get tense, suggest a short break. Your role is to facilitate
+                        agreement, not to take sides or lose your cool.
+                    </p>
+                </AgentLearnSection>
 
-                <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                    <h4 className="text-xl font-bold text-gold mb-3">Golden Rule</h4>
-                    <p className="text-charcoal/80">
+                <AgentLearnCallout title="Golden rule">
+                    <p>
                         A deal that falls apart later helps no one. Ensure both parties understand and accept
                         the terms. Clarity prevents disputes.
                     </p>
-                </div>
+                </AgentLearnCallout>
             </div>
         ),
     },
@@ -423,132 +558,133 @@ const AGENT_MODULES: Record<string, { title: string; icon: string; content: Reac
         title: 'Time Management for Agents',
         icon: 'Target',
         content: (
-            <div className="space-y-6 text-charcoal/90">
-                <p className="text-lg">
+            <div className="contents">
+                <p>
                     Agents juggle viewings, admin, marketing, and follow-ups. Without systems, you burn out
                     or drop balls. Here&apos;s how to work smarter.
                 </p>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">1. Prioritise Hot Leads</h3>
-                <p>
-                    Not all leads are equal. Focus first on: new leads (contact within 2 hours), leads who
-                    have viewed (follow up same day), and qualified buyers with a short timeline. Use your
-                    PropReady dashboard to filter and sort.
-                </p>
+                <AgentLearnSection title="1. Prioritise hot leads">
+                    <AgentLearnBullets
+                        variant="check"
+                        items={[
+                            'New leads — contact within 2 hours.',
+                            'Leads who have viewed — follow up same day.',
+                            'Qualified buyers with a short timeline — top of your list.',
+                        ]}
+                    />
+                    <p>Use your PropReady dashboard to filter and sort by priority.</p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">2. Batch Similar Tasks</h3>
-                <p>
-                    Do all calls in one block, all listing updates in another, all viewings in clusters by
-                    area. Context-switching costs time and focus.
-                </p>
+                <AgentLearnSection title="2. Batch similar tasks">
+                    <AgentLearnBullets
+                        variant="tip"
+                        items={[
+                            'All calls in one block.',
+                            'All listing updates in another.',
+                            'Viewings clustered by area — less driving, more focus.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">3. Use a CRM (or PropReady)</h3>
-                <p>
-                    Track where each lead is: new, contacted, viewed, offer made. Set reminders for
-                    follow-ups. Your PropReady dashboard helps—use the status filters and notes to stay
-                    organised.
-                </p>
+                <AgentLearnSection title="3. Use a CRM (or PropReady)">
+                    <p>
+                        Track where each lead is: new, contacted, viewed, offer made. Set reminders for
+                        follow-ups. Use status filters and notes to stay organised.
+                    </p>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">4. Schedule Admin Time</h3>
-                <p>
-                    Block 30–60 minutes daily for paperwork, emails, and updates. If you don&apos;t schedule
-                    it, it spills into evenings and weekends.
-                </p>
+                <AgentLearnSection title="4. Schedule admin time">
+                    <AgentLearnInfo variant="important">
+                        <p>
+                            Block 30–60 minutes daily for paperwork, emails, and updates. If you don&apos;t
+                            schedule it, it spills into evenings and weekends.
+                        </p>
+                    </AgentLearnInfo>
+                </AgentLearnSection>
 
-                <h3 className="text-2xl font-bold text-charcoal mt-8 mb-4">5. Protect Your Off-Time</h3>
-                <p>
-                    Real estate is 24/7, but you don&apos;t have to be. Set boundaries: no calls after 8pm
-                    unless urgent, or one weekend day off. Sustainable pace beats short-term hustle.
-                </p>
+                <AgentLearnSection title="5. Protect your off-time">
+                    <AgentLearnBullets
+                        items={[
+                            'Set boundaries: no calls after 8pm unless urgent.',
+                            'Protect at least one weekend day off.',
+                            'Sustainable pace beats short-term hustle.',
+                        ]}
+                    />
+                </AgentLearnSection>
 
-                <div className="premium-card p-6 rounded-xl mt-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                    <h4 className="text-xl font-bold text-gold mb-3">PropReady Tip</h4>
-                    <p className="text-charcoal/80">
+                <AgentLearnCallout title="PropReady tip">
+                    <p>
                         Use the Viewings section to schedule and manage appointments in one place. Fewer
                         tools = less chaos.
                     </p>
-                </div>
+                </AgentLearnCallout>
             </div>
         ),
     },
 };
 
-export default async function AgentLearnArticlePage({
-    params,
-}: {
-    params: Promise<{ slug: string }>;
-}) {
-    const { slug } = await params;
+const AGENT_MODULES = {
+    ...AGENT_MODULES_BASE,
+    ...GROWTH_LEARN_ARTICLES,
+    ...COMPLIANCE_LEARN_ARTICLES,
+    ...PRACTICE_LEARN_ARTICLES,
+};
+
+export default function AgentLearnArticlePage() {
+    const router = useRouter();
+    const params = useParams();
+    const slug = typeof params.slug === 'string' ? params.slug : '';
+    const [currentAgent, setCurrentAgent] = useState<AgentPortalAgent | null>(null);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const agent = localStorage.getItem('propReady_currentAgent');
+        if (!agent) {
+            router.replace('/agents/login');
+            return;
+        }
+        setCurrentAgent(JSON.parse(agent));
+    }, [router]);
+
     const agentModule = AGENT_MODULES[slug];
 
-    if (!agentModule) {
+    if (!slug || !agentModule) {
         notFound();
     }
 
+    const meta = LEARN_MODULE_META[slug];
+
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/agents/dashboard" className="text-charcoal/90 hover:text-charcoal transition">
-                                Dashboard
-                            </Link>
-                            <Link href="/agents/learn" className="text-gold font-semibold">
-                                Learning Hub
-                            </Link>
-                            <Link href="/agents/settings" className="text-charcoal/90 hover:text-charcoal transition">
-                                Settings
-                            </Link>
-                        </div>
-                    </div>
-
+        <AgentPortalLayout
+            activePage="learn"
+            agent={currentAgent}
+            title="Learning Hub"
+            pageHeader={
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow="Learning Hub – Agents"
+                    title={agentModule.title}
+                >
                     <Link
                         href="/agents/learn"
-                        className="flex items-center space-x-2 text-charcoal hover:text-gold transition"
+                        className={`${AGENT_SECONDARY_BTN} mt-4 h-9 px-4 text-xs`}
                     >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Learning Hub</span>
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Learning Hub
                     </Link>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-16">
-                <div className="container mx-auto max-w-3xl relative z-10">
-                    <div className="mb-8">
-                        <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-gold/20 border border-gold/30 mb-4">
-                            <BookOpen className="w-4 h-4 text-gold" />
-                            <span className="text-gold font-semibold text-sm">Learning Hub – Agents</span>
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-bold text-charcoal mb-4">
-                            {agentModule.title}
-                        </h1>
-                    </div>
-
-                    <article className="prose prose-lg max-w-none">
-                        {agentModule.content}
-                    </article>
-
-                    <div className="mt-12 pt-8 border-t border-charcoal/20">
-                        <Link
-                            href="/agents/learn"
-                            className="inline-flex items-center space-x-2 text-gold font-semibold hover:underline"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                            <span>Back to Learning Hub</span>
-                        </Link>
-                    </div>
-                </div>
-            </main>
-        </div>
+                </AgentPageHeader>
+            }
+        >
+            <div className={AGENT_PAGE_CONTAINER}>
+                <AgentLearnArticleContent
+                    category={meta?.category}
+                    readMinutes={meta?.readMinutes}
+                    title={agentModule.title}
+                >
+                    {agentModule.content}
+                </AgentLearnArticleContent>
+            </div>
+        </AgentPortalLayout>
     );
 }

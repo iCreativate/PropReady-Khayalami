@@ -16,6 +16,19 @@ import {
     EMPTY_PROPERTY_FORM,
 } from '@/lib/listed-property';
 import PpraVerificationGate from '@/components/PpraVerificationGate';
+import AgentPageHeader from '@/components/AgentPageHeader';
+import {
+    AGENT_CARD,
+    AGENT_CARD_HEADER,
+    AGENT_CARD_BODY,
+    AGENT_PRIMARY_BTN,
+    AGENT_EMPTY_ICON,
+    AGENT_BADGE,
+    AGENT_SECONDARY_BTN,
+    AGENT_VIEW_BTN,
+    AGENT_PANEL_HEADER,
+    AGENT_PANEL_BODY,
+} from '@/lib/agent-portal-ui';
 import { isAgentPpraVerified } from '@/lib/ppra';
 
 interface AgentListedPropertiesWorkspaceProps {
@@ -444,40 +457,48 @@ export default function AgentListedPropertiesWorkspace({
         <>
             <PpraVerificationGate agent={currentAgent} />
             {showPageHeader && (
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold text-charcoal mb-2">My Listed Properties</h1>
-                    <p className="text-charcoal/80 text-lg">
-                        Manage listings, publish to buyers, and schedule viewings
-                    </p>
-                </div>
+                <AgentPageHeader
+                    variant="premium"
+                    eyebrow="Listings"
+                    title="My Listed Properties"
+                    description="Manage listings, publish to buyers, and schedule viewings"
+                />
             )}
             {currentAgent && isAgentPpraVerified(currentAgent) ? (
                 <>
-                                        {/* Listed Properties Section */}
-                                        <div id="properties-section" className="glass-effect rounded-xl p-6 mb-6">
-                                            <div className="flex items-center justify-end mb-6">
+                                        <div id="properties-section" className={AGENT_CARD}>
+                                            <div className={`${AGENT_CARD_HEADER} flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5`}>
+                                                <div>
+                                                    <h2 className="text-xl sm:text-2xl font-semibold text-charcoal tracking-tight">Your properties</h2>
+                                                    <p className="text-charcoal/45 text-sm mt-2 leading-relaxed">
+                                                        {listedProperties.length} listing{listedProperties.length === 1 ? '' : 's'}
+                                                    </p>
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={openAddProperty}
-                                                    className="px-4 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition flex items-center gap-2"
+                                                    className={`${AGENT_PRIMARY_BTN} self-start sm:self-auto`}
                                                 >
                                                     <Plus className="w-4 h-4" />
                                                     Add Property
                                                 </button>
                                             </div>
+                                            <div className={`${AGENT_CARD_BODY} sm:px-6 sm:py-6`}>
                     
                                             {listedProperties.length === 0 ? (
-                                                <div className="text-center py-12">
-                                                    <Building2 className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                                                    <p className="text-charcoal/70 text-lg">No properties listed yet</p>
-                                                    <p className="text-charcoal/50 text-sm mt-2">
+                                                <div className="text-center py-16 px-4">
+                                                    <div className={AGENT_EMPTY_ICON}>
+                                                        <Building2 className="w-8 h-8 text-charcoal/25" />
+                                                    </div>
+                                                    <p className="text-charcoal font-semibold text-lg tracking-tight">No properties listed yet</p>
+                                                    <p className="text-charcoal/45 text-sm mt-2 max-w-md mx-auto leading-relaxed">
                                                         Add your first property to start connecting with buyers and sellers
                                                     </p>
                                                 </div>
                                             ) : (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                                                     {listedProperties.map((property) => (
-                                                        <div key={property.id} className="bg-white/10 rounded-lg overflow-hidden border border-charcoal/20 flex flex-col">
+                                                        <div key={property.id} className="rounded-3xl overflow-hidden border border-charcoal/[0.07] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.07)] hover:border-charcoal/[0.12] transition-all duration-300 flex flex-col">
                                                             {property.images?.length && property.images[0] ? (
                                                                 <div className="relative w-full aspect-[16/10] bg-charcoal/10">
                                                                     <img
@@ -502,12 +523,12 @@ export default function AgentListedPropertiesWorkspace({
                                                                     <h3 className="text-charcoal font-semibold">{property.title}</h3>
                                                                     <div className="flex items-center gap-1.5 flex-shrink-0">
                                                                         {!property.published && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-700">
+                                                                            <span className={`${AGENT_BADGE} bg-amber-500/10 text-amber-800 border border-amber-500/15`}>
                                                                                 Draft
                                                                             </span>
                                                                         )}
                                                                         {property.listingScore != null && (
-                                                                            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gold/20 text-gold">
+                                                                            <span className={`${AGENT_BADGE} bg-gold/[0.08] text-gold border border-gold/10`}>
                                                                                 {property.listingScore}/100
                                                                             </span>
                                                                         )}
@@ -540,7 +561,7 @@ export default function AgentListedPropertiesWorkspace({
                                                                 {property.features?.length ? (
                                                                     <div className="flex flex-wrap gap-1 mb-3">
                                                                         {property.features.slice(0, 5).map((f) => (
-                                                                            <span key={f} className="px-2 py-0.5 rounded bg-charcoal/10 text-charcoal/80 text-xs">
+                                                                            <span key={f} className="px-2 py-0.5 rounded-md bg-charcoal/5 text-charcoal/70 text-xs border border-charcoal/8">
                                                                                 {f}
                                                                             </span>
                                                                         ))}
@@ -563,7 +584,7 @@ export default function AgentListedPropertiesWorkspace({
                                                                 <div className="flex items-center gap-2 mt-auto">
                                                                     <button
                                                                         onClick={() => { setShowViewPropertyModal(property); setViewPropertyImageIndex(0); }}
-                                                                        className="flex-1 px-3 py-2 border border-charcoal/20 text-charcoal rounded-lg hover:bg-charcoal/5 transition text-sm flex items-center justify-center gap-1.5"
+                                                                        className={`${AGENT_SECONDARY_BTN} flex-1 h-8 px-3 text-xs`}
                                                                     >
                                                                         <Edit className="w-4 h-4" />
                                                                         View
@@ -571,7 +592,7 @@ export default function AgentListedPropertiesWorkspace({
                                                                     {!property.published && (
                                                                         <button
                                                                             onClick={() => handleEditProperty(property)}
-                                                                            className="px-3 py-2 bg-gold/20 text-gold border border-gold/40 rounded-lg hover:bg-gold/30 transition text-sm font-semibold"
+                                                                            className={`${AGENT_VIEW_BTN} h-8 px-3`}
                                                                             title="Edit draft"
                                                                         >
                                                                             Edit
@@ -579,7 +600,7 @@ export default function AgentListedPropertiesWorkspace({
                                                                     )}
                                                                     <button
                                                                         onClick={() => handleDeleteProperty(property)}
-                                                                        className="p-2 border border-red-500/30 text-red-600 rounded-lg hover:bg-red-500/10 transition"
+                                                                        className="p-2 h-8 w-8 rounded-full border border-red-500/20 text-red-600 hover:bg-red-500/[0.06] transition"
                                                                         title="Delete property"
                                                                     >
                                                                         <Trash2 className="w-4 h-4" />
@@ -587,14 +608,14 @@ export default function AgentListedPropertiesWorkspace({
                                                                     {property.published ? (
                                                                         <button
                                                                             onClick={() => handleUnpublishProperty(property)}
-                                                                            className="flex-1 px-3 py-2 bg-charcoal/10 text-charcoal rounded-lg hover:bg-charcoal/20 transition text-sm text-xs font-medium"
+                                                                            className={`${AGENT_SECONDARY_BTN} flex-1 h-8 px-3 text-xs`}
                                                                         >
                                                                             Unpublish
                                                                         </button>
                                                                     ) : (
                                                                         <button
                                                                             onClick={() => handlePublishProperty(property)}
-                                                                            className="flex-1 px-3 py-2 bg-gold text-white rounded-lg hover:bg-gold-600 transition text-sm flex items-center justify-center gap-1.5"
+                                                                            className={`${AGENT_PRIMARY_BTN} flex-1 h-8 px-3 text-xs`}
                                                                         >
                                                                             Publish
                                                                         </button>
@@ -604,7 +625,7 @@ export default function AgentListedPropertiesWorkspace({
                                                                     onClick={() => {
                                                                         scheduleViewingForProperty(property);
                                                                     }}
-                                                                    className="w-full px-4 py-2 bg-gold/20 text-gold border border-gold/40 rounded-lg hover:bg-gold/30 transition text-sm flex items-center justify-center gap-2 mt-2"
+                                                                    className={`${AGENT_VIEW_BTN} w-full h-9 mt-2`}
                                                                 >
                                                                     <CalendarIcon className="w-4 h-4" />
                                                                     Schedule Viewing
@@ -614,6 +635,7 @@ export default function AgentListedPropertiesWorkspace({
                                                     ))}
                                                 </div>
                                             )}
+                                            </div>
                                         </div>
                 </>
             ) : (
@@ -629,12 +651,10 @@ export default function AgentListedPropertiesWorkspace({
                                 </div>
             
                                 <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                                    {/* Header with gradient */}
-                                    <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                                        <div className="relative flex items-start justify-between gap-4">
+                                    <div className={AGENT_PANEL_HEADER}>
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
-                                                <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                                                <h2 className="text-xl md:text-2xl font-semibold text-charcoal tracking-tight leading-tight">
                                                     {editingPropertyId ? 'Edit Property' : 'Add Property to PropReady'}
                                                 </h2>
                                             </div>
@@ -644,16 +664,15 @@ export default function AgentListedPropertiesWorkspace({
                                                     setAddPropertyMode('choice');
                                                     setEditingPropertyId(null);
                                                 }}
-                                                className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                                className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
                                                 aria-label="Close"
                                             >
-                                                <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                                                <X className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
             
-                                    {/* Content area */}
-                                    <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                                    <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY}`}>
             
                                     {/* Step 1: Choose how to add */}
                                     {addPropertyMode === 'choice' && (
@@ -1073,28 +1092,28 @@ export default function AgentListedPropertiesWorkspace({
                                     <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
                                 </div>
                                 <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
-                                    <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                                        <div className="relative flex items-start justify-between gap-4">
+                                    <div className={AGENT_PANEL_HEADER}>
+                                        <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
-                                                <h2 className="text-2xl font-bold text-white mb-1">{showViewPropertyModal.title}</h2>
-                                                <p className="text-white/90 text-sm flex items-center gap-1">
+                                                <h2 className="text-xl md:text-2xl font-semibold text-charcoal tracking-tight leading-tight">{showViewPropertyModal.title}</h2>
+                                                <p className="text-charcoal/45 text-sm flex items-center gap-1 mt-1">
                                                     <MapPin className="w-4 h-4" />
                                                     {showViewPropertyModal.address}
                                                 </p>
-                                                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${showViewPropertyModal.published ? 'bg-white/20 text-white' : 'bg-amber-500/30 text-amber-100'}`}>
+                                                <span className={`${AGENT_BADGE} mt-2 ${showViewPropertyModal.published ? 'bg-emerald-500/[0.08] text-emerald-700 border border-emerald-500/15' : 'bg-amber-500/[0.08] text-amber-800 border border-amber-500/15'}`}>
                                                     {showViewPropertyModal.published ? 'Published' : 'Draft'}
                                                 </span>
                                             </div>
                                             <button
                                                 onClick={() => setShowViewPropertyModal(null)}
-                                                className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 border border-white/30 text-white hover:bg-white/30 transition flex items-center justify-center"
+                                                className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
                                                 aria-label="Close"
                                             >
                                                 <X className="w-5 h-5" />
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+                                    <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY} space-y-6`}>
                                         {showViewPropertyModal.images?.length ? (
                                             <div className="rounded-xl overflow-hidden border border-charcoal/10 relative">
                                                 <div className="relative aspect-[16/10] bg-charcoal/10 overflow-hidden">

@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, FileText, Building2, Calendar, ArrowLeft, Phone, Mail, MapPin, DollarSign, Users, CheckCircle, X, Search, Star, Clock } from 'lucide-react';
+import { Home, FileText, Building2, Calendar, Phone, Mail, MapPin, DollarSign, Users, CheckCircle, X, Search, Star, Clock } from 'lucide-react';
+import UserPortalLayout from '@/components/UserPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 import PpraTrustSection from '@/components/PpraTrustSection';
 import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
+import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_STAT_ICON } from '@/lib/portal-ui';
 
 interface Agent {
     id: string;
@@ -133,10 +136,10 @@ export default function SellerDashboardPage() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-charcoal/70">Loading...</p>
+                    <p className="text-charcoal/60">Loading...</p>
                 </div>
             </div>
         );
@@ -164,56 +167,22 @@ export default function SellerDashboardPage() {
     };
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-8">
-                        <Link href="/" className="flex items-center space-x-2">
-                            <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                                <Home className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold">PropReady</span>
-                        </Link>
-
-                        <div className="hidden md:flex items-center space-x-6">
-                            <Link href="/sellers/dashboard" className="text-gold font-semibold">
-                                Dashboard
-                            </Link>
-                            <Link href="/sellers" className="text-charcoal/90 hover:text-charcoal transition">
-                                Learning Center
-                            </Link>
-                            <Link href="/dashboard" className="text-charcoal/90 hover:text-charcoal transition">
-                                Buyer Dashboard
-                            </Link>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                            <p className="text-charcoal/70 text-sm">Seller</p>
-                            <p className="text-charcoal font-semibold">
-                                {currentUser?.fullName || 'User'}
-                            </p>
-                        </div>
-                        <button 
-                            onClick={() => {
-                                if (typeof window !== 'undefined') {
-                                    localStorage.removeItem('propReady_currentUser');
-                                    window.location.href = '/login';
-                                }
-                            }}
-                            className="px-4 py-2 rounded-lg border border-charcoal/30 text-charcoal hover:bg-charcoal/10 transition-all"
-                        >
-                            Sign Out
-                        </button>
-                    </div>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-8">
-                <div className="container mx-auto max-w-7xl relative z-10">
+        <>
+            <UserPortalLayout
+                portal="seller"
+                activePage="dashboard"
+                user={currentUser}
+                title="Dashboard"
+                pageHeader={
+                    <PortalPageHeader
+                        variant="premium"
+                        eyebrow={`Welcome back${currentUser?.fullName ? `, ${currentUser.fullName.split(' ')[0]}` : ''}`}
+                        title={<>Seller Dashboard <span aria-hidden="true">👋</span></>}
+                        description="Manage your property listing and connect with agents"
+                    />
+                }
+            >
+                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {currentUser && (
                         <AppointmentConfirmPanel
                             viewings={viewingAppointments}
@@ -241,21 +210,10 @@ export default function SellerDashboardPage() {
                             </button>
                         </div>
                     )}
-                    {/* Welcome Section */}
-                    <div className="mb-8">
-                        <h1 className="text-4xl font-bold text-charcoal mb-2">
-                            Welcome back, {currentUser?.fullName || 'User'}! 👋
-                        </h1>
-                        <p className="text-charcoal/80 text-lg">
-                            Manage your property listing and connect with agents
-                        </p>
-                    </div>
-
                     {/* Property Summary Card */}
                     {sellerInfo && (
-                        <div className="premium-card rounded-2xl p-8 mb-8 relative overflow-hidden">
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-6">
+                        <div className="premium-card p-8 mb-8 sm:mb-10 overflow-hidden">
+                            <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h2 className="text-2xl font-bold text-charcoal mb-2">Your Property</h2>
                                         <p className="text-charcoal/60 text-sm">Property listing details</p>
@@ -268,36 +226,34 @@ export default function SellerDashboardPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                        <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Property Type</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                                    <div className="portal-stat-inner">
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Property Type</p>
                                         <p className="text-charcoal font-bold text-xl capitalize">
                                             {sellerInfo.propertyType || 'N/A'}
                                         </p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-gold/5 to-gold/10 rounded-xl p-5 border border-gold/20 shadow-sm">
-                                        <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Timeline</p>
+                                    <div className="portal-stat-inner">
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Timeline</p>
                                         <p className="text-charcoal font-bold text-xl capitalize">
                                             {sellerInfo.timeline ? sellerInfo.timeline.replace('-', ' to ') : 'N/A'}
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full blur-3xl opacity-50"></div>
                         </div>
                     )}
 
                     {/* Quick Actions */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                        <Link href="/sellers" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6 mb-8 sm:mb-10">
+                        <Link href="/sellers" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <FileText className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Learning Center</h3>
                         </Link>
 
-                        <Link href="/sellers/valuation" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                        <Link href="/sellers/valuation" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Calendar className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Book Valuation</h3>
@@ -305,9 +261,9 @@ export default function SellerDashboardPage() {
 
                         <button
                             onClick={() => setShowAgentModal(true)}
-                            className="premium-card rounded-xl p-6 text-center group"
+                            className="premium-card p-6 text-center group"
                         >
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Users className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">
@@ -315,15 +271,15 @@ export default function SellerDashboardPage() {
                             </h3>
                         </button>
 
-                        <Link href="/dashboard" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                        <Link href="/dashboard" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Home className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Buyer Dashboard</h3>
                         </Link>
 
-                        <Link href="/dashboard/viewings" className="premium-card rounded-xl p-6 text-center group">
-                            <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gold/20 transition-colors">
+                        <Link href="/dashboard/viewings" className="premium-card p-6 text-center group">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
                                 <Calendar className="w-6 h-6 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Viewings</h3>
@@ -568,7 +524,7 @@ export default function SellerDashboardPage() {
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl"></div>
                 </div>
-            </main>
+            </UserPortalLayout>
 
             {/* Agent Selection Modal */}
             {showAgentModal && (
@@ -697,6 +653,6 @@ export default function SellerDashboardPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }

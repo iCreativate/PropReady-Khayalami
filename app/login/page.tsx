@@ -10,6 +10,13 @@ import {
     getRememberedUserEmail,
     setRememberedUserEmail,
 } from '@/lib/auth';
+import { hydrateDemoUserSession } from '@/lib/demo-user-session';
+import {
+    DEMO_BUYER,
+    DEMO_BUYER_LOGIN_HINT,
+    DEMO_SELLER,
+    DEMO_SELLER_LOGIN_HINT,
+} from '@/lib/demo-users';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -84,14 +91,39 @@ export default function LoginPage() {
                         fullName: localUser.fullName,
                         email: localUser.email,
                     };
+                } else if (
+                    formData.email.trim().toLowerCase() === DEMO_BUYER.email &&
+                    formData.password === DEMO_BUYER.password
+                ) {
+                    authenticatedUser = {
+                        id: DEMO_BUYER.id,
+                        fullName: DEMO_BUYER.fullName,
+                        email: DEMO_BUYER.email,
+                    };
+                } else if (
+                    formData.email.trim().toLowerCase() === DEMO_SELLER.email &&
+                    formData.password === DEMO_SELLER.password
+                ) {
+                    authenticatedUser = {
+                        id: DEMO_SELLER.id,
+                        fullName: DEMO_SELLER.fullName,
+                        email: DEMO_SELLER.email,
+                    };
                 }
             }
 
             if (authenticatedUser) {
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('propReady_currentUser', JSON.stringify(authenticatedUser));
+                    const demoType = hydrateDemoUserSession(formData.email);
+                    router.push(
+                        demoType === 'seller'
+                            ? DEMO_SELLER_LOGIN_HINT.dashboardUrl
+                            : '/dashboard'
+                    );
+                } else {
+                    router.push('/dashboard');
                 }
-                router.push('/dashboard');
             } else {
                 setError('Invalid email or password. Please try again.');
             }
@@ -218,6 +250,50 @@ export default function LoginPage() {
                                 {isLoading ? 'Signing In...' : 'Sign In'}
                             </button>
                         </form>
+
+                        <div className="mt-8 rounded-xl border border-charcoal/10 bg-charcoal/[0.02] p-4">
+                            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-charcoal/45 mb-3">
+                                Demo accounts (development)
+                            </p>
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFormData({
+                                            email: DEMO_BUYER_LOGIN_HINT.email,
+                                            password: DEMO_BUYER_LOGIN_HINT.password,
+                                        })
+                                    }
+                                    className="w-full rounded-lg border border-charcoal/10 bg-white px-4 py-3 text-left transition hover:border-gold/30 hover:shadow-sm"
+                                >
+                                    <p className="text-sm font-semibold text-charcoal">Demo buyer</p>
+                                    <p className="mt-1 text-xs text-charcoal/55">
+                                        {DEMO_BUYER_LOGIN_HINT.email} · Pre-qualified dashboard
+                                    </p>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFormData({
+                                            email: DEMO_SELLER_LOGIN_HINT.email,
+                                            password: DEMO_SELLER_LOGIN_HINT.password,
+                                        })
+                                    }
+                                    className="w-full rounded-lg border border-charcoal/10 bg-white px-4 py-3 text-left transition hover:border-gold/30 hover:shadow-sm"
+                                >
+                                    <p className="text-sm font-semibold text-charcoal">Demo seller</p>
+                                    <p className="mt-1 text-xs text-charcoal/55">
+                                        {DEMO_SELLER_LOGIN_HINT.email} · Seller dashboard & viewings
+                                    </p>
+                                </button>
+                            </div>
+                            <p className="mt-3 text-[11px] leading-relaxed text-charcoal/45">
+                                Seed first:{' '}
+                                <code className="rounded bg-charcoal/5 px-1.5 py-0.5 text-[10px]">
+                                    npm run seed:demo-users
+                                </code>
+                            </p>
+                        </div>
 
                         <div className="relative my-8">
                             <div className="absolute inset-0 flex items-center">
