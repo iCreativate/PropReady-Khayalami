@@ -12,7 +12,7 @@ import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import type { BondOriginator } from '@/lib/bond-originators';
 import { BUYER_DOCUMENT_SLOTS, readBuyerDocumentsLocal, refreshBuyerDocumentsFromApi, type BuyerDocument } from '@/lib/buyer-documents';
 import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
-import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
+import { resolveBuyerQuizResultSync, type BuyerQuizResult } from '@/lib/quiz-result';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
@@ -20,6 +20,7 @@ import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 import PortalLoading from '@/components/PortalLoading';
+import PropReadyScoreCard from '@/components/PropReadyScoreCard';
 
 function readSellerInfoForUser(user: { id?: string; email?: string }) {
     if (typeof window === 'undefined') return null;
@@ -45,6 +46,7 @@ function readQuizSummary(user: { id?: string; email?: string }) {
         depositRaw != null && String(depositRaw).trim() !== '' ? String(depositRaw) : '0';
     const debtRaw = result.hasDebt ? result.expenses : null;
     return {
+        ...result,
         score: result.score || 0,
         preQualAmount: result.preQualAmount || 0,
         monthlyIncome: result.monthlyIncome || '0',
@@ -52,6 +54,9 @@ function readQuizSummary(user: { id?: string; email?: string }) {
         monthlyDebt: debtRaw != null && String(debtRaw).trim() !== '' ? String(debtRaw) : null,
         hasDebt: result.hasDebt === true,
         fullName: result.fullName || 'User',
+    } satisfies BuyerQuizResult & {
+        monthlyDebt: string | null;
+        hasDebt: boolean;
     };
 }
 
@@ -115,38 +120,11 @@ export default function DashboardPage() {
         }
     };
 
-    const getScoreLabel = (score: number) => {
-        if (score >= 80) return 'Excellent';
-        if (score >= 65) return 'Very Good';
-        if (score >= 50) return 'Good';
-        if (score >= 35) return 'Fair';
-        return 'Needs Improvement';
-    };
-
     // Parse number from comma-formatted string (e.g., "250,000" -> 250000)
     const parseNumberFromString = (value: string): number => {
         if (!value) return 0;
         const digitsOnly = value.replace(/[^\d]/g, '');
         return digitsOnly ? Number(digitsOnly) : 0;
-    };
-
-    const calculateMonthlyBudget = (preQualAmount: number) => {
-        // Estimate monthly repayment based on pre-qual amount
-        // Using typical 20-year loan at ~10% interest rate
-        // Simplified calculation: (amount * 0.10) / 12 for rough estimate
-        // More accurate: Using mortgage formula approximation
-        const annualRate = 0.10; // 10% annual interest
-        const years = 20;
-        const monthlyRate = annualRate / 12;
-        const numPayments = years * 12;
-        
-        if (preQualAmount === 0) return 0;
-        
-        // Mortgage payment formula: P * [r(1+r)^n] / [(1+r)^n - 1]
-        const monthlyPayment = preQualAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
-                               (Math.pow(1 + monthlyRate, numPayments) - 1);
-        
-        return Math.round(monthlyPayment);
     };
 
     const generateSuggestedProperties = () => {
@@ -269,55 +247,23 @@ export default function DashboardPage() {
                     )}
 
                     {/* PropReady Score Card */}
-                    <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10 overflow-hidden`}>
-                        <div>
-                            <div className="flex items-center justify-between mb-8">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-charcoal mb-2">Your PropReady Score</h2>
-                                    <p className="text-charcoal/60 text-sm">Based on your qualification quiz</p>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-5xl font-bold text-gold mb-1">
-                                        {quizResult?.score || 0}%
-                                    </div>
-                                    <p className="text-charcoal/50 text-sm font-medium">
-                                        {quizResult ? getScoreLabel(quizResult.score) : 'No Score'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-                                <div className="portal-stat-inner">
-                                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Pre-Qualification</p>
-                                    <p className="text-charcoal font-bold text-xl">
-                                        {formatCurrency(quizResult?.preQualAmount ?? 0)}
-                                    </p>
-                                </div>
-                                <div className="portal-stat-inner">
-                                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Monthly Budget</p>
-                                    <p className="text-charcoal font-bold text-xl">
-                                        {quizResult ? formatCurrency(calculateMonthlyBudget(quizResult.preQualAmount)) : 'R 0'}
-                                    </p>
-                                </div>
-                                <div className="portal-stat-inner">
-                                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Deposit Saved</p>
-                                    <p className="text-charcoal font-bold text-xl text-right whitespace-nowrap">
-                                        {formatCurrency(
-                                            quizResult
-                                                ? parseNumberFromString(quizResult.depositSaved || '0')
-                                                : 0
-                                        )}
-                                    </p>
-                                    {quizResult?.hasDebt && quizResult.monthlyDebt && (
-                                        <p className="text-charcoal/45 text-xs mt-2 text-right">
-                                            Monthly debt:{' '}
-                                            {formatCurrency(parseNumberFromString(quizResult.monthlyDebt))}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <PropReadyScoreCard
+                        result={quizResult}
+                        documents={buyerDocuments}
+                        viewingCount={viewingAppointments.length}
+                        preQualAmount={quizResult?.preQualAmount ?? 0}
+                        depositSavedLabel={formatCurrency(
+                            quizResult
+                                ? parseNumberFromString(quizResult.depositSaved || '0')
+                                : 0
+                        )}
+                        monthlyDebtLabel={
+                            quizResult?.monthlyDebt
+                                ? formatCurrency(parseNumberFromString(quizResult.monthlyDebt))
+                                : null
+                        }
+                        showDebtNote={Boolean(quizResult?.hasDebt && quizResult.monthlyDebt)}
+                    />
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 mb-8 sm:mb-10">
