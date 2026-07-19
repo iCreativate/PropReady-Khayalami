@@ -6,7 +6,17 @@
  * - Accent: Tailwind `gold` (#DC2626 brand red) · Neutrals: charcoal opacity ladder
  * - Auth pages may use `.auth-*` in globals.css; do not invent new radius/shadow recipes elsewhere
  * - Marketing (landing) may use AGENT_MARKETING_CTA; keep scale-105 off product surfaces
+ * - Polish tokens: see `lib/ui-foundation.ts` + CSS vars in `app/globals.css`
  */
+
+import {
+    UI_FOCUS_RING,
+    UI_FOCUS_RING_INPUT,
+    UI_HOVER_SURFACE,
+    UI_TRANSITION,
+    UI_TRANSITION_FAST,
+    UI_TRANSITION_MODERATE,
+} from '@/lib/ui-foundation';
 
 /** Text opacity ladder — prefer these over ad-hoc /60 /70 /75 mixes */
 export const AGENT_TEXT_PRIMARY = 'text-charcoal';
@@ -15,34 +25,34 @@ export const AGENT_TEXT_TERTIARY = 'text-charcoal/45';
 export const AGENT_TEXT_MUTED = 'text-charcoal/45';
 export const AGENT_LABEL_TRACKING = 'tracking-[0.08em]';
 
-/** Icon glyphs (Lucide class sizes) */
-export const AGENT_ICON_NAV = 'w-5 h-5';
-export const AGENT_ICON_IN_CARD = 'w-5 h-5';
-export const AGENT_ICON_BADGE = 'w-3 h-3';
-export const AGENT_ICON_EMPTY = 'w-8 h-8';
-export const AGENT_ICON_LOGO = 'w-6 h-6';
-export const AGENT_ICON_LOGO_SM = 'w-5 h-5';
+/** Icon glyphs (Lucide class sizes) — aligned with --icon-* tokens */
+export const AGENT_ICON_NAV = 'w-icon-md h-icon-md';
+export const AGENT_ICON_IN_CARD = 'w-icon-md h-icon-md';
+export const AGENT_ICON_BADGE = 'w-icon-xs h-icon-xs';
+export const AGENT_ICON_EMPTY = 'w-icon-xl h-icon-xl';
+export const AGENT_ICON_LOGO = 'w-icon-lg h-icon-lg';
+export const AGENT_ICON_LOGO_SM = 'w-icon-md h-icon-md';
 export const AGENT_LOGO_MARK =
-    'w-10 h-10 bg-gold rounded-lg flex items-center justify-center shrink-0 shadow-sm';
+    'w-10 h-10 bg-gold rounded-lg flex items-center justify-center shrink-0 shadow-elevation-xs';
 export const AGENT_LOGO_MARK_SM =
     'w-9 h-9 bg-gold rounded-lg flex items-center justify-center shrink-0';
 
 export const AGENT_PAGE_CONTAINER = 'max-w-[1400px] w-full mx-auto pb-8 sm:pb-12';
 
 export const AGENT_PAGE_HEADER_BAND =
-    'bg-white border-b border-charcoal/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.02)]';
+    'bg-white border-b border-charcoal/[0.06] shadow-elevation-xs';
 
 export const AGENT_CARD =
-    'rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.04)] overflow-hidden';
+    'rounded-3xl border border-charcoal/[0.07] bg-white shadow-elevation-md overflow-hidden';
 
 export const AGENT_CARD_SOFT =
-    'rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)]';
+    'rounded-3xl border border-charcoal/[0.07] bg-white shadow-elevation-sm';
 
 export const AGENT_STAT_CARD =
-    'group flex flex-col justify-between h-full min-h-[148px] rounded-3xl border border-charcoal/[0.07] bg-white p-6 sm:p-7 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.07)] hover:border-charcoal/[0.12] transition-all duration-300 text-left';
+    `group flex flex-col justify-between h-full min-h-[148px] rounded-3xl border border-charcoal/[0.07] bg-white p-6 sm:p-7 shadow-elevation-sm hover:shadow-elevation-hover hover:border-charcoal/[0.12] ${UI_TRANSITION_MODERATE} text-left`;
 
 export const AGENT_STAT_ICON =
-    'w-12 h-12 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] flex items-center justify-center shrink-0 group-hover:bg-gold/[0.06] group-hover:border-gold/10 transition-colors duration-300';
+    `w-12 h-12 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] flex items-center justify-center shrink-0 group-hover:bg-gold/[0.06] group-hover:border-gold/10 ${UI_TRANSITION_MODERATE}`;
 
 export const AGENT_BADGE =
     'inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-xs font-medium whitespace-nowrap';
@@ -53,10 +63,10 @@ export const AGENT_TABLE_HEAD =
 export const AGENT_TABLE_CELL = 'py-5 px-6 align-middle';
 
 export const AGENT_TABLE_ROW =
-    'hover:bg-charcoal/[0.018] transition-colors duration-150 group';
+    `hover:bg-charcoal/[0.018] ${UI_TRANSITION_FAST} group`;
 
 export const AGENT_VIEW_BTN =
-    'inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-semibold text-gold bg-gold/[0.06] hover:bg-gold/10 border border-gold/10 hover:border-gold/20 transition-all duration-200';
+    `inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-xs font-semibold text-gold bg-gold/[0.06] hover:bg-gold/10 border border-gold/10 hover:border-gold/20 ${UI_TRANSITION} ${UI_FOCUS_RING}`;
 
 export const AGENT_CARD_HEADER =
     'px-6 sm:px-8 pt-7 sm:pt-8 pb-5 sm:pb-6 border-b border-charcoal/[0.06]';
@@ -70,78 +80,78 @@ export const AGENT_CARD_FOOTER =
     'text-charcoal/40 text-xs px-6 sm:px-8 py-5 border-t border-charcoal/[0.06] leading-relaxed';
 
 export const AGENT_SEARCH_INPUT =
-    'w-full pl-11 pr-4 py-3 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm placeholder:text-charcoal/35 focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white transition-all duration-200';
+    `w-full pl-11 pr-4 py-3 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm placeholder:text-charcoal/35 ${UI_FOCUS_RING_INPUT} ${UI_TRANSITION}`;
 
 export const AGENT_SELECT =
-    'w-full sm:w-auto min-w-[140px] px-4 py-3 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white [&>option]:text-charcoal transition-all duration-200';
+    `w-full sm:w-auto min-w-[140px] px-4 py-3 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm ${UI_FOCUS_RING_INPUT} [&>option]:text-charcoal ${UI_TRANSITION}`;
 
 export const AGENT_SEGMENT_WRAP =
     'inline-flex p-1 rounded-full bg-charcoal/[0.04] border border-charcoal/[0.06]';
 
 export const agentSegmentBtn = (active: boolean) =>
-    `px-5 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+    `px-5 py-2 rounded-full text-sm font-medium ${UI_TRANSITION} ${
         active
-            ? 'bg-white text-charcoal shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+            ? 'bg-white text-charcoal shadow-elevation-xs'
             : 'text-charcoal/50 hover:text-charcoal'
     }`;
 
 export const AGENT_REFRESH_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/60 text-sm font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
+    `inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/60 text-sm font-medium ${UI_HOVER_SURFACE} ${UI_TRANSITION} shadow-elevation-xs ${UI_FOCUS_RING}`;
 
 export const AGENT_PRIMARY_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)] disabled:opacity-50 disabled:pointer-events-none';
+    `inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 ${UI_TRANSITION} shadow-elevation-gold disabled:opacity-50 disabled:pointer-events-none ${UI_FOCUS_RING}`;
 
 export const AGENT_PRIMARY_BTN_LG =
-    'inline-flex items-center justify-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)] disabled:opacity-50 disabled:pointer-events-none';
+    `inline-flex items-center justify-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 ${UI_TRANSITION} shadow-elevation-gold disabled:opacity-50 disabled:pointer-events-none ${UI_FOCUS_RING}`;
 
 /** Landing / marketing only — same recipe as primary, larger hit target */
 export const AGENT_MARKETING_CTA =
-    'inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]';
+    `inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 ${UI_TRANSITION} shadow-elevation-gold ${UI_FOCUS_RING}`;
 
 export const AGENT_SECONDARY_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-sm font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none';
+    `inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-sm font-medium ${UI_HOVER_SURFACE} ${UI_TRANSITION} disabled:opacity-50 disabled:pointer-events-none ${UI_FOCUS_RING}`;
 
 export const AGENT_DANGER_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none';
+    `inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 ${UI_TRANSITION} disabled:opacity-50 disabled:pointer-events-none ${UI_FOCUS_RING}`;
 
 export const AGENT_SUCCESS_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none';
+    `inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 ${UI_TRANSITION} disabled:opacity-50 disabled:pointer-events-none ${UI_FOCUS_RING}`;
 
 export const AGENT_ICON_BTN =
-    'inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal hover:border-charcoal/15 transition-all duration-200';
+    `inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/60 ${UI_HOVER_SURFACE} ${UI_TRANSITION} ${UI_FOCUS_RING}`;
 
 export const AGENT_MODAL_BACKDROP =
     'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]';
 
 export const AGENT_MODAL_PANEL =
-    'relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]';
+    'relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-charcoal/[0.07] bg-white shadow-elevation-xl';
 
 export const AGENT_MODAL_PANEL_LG =
-    'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]';
+    'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-charcoal/[0.07] bg-white shadow-elevation-xl';
 
 export const AGENT_EMPTY_ICON =
     'w-16 h-16 rounded-2xl bg-charcoal/[0.04] border border-charcoal/[0.06] flex items-center justify-center mx-auto mb-4';
 
 export const AGENT_INNER_CARD =
-    'rounded-2xl border border-charcoal/[0.07] bg-white p-5 md:p-6 hover:border-charcoal/[0.12] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200';
+    `rounded-2xl border border-charcoal/[0.07] bg-white p-5 md:p-6 hover:border-charcoal/[0.12] hover:shadow-elevation-sm ${UI_TRANSITION}`;
 
 export const AGENT_PLAN_CARD =
-    'rounded-2xl p-5 border block transition-all duration-200 h-full bg-white border-charcoal/[0.07] hover:border-charcoal/[0.12] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]';
+    `rounded-2xl p-5 border block ${UI_TRANSITION} h-full bg-white border-charcoal/[0.07] hover:border-charcoal/[0.12] hover:shadow-elevation-sm`;
 
 export const AGENT_PLAN_CARD_CURRENT =
-    'rounded-2xl p-5 border block transition-all duration-200 h-full bg-white border-gold/25 shadow-[0_1px_3px_rgba(220,38,38,0.08)] ring-1 ring-gold/10';
+    'rounded-2xl p-5 border block transition-all duration-200 h-full bg-white border-gold/25 shadow-elevation-gold ring-1 ring-gold/10';
 
 export const AGENT_SECTION_LABEL =
     'text-sm font-semibold text-charcoal uppercase tracking-[0.08em]';
 
 export const AGENT_MODULE_CARD =
-    'group relative flex flex-col h-full rounded-3xl border border-charcoal/[0.07] bg-white p-6 sm:p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04),0_12px_32px_rgba(0,0,0,0.04)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.1)] hover:border-charcoal/[0.12] hover:-translate-y-1 transition-all duration-400 overflow-hidden';
+    `group relative flex flex-col h-full rounded-3xl border border-charcoal/[0.07] bg-white p-6 sm:p-7 shadow-elevation-lg hover:shadow-elevation-lift hover:border-charcoal/[0.12] hover:-translate-y-1 transition-all duration-400 ease-out-soft overflow-hidden`;
 
 export const AGENT_MODULE_CARD_ICON =
-    'w-11 h-11 rounded-2xl bg-gradient-to-br from-charcoal/[0.04] to-charcoal/[0.01] border border-charcoal/[0.08] flex items-center justify-center shrink-0 group-hover:from-gold/[0.12] group-hover:to-gold/[0.04] group-hover:border-gold/20 transition-all duration-300';
+    `w-11 h-11 rounded-2xl bg-gradient-to-br from-charcoal/[0.04] to-charcoal/[0.01] border border-charcoal/[0.08] flex items-center justify-center shrink-0 group-hover:from-gold/[0.12] group-hover:to-gold/[0.04] group-hover:border-gold/20 ${UI_TRANSITION_MODERATE}`;
 
 export const AGENT_LEARN_ARTICLE =
-    'overflow-hidden rounded-2xl border border-charcoal/[0.08] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_12px_40px_rgba(0,0,0,0.05)]';
+    'overflow-hidden rounded-2xl border border-charcoal/[0.08] bg-white shadow-elevation-lg';
 
 export const AGENT_LEARN_ARTICLE_HERO =
     'relative border-b border-charcoal/[0.08] bg-white';
@@ -170,20 +180,20 @@ export const AGENT_LEARN_SECTION_TITLE =
     'flex items-center gap-3 mb-5 sm:mb-6';
 
 export const AGENT_LEARN_CTA =
-    'relative mt-14 sm:mt-16 rounded-3xl overflow-hidden border border-charcoal/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.08)]';
+    'relative mt-14 sm:mt-16 rounded-3xl overflow-hidden border border-charcoal/[0.08] shadow-elevation-lg';
 
 export const AGENT_FORM_SECTION =
-    'rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_rgba(0,0,0,0.04)] overflow-hidden mb-6';
+    'rounded-3xl border border-charcoal/[0.07] bg-white shadow-elevation-md overflow-hidden mb-6';
 
 export const AGENT_FORM_SECTION_HEADER =
     'px-6 md:px-8 py-5 sm:py-6 border-b border-charcoal/[0.06] bg-charcoal/[0.015]';
 
 /** Plain field (no leading icon) — use in modals & selects */
 export const AGENT_INPUT =
-    'w-full px-4 py-2.5 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm placeholder:text-charcoal/35 focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white transition-all duration-200 [&>option]:text-charcoal';
+    `w-full px-4 py-2.5 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm placeholder:text-charcoal/35 ${UI_FOCUS_RING_INPUT} ${UI_TRANSITION} [&>option]:text-charcoal`;
 
 export const AGENT_FORM_INPUT =
-    'w-full pl-10 pr-4 py-2.5 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal placeholder:text-charcoal/35 focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white transition-all duration-200';
+    `w-full pl-10 pr-4 py-2.5 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal placeholder:text-charcoal/35 ${UI_FOCUS_RING_INPUT} ${UI_TRANSITION}`;
 
 export const AGENT_FORM_LABEL =
     'block text-charcoal/70 text-sm font-medium mb-1.5';
