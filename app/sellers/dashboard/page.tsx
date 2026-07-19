@@ -11,6 +11,9 @@ import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 import PpraTrustSection from '@/components/PpraTrustSection';
 import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_STAT_ICON } from '@/lib/portal-ui';
+import { useOnboardingGate } from '@/hooks/useOnboardingGate';
+import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
+import SellerPropertyOnboardingForm from '@/components/onboarding/SellerPropertyOnboardingForm';
 
 interface Agent {
     id: string;
@@ -33,6 +36,13 @@ interface Agent {
 
 export default function SellerDashboardPage() {
     const router = useRouter();
+    const {
+        loading: onboardingLoading,
+        required: onboardingRequired,
+        intent: onboardingIntent,
+        user: onboardingUser,
+        completeOnboarding,
+    } = useOnboardingGate();
     const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id: string } | null>(null);
     const [sellerInfo, setSellerInfo] = useState<any>(null);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -47,6 +57,12 @@ export default function SellerDashboardPage() {
     useEffect(() => {
         async function load() {
             if (typeof window === 'undefined') return;
+
+            if (!onboardingLoading && onboardingIntent === 'buyer' && onboardingRequired) {
+                router.replace('/dashboard');
+                return;
+            }
+
             const userData = localStorage.getItem('propReady_currentUser');
             if (!userData) {
                 router.push('/login');
@@ -98,8 +114,12 @@ export default function SellerDashboardPage() {
             setIsLoading(false);
         }
         load();
-    }, [router, confirmRefreshKey]);
+    }, [router, confirmRefreshKey, onboardingLoading, onboardingIntent, onboardingRequired]);
 
+    const handleSellerOnboardingComplete = async () => {
+        await completeOnboarding();
+        setConfirmRefreshKey((k) => k + 1);
+    };
     useEffect(() => {
         // Load real registered agents
         if (typeof window !== 'undefined') {
@@ -134,7 +154,7 @@ export default function SellerDashboardPage() {
         }
     }, []);
 
-    if (isLoading) {
+    if (isLoading && !(onboardingRequired && onboardingIntent === 'seller')) {
         return (
             <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
                 <div className="text-center">
@@ -143,6 +163,20 @@ export default function SellerDashboardPage() {
                 </div>
             </div>
         );
+    }
+
+    const portalUser =
+        currentUser ||
+        (onboardingUser
+            ? {
+                  id: onboardingUser.id,
+                  fullName: onboardingUser.fullName || 'Seller',
+                  email: onboardingUser.email,
+              }
+            : null);
+
+    if (!portalUser) {
+        return null;
     }
 
     const filteredAgents = availableAgents.filter(agent =>
@@ -171,12 +205,12 @@ export default function SellerDashboardPage() {
             <UserPortalLayout
                 portal="seller"
                 activePage="dashboard"
-                user={currentUser}
+                user={portalUser}
                 title="Dashboard"
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        eyebrow={`Welcome back${currentUser?.fullName ? `, ${currentUser.fullName.split(' ')[0]}` : ''}`}
+                        eyebrow={`Welcome back${portalUser?.fullName ? `, ${portalUser.fullName.split(' ')[0]}` : ''}`}
                         title={<>Seller Dashboard <span aria-hidden="true">👋</span></>}
                         description="Manage your property listing and connect with agents"
                     />
@@ -653,6 +687,19 @@ export default function SellerDashboardPage() {
                     </div>
                 </div>
             )}
+
+            <OnboardingGateModal
+                open={Boolean(onboardingRequired && onboardingIntent === 'seller' && onboardingUser)}
+                title="Add the property you want to sell"
+                subtitle="Add your property details once so we can set up your seller dashboard. You can’t continue until it’s done."
+            >
+                {onboardingUser && (
+                    <SellerPropertyOnboardingForm
+                        user={onboardingUser}
+                        onComplete={handleSellerOnboardingComplete}
+                    />
+                )}
+            </OnboardingGateModal>
         </>
     );
 }

@@ -28,6 +28,17 @@ export async function POST(request: NextRequest) {
 
         await markEmailVerified(email, type);
 
+        // Sync enterprise auth account verification
+        try {
+            const { findAccountByEmail, markEmailVerified: markAuthVerified } = await import(
+                '@/lib/auth-enterprise/sessions'
+            );
+            const account = await findAccountByEmail(email.toLowerCase().trim(), type);
+            if (account) await markAuthVerified(account.id);
+        } catch {
+            /* auth tables may not exist yet */
+        }
+
         return NextResponse.json({
             success: true,
             message: 'Email verified successfully. You can now sign in.',

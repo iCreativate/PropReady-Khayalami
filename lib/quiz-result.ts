@@ -84,11 +84,15 @@ function normalizeQuizResult(raw: Record<string, unknown>): BuyerQuizResult {
                 : typeof raw.has_debt === 'boolean'
                   ? raw.has_debt
                   : null,
-        depositSaved: raw.depositSaved
-            ? String(raw.depositSaved)
-            : raw.deposit_saved
-              ? String(raw.deposit_saved)
-              : undefined,
+        depositSaved: (() => {
+            const rawDeposit = raw.depositSaved ?? raw.deposit_saved;
+            if (rawDeposit == null || rawDeposit === '') return undefined;
+            // Never treat booleans / debt flags as a deposit amount
+            if (typeof rawDeposit === 'boolean') return undefined;
+            const asString = String(rawDeposit).trim();
+            if (asString === 'true' || asString === 'false') return undefined;
+            return asString;
+        })(),
         creditScore: raw.creditScore
             ? String(raw.creditScore)
             : raw.credit_score

@@ -11,6 +11,7 @@ import {
     LayoutDashboard,
     Search,
     Sparkles,
+    Users,
 } from 'lucide-react';
 
 export type UserPortalKind = 'buyer' | 'seller';
@@ -20,6 +21,7 @@ export type BuyerPortalPage =
     | 'properties'
     | 'viewings'
     | 'documents'
+    | 'agent'
     | 'property-optimizer'
     | 'calculator'
     | 'learn'
@@ -31,6 +33,7 @@ export type SellerPortalPage =
     | 'property-quiz'
     | 'property-optimizer'
     | 'learn'
+    | 'agent'
     | 'buyer-dashboard';
 
 export type UserPortalPage = BuyerPortalPage | SellerPortalPage;
@@ -40,13 +43,22 @@ export interface UserPortalNavLink {
     href: string;
     label: string;
     icon: LucideIcon;
+    /** Visual emphasis for logged-in CTAs (e.g. bond originator prequal) */
+    emphasize?: 'alert';
 }
 
 export const BUYER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { page: 'properties', href: '/search', label: 'Properties', icon: Search },
     { page: 'viewings', href: '/dashboard/viewings', label: 'Viewings', icon: Calendar },
-    { page: 'documents', href: '/dashboard/documents', label: 'Documents', icon: FileText },
+    {
+        page: 'documents',
+        href: '/dashboard/documents',
+        label: 'Bond Originators',
+        icon: FileText,
+        emphasize: 'alert',
+    },
+    { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
     { page: 'calculator', href: '/calculator', label: 'Bond Calculator', icon: Calculator },
     { page: 'learn', href: '/learn', label: 'Learning Center', icon: BookOpen },
@@ -57,6 +69,7 @@ export const SELLER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'dashboard', href: '/sellers/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { page: 'valuation', href: '/sellers/valuation', label: 'Property Valuation', icon: DollarSign },
     { page: 'property-quiz', href: '/sellers/property-quiz', label: 'List Property', icon: Building2 },
+    { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
     { page: 'learn', href: '/sellers', label: 'Learning Center', icon: BookOpen },
     { page: 'buyer-dashboard', href: '/dashboard', label: 'Buyer Dashboard', icon: Home },

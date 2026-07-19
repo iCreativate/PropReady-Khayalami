@@ -16,6 +16,9 @@ import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_CALLOUT } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import { useOnboardingGate } from '@/hooks/useOnboardingGate';
+import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
+import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 
 function readSellerInfoForUser(user: { id?: string; email?: string }) {
     if (typeof window === 'undefined') return null;
@@ -35,11 +38,18 @@ function readSellerInfoForUser(user: { id?: string; email?: string }) {
 function readQuizSummary(user: { id?: string; email?: string }) {
     const result = resolveBuyerQuizResultSync(user);
     if (!result) return null;
+    // Deposit must never fall back to debt/expenses — those are separate fields.
+    const depositRaw = result.depositSaved;
+    const depositSaved =
+        depositRaw != null && String(depositRaw).trim() !== '' ? String(depositRaw) : '0';
+    const debtRaw = result.hasDebt ? result.expenses : null;
     return {
         score: result.score || 0,
         preQualAmount: result.preQualAmount || 0,
         monthlyIncome: result.monthlyIncome || '0',
-        depositSaved: result.depositSaved || '0',
+        depositSaved,
+        monthlyDebt: debtRaw != null && String(debtRaw).trim() !== '' ? String(debtRaw) : null,
+        hasDebt: result.hasDebt === true,
         fullName: result.fullName || 'User',
     };
 }
@@ -47,6 +57,13 @@ function readQuizSummary(user: { id?: string; email?: string }) {
 export default function DashboardPage() {
     const router = useRouter();
     const { user: currentUser, isHydrated } = useHydratedBuyerPortalUser();
+    const {
+        loading: onboardingLoading,
+        required: onboardingRequired,
+        intent: onboardingIntent,
+        user: onboardingUser,
+        completeOnboarding,
+    } = useOnboardingGate();
     const [selectedOriginator, setSelectedOriginator] = useState<BondOriginator | null>(null);
     const [quizResult, setQuizResult] = useState<ReturnType<typeof readQuizSummary> | null>(null);
     const [sellerInfo, setSellerInfo] = useState<any>(null);
@@ -60,6 +77,11 @@ export default function DashboardPage() {
 
         if (!currentUser) {
             router.push('/login');
+            return;
+        }
+
+        if (!onboardingLoading && onboardingIntent === 'seller' && onboardingRequired) {
+            router.replace('/sellers/dashboard');
             return;
         }
 
@@ -83,7 +105,14 @@ export default function DashboardPage() {
                   ).then(setBuyerDocuments)
                 : Promise.resolve(),
         ]);
-    }, [router, isHydrated, currentUser]);
+    }, [router, isHydrated, currentUser, onboardingLoading, onboardingIntent, onboardingRequired]);
+
+    const handleBuyerOnboardingComplete = async () => {
+        await completeOnboarding();
+        if (currentUser) {
+            setQuizResult(readQuizSummary(currentUser));
+        }
+    };
 
     const getScoreLabel = (score: number) => {
         if (score >= 80) return 'Excellent';
@@ -272,8 +301,18 @@ export default function DashboardPage() {
                                 <div className="portal-stat-inner">
                                     <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Deposit Saved</p>
                                     <p className="text-charcoal font-bold text-xl text-right whitespace-nowrap">
-                                        {formatCurrency(quizResult ? parseNumberFromString(quizResult.depositSaved || '0') : 0)}
+                                        {formatCurrency(
+                                            quizResult
+                                                ? parseNumberFromString(quizResult.depositSaved || '0')
+                                                : 0
+                                        )}
                                     </p>
+                                    {quizResult?.hasDebt && quizResult.monthlyDebt && (
+                                        <p className="text-charcoal/45 text-xs mt-2 text-right">
+                                            Monthly debt:{' '}
+                                            {formatCurrency(parseNumberFromString(quizResult.monthlyDebt))}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -288,11 +327,12 @@ export default function DashboardPage() {
                             <h3 className="text-charcoal font-semibold text-sm">Browse Properties</h3>
                         </Link>
 
-                        <Link href="/dashboard/documents" className="premium-card p-6 text-center group">
-                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <FileText className="w-6 h-6 text-gold" />
+                        <Link href="/dashboard/documents" className="premium-card p-6 text-center group border-red-200 ring-1 ring-red-100">
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4 bg-red-50 border-red-100`}>
+                                <FileText className="w-6 h-6 text-red-600" />
                             </div>
-                            <h3 className="text-charcoal font-semibold text-sm">My Documents</h3>
+                            <h3 className="text-red-700 font-semibold text-sm">Bond Originators</h3>
+                            <p className="text-[11px] text-red-600/80 mt-1 font-medium">Full prequal</p>
                         </Link>
 
                         <Link href="/dashboard/agent" className="premium-card p-6 text-center group">
@@ -379,12 +419,12 @@ export default function DashboardPage() {
                     )}
 
                     {/* Bond Originators Section */}
-                    <div className={`${PORTAL_CARD} p-6 sm:p-8 mb-8 sm:mb-10`}>
+                    <div className={`${PORTAL_CARD} p-6 sm:p-8 mb-8 sm:mb-10 border-red-200 ring-1 ring-red-100`}>
                         <PortalPageHeader
                             variant="premium"
-                            eyebrow="Home loan partners"
+                            eyebrow="Extensive pre-qualification"
                             title="Recommended Bond Originators"
-                            description="Compare all originators and connect with a trusted expert to help secure your home loan."
+                            description="You’re signed in — choose an originator and upload documents to prequalify more thoroughly."
                             className="mb-6 sm:mb-8"
                         />
 
@@ -393,11 +433,16 @@ export default function DashboardPage() {
                             onContact={setSelectedOriginator}
                         />
 
-                        <div className={PORTAL_CALLOUT}>
-                            <p className="text-charcoal/70 text-sm text-center flex items-center justify-center gap-2">
-                                <CheckCircle className="w-4 h-4 text-gold shrink-0" />
-                                Bond originators work for free — banks pay their commission, not you!
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                            <p className="text-red-800 text-sm">
+                                Ready for a full bond prequal? Send your FICA pack to an originator.
                             </p>
+                            <Link
+                                href="/dashboard/documents"
+                                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shrink-0"
+                            >
+                                Open Bond Originators
+                            </Link>
                         </div>
                     </div>
 
@@ -640,6 +685,19 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
+
+            <OnboardingGateModal
+                open={Boolean(onboardingRequired && onboardingIntent === 'buyer' && onboardingUser)}
+                title="Complete your pre-qualification"
+                subtitle="Finish this once so we can personalise your buyer dashboard. You can’t continue until it’s done."
+            >
+                {onboardingUser && (
+                    <BuyerPrequalOnboardingForm
+                        user={onboardingUser}
+                        onComplete={handleBuyerOnboardingComplete}
+                    />
+                )}
+            </OnboardingGateModal>
         </>
     );
 }

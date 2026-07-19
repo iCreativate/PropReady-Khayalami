@@ -1,139 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { validatePassword } from '@/lib/password';
+import {
+    createSession,
+    ensureAuthAccountForProfile,
+    markEmailVerified,
+    setAuthCookies,
+    verifyAccountPassword,
+    getRequestMeta,
+} from '@/lib/auth-enterprise';
+import { createServiceClient } from '@/lib/supabase-admin';
+import type { AccountType } from '@/lib/auth-enterprise';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-const AGENT_SELECT_EXTENDED =
-    'id, full_name, email, company, phone, password, plan, seller_plan, email_verified, ppra_number, eaab_number, ffc_number, ffc_document_url, verification_status, verification_date, status, city';
-
-const AGENT_SELECT_BASE =
-    'id, full_name, email, company, phone, password, eaab_number, status';
-
-async function fetchAgentForLogin(supabase: SupabaseClient, email: string) {
-    const extended = await supabase
-        .from('agents')
-        .select(AGENT_SELECT_EXTENDED)
-        .eq('email', email)
-        .single();
-
-    if (!extended.error) return extended;
-
-    if (/column/i.test(extended.error.message || '')) {
-        return supabase.from('agents').select(AGENT_SELECT_BASE).eq('email', email).single();
+function toLegacyUser(user: Awaited<ReturnType<typeof createSession>>['user']) {
+    if (user.accountType === 'agent') {
+        return {
+            id: user.profileId,
+            fullName: user.fullName,
+            email: user.email,
+            company: user.company,
+            phone: user.phone,
+            plan: user.plan || 'free',
+            sellerPlan: user.sellerPlan || 'none',
+            ppraNumber: user.ppraNumber,
+            verificationStatus: user.verificationStatus,
+            status: user.status,
+        };
     }
-
-    return extended;
+    return { id: user.profileId, fullName: user.fullName, email: user.email };
 }
 
 export async function POST(request: NextRequest) {
-    const { email, password, type = 'user' } = await request.json();
-
-    if (!email || !password) {
-        return NextResponse.json(
-            { success: false, error: 'Email and password required' },
-            { status: 400 }
-        );
-    }
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return NextResponse.json(
-            { success: false, error: 'Database not configured' },
-            { status: 503 }
-        );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const accountType = type === 'agent' ? 'agent' : 'user';
-
     try {
-        if (accountType === 'agent') {
-            const { data: agent, error } = await fetchAgentForLogin(supabase, email);
+        const body = await request.json();
+        const email = String(body.email || '').trim().toLowerCase();
+        const password = String(body.password || '');
+        const accountType: AccountType = body.type === 'agent' ? 'agent' : 'user';
+        const rememberDevice = Boolean(body.rememberDevice ?? body.rememberMe);
+        const meta = getRequestMeta(request);
 
-            if (error || !agent || agent.password !== password) {
-                return NextResponse.json(
-                    { success: false, error: 'Invalid email or password' },
-                    { status: 401 }
-                );
-            }
-
-            if (agent.email_verified === false) {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        error: 'Please verify your email before signing in.',
-                        needsVerification: true,
-                        email: agent.email,
-                    },
-                    { status: 403 }
-                );
-            }
-
-            const { password: _p, ...safe } = agent;
-            return NextResponse.json({
-                success: true,
-                user: {
-                    id: safe.id,
-                    fullName: safe.full_name,
-                    email: safe.email,
-                    company: safe.company,
-                    phone: safe.phone,
-                    city: safe.city,
-                    plan: safe.plan || 'free',
-                    sellerPlan: safe.seller_plan || 'none',
-                    ppraNumber: safe.ppra_number || safe.eaab_number,
-                    ffcNumber: safe.ffc_number,
-                    ffcDocumentUrl: safe.ffc_document_url,
-                    verificationStatus:
-                        safe.verification_status ||
-                        (safe.status === 'approved' ? 'verified' : 'pending'),
-                    status: safe.status,
-                },
-            });
+        if (!email || !password) {
+            return NextResponse.json({ success: false, error: 'Email and password required' }, { status: 400 });
         }
 
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('id, full_name, email, password, email_verified')
+        const supabase = createServiceClient();
+        if (!supabase) {
+            return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
+        }
+
+        const table = accountType === 'agent' ? 'agents' : 'users';
+        const { data: profile, error } = await supabase
+            .from(table)
+            .select('id, email, password')
             .eq('email', email)
-            .single();
+            .maybeSingle();
 
-        if (error || !user) {
-            return NextResponse.json(
-                { success: false, error: 'Invalid email or password' },
-                { status: 401 }
-            );
+        if (error || !profile) {
+            return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
         }
 
-        if (user.password !== password) {
-            return NextResponse.json(
-                { success: false, error: 'Invalid email or password' },
-                { status: 401 }
-            );
+        const account = await ensureAuthAccountForProfile(email, accountType, profile.id);
+
+        const valid = await verifyAccountPassword(account, password);
+        if (!valid) {
+            return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
         }
 
-        if (user.email_verified === false) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Please verify your email before signing in.',
-                    needsVerification: true,
-                    email: user.email,
-                },
-                { status: 403 }
-            );
+        if (!account.email_verified_at) {
+            await markEmailVerified(account.id);
         }
 
-        return NextResponse.json({
+        const session = await createSession(
+            { ...account, email_verified_at: account.email_verified_at ?? new Date().toISOString() },
+            { ...meta, trustedDevice: rememberDevice }
+        );
+
+        const response = NextResponse.json({
             success: true,
-            user: {
-                id: user.id,
-                fullName: user.full_name,
-                email: user.email,
-            },
+            user: toLegacyUser(session.user),
+            expiresIn: session.expiresIn,
         });
+        setAuthCookies(response, session.accessToken, session.refreshToken, rememberDevice);
+        return response;
     } catch (err) {
-        console.error('API auth/login error:', err);
+        console.error('auth/login:', err);
         return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
     }
 }

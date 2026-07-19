@@ -11,6 +11,7 @@ import {
     type UserPortalPage,
 } from '@/lib/user-portal-nav';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PAGE_HEADER_BAND } from '@/lib/portal-ui';
+import { signOutClient } from '@/lib/auth-signout';
 
 export interface UserPortalUser {
     fullName: string;
@@ -40,21 +41,34 @@ function NavLinks({
 
     return (
         <nav className="flex flex-col gap-1 px-3">
-            {links.map(({ page, href, label, icon: Icon }) => (
-                <Link
-                    key={page}
-                    href={href}
-                    onClick={onNavigate}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
-                        activePage === page
-                            ? 'bg-gold/15 text-gold border border-gold/25'
-                            : 'text-charcoal/75 hover:text-charcoal hover:bg-charcoal/5'
-                    }`}
-                >
-                    <Icon className="w-5 h-5 shrink-0" />
-                    {label}
-                </Link>
-            ))}
+            {links.map(({ page, href, label, icon: Icon, emphasize }) => {
+                const isActive = activePage === page;
+                const isAlert = emphasize === 'alert';
+                return (
+                    <Link
+                        key={page}
+                        href={href}
+                        onClick={onNavigate}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                            isAlert
+                                ? isActive
+                                    ? 'bg-red-600 text-white border border-red-700 shadow-sm'
+                                    : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:text-red-800'
+                                : isActive
+                                  ? 'bg-gold/15 text-gold border border-gold/25'
+                                  : 'text-charcoal/75 hover:text-charcoal hover:bg-charcoal/5'
+                        }`}
+                    >
+                        <Icon className="w-5 h-5 shrink-0" />
+                        <span className="flex-1">{label}</span>
+                        {isAlert && !isActive && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-red-600">
+                                Prequal
+                            </span>
+                        )}
+                    </Link>
+                );
+            })}
         </nav>
     );
 }
@@ -73,10 +87,7 @@ export default function UserPortalLayout({
     const portalLabel = getUserPortalLabel(portal);
 
     const handleSignOut = () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('propReady_currentUser');
-            window.location.href = '/login';
-        }
+        void signOutClient({ accountType: 'user' });
     };
 
     return (

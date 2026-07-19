@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
 import { AGENT_PAGE_CONTAINER, AGENT_PAGE_HEADER_BAND } from '@/lib/agent-portal-ui';
+import { signOutClient } from '@/lib/auth-signout';
 
 export type AgentPortalPage =
     | 'dashboard'
@@ -175,10 +176,7 @@ export default function AgentPortalLayout({
                         <button
                             type="button"
                             onClick={() => {
-                                if (typeof window !== 'undefined') {
-                                    localStorage.removeItem('propReady_currentAgent');
-                                    window.location.href = '/agents/login';
-                                }
+                                void signOutClient({ accountType: 'agent' });
                             }}
                             className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-charcoal/[0.08] text-charcoal/65 hover:bg-charcoal/[0.03] hover:text-charcoal hover:border-charcoal/12 transition-all duration-200 text-sm font-medium"
                             title="Sign out"
