@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Home, FileText, Heart, Users, TrendingUp, Download, Calendar, Building2, Phone, ExternalLink, CheckCircle, X, MapPin, Clock, Upload, Eye } from 'lucide-react';
@@ -14,6 +14,8 @@ import { BUYER_DOCUMENT_SLOTS, readBuyerDocumentsLocal, refreshBuyerDocumentsFro
 import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
 import { resolveBuyerQuizResultSync, type BuyerQuizResult } from '@/lib/quiz-result';
 import { resolvePrequalMode } from '@/lib/buyer-full-prequal';
+import type { ListedProperty } from '@/lib/listed-property';
+import { getProxiedImageUrl } from '@/lib/image-proxy';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
@@ -22,6 +24,94 @@ import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 import PortalLoading from '@/components/PortalLoading';
 import PropReadyScoreCard from '@/components/PropReadyScoreCard';
+
+type MatchedListing = ListedProperty & { matchScore: number };
+
+function normalizeListedProperty(p: Record<string, unknown>): ListedProperty | null {
+    if (!p?.id || !p?.type) return null;
+    if (p.published === false) return null;
+    return {
+        id: String(p.id),
+        title: String(p.title || 'Listed Property'),
+        address: String(p.address || ''),
+        type: String(p.type || 'Property'),
+        price: Number(p.price || 0),
+        bedrooms: Number(p.bedrooms || 0),
+        bathrooms: Number(p.bathrooms || 0),
+        size: Number(p.size || 0),
+        description: String(p.description || ''),
+        agentId: String(p.agentId || ''),
+        timestamp: String(p.timestamp || ''),
+        images: Array.isArray(p.images) ? (p.images as string[]) : undefined,
+        features: Array.isArray(p.features) ? (p.features as string[]) : undefined,
+        videoUrl: p.videoUrl ? String(p.videoUrl) : undefined,
+        published: p.published !== false,
+    };
+}
+
+async function loadPublishedListings(): Promise<ListedProperty[]> {
+    let apiProperties: ListedProperty[] = [];
+    try {
+        const res = await fetch(`/api/properties?_=${Date.now()}`, {
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && Array.isArray(data.properties)) {
+            apiProperties = data.properties
+                .map((p: Record<string, unknown>) => normalizeListedProperty(p))
+                .filter(Boolean) as ListedProperty[];
+        }
+    } catch {
+        /* fall back to local */
+    }
+
+    let localOnly: ListedProperty[] = [];
+    try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.listedProperties) || '[]');
+        localOnly = (Array.isArray(stored) ? stored : [])
+            .map((p: Record<string, unknown>) => normalizeListedProperty(p))
+            .filter(Boolean) as ListedProperty[];
+    } catch {
+        localOnly = [];
+    }
+
+    const ids = new Set(apiProperties.map((p) => p.id));
+    return [...apiProperties, ...localOnly.filter((p) => !ids.has(p.id))];
+}
+
+function matchListingsToPrequal(
+    listings: ListedProperty[],
+    preQualAmount: number,
+    score: number
+): MatchedListing[] {
+    if (!listings.length) return [];
+
+    if (preQualAmount <= 0) {
+        return [...listings]
+            .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+            .slice(0, 3)
+            .map((p) => ({ ...p, matchScore: 0 }));
+    }
+
+    const scored = listings.map((property) => {
+        const priceDifference = Math.abs(property.price - preQualAmount);
+        const maxDifference = Math.max(preQualAmount * 0.4, 1);
+        const priceMatch = Math.max(0, 100 - (priceDifference / maxDifference) * 60);
+        const scoreMatch = score * 0.4;
+        const matchScore = Math.min(100, Math.max(0, Math.round(priceMatch + scoreMatch)));
+        const withinBand = priceDifference <= preQualAmount * 0.35;
+        return { ...property, matchScore, withinBand };
+    });
+
+    const matched = scored
+        .filter((p) => p.withinBand)
+        .sort((a, b) => b.matchScore - a.matchScore);
+
+    const pool = matched.length > 0 ? matched : scored.sort((a, b) => b.matchScore - a.matchScore);
+
+    return pool.slice(0, 3).map(({ withinBand: _w, ...rest }) => rest);
+}
 
 function readSellerInfoForUser(user: { id?: string; email?: string }) {
     if (typeof window === 'undefined') return null;
@@ -83,6 +173,7 @@ export default function DashboardPage() {
     const [viewingAppointments, setViewingAppointments] = useState<any[]>([]);
     const [buyerDocuments, setBuyerDocuments] = useState<BuyerDocument[]>([]);
     const [previewDoc, setPreviewDoc] = useState<BuyerDocument | null>(null);
+    const [agentListings, setAgentListings] = useState<ListedProperty[]>([]);
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -116,6 +207,7 @@ export default function DashboardPage() {
                       readBuyerDocumentsLocal(currentUser.id)
                   ).then(setBuyerDocuments)
                 : Promise.resolve(),
+            loadPublishedListings().then(setAgentListings),
         ]);
     }, [router, isHydrated, currentUser, onboardingLoading, onboardingIntent, onboardingRequired]);
 
@@ -133,58 +225,17 @@ export default function DashboardPage() {
         return digitsOnly ? Number(digitsOnly) : 0;
     };
 
-    const generateSuggestedProperties = () => {
-        if (!quizResult || quizResult.preQualAmount === 0) {
-            return [];
-        }
+    const suggestedProperties = useMemo(
+        () =>
+            matchListingsToPrequal(
+                agentListings,
+                quizResult?.preQualAmount ?? 0,
+                quizResult?.score ?? 0
+            ),
+        [agentListings, quizResult?.preQualAmount, quizResult?.score]
+    );
 
-        const preQualAmount = quizResult.preQualAmount;
-        const propReadyScore = quizResult.score || 0;
-        
-        // Property types
-        const propertyTypes = ['Apartment', 'Townhouse', 'House', 'Duplex'];
-        const locations = [
-            'iKhayalami, Johannesburg',
-            'Sandton, Johannesburg',
-            'Rosebank, Johannesburg',
-            'Fourways, Johannesburg',
-            'Randburg, Johannesburg'
-        ];
-
-        // Generate properties within 80-120% of prequalification amount
-        // Higher PropReady Score = properties closer to prequal amount
-        const scoreMultiplier = propReadyScore / 100; // 0 to 1
-        const minPrice = preQualAmount * (0.75 + scoreMultiplier * 0.1); // 75-85% for high scores
-        const maxPrice = preQualAmount * (1.15 - scoreMultiplier * 0.1); // 105-115% for high scores
-
-        const properties = [];
-        for (let i = 0; i < 3; i++) {
-            // Generate price within range, with some variation
-            const priceVariation = (maxPrice - minPrice) / 3;
-            const basePrice = minPrice + (priceVariation * i);
-            const propertyPrice = Math.round(basePrice + (Math.random() * priceVariation * 0.5 - priceVariation * 0.25));
-
-            // Calculate match score based on:
-            // 1. How close price is to prequal amount (60% weight)
-            // 2. PropReady Score (40% weight)
-            const priceDifference = Math.abs(propertyPrice - preQualAmount);
-            const maxDifference = preQualAmount * 0.3; // 30% max difference
-            const priceMatch = Math.max(0, 100 - (priceDifference / maxDifference) * 60);
-            const scoreMatch = propReadyScore * 0.4;
-            const matchScore = Math.round(priceMatch + scoreMatch);
-
-            properties.push({
-                id: `suggested-${i + 1}`,
-                type: propertyTypes[i % propertyTypes.length],
-                location: locations[i % locations.length],
-                price: propertyPrice,
-                matchScore: Math.min(100, Math.max(60, matchScore)) // Clamp between 60-100%
-            });
-        }
-
-        // Sort by match score (highest first)
-        return properties.sort((a, b) => b.matchScore - a.matchScore);
-    };
+    const showSuggestedProperties = agentListings.length > 0 && suggestedProperties.length > 0;
 
     if (!isHydrated || !currentUser) {
         return <PortalLoading message="Loading dashboard…" />;
@@ -404,71 +455,81 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Main Dashboard Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Suggested Properties */}
-                        <div className="lg:col-span-2">
-                            <div className={`${PORTAL_CARD} p-6`}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-charcoal flex items-center mb-1">
-                                            <Heart className="w-6 h-6 mr-2 text-gold" />
-                                            Suggested Properties
-                                        </h2>
-                                        {quizResult && quizResult.preQualAmount > 0 && (
+                    <div
+                        className={`grid grid-cols-1 gap-8 ${
+                            showSuggestedProperties ? 'lg:grid-cols-3' : 'lg:grid-cols-1 lg:max-w-md'
+                        }`}
+                    >
+                        {showSuggestedProperties ? (
+                            <div className="lg:col-span-2">
+                                <div className={`${PORTAL_CARD} p-6`}>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-charcoal flex items-center mb-1">
+                                                <Heart className="w-6 h-6 mr-2 text-gold" />
+                                                Suggested Properties
+                                            </h2>
                                             <p className="text-charcoal/60 text-sm ml-8">
-                                                Matched based on your {formatCurrency(quizResult.preQualAmount)} prequalification and {quizResult.score}% PropReady Score
+                                                From agent listings
+                                                {quizResult && quizResult.preQualAmount > 0
+                                                    ? ` · matched to your ${formatCurrency(quizResult.preQualAmount)} prequalification`
+                                                    : ''}
                                             </p>
-                                        )}
-                                    </div>
-                                    <Link href="/search" className="text-gold hover:text-gold-600 font-semibold text-sm transition-colors">
-                                        View All
-                                    </Link>
-                                </div>
-
-                                {quizResult && quizResult.preQualAmount > 0 ? (
-                                    <div className="space-y-3">
-                                        {generateSuggestedProperties().map((property) => (
-                                            <Link
-                                                key={property.id}
-                                                href="/search"
-                                                className={`${PORTAL_CARD} p-4 flex items-center space-x-4 group transition-all cursor-pointer`}
-                                            >
-                                                <div className="w-20 h-20 bg-gradient-to-br from-gold/10 to-gold/5 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20 group-hover:border-gold/40 transition-colors">
-                                                    <Home className="w-8 h-8 text-gold/70" />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <h3 className="text-charcoal font-semibold mb-1">Modern {property.type}</h3>
-                                                    <p className="text-charcoal/50 text-sm mb-2">{property.location}</p>
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="text-gold font-bold text-lg">{formatCurrency(property.price)}</span>
-                                                        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold">
-                                                            {property.matchScore}% Match
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-charcoal/40 text-xs mt-1">
-                                                        Based on your {formatCurrency(quizResult.preQualAmount)} prequalification
-                                                    </p>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12">
-                                        <Home className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                                        <p className="text-charcoal/70 text-lg mb-2">Complete the quiz to see suggested properties</p>
-                                        <p className="text-charcoal/50 text-sm mb-4">
-                                            Properties will be matched based on your prequalification amount and PropReady Score
-                                        </p>
+                                        </div>
                                         <Link
-                                            href="/quiz"
-                                            className={PORTAL_PRIMARY_BTN}
+                                            href="/search"
+                                            className="text-gold hover:text-gold-600 font-semibold text-sm transition-colors"
                                         >
-                                            Take the Quiz
+                                            View All
                                         </Link>
                                     </div>
-                                )}
+
+                                    <div className="space-y-3">
+                                        {suggestedProperties.map((property) => {
+                                            const thumb = property.images?.[0];
+                                            return (
+                                                <Link
+                                                    key={property.id}
+                                                    href={`/search?property=${encodeURIComponent(property.id)}`}
+                                                    className={`${PORTAL_CARD} p-4 flex items-center space-x-4 group transition-all cursor-pointer`}
+                                                >
+                                                    <div className="w-20 h-20 bg-gradient-to-br from-gold/10 to-gold/5 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20 group-hover:border-gold/40 transition-colors overflow-hidden">
+                                                        {thumb ? (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img
+                                                                src={getProxiedImageUrl(thumb)}
+                                                                alt=""
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <Home className="w-8 h-8 text-gold/70" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="text-charcoal font-semibold mb-1 truncate">
+                                                            {property.title}
+                                                        </h3>
+                                                        <p className="text-charcoal/50 text-sm mb-2 truncate">
+                                                            {property.address || property.type}
+                                                        </p>
+                                                        <div className="flex items-center justify-between gap-3">
+                                                            <span className="text-gold font-bold text-lg">
+                                                                {formatCurrency(property.price)}
+                                                            </span>
+                                                            {property.matchScore > 0 ? (
+                                                                <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold shrink-0">
+                                                                    {property.matchScore}% Match
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        ) : null}
 
                         {/* Activity & Documents */}
                         <div className="space-y-6">
@@ -479,18 +540,41 @@ export default function DashboardPage() {
                                     Recent Activity
                                 </h2>
                                 <div className="space-y-4">
-                                    <div className="text-sm pb-3 border-b border-charcoal/10 last:border-0">
-                                        <p className="text-charcoal font-medium mb-1">3 new properties suggested</p>
-                                        <p className="text-charcoal/40 text-xs">2 hours ago</p>
-                                    </div>
-                                    <div className="text-sm pb-3 border-b border-charcoal/10 last:border-0">
-                                        <p className="text-charcoal font-medium mb-1">Completed qualification quiz</p>
-                                        <p className="text-charcoal/40 text-xs">Yesterday</p>
-                                    </div>
-                                    <div className="text-sm">
-                                        <p className="text-charcoal font-medium mb-1">Uploaded ID document</p>
-                                        <p className="text-charcoal/40 text-xs">3 days ago</p>
-                                    </div>
+                                    {showSuggestedProperties ? (
+                                        <div className="text-sm pb-3 border-b border-charcoal/10 last:border-0">
+                                            <p className="text-charcoal font-medium mb-1">
+                                                {suggestedProperties.length} agent listing
+                                                {suggestedProperties.length === 1 ? '' : 's'} matched for you
+                                            </p>
+                                            <p className="text-charcoal/40 text-xs">Just now</p>
+                                        </div>
+                                    ) : null}
+                                    {quizResult ? (
+                                        <div className="text-sm pb-3 border-b border-charcoal/10 last:border-0">
+                                            <p className="text-charcoal font-medium mb-1">
+                                                Completed qualification quiz
+                                            </p>
+                                            <p className="text-charcoal/40 text-xs">On file</p>
+                                        </div>
+                                    ) : null}
+                                    {buyerDocuments.length > 0 ? (
+                                        <div className="text-sm">
+                                            <p className="text-charcoal font-medium mb-1">
+                                                {buyerDocuments.length} document
+                                                {buyerDocuments.length === 1 ? '' : 's'} uploaded
+                                            </p>
+                                            <p className="text-charcoal/40 text-xs">Documents</p>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm">
+                                            <p className="text-charcoal font-medium mb-1">
+                                                No recent activity yet
+                                            </p>
+                                            <p className="text-charcoal/40 text-xs">
+                                                Suggested homes appear when agents publish listings
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
