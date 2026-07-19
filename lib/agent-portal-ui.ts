@@ -39,6 +39,21 @@ export const AGENT_LOGO_MARK_SM =
 
 export const AGENT_PAGE_CONTAINER = 'max-w-[1400px] w-full mx-auto pb-8 sm:pb-12';
 
+/** Portal chrome — nav sits darker than the content canvas for clear separation */
+export const AGENT_SHELL_SIDEBAR =
+    'bg-[#ebeae7] border-r border-charcoal/[0.1] shadow-[4px_0_24px_rgba(44,44,44,0.045)]';
+export const AGENT_SHELL_SIDEBAR_MOBILE =
+    'bg-[#ebeae7] shadow-xl border-r border-charcoal/[0.1]';
+export const AGENT_SHELL_CONTENT = 'bg-[#fafafa]';
+export const AGENT_SHELL_TOPBAR =
+    'bg-white/95 backdrop-blur-md border-b border-charcoal/[0.06] shadow-elevation-xs';
+export const AGENT_NAV_LINK =
+    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200';
+export const AGENT_NAV_LINK_IDLE =
+    'text-charcoal/70 hover:text-charcoal hover:bg-white/70';
+export const AGENT_NAV_LINK_ACTIVE =
+    'bg-white text-gold border border-gold/20 shadow-[0_1px_2px_rgba(0,0,0,0.04)]';
+
 export const AGENT_PAGE_HEADER_BAND =
     'bg-white border-b border-charcoal/[0.06] shadow-elevation-xs';
 

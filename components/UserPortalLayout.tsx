@@ -19,6 +19,13 @@ import {
     PORTAL_ICON_LOGO_SM,
     PORTAL_SECONDARY_BTN,
     PORTAL_ICON_BTN,
+    PORTAL_SHELL_SIDEBAR,
+    PORTAL_SHELL_SIDEBAR_MOBILE,
+    PORTAL_SHELL_CONTENT,
+    PORTAL_SHELL_TOPBAR,
+    PORTAL_NAV_LINK,
+    PORTAL_NAV_LINK_IDLE,
+    PORTAL_NAV_LINK_ACTIVE,
 } from '@/lib/portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
 
@@ -58,14 +65,14 @@ function NavLinks({
                         key={page}
                         href={href}
                         onClick={onNavigate}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                        className={`${PORTAL_NAV_LINK} ${
                             isAlert
                                 ? isActive
                                     ? 'bg-red-600 text-white border border-red-700 shadow-sm'
                                     : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:text-red-800'
                                 : isActive
-                                  ? 'bg-gold/15 text-gold border border-gold/25'
-                                  : 'text-charcoal/75 hover:text-charcoal hover:bg-charcoal/5'
+                                  ? PORTAL_NAV_LINK_ACTIVE
+                                  : PORTAL_NAV_LINK_IDLE
                         }`}
                     >
                         <Icon className="w-5 h-5 shrink-0" />
@@ -100,9 +107,11 @@ export default function UserPortalLayout({
     };
 
     return (
-        <div className="min-h-screen bg-white">
-            <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col border-r border-charcoal/[0.06] bg-white z-40">
-                <div className="px-5 py-6 border-b border-charcoal/[0.06]">
+        <div className={`min-h-screen ${PORTAL_SHELL_CONTENT}`}>
+            <aside
+                className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 ${PORTAL_SHELL_SIDEBAR}`}
+            >
+                <div className="px-5 py-6 border-b border-charcoal/[0.08]">
                     <Link href="/" className="flex items-center gap-2.5">
                         <div className={PORTAL_LOGO_MARK}>
                             <Home className={`${PORTAL_ICON_LOGO} text-white`} />
@@ -114,7 +123,7 @@ export default function UserPortalLayout({
                 <div className="flex-1 py-4 overflow-y-auto">
                     <NavLinks portal={portal} activePage={activePage} />
                 </div>
-                <div className="px-5 py-4 border-t border-charcoal/[0.06]">
+                <div className="px-5 py-4 border-t border-charcoal/[0.08]">
                     <Link
                         href={portal === 'buyer' ? '/sellers/dashboard' : '/dashboard'}
                         className="text-xs font-medium text-charcoal/50 hover:text-gold transition"
@@ -132,8 +141,10 @@ export default function UserPortalLayout({
                         aria-label="Close menu"
                         onClick={() => setMobileOpen(false)}
                     />
-                    <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl flex flex-col">
-                        <div className="flex items-center justify-between px-5 py-4 border-b border-charcoal/10">
+                    <aside
+                        className={`absolute left-0 top-0 bottom-0 w-72 flex flex-col ${PORTAL_SHELL_SIDEBAR_MOBILE}`}
+                    >
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-charcoal/[0.08]">
                             <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
                                 <div className={PORTAL_LOGO_MARK_SM}>
                                     <Home className={`${PORTAL_ICON_LOGO_SM} text-white`} />
@@ -156,7 +167,7 @@ export default function UserPortalLayout({
                                 onNavigate={() => setMobileOpen(false)}
                             />
                         </div>
-                        <div className="px-5 py-4 border-t border-charcoal/10">
+                        <div className="px-5 py-4 border-t border-charcoal/[0.08]">
                             <Link
                                 href={portal === 'buyer' ? '/sellers/dashboard' : '/dashboard'}
                                 onClick={() => setMobileOpen(false)}
@@ -169,7 +180,9 @@ export default function UserPortalLayout({
                 </div>
             )}
 
-            <header className="fixed top-0 right-0 left-0 lg:left-64 z-30 h-[4.25rem] bg-white/95 backdrop-blur-md border-b border-charcoal/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+            <header
+                className={`fixed top-0 right-0 left-0 lg:left-64 z-30 h-[4.25rem] ${PORTAL_SHELL_TOPBAR}`}
+            >
                 <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                         <button
@@ -202,7 +215,7 @@ export default function UserPortalLayout({
                 </div>
             </header>
 
-            <main className="lg:pl-64 pt-[4.25rem] min-h-screen bg-[#fafafa]">
+            <main className={`lg:pl-64 pt-[4.25rem] min-h-screen ${PORTAL_SHELL_CONTENT}`}>
                 {pageHeader && (
                     <div
                         className={`${PORTAL_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 lg:py-11`}
