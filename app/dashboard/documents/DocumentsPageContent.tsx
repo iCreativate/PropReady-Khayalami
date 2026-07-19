@@ -40,6 +40,11 @@ import {
 } from '@/lib/document-blobs';
 import { saveLeadDocumentsLocally } from '@/lib/lead-documents';
 import {
+    markOriginatorLetterUploaded,
+    markOriginatorPrequalPending,
+} from '@/lib/buyer-full-prequal';
+import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
+import {
     PORTAL_CALLOUT,
     PORTAL_CARD,
     PORTAL_CARD_HEADER,
@@ -212,6 +217,14 @@ export default function DocumentsPageContent() {
             persistBuyerDocuments(user.id, updatedDocs);
             logActivity(`Uploaded ${uploaded.length} document(s)`, user.id);
             success(`${uploaded.length} file(s) uploaded successfully`);
+
+            if (uploaded.some((d) => d.type === 'pre-qualification')) {
+                const quiz = resolveBuyerQuizResultSync(user);
+                markOriginatorLetterUploaded({
+                    userId: user.id,
+                    softAmount: quiz?.preQualAmount ?? null,
+                });
+            }
         }
 
         if (errors.length > 0) {
@@ -325,9 +338,15 @@ export default function DocumentsPageContent() {
             };
 
             localStorage.setItem(STORAGE_KEYS.documentsSent, JSON.stringify(sentData));
+            const quiz = resolveBuyerQuizResultSync(user);
+            markOriginatorPrequalPending({
+                userId: user.id,
+                softAmount: quiz?.preQualAmount ?? null,
+                originatorId: selectedOriginator,
+            });
             logActivity(`Documents sent to ${originatorName}`, user.id);
             setSendSuccess(true);
-            success(`Documents sent to ${originatorName}. Bond originator API integration pending.`);
+            success(`Documents sent to ${originatorName}. When you receive your letter, upload it and enter the official amount on your dashboard.`);
 
             setTimeout(() => {
                 setSendSuccess(false);

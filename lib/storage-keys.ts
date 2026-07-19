@@ -18,5 +18,7 @@ export const STORAGE_KEYS = {
     selectedOriginator: 'propReady_selectedOriginator',
     documentsSent: 'propReady_documentsSent',
     activity: 'propReady_activity',
+    /** Latest full originator prequal snapshot (also stored per-user key) */
+    fullPrequal: 'propReady_fullPrequal',
     selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
 } as const;

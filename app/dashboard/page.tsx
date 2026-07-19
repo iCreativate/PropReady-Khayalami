@@ -13,6 +13,7 @@ import type { BondOriginator } from '@/lib/bond-originators';
 import { BUYER_DOCUMENT_SLOTS, readBuyerDocumentsLocal, refreshBuyerDocumentsFromApi, type BuyerDocument } from '@/lib/buyer-documents';
 import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
 import { resolveBuyerQuizResultSync, type BuyerQuizResult } from '@/lib/quiz-result';
+import { resolvePrequalMode } from '@/lib/buyer-full-prequal';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
@@ -45,10 +46,15 @@ function readQuizSummary(user: { id?: string; email?: string }) {
     const depositSaved =
         depositRaw != null && String(depositRaw).trim() !== '' ? String(depositRaw) : '0';
     const debtRaw = result.hasDebt ? result.expenses : null;
+    const softAmount = result.preQualAmount || 0;
+    const prequal = resolvePrequalMode({
+        userId: user.id,
+        softAmount,
+    });
     return {
         ...result,
         score: result.score || 0,
-        preQualAmount: result.preQualAmount || 0,
+        preQualAmount: prequal.displayAmount || softAmount,
         monthlyIncome: result.monthlyIncome || '0',
         depositSaved,
         monthlyDebt: debtRaw != null && String(debtRaw).trim() !== '' ? String(debtRaw) : null,
@@ -249,6 +255,7 @@ export default function DashboardPage() {
                     {/* PropReady Score Card */}
                     <PropReadyScoreCard
                         result={quizResult}
+                        userId={currentUser.id}
                         documents={buyerDocuments}
                         viewingCount={viewingAppointments.length}
                         preQualAmount={quizResult?.preQualAmount ?? 0}
@@ -263,6 +270,9 @@ export default function DashboardPage() {
                                 : null
                         }
                         showDebtNote={Boolean(quizResult?.hasDebt && quizResult.monthlyDebt)}
+                        onFullPrequalUpdated={() => {
+                            if (currentUser) setQuizResult(readQuizSummary(currentUser));
+                        }}
                     />
 
                     {/* Quick Actions */}
