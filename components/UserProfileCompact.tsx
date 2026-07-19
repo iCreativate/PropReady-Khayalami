@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { UserPortalUser } from '@/components/UserPortalLayout';
 import { getUserPortalLabel, type UserPortalKind } from '@/lib/user-portal-nav';
 
@@ -17,11 +18,16 @@ interface UserProfileCompactProps {
 
 export default function UserProfileCompact({ user, portal }: UserProfileCompactProps) {
     const portalLabel = getUserPortalLabel(portal);
+    const settingsHref = portal === 'seller' ? '/sellers/dashboard' : '/dashboard';
 
     return (
-        <div className="hidden sm:flex items-center gap-3 pl-3 pr-1 py-1.5 rounded-2xl border border-charcoal/[0.08] bg-white hover:border-charcoal/[0.12] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200">
+        <Link
+            href={settingsHref}
+            className="hidden sm:flex items-center gap-3 pl-3 pr-1 py-1.5 rounded-2xl border border-charcoal/[0.08] bg-white hover:border-charcoal/[0.12] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200"
+            title="Open dashboard"
+        >
             <div
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-amber-600 flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white shrink-0"
+                className="w-9 h-9 rounded-full bg-gradient-to-br from-gold to-gold-600 flex items-center justify-center text-white text-sm font-bold shadow-sm ring-2 ring-white shrink-0"
                 aria-hidden
             >
                 {getUserInitials(user.fullName)}
@@ -30,8 +36,8 @@ export default function UserProfileCompact({ user, portal }: UserProfileCompactP
                 <p className="text-charcoal font-semibold text-sm truncate leading-tight">
                     {user.fullName}
                 </p>
-                <p className="text-charcoal/50 text-[11px] truncate leading-tight">{portalLabel}</p>
+                <p className="text-charcoal/45 text-[11px] truncate leading-tight">{portalLabel}</p>
             </div>
-        </div>
+        </Link>
     );
 }

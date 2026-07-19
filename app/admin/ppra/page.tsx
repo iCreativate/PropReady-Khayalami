@@ -13,6 +13,22 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import PpraVerificationBadge from '@/components/PpraVerificationBadge';
+import PortalLoading from '@/components/PortalLoading';
+import {
+    PORTAL_CARD,
+    PORTAL_PRIMARY_BTN,
+    PORTAL_SECONDARY_BTN,
+    PORTAL_DANGER_BTN,
+    PORTAL_SUCCESS_BTN,
+    PORTAL_INPUT,
+    PORTAL_SEARCH_INPUT,
+    PORTAL_REFRESH_BTN,
+    PORTAL_PAGE_CONTAINER,
+    PORTAL_LOGO_MARK,
+    PORTAL_ICON_LOGO,
+    PORTAL_SELECT,
+    PORTAL_TEXT_SECONDARY,
+} from '@/lib/portal-ui';
 
 interface Application {
     id: string;
@@ -110,60 +126,74 @@ export default function AdminPpraPage() {
         }
     };
 
+    const topBar = (
+        <header className="bg-white border-b border-charcoal/[0.06]">
+            <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+                <Link href="/" className="flex items-center gap-2.5 min-w-0">
+                    <div className={PORTAL_LOGO_MARK}>
+                        <Home className={`${PORTAL_ICON_LOGO} text-white`} />
+                    </div>
+                    <div className="min-w-0">
+                        <span className="text-charcoal text-lg font-semibold block leading-tight">
+                            PropReady
+                        </span>
+                        <span className={`text-xs ${PORTAL_TEXT_SECONDARY}`}>PPRA Admin</span>
+                    </div>
+                </Link>
+                {authenticated ? (
+                    <span className={`text-sm truncate ${PORTAL_TEXT_SECONDARY}`}>{adminEmail}</span>
+                ) : null}
+            </div>
+        </header>
+    );
+
     if (!authenticated) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center p-4">
-                <div className="max-w-md w-full premium-card p-8 rounded-2xl">
-                    <div className="flex items-center gap-2 mb-6">
-                        <Shield className="w-8 h-8 text-gold" />
-                        <h1 className="text-2xl font-bold text-charcoal">PPRA Admin</h1>
+            <div className="min-h-screen bg-[#fafafa]">
+                {topBar}
+                <div className="flex items-center justify-center p-4 py-16">
+                    <div className={`${PORTAL_CARD} max-w-md w-full p-8`}>
+                        <div className="flex items-center gap-2 mb-6">
+                            <Shield className="w-7 h-7 text-gold" />
+                            <h1 className="text-2xl font-semibold text-charcoal">PPRA Admin</h1>
+                        </div>
+                        <p className={`text-sm mb-4 ${PORTAL_TEXT_SECONDARY}`}>
+                            Sign in with an email listed in <code className="text-xs">ADMIN_EMAILS</code> on
+                            the server.
+                        </p>
+                        <input
+                            type="email"
+                            value={adminEmail}
+                            onChange={(e) => setAdminEmail(e.target.value)}
+                            placeholder="admin@propready.co.za"
+                            className={`${PORTAL_INPUT} mb-4`}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setAuthenticated(!!adminEmail.trim())}
+                            className={`${PORTAL_PRIMARY_BTN} w-full`}
+                        >
+                            Continue
+                        </button>
                     </div>
-                    <p className="text-charcoal/70 text-sm mb-4">
-                        Sign in with an email listed in <code className="text-xs">ADMIN_EMAILS</code> on the
-                        server.
-                    </p>
-                    <input
-                        type="email"
-                        value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        placeholder="admin@propready.co.za"
-                        className="w-full px-4 py-3 rounded-lg border border-charcoal/20 mb-4"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setAuthenticated(!!adminEmail.trim())}
-                        className="w-full py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600"
-                    >
-                        Continue
-                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            <header className="border-b border-charcoal/10 px-4 py-4">
-                <div className="container mx-auto flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 text-charcoal font-bold">
-                        <Home className="w-5 h-5 text-gold" />
-                        PropReady Admin
-                    </Link>
-                    <span className="text-sm text-charcoal/60">{adminEmail}</span>
-                </div>
-            </header>
+        <div className="min-h-screen bg-[#fafafa]">
+            {topBar}
 
-            <main className="container mx-auto px-4 py-8 max-w-7xl">
+            <main className={`${PORTAL_PAGE_CONTAINER} px-4 py-8`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold text-charcoal">PPRA verification queue</h1>
-                        <p className="text-charcoal/70">Review practitioner applications</p>
+                        <h1 className="text-2xl sm:text-3xl font-semibold text-charcoal tracking-tight">
+                            PPRA verification queue
+                        </h1>
+                        <p className={PORTAL_TEXT_SECONDARY}>Review practitioner applications</p>
                     </div>
-                    <button
-                        type="button"
-                        onClick={loadApplications}
-                        className="flex items-center gap-2 px-4 py-2 border border-charcoal/20 rounded-lg hover:bg-charcoal/5"
-                    >
+                    <button type="button" onClick={loadApplications} className={PORTAL_REFRESH_BTN}>
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
@@ -178,21 +208,21 @@ export default function AdminPpraPage() {
 
                 <div className="flex flex-col lg:flex-row gap-6">
                     <div className="flex-1">
-                        <div className="flex gap-2 mb-4">
+                        <div className="flex flex-col sm:flex-row gap-2 mb-4">
                             <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                                 <input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && loadApplications()}
                                     placeholder="Search name, agency, PPRA number…"
-                                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-charcoal/20"
+                                    className={PORTAL_SEARCH_INPUT}
                                 />
                             </div>
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="px-3 py-2 rounded-lg border border-charcoal/20"
+                                className={PORTAL_SELECT}
                             >
                                 <option value="all">All</option>
                                 <option value="pending">Pending</option>
@@ -201,7 +231,10 @@ export default function AdminPpraPage() {
                             </select>
                         </div>
 
-                        <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                        <div className="relative space-y-2 max-h-[70vh] overflow-y-auto min-h-[120px]">
+                            {loading && applications.length === 0 ? (
+                                <PortalLoading variant="inline" message="Loading applications…" />
+                            ) : null}
                             {applications.map((app) => (
                                 <button
                                     key={app.id}
@@ -211,17 +244,17 @@ export default function AdminPpraPage() {
                                         setPreviewUrl(null);
                                         setNotes(app.verificationNotes || '');
                                     }}
-                                    className={`w-full text-left p-4 rounded-xl border transition ${
+                                    className={`w-full text-left p-4 rounded-2xl border transition ${
                                         selected?.id === app.id
-                                            ? 'border-gold bg-gold/5'
-                                            : 'border-charcoal/10 hover:border-gold/30'
+                                            ? 'border-gold/30 bg-gold/[0.04]'
+                                            : 'border-charcoal/[0.08] bg-white hover:border-charcoal/15'
                                     }`}
                                 >
                                     <div className="flex justify-between gap-2">
                                         <div>
                                             <p className="font-semibold text-charcoal">{app.fullName}</p>
-                                            <p className="text-sm text-charcoal/60">{app.company}</p>
-                                            <p className="text-xs text-charcoal/50 font-mono mt-1">
+                                            <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>{app.company}</p>
+                                            <p className="text-xs text-charcoal/45 font-mono mt-1">
                                                 PPRA {app.ppraNumber}
                                             </p>
                                         </div>
@@ -232,37 +265,43 @@ export default function AdminPpraPage() {
                                 </button>
                             ))}
                             {!loading && applications.length === 0 && (
-                                <p className="text-center text-charcoal/50 py-8">No applications found</p>
+                                <p className={`text-center py-8 ${PORTAL_TEXT_SECONDARY}`}>
+                                    No applications found
+                                </p>
                             )}
                         </div>
                     </div>
 
-                    <div className="lg:w-96 premium-card p-6 rounded-xl border border-charcoal/10 h-fit sticky top-24">
+                    <div className={`${PORTAL_CARD} lg:w-96 p-6 h-fit sticky top-24`}>
                         {selected ? (
                             <>
-                                <h2 className="text-xl font-bold text-charcoal mb-2">{selected.fullName}</h2>
+                                <h2 className="text-xl font-semibold text-charcoal mb-2">
+                                    {selected.fullName}
+                                </h2>
                                 <PpraVerificationBadge
                                     agent={{ verificationStatus: selected.verificationStatus }}
                                 />
-                                <dl className="mt-4 space-y-2 text-sm text-charcoal/80">
+                                <dl className={`mt-4 space-y-2 text-sm ${PORTAL_TEXT_SECONDARY}`}>
                                     <div>
-                                        <dt className="text-charcoal/50">Email</dt>
-                                        <dd>{selected.email}</dd>
+                                        <dt className="text-charcoal/45">Email</dt>
+                                        <dd className="text-charcoal">{selected.email}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-charcoal/50">Phone</dt>
-                                        <dd>{selected.phone}</dd>
+                                        <dt className="text-charcoal/45">Phone</dt>
+                                        <dd className="text-charcoal">{selected.phone}</dd>
                                     </div>
                                     <div>
-                                        <dt className="text-charcoal/50">FFC number</dt>
-                                        <dd className="font-mono">{selected.ffcNumber || '—'}</dd>
+                                        <dt className="text-charcoal/45">FFC number</dt>
+                                        <dd className="font-mono text-charcoal">
+                                            {selected.ffcNumber || '—'}
+                                        </dd>
                                     </div>
                                 </dl>
                                 {selected.ffcDocumentUrl && (
                                     <button
                                         type="button"
                                         onClick={() => openPreview(selected)}
-                                        className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-charcoal/20 rounded-lg hover:bg-charcoal/5 text-sm"
+                                        className={`${PORTAL_SECONDARY_BTN} mt-4 w-full`}
                                     >
                                         <Eye className="w-4 h-4" />
                                         Preview FFC document
@@ -283,7 +322,7 @@ export default function AdminPpraPage() {
                                     onChange={(e) => setNotes(e.target.value)}
                                     placeholder="Internal verification notes (optional)"
                                     rows={2}
-                                    className="w-full mt-4 px-3 py-2 rounded-lg border border-charcoal/20 text-sm"
+                                    className={`${PORTAL_INPUT} mt-4 text-sm`}
                                 />
                                 {selected.verificationStatus === 'pending' && (
                                     <>
@@ -292,14 +331,14 @@ export default function AdminPpraPage() {
                                             onChange={(e) => setRejectionReason(e.target.value)}
                                             placeholder="Rejection reason (required if rejecting)"
                                             rows={2}
-                                            className="w-full mt-2 px-3 py-2 rounded-lg border border-charcoal/20 text-sm"
+                                            className={`${PORTAL_INPUT} mt-2 text-sm`}
                                         />
                                         <div className="flex gap-2 mt-4">
                                             <button
                                                 type="button"
                                                 disabled={actionLoading}
                                                 onClick={() => review('approve')}
-                                                className="flex-1 py-2 bg-green-600 text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-1 hover:bg-green-700 disabled:opacity-50"
+                                                className={`${PORTAL_SUCCESS_BTN} flex-1`}
                                             >
                                                 <CheckCircle className="w-4 h-4" />
                                                 Approve
@@ -308,7 +347,7 @@ export default function AdminPpraPage() {
                                                 type="button"
                                                 disabled={actionLoading}
                                                 onClick={() => review('reject')}
-                                                className="flex-1 py-2 bg-red-600 text-white rounded-lg font-semibold text-sm flex items-center justify-center gap-1 hover:bg-red-700 disabled:opacity-50"
+                                                className={`${PORTAL_DANGER_BTN} flex-1`}
                                             >
                                                 <XCircle className="w-4 h-4" />
                                                 Reject
@@ -318,7 +357,9 @@ export default function AdminPpraPage() {
                                 )}
                             </>
                         ) : (
-                            <p className="text-charcoal/50 text-sm">Select an application to review</p>
+                            <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>
+                                Select an application to review
+                            </p>
                         )}
                     </div>
                 </div>

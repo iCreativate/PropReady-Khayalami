@@ -13,12 +13,13 @@ import type { BondOriginator } from '@/lib/bond-originators';
 import { BUYER_DOCUMENT_SLOTS, readBuyerDocumentsLocal, refreshBuyerDocumentsFromApi, type BuyerDocument } from '@/lib/buyer-documents';
 import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
 import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
-import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_CALLOUT } from '@/lib/portal-ui';
+import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
+import PortalLoading from '@/components/PortalLoading';
 
 function readSellerInfoForUser(user: { id?: string; email?: string }) {
     if (typeof window === 'undefined') return null;
@@ -202,7 +203,7 @@ export default function DashboardPage() {
     };
 
     if (!isHydrated || !currentUser) {
-        return null;
+        return <PortalLoading message="Loading dashboard…" />;
     }
 
     return (
@@ -228,11 +229,11 @@ export default function DashboardPage() {
                 <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Seller Information Section (if user is also a seller) */}
                     {isSeller && sellerInfo && (
-                        <div className="premium-card p-8 mb-8 sm:mb-10 overflow-hidden">
+                        <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10 overflow-hidden`}>
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
                                     <div className={PORTAL_STAT_ICON}>
-                                        <Building2 className="w-6 h-6 text-gold" />
+                                        <Building2 className="w-5 h-5 text-gold" />
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-charcoal mb-1">Your Property Listing</h2>
@@ -268,7 +269,7 @@ export default function DashboardPage() {
                     )}
 
                     {/* PropReady Score Card */}
-                    <div className="premium-card p-8 mb-8 sm:mb-10 overflow-hidden">
+                    <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10 overflow-hidden`}>
                         <div>
                             <div className="flex items-center justify-between mb-8">
                                 <div>
@@ -320,31 +321,31 @@ export default function DashboardPage() {
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 mb-8 sm:mb-10">
-                        <Link href="/search" className="premium-card p-6 text-center group">
+                        <Link href="/search" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Home className="w-6 h-6 text-gold" />
+                                <Home className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Browse Properties</h3>
                         </Link>
 
-                        <Link href="/dashboard/documents" className="premium-card p-6 text-center group border-red-200 ring-1 ring-red-100">
+                        <Link href="/dashboard/documents" className={`${PORTAL_CARD} p-6 text-center group border-red-200 ring-1 ring-red-100`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4 bg-red-50 border-red-100`}>
-                                <FileText className="w-6 h-6 text-red-600" />
+                                <FileText className="w-5 h-5 text-red-600" />
                             </div>
                             <h3 className="text-red-700 font-semibold text-sm">Bond Originators</h3>
                             <p className="text-[11px] text-red-600/80 mt-1 font-medium">Full prequal</p>
                         </Link>
 
-                        <Link href="/dashboard/agent" className="premium-card p-6 text-center group">
+                        <Link href="/dashboard/agent" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Users className="w-6 h-6 text-gold" />
+                                <Users className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">My Agent</h3>
                         </Link>
 
-                        <Link href="/dashboard/viewings" className="premium-card p-6 text-center group">
+                        <Link href="/dashboard/viewings" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Calendar className="w-6 h-6 text-gold" />
+                                <Calendar className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Viewings</h3>
                         </Link>
@@ -352,11 +353,11 @@ export default function DashboardPage() {
 
                     {/* Viewing Appointments Section */}
                     {viewingAppointments.length > 0 && (
-                        <div className="premium-card p-8 mb-8 sm:mb-10">
+                        <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10`}>
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
                                     <div className={PORTAL_STAT_ICON}>
-                                        <Calendar className="w-6 h-6 text-gold" />
+                                        <Calendar className="w-5 h-5 text-gold" />
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-charcoal mb-1">Your Viewing Appointments</h2>
@@ -375,7 +376,7 @@ export default function DashboardPage() {
                                 {viewingAppointments.slice(0, 3).map((viewing) => (
                                     <div
                                         key={viewing.id}
-                                        className="premium-card rounded-xl p-6 border border-charcoal/20 hover:border-gold/50 transition"
+                                        className={`${PORTAL_CARD} p-6 border border-charcoal/20 hover:border-gold/50 transition`}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex-1">
@@ -450,7 +451,7 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Suggested Properties */}
                         <div className="lg:col-span-2">
-                            <div className="premium-card rounded-xl p-6">
+                            <div className={`${PORTAL_CARD} p-6`}>
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
                                         <h2 className="text-2xl font-bold text-charcoal flex items-center mb-1">
@@ -474,7 +475,7 @@ export default function DashboardPage() {
                                             <Link
                                                 key={property.id}
                                                 href="/search"
-                                                className="premium-card rounded-lg p-4 flex items-center space-x-4 group hover:scale-[1.02] transition-all cursor-pointer"
+                                                className={`${PORTAL_CARD} p-4 flex items-center space-x-4 group transition-all cursor-pointer`}
                                             >
                                                 <div className="w-20 h-20 bg-gradient-to-br from-gold/10 to-gold/5 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20 group-hover:border-gold/40 transition-colors">
                                                     <Home className="w-8 h-8 text-gold/70" />
@@ -504,7 +505,7 @@ export default function DashboardPage() {
                                         </p>
                                         <Link
                                             href="/quiz"
-                                            className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-semibold rounded-full hover:bg-gold-600 transition"
+                                            className={PORTAL_PRIMARY_BTN}
                                         >
                                             Take the Quiz
                                         </Link>
@@ -516,7 +517,7 @@ export default function DashboardPage() {
                         {/* Activity & Documents */}
                         <div className="space-y-6">
                             {/* Recent Activity */}
-                            <div className="premium-card rounded-xl p-6">
+                            <div className={`${PORTAL_CARD} p-6`}>
                                 <h2 className="text-xl font-bold text-charcoal mb-5 flex items-center">
                                     <TrendingUp className="w-5 h-5 mr-2 text-gold" />
                                     Recent Activity
@@ -538,7 +539,7 @@ export default function DashboardPage() {
                             </div>
 
                             {/* Documents */}
-                            <div className="premium-card rounded-xl p-6">
+                            <div className={`${PORTAL_CARD} p-6`}>
                                 <div className="flex items-center justify-between mb-5">
                                     <h2 className="text-xl font-bold text-charcoal flex items-center">
                                         <Download className="w-5 h-5 mr-2 text-gold" />
@@ -630,7 +631,7 @@ export default function DashboardPage() {
                                 </div>
                                 <button
                                     onClick={() => setSelectedOriginator(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group"
                                     aria-label="Close"
                                 >
                                     <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
@@ -655,7 +656,7 @@ export default function DashboardPage() {
                             <div className="space-y-3">
                                 <a
                                     href={`tel:${selectedOriginator.phone}`}
-                                    className="w-full px-6 py-3 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                                    className={`w-full ${PORTAL_PRIMARY_BTN}`}
                                 >
                                     <Phone className="w-5 h-5" />
                                     Call Now
@@ -664,7 +665,7 @@ export default function DashboardPage() {
                                     href={selectedOriginator.website}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-full px-6 py-3 border border-charcoal/20 text-charcoal font-semibold rounded-xl hover:bg-charcoal/5 transition flex items-center justify-center gap-2"
+                                    className={`w-full ${PORTAL_SECONDARY_BTN}`}
                                 >
                                     <ExternalLink className="w-5 h-5" />
                                     Visit Website
@@ -676,7 +677,7 @@ export default function DashboardPage() {
                         <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
                             <button
                                 onClick={() => setSelectedOriginator(null)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className={PORTAL_PRIMARY_BTN}
                             >
                                 <span>Done</span>
                                 <X className="w-4 h-4" />

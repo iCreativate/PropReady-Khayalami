@@ -116,7 +116,7 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                                                 e.stopPropagation();
                                                 openViewer(item);
                                             }}
-                                            className="px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 text-sm flex items-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 flex-1 sm:flex-initial justify-center"
+                                            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)] flex-1 sm:flex-initial"
                                         >
                                             <Eye className="w-4 h-4" />
                                             <span>View</span>
@@ -226,7 +226,7 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                                 </div>
                                 <button
                                     onClick={closeViewer}
-                                    className="px-6 sm:px-8 py-2.5 sm:py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2 text-sm sm:text-base"
+                                    className="inline-flex items-center justify-center gap-2 h-10 sm:h-11 px-5 sm:px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                                 >
                                     <span>Done</span>
                                     <X className="w-4 h-4" />

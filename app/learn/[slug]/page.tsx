@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import TransferCostCalculator from '@/components/TransferCostCalculator';
 import LearningToolkit from '@/components/LearningToolkit';
-import { ArrowLeft, BookOpen, Home, Calendar, CheckCircle, AlertCircle, Coins, Wallet } from 'lucide-react';
+import LearnArticleShell from '@/components/LearnArticleShell';
+import { ArrowLeft, Calendar, CheckCircle, AlertCircle, Coins, Wallet } from 'lucide-react';
 
 export default async function LearningModulePage({
     params,
@@ -1681,103 +1682,26 @@ export default async function LearningModulePage({
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <div className="text-center text-charcoal">
                     <h1 className="text-4xl font-bold mb-4">Module Not Found</h1>
-                    <Link href="/learn" className="text-gold hover:underline">Back to Learning Center - Buyers</Link>
+                    <Link href="/learn" className="text-gold hover:underline">
+                        Back to Learning Center - Buyers
+                    </Link>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-white via-white to-charcoal/5">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link href="/learn" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Learning Center</span>
-                    </Link>
-
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
-                    </div>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative px-4 pt-24 pb-16">
-                <div className="container mx-auto max-w-4xl relative z-10">
-                    <div className="rounded-3xl shadow-2xl border border-charcoal/10 bg-white/90 backdrop-blur-xl overflow-hidden">
-                        {/* Card header styled like toolkit modal */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-6 md:px-10 py-6 md:py-8 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
-                                        <BookOpen className="w-6 h-6 md:w-7 md:h-7 text-white" />
-                                    </div>
-                                    <div>
-                                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight mb-2">
-                                            {learningModule.title}
-                                        </h1>
-                                        <p className="text-white/90 text-sm md:text-base max-w-xl">
-                                            A focused learning module to guide you step-by-step on your home journey.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Card body */}
-                        <div className="px-6 md:px-10 py-8 md:py-10 bg-gradient-to-b from-white to-charcoal/5">
-                            <div className="prose max-w-none text-charcoal/90">
-                                {learningModule.content}
-                            </div>
-
-                            {learningModule.toolkit && (
-                                <LearningToolkit items={learningModule.toolkit} />
-                            )}
-
-                            {/* Footer actions */}
-                            <div className="mt-12 pt-8 border-t border-charcoal/15 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-                                <Link
-                                    href="/learn"
-                                    className="text-charcoal/70 hover:text-charcoal transition flex items-center"
-                                >
-                                    <ArrowLeft className="w-4 h-4 mr-2" />
-                                    Back to Topics
-                                </Link>
-
-                                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 md:items-center md:ml-auto">
-                                    {nextModule && (
-                                        <Link
-                                            href={`/learn/${nextSlug}`}
-                                            className="px-6 py-3 border border-gold/40 text-gold font-semibold rounded-xl hover:bg-gold/10 transition shadow-sm text-center"
-                                        >
-                                            Next Topic: {nextModule.title}
-                                        </Link>
-                                    )}
-
-                                    <Link
-                                        href="/quiz"
-                                        className="px-6 py-3 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition shadow-lg text-center"
-                                    >
-                                        Start Your Journey
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold/40 rounded-full blur-3xl"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/30 rounded-full blur-3xl"></div>
-                </div>
-            </main>
-        </div>
+        <LearnArticleShell
+            title={learningModule.title}
+            nextSlug={nextSlug}
+            nextTitle={nextModule?.title ?? null}
+            toolkit={
+                learningModule.toolkit ? (
+                    <LearningToolkit items={learningModule.toolkit} />
+                ) : null
+            }
+        >
+            {learningModule.content}
+        </LearnArticleShell>
     );
 }

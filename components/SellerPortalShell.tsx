@@ -1,6 +1,7 @@
 'use client';
 
 import UserPortalLayout from '@/components/UserPortalLayout';
+import PortalLoading from '@/components/PortalLoading';
 import { useHydratedSellerPortalUser } from '@/hooks/useHydratedPortalUser';
 import type { SellerPortalPage } from '@/lib/user-portal-nav';
 
@@ -22,7 +23,7 @@ export default function SellerPortalShell({
     const { user, isHydrated } = useHydratedSellerPortalUser();
 
     if (!isHydrated) {
-        return null;
+        return <PortalLoading message="Loading portal…" />;
     }
 
     if (user) {

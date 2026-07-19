@@ -6,6 +6,7 @@ import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPort
 import AgentPageHeader from '@/components/AgentPageHeader';
 import AgentViewingsWorkspace from '@/components/AgentViewingsWorkspace';
 import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 
 export default function AgentViewingsPage() {
     const router = useRouter();
@@ -27,11 +28,7 @@ export default function AgentViewingsPage() {
     }, [router]);
 
     if (!currentAgent) {
-        return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <p className="text-charcoal/60">Loading…</p>
-            </div>
-        );
+        return <PortalLoading />;
     }
 
     return (

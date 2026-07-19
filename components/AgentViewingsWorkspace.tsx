@@ -17,6 +17,8 @@ import {
     AGENT_SEGMENT_WRAP,
     agentSegmentBtn,
     AGENT_PRIMARY_BTN,
+    AGENT_SECONDARY_BTN,
+    AGENT_DANGER_BTN,
     AGENT_TABLE_HEAD,
     AGENT_TABLE_CELL,
     AGENT_TABLE_ROW,
@@ -25,6 +27,11 @@ import {
     AGENT_EMPTY_ICON,
     AGENT_PANEL_HEADER,
     AGENT_PANEL_BODY,
+    AGENT_INPUT,
+    AGENT_FORM_LABEL,
+    AGENT_MODAL_BACKDROP,
+    AGENT_MODAL_PANEL,
+    AGENT_ICON_BTN,
 } from '@/lib/agent-portal-ui';
 import type { ListedProperty } from '@/lib/listed-property';
 import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
@@ -823,16 +830,8 @@ export default function AgentViewingsWorkspace({
             </div>
 
             {showViewingModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse" />
-                        <div
-                            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse"
-                            style={{ animationDelay: '1s' }}
-                        />
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
+                <div className={AGENT_MODAL_BACKDROP}>
+                    <div className={`${AGENT_MODAL_PANEL} flex flex-col overflow-hidden`}>
                         <div className={AGENT_PANEL_HEADER}>
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
@@ -845,7 +844,7 @@ export default function AgentViewingsWorkspace({
                                 </div>
                                 <button
                                     onClick={closeScheduleModal}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
+                                    className={`flex-shrink-0 ${AGENT_ICON_BTN}`}
                                     aria-label="Close"
                                 >
                                     <X className="w-5 h-5" />
@@ -857,7 +856,7 @@ export default function AgentViewingsWorkspace({
                             <div className="space-y-4">
                                 {!selectedPropertyForViewing && (
                                     <div>
-                                        <label className="block text-charcoal font-semibold mb-2">
+                                        <label className={AGENT_FORM_LABEL}>
                                             Property <span className="text-red-600">*</span>
                                         </label>
                                         <select
@@ -865,7 +864,7 @@ export default function AgentViewingsWorkspace({
                                             onChange={(e) => {
                                                 setViewingForm({ ...viewingForm, propertyId: e.target.value });
                                             }}
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                            className={`${AGENT_SELECT} sm:w-full`}
                                             disabled={allAvailableProperties.length === 0}
                                         >
                                             {allAvailableProperties.length === 0 ? (
@@ -884,13 +883,13 @@ export default function AgentViewingsWorkspace({
                                         </select>
                                     </div>
                                 )}
-                                <p className="text-sm text-charcoal/70 bg-gold/10 border border-gold/30 rounded-lg p-3">
+                                <p className="text-sm text-charcoal/70 bg-gold/10 border border-gold/30 rounded-2xl p-3">
                                     Select <strong>both</strong> buyer and seller. Each must confirm the appointment in
                                     their dashboard before the lead is verified.
                                 </p>
 
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
+                                    <label className={AGENT_FORM_LABEL}>
                                         Buyer <span className="text-red-600">*</span>
                                     </label>
                                     <select
@@ -920,7 +919,7 @@ export default function AgentViewingsWorkspace({
                                                 }));
                                             }
                                         }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
+                                        className={`${AGENT_SELECT} sm:w-full`}
                                     >
                                         <option value="">{leads.length === 0 ? 'No buyers yet' : 'Select buyer'}</option>
                                         {leads.map((lead) => (
@@ -932,7 +931,7 @@ export default function AgentViewingsWorkspace({
                                 </div>
 
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">
+                                    <label className={AGENT_FORM_LABEL}>
                                         Seller <span className="text-red-600">*</span>
                                     </label>
                                     <select
@@ -962,7 +961,7 @@ export default function AgentViewingsWorkspace({
                                                 }));
                                             }
                                         }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
+                                        className={`${AGENT_SELECT} sm:w-full`}
                                     >
                                         <option value="">
                                             {sellers.length === 0 ? 'No sellers yet' : 'Select seller'}
@@ -977,48 +976,48 @@ export default function AgentViewingsWorkspace({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Date</label>
+                                        <label className={AGENT_FORM_LABEL}>Date</label>
                                         <input
                                             type="date"
                                             value={viewingForm.date}
                                             onChange={(e) => setViewingForm({ ...viewingForm, date: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
+                                            className={AGENT_INPUT}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-charcoal font-semibold mb-2">Time</label>
+                                        <label className={AGENT_FORM_LABEL}>Time</label>
                                         <input
                                             type="time"
                                             value={viewingForm.time}
                                             onChange={(e) => setViewingForm({ ...viewingForm, time: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
+                                            className={AGENT_INPUT}
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-charcoal font-semibold mb-2">Notes (Optional)</label>
+                                    <label className={AGENT_FORM_LABEL}>Notes (Optional)</label>
                                     <textarea
                                         value={viewingForm.notes}
                                         onChange={(e) => setViewingForm({ ...viewingForm, notes: e.target.value })}
                                         placeholder="Any additional notes..."
                                         rows={3}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                        className={AGENT_INPUT}
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
+                        <div className="px-6 sm:px-8 py-5 border-t border-charcoal/[0.06] flex items-center justify-end gap-3">
                             <button
                                 onClick={closeScheduleModal}
-                                className="px-6 py-3 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition"
+                                className={AGENT_SECONDARY_BTN}
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleScheduleViewing}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                                className={AGENT_PRIMARY_BTN}
                             >
                                 {selectedViewing ? 'Update Viewing' : 'Schedule Viewing'}
                             </button>
@@ -1028,16 +1027,8 @@ export default function AgentViewingsWorkspace({
             )}
 
             {selectedViewing && !showViewingModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse" />
-                        <div
-                            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse"
-                            style={{ animationDelay: '1s' }}
-                        />
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
+                <div className={AGENT_MODAL_BACKDROP}>
+                    <div className={`${AGENT_MODAL_PANEL} flex flex-col overflow-hidden`}>
                         <div className={AGENT_PANEL_HEADER}>
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
@@ -1055,7 +1046,7 @@ export default function AgentViewingsWorkspace({
                                 </div>
                                 <button
                                     onClick={() => setSelectedViewing(null)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
+                                    className={`flex-shrink-0 ${AGENT_ICON_BTN}`}
                                     aria-label="Close"
                                 >
                                     <X className="w-5 h-5" />
@@ -1065,7 +1056,7 @@ export default function AgentViewingsWorkspace({
 
                         <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY}`}>
                             <div className="mb-6">
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
+                                <div className={`${AGENT_CARD} p-4 mb-4`}>
                                     <p className="text-charcoal/70 text-sm mb-2 font-semibold">Contact Information</p>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2">
@@ -1084,14 +1075,14 @@ export default function AgentViewingsWorkspace({
                                 </div>
 
                                 {(selectedViewing.propertyPrice ?? 0) > 0 && (
-                                    <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
+                                    <div className={`${AGENT_CARD} p-4 mb-4`}>
                                         <p className="text-gold font-bold text-xl">
                                             {formatCurrency(selectedViewing.propertyPrice!)}
                                         </p>
                                     </div>
                                 )}
 
-                                <div className="bg-white rounded-lg p-4 border border-charcoal/10 mb-4 shadow-sm">
+                                <div className={`${AGENT_CARD} p-4 mb-4`}>
                                     <p className="text-charcoal/70 text-sm mb-2 font-semibold">Appointment Details</p>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between">
@@ -1158,7 +1149,7 @@ export default function AgentViewingsWorkspace({
                                                 status: e.target.value as ViewingAppointment['status'],
                                             });
                                         }}
-                                        className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                        className={`${AGENT_SELECT} sm:w-full`}
                                     >
                                         <option value="scheduled">Scheduled</option>
                                         <option value="confirmed">Confirmed</option>
@@ -1196,7 +1187,7 @@ export default function AgentViewingsWorkspace({
                                             );
                                             setShowViewingModal(true);
                                         }}
-                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition"
+                                        className={AGENT_SECONDARY_BTN}
                                     >
                                         <Edit className="w-4 h-4" />
                                         <span>Edit</span>
@@ -1207,7 +1198,7 @@ export default function AgentViewingsWorkspace({
                                                 deleteViewing(selectedViewing.id);
                                             }
                                         }}
-                                        className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500/20 to-red-500/10 text-red-600 rounded-xl hover:from-red-500/30 hover:to-red-500/20 transition border border-red-500/30"
+                                        className={AGENT_DANGER_BTN}
                                     >
                                         <Trash2 className="w-4 h-4" />
                                         <span>Delete</span>
@@ -1216,10 +1207,10 @@ export default function AgentViewingsWorkspace({
                             </div>
                         </div>
 
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
+                        <div className="px-6 sm:px-8 py-5 border-t border-charcoal/[0.06] flex items-center justify-end gap-3">
                             <button
                                 onClick={() => setSelectedViewing(null)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className={AGENT_PRIMARY_BTN}
                             >
                                 <span>Done</span>
                                 <X className="w-4 h-4" />

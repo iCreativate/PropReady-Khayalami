@@ -39,6 +39,7 @@ import {
     AGENT_PRIMARY_BTN,
     AGENT_CARD_SOFT,
 } from '@/lib/agent-portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 
 interface AgentMyLeadsPanelProps {
     agentId?: string;
@@ -148,9 +149,7 @@ export default function AgentMyLeadsPanel({
             )}
 
             {loading ? (
-                <div className={`${AGENT_CARD_SOFT} p-10 text-center`}>
-                    <p className="text-charcoal/45 text-sm">Loading leads…</p>
-                </div>
+                <PortalLoading variant="inline" message="Loading leads…" />
             ) : allMyLeads.length === 0 ? (
                 <div className={`${AGENT_CARD_SOFT} p-12 sm:p-16 text-center`}>
                     <div className={AGENT_EMPTY_ICON}>

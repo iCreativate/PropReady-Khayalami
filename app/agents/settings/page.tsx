@@ -29,6 +29,7 @@ import {
     AGENT_CARD_SOFT,
     agentFormInput,
 } from '@/lib/agent-portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 
 interface AgentData {
     id: string;
@@ -295,11 +296,7 @@ export default function AgentSettingsPage() {
     };
 
     if (isLoading) {
-        return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <p className="text-charcoal/45 text-sm font-medium">Loading…</p>
-            </div>
-        );
+        return <PortalLoading />;
     }
 
     return (

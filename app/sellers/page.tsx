@@ -60,7 +60,7 @@ export default async function SellersHubPage() {
                         </p>
                         <Link
                             href="/sellers/property-quiz"
-                            className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transform hover:scale-105 transition-all shadow-xl"
+                            className="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]"
                         >
                             <Calendar className="w-5 h-5" />
                             <span>Book a Free Valuation</span>
@@ -301,7 +301,7 @@ export default async function SellersHubPage() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <Link
                                 href="/sellers/property-quiz"
-                                className="inline-flex items-center space-x-2 px-8 py-4 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transform hover:scale-105 transition-all shadow-xl"
+                                className="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]"
                             >
                                 <Calendar className="w-5 h-5" />
                                 <span>Book a Free Valuation</span>
@@ -309,7 +309,7 @@ export default async function SellersHubPage() {
                             {showFindAgent && (
                                 <Link
                                     href="/agents/login"
-                                    className="inline-flex items-center space-x-2 px-8 py-4 border-2 border-gold text-gold font-semibold rounded-xl hover:bg-gold/10 transform hover:scale-105 transition-all"
+                                    className="inline-flex items-center gap-2 h-12 px-8 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-base font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200"
                                 >
                                     <span>Find an Agent</span>
                                     <ArrowLeft className="w-5 h-5 rotate-180" />

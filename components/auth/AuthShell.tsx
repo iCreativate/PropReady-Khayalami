@@ -7,9 +7,17 @@ interface AuthShellProps {
     title: string;
     subtitle?: string;
     accountType?: 'user' | 'agent';
+    /** Wider form column for multi-step agent registration */
+    wide?: boolean;
 }
 
-export default function AuthShell({ children, title, subtitle, accountType = 'user' }: AuthShellProps) {
+export default function AuthShell({
+    children,
+    title,
+    subtitle,
+    accountType = 'user',
+    wide = false,
+}: AuthShellProps) {
     const homeHref = accountType === 'agent' ? '/agents' : '/';
 
     return (
@@ -45,8 +53,8 @@ export default function AuthShell({ children, title, subtitle, accountType = 'us
                 </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-[#FAFAFA]">
-                <div className="w-full max-w-[420px]">
+            <div className="flex-1 flex items-start justify-center p-6 sm:p-10 bg-[#FAFAFA] min-h-screen overflow-y-auto">
+                <div className={`w-full ${wide ? 'max-w-[560px]' : 'max-w-[420px]'} py-4 sm:py-8`}>
                     <div className="lg:hidden mb-8 text-center">
                         <Link href={homeHref} className="text-2xl font-bold text-charcoal">
                             Prop<span className="text-gold">Ready</span>

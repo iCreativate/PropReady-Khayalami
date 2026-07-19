@@ -1,4 +1,31 @@
-/** Shared premium styling tokens for the agent portal. */
+/**
+ * PropReady portal design system — source of truth for product UI.
+ *
+ * Roles:
+ * - Cards: rounded-3xl · Inputs/inner: rounded-2xl · Nav chips: rounded-xl · CTAs: rounded-full
+ * - Accent: Tailwind `gold` (#DC2626 brand red) · Neutrals: charcoal opacity ladder
+ * - Auth pages may use `.auth-*` in globals.css; do not invent new radius/shadow recipes elsewhere
+ * - Marketing (landing) may use AGENT_MARKETING_CTA; keep scale-105 off product surfaces
+ */
+
+/** Text opacity ladder — prefer these over ad-hoc /60 /70 /75 mixes */
+export const AGENT_TEXT_PRIMARY = 'text-charcoal';
+export const AGENT_TEXT_SECONDARY = 'text-charcoal/55';
+export const AGENT_TEXT_TERTIARY = 'text-charcoal/45';
+export const AGENT_TEXT_MUTED = 'text-charcoal/45';
+export const AGENT_LABEL_TRACKING = 'tracking-[0.08em]';
+
+/** Icon glyphs (Lucide class sizes) */
+export const AGENT_ICON_NAV = 'w-5 h-5';
+export const AGENT_ICON_IN_CARD = 'w-5 h-5';
+export const AGENT_ICON_BADGE = 'w-3 h-3';
+export const AGENT_ICON_EMPTY = 'w-8 h-8';
+export const AGENT_ICON_LOGO = 'w-6 h-6';
+export const AGENT_ICON_LOGO_SM = 'w-5 h-5';
+export const AGENT_LOGO_MARK =
+    'w-10 h-10 bg-gold rounded-lg flex items-center justify-center shrink-0 shadow-sm';
+export const AGENT_LOGO_MARK_SM =
+    'w-9 h-9 bg-gold rounded-lg flex items-center justify-center shrink-0';
 
 export const AGENT_PAGE_CONTAINER = 'max-w-[1400px] w-full mx-auto pb-8 sm:pb-12';
 
@@ -62,10 +89,35 @@ export const AGENT_REFRESH_BTN =
     'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/60 text-sm font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
 
 export const AGENT_PRIMARY_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]';
+    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)] disabled:opacity-50 disabled:pointer-events-none';
+
+export const AGENT_PRIMARY_BTN_LG =
+    'inline-flex items-center justify-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)] disabled:opacity-50 disabled:pointer-events-none';
+
+/** Landing / marketing only — same recipe as primary, larger hit target */
+export const AGENT_MARKETING_CTA =
+    'inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]';
 
 export const AGENT_SECONDARY_BTN =
-    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-sm font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200';
+    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-sm font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none';
+
+export const AGENT_DANGER_BTN =
+    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none';
+
+export const AGENT_SUCCESS_BTN =
+    'inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none';
+
+export const AGENT_ICON_BTN =
+    'inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal hover:border-charcoal/15 transition-all duration-200';
+
+export const AGENT_MODAL_BACKDROP =
+    'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]';
+
+export const AGENT_MODAL_PANEL =
+    'relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]';
+
+export const AGENT_MODAL_PANEL_LG =
+    'relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-charcoal/[0.07] bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]';
 
 export const AGENT_EMPTY_ICON =
     'w-16 h-16 rounded-2xl bg-charcoal/[0.04] border border-charcoal/[0.06] flex items-center justify-center mx-auto mb-4';
@@ -89,10 +141,10 @@ export const AGENT_MODULE_CARD_ICON =
     'w-11 h-11 rounded-2xl bg-gradient-to-br from-charcoal/[0.04] to-charcoal/[0.01] border border-charcoal/[0.08] flex items-center justify-center shrink-0 group-hover:from-gold/[0.12] group-hover:to-gold/[0.04] group-hover:border-gold/20 transition-all duration-300';
 
 export const AGENT_LEARN_ARTICLE =
-    'overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_12px_40px_rgba(0,0,0,0.05)]';
+    'overflow-hidden rounded-2xl border border-charcoal/[0.08] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_12px_40px_rgba(0,0,0,0.05)]';
 
 export const AGENT_LEARN_ARTICLE_HERO =
-    'relative border-b border-[#E5E7EB] bg-white';
+    'relative border-b border-charcoal/[0.08] bg-white';
 
 export const AGENT_LEARN_ARTICLE_PADDING =
     'px-6 sm:px-8';
@@ -126,6 +178,10 @@ export const AGENT_FORM_SECTION =
 export const AGENT_FORM_SECTION_HEADER =
     'px-6 md:px-8 py-5 sm:py-6 border-b border-charcoal/[0.06] bg-charcoal/[0.015]';
 
+/** Plain field (no leading icon) — use in modals & selects */
+export const AGENT_INPUT =
+    'w-full px-4 py-2.5 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal text-sm placeholder:text-charcoal/35 focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white transition-all duration-200 [&>option]:text-charcoal';
+
 export const AGENT_FORM_INPUT =
     'w-full pl-10 pr-4 py-2.5 rounded-2xl bg-charcoal/[0.02] border border-charcoal/[0.08] text-charcoal placeholder:text-charcoal/35 focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white transition-all duration-200';
 
@@ -137,6 +193,9 @@ export const AGENT_FORM_HINT =
 
 export const agentFormInput = (hasError?: boolean) =>
     `${AGENT_FORM_INPUT}${hasError ? ' border-red-400 ring-1 ring-red-400/30' : ''}`;
+
+export const agentInput = (hasError?: boolean) =>
+    `${AGENT_INPUT}${hasError ? ' border-red-400 ring-1 ring-red-400/30' : ''}`;
 
 export const AGENT_FORM_FOOTER =
     'pt-6 mt-2 border-t border-charcoal/[0.06]';

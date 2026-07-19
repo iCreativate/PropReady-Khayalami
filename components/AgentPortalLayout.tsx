@@ -16,7 +16,7 @@ import {
     Settings,
 } from 'lucide-react';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
-import { AGENT_PAGE_CONTAINER, AGENT_PAGE_HEADER_BAND } from '@/lib/agent-portal-ui';
+import { AGENT_PAGE_CONTAINER, AGENT_PAGE_HEADER_BAND, AGENT_LOGO_MARK, AGENT_LOGO_MARK_SM, AGENT_ICON_LOGO, AGENT_ICON_LOGO_SM, AGENT_SECONDARY_BTN, AGENT_ICON_BTN } from '@/lib/agent-portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
 
 export type AgentPortalPage =
@@ -107,8 +107,8 @@ export default function AgentPortalLayout({
             <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col border-r border-charcoal/[0.06] bg-white z-40">
                 <div className="px-5 py-6 border-b border-charcoal/[0.06]">
                     <Link href="/" className="flex items-center gap-2.5">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center shadow-sm">
-                            <Home className="w-6 h-6 text-white" />
+                        <div className={AGENT_LOGO_MARK}>
+                            <Home className={`${AGENT_ICON_LOGO} text-white`} />
                         </div>
                         <span className="text-charcoal text-lg font-bold">PropReady</span>
                     </Link>
@@ -131,15 +131,15 @@ export default function AgentPortalLayout({
                     <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl flex flex-col">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-charcoal/10">
                             <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                                <div className="w-9 h-9 bg-gold rounded-lg flex items-center justify-center">
-                                    <Home className="w-5 h-5 text-white" />
+                                <div className={AGENT_LOGO_MARK_SM}>
+                                    <Home className={`${AGENT_ICON_LOGO_SM} text-white`} />
                                 </div>
                                 <span className="font-bold text-charcoal">PropReady</span>
                             </Link>
                             <button
                                 type="button"
                                 onClick={() => setMobileOpen(false)}
-                                className="p-2 rounded-lg hover:bg-charcoal/5"
+                                className={AGENT_ICON_BTN}
                                 aria-label="Close"
                             >
                                 <X className="w-5 h-5 text-charcoal" />
@@ -159,13 +159,13 @@ export default function AgentPortalLayout({
                         <button
                             type="button"
                             onClick={() => setMobileOpen(true)}
-                            className="lg:hidden p-2 rounded-lg border border-charcoal/15 text-charcoal hover:bg-charcoal/5"
+                            className={`lg:hidden ${AGENT_ICON_BTN}`}
                             aria-label="Open menu"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
                         <div className="min-w-0">
-                            <h1 className="text-lg sm:text-xl font-bold text-charcoal truncate">
+                            <h1 className="text-lg sm:text-xl font-semibold text-charcoal truncate tracking-tight">
                                 {title ?? activeLabel}
                             </h1>
                         </div>
@@ -178,7 +178,7 @@ export default function AgentPortalLayout({
                             onClick={() => {
                                 void signOutClient({ accountType: 'agent' });
                             }}
-                            className="flex items-center gap-2 px-3.5 py-2 rounded-full border border-charcoal/[0.08] text-charcoal/65 hover:bg-charcoal/[0.03] hover:text-charcoal hover:border-charcoal/12 transition-all duration-200 text-sm font-medium"
+                            className={`${AGENT_SECONDARY_BTN} !h-9 !px-3.5`}
                             title="Sign out"
                         >
                             <LogOut className="w-4 h-4" />

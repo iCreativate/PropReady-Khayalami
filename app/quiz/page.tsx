@@ -1084,7 +1084,7 @@ export default function QuizPage() {
                         <button
                             type="button"
                             onClick={handleNext}
-                            className="inline-flex items-center space-x-2 px-8 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                            className="inline-flex items-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                         >
                             <span>
                                 {currentStep === totalSteps
@@ -1170,7 +1170,7 @@ export default function QuizPage() {
                         <div className="space-y-3">
                             <a
                                 href={`tel:${selectedOriginator.phone}`}
-                                className="w-full px-6 py-3 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                                className="w-full inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                             >
                                 <Phone className="w-5 h-5" />
                                 Call Now
@@ -1191,7 +1191,7 @@ export default function QuizPage() {
                         <button
                             type="button"
                             onClick={() => setSelectedOriginator(null)}
-                            className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                            className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                         >
                             <span>Done</span>
                             <X className="w-4 h-4" />

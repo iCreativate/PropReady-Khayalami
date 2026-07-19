@@ -287,7 +287,7 @@ export default function PropertyQuizPage() {
 
                             <button
                                 onClick={handleNext}
-                                className="inline-flex items-center space-x-2 px-8 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                                className="inline-flex items-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                             >
                                 <span>{currentStep === totalSteps ? 'Continue to Valuation' : 'Next Step'}</span>
                                 <ArrowRight className="w-5 h-5" />

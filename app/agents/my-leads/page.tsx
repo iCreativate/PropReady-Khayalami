@@ -8,6 +8,7 @@ import AgentPageHeader from '@/components/AgentPageHeader';
 import AgentMyLeadsPanel from '@/components/AgentMyLeadsPanel';
 import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
 import PpraVerificationGate from '@/components/PpraVerificationGate';
+import PortalLoading from '@/components/PortalLoading';
 
 export default function AgentMyLeadsPage() {
     const router = useRouter();
@@ -31,11 +32,7 @@ export default function AgentMyLeadsPage() {
     }, [router]);
 
     if (!currentAgent) {
-        return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <p className="text-charcoal/60">Loading…</p>
-            </div>
-        );
+        return <PortalLoading />;
     }
 
     const firstName = currentAgent.fullName?.split(' ')[0];

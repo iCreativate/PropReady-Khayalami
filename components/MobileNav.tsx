@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Menu, X, Home } from 'lucide-react';
+import { PORTAL_ICON_BTN, PORTAL_ICON_LOGO, PORTAL_PRIMARY_BTN } from '@/lib/portal-ui';
 
 interface MobileNavProps {
     links: Array<{
@@ -23,7 +24,6 @@ export default function MobileNav({ links }: MobileNavProps) {
 
     useEffect(() => {
         if (isOpen) {
-            // Prevent body scroll when menu is open
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
@@ -33,85 +33,71 @@ export default function MobileNav({ links }: MobileNavProps) {
         };
     }, [isOpen]);
 
-    const toggleMenu = () => {
-        setIsOpen(!isOpen);
-    };
-
-    const closeMenu = () => {
-        setIsOpen(false);
-    };
+    const closeMenu = () => setIsOpen(false);
 
     return (
         <>
-            {/* Hamburger Button */}
             <button
-                onClick={toggleMenu}
-                className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg bg-charcoal/5 hover:bg-charcoal/10 active:bg-charcoal/20 transition-colors touch-manipulation z-50 relative"
+                onClick={() => setIsOpen(!isOpen)}
+                className={`md:hidden ${PORTAL_ICON_BTN}`}
                 aria-label="Toggle menu"
                 type="button"
             >
                 {isOpen ? (
-                    <X className="w-6 h-6 text-charcoal" />
+                    <X className="w-5 h-5 text-charcoal" />
                 ) : (
-                    <Menu className="w-6 h-6 text-charcoal" />
+                    <Menu className="w-5 h-5 text-charcoal" />
                 )}
             </button>
 
-            {/* Mobile Menu Overlay - Rendered via Portal */}
-            {isMounted && isOpen && typeof document !== 'undefined' && createPortal(
-                <div
-                    className="fixed inset-0 z-[9999] md:hidden"
-                    onClick={closeMenu}
-                >
-                    {/* Backdrop */}
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            {isMounted &&
+                isOpen &&
+                typeof document !== 'undefined' &&
+                createPortal(
+                    <div className="fixed inset-0 z-[9999] md:hidden" onClick={closeMenu}>
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
 
-                    {/* Menu Panel */}
-                    <div
-                        className="absolute right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl overflow-y-auto transform transition-transform duration-300 ease-out"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header */}
-                        <div className="sticky top-0 bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-6 py-5 border-b border-gold/20 flex items-center justify-between z-10">
-                            <div className="flex items-center space-x-2">
-                                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
-                                    <Home className="w-6 h-6 text-white" />
+                        <div
+                            className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-white border-r border-charcoal/[0.08] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="sticky top-0 bg-white border-b border-charcoal/[0.06] px-5 py-4 flex items-center justify-between z-10">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-9 h-9 bg-gold rounded-lg flex items-center justify-center shadow-sm">
+                                        <Home className={`${PORTAL_ICON_LOGO} text-white !w-5 !h-5`} />
+                                    </div>
+                                    <span className="text-charcoal text-lg font-bold">PropReady</span>
                                 </div>
-                                <span className="text-white text-xl font-bold">PropReady</span>
-                            </div>
-                            <button
-                                onClick={closeMenu}
-                                className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 active:bg-white/40 transition-colors flex items-center justify-center touch-manipulation"
-                                aria-label="Close menu"
-                                type="button"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Menu Items */}
-                        <nav className="px-4 py-6 space-y-2">
-                            {links.map((link, index) => (
-                                <Link
-                                    key={index}
-                                    href={link.href}
-                                    onClick={(e) => {
-                                        closeMenu();
-                                    }}
-                                    className={`block px-4 py-3 rounded-xl transition-all touch-manipulation ${
-                                        link.isButton
-                                            ? 'bg-gradient-to-r from-gold to-gold/90 text-white font-semibold hover:from-gold-600 hover:to-gold-700 active:from-gold-700 active:to-gold-800 shadow-md'
-                                            : 'text-charcoal/90 hover:text-charcoal active:text-charcoal hover:bg-charcoal/5 active:bg-charcoal/10'
-                                    }`}
+                                <button
+                                    onClick={closeMenu}
+                                    className={PORTAL_ICON_BTN}
+                                    aria-label="Close menu"
+                                    type="button"
                                 >
-                                    {link.label}
-                                </Link>
-                            ))}
-                        </nav>
-                    </div>
-                </div>,
-                document.body
-            )}
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <nav className="px-3 py-5 space-y-1">
+                                {links.map((link) => (
+                                    <Link
+                                        key={link.href + link.label}
+                                        href={link.href}
+                                        onClick={closeMenu}
+                                        className={
+                                            link.isButton
+                                                ? `${PORTAL_PRIMARY_BTN} w-full`
+                                                : 'flex items-center px-3 py-2.5 rounded-xl text-sm font-medium text-charcoal/75 hover:text-charcoal hover:bg-charcoal/5 transition'
+                                        }
+                                    >
+                                        {link.label}
+                                    </Link>
+                                ))}
+                            </nav>
+                        </div>
+                    </div>,
+                    document.body
+                )}
         </>
     );
 }

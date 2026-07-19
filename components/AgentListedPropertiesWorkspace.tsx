@@ -25,9 +25,16 @@ import {
     AGENT_EMPTY_ICON,
     AGENT_BADGE,
     AGENT_SECONDARY_BTN,
+    AGENT_DANGER_BTN,
     AGENT_VIEW_BTN,
     AGENT_PANEL_HEADER,
     AGENT_PANEL_BODY,
+    AGENT_INPUT,
+    AGENT_SELECT,
+    AGENT_FORM_LABEL,
+    AGENT_MODAL_BACKDROP,
+    AGENT_MODAL_PANEL_LG,
+    AGENT_ICON_BTN,
 } from '@/lib/agent-portal-ui';
 import { isAgentPpraVerified } from '@/lib/ppra';
 
@@ -643,14 +650,8 @@ export default function AgentListedPropertiesWorkspace({
             )}
                         {/* Add Property Modal */}
                         {showPropertyModal && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                                {/* Decorative background elements */}
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                                </div>
-            
-                                <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
+                            <div className={AGENT_MODAL_BACKDROP}>
+                                <div className={`${AGENT_MODAL_PANEL_LG} flex flex-col overflow-hidden`}>
                                     <div className={AGENT_PANEL_HEADER}>
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
@@ -664,7 +665,7 @@ export default function AgentListedPropertiesWorkspace({
                                                     setAddPropertyMode('choice');
                                                     setEditingPropertyId(null);
                                                 }}
-                                                className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
+                                                className={`flex-shrink-0 ${AGENT_ICON_BTN}`}
                                                 aria-label="Close"
                                             >
                                                 <X className="w-5 h-5" />
@@ -682,7 +683,7 @@ export default function AgentListedPropertiesWorkspace({
                                                 <button
                                                     type="button"
                                                     onClick={() => setAddPropertyMode('import')}
-                                                    className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/50 transition-all text-left"
+                                                    className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-gold/30 bg-gold/5 hover:bg-gold/10 hover:border-gold/50 transition-all text-left"
                                                 >
                                                     <Link2 className="w-12 h-12 text-gold" />
                                                     <div>
@@ -693,7 +694,7 @@ export default function AgentListedPropertiesWorkspace({
                                                 <button
                                                     type="button"
                                                     onClick={() => setAddPropertyMode('manual')}
-                                                    className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-charcoal/20 bg-white hover:bg-charcoal/5 hover:border-charcoal/30 transition-all text-left"
+                                                    className="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-charcoal/20 bg-white hover:bg-charcoal/5 hover:border-charcoal/30 transition-all text-left"
                                                 >
                                                     <FileEdit className="w-12 h-12 text-charcoal/60" />
                                                     <div>
@@ -718,14 +719,14 @@ export default function AgentListedPropertiesWorkspace({
                                                 </button>
                                             </div>
                                             <div>
-                                                <label className="block text-charcoal font-semibold mb-2">Paste property listing URL</label>
+                                                <label className={AGENT_FORM_LABEL}>Paste property listing URL</label>
                                                 <p className="text-charcoal/60 text-sm mb-2">Works with Property24, Private Property, RE/MAX, and most property listing websites.</p>
                                                 <input
                                                     type="url"
                                                     value={importUrl}
                                                     onChange={(e) => { setImportUrl(e.target.value); setImportError(null); }}
                                                     placeholder="https://www.property24.co.za/..."
-                                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                    className={AGENT_INPUT}
                                                     onKeyDown={(e) => e.key === 'Enter' && handleImportFromUrl()}
                                                 />
                                             </div>
@@ -739,7 +740,7 @@ export default function AgentListedPropertiesWorkspace({
                                                 type="button"
                                                 onClick={handleImportFromUrl}
                                                 disabled={importLoading || !importUrl.trim()}
-                                                className="w-full px-6 py-3.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                                                className={`${AGENT_PRIMARY_BTN} w-full`}
                                             >
                                                 {importLoading ? (
                                                     <>Fetching listing…</>
@@ -771,34 +772,34 @@ export default function AgentListedPropertiesWorkspace({
                                     </div>
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-charcoal font-semibold mb-2">Property Title</label>
+                                            <label className={AGENT_FORM_LABEL}>Property Title</label>
                                             <input
                                                 type="text"
                                                 value={propertyForm.title}
                                                 onChange={(e) => setPropertyForm({ ...propertyForm, title: e.target.value })}
                                                 placeholder="e.g., Modern 3-Bedroom House"
-                                                className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                className={AGENT_INPUT}
                                             />
                                         </div>
             
                                         <div>
-                                            <label className="block text-charcoal font-semibold mb-2">Address</label>
+                                            <label className={AGENT_FORM_LABEL}>Address</label>
                                             <input
                                                 type="text"
                                                 value={propertyForm.address}
                                                 onChange={(e) => setPropertyForm({ ...propertyForm, address: e.target.value })}
                                                 placeholder="e.g., 123 Main Street, Sandton"
-                                                className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                className={AGENT_INPUT}
                                             />
                                         </div>
             
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-charcoal font-semibold mb-2">Type</label>
+                                                <label className={AGENT_FORM_LABEL}>Type</label>
                                                 <select
                                                     value={propertyForm.type}
                                                     onChange={(e) => setPropertyForm({ ...propertyForm, type: e.target.value })}
-                                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                                    className={`${AGENT_SELECT} sm:w-full`}
                                                 >
                                                     <option value="">Select type</option>
                                                     <option value="House">House</option>
@@ -811,7 +812,7 @@ export default function AgentListedPropertiesWorkspace({
                                             </div>
             
                                             <div>
-                                                <label className="block text-charcoal font-semibold mb-2">Price (R)</label>
+                                                <label className={AGENT_FORM_LABEL}>Price (R)</label>
                                                 <input
                                                     type="text"
                                                     inputMode="numeric"
@@ -821,48 +822,48 @@ export default function AgentListedPropertiesWorkspace({
                                                         setPropertyForm(prev => ({ ...prev, price: digits }));
                                                     }}
                                                     placeholder="e.g., 1,500,000"
-                                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                    className={AGENT_INPUT}
                                                 />
                                             </div>
                                         </div>
             
                                         <div className="grid grid-cols-3 gap-4">
                                             <div>
-                                                <label className="block text-charcoal font-semibold mb-2">Bedrooms</label>
+                                                <label className={AGENT_FORM_LABEL}>Bedrooms</label>
                                                 <input
                                                     type="number"
                                                     value={propertyForm.bedrooms}
                                                     onChange={(e) => setPropertyForm({ ...propertyForm, bedrooms: e.target.value })}
                                                     placeholder="3"
-                                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                    className={AGENT_INPUT}
                                                 />
                                             </div>
             
                                             <div>
-                                                <label className="block text-charcoal font-semibold mb-2">Bathrooms</label>
+                                                <label className={AGENT_FORM_LABEL}>Bathrooms</label>
                                                 <input
                                                     type="number"
                                                     value={propertyForm.bathrooms}
                                                     onChange={(e) => setPropertyForm({ ...propertyForm, bathrooms: e.target.value })}
                                                     placeholder="2"
-                                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                    className={AGENT_INPUT}
                                                 />
                                             </div>
             
                                             <div>
-                                                <label className="block text-charcoal font-semibold mb-2">Size (m²)</label>
+                                                <label className={AGENT_FORM_LABEL}>Size (m²)</label>
                                                 <input
                                                     type="number"
                                                     value={propertyForm.size}
                                                     onChange={(e) => setPropertyForm({ ...propertyForm, size: e.target.value })}
                                                     placeholder="120"
-                                                    className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                    className={AGENT_INPUT}
                                                 />
                                             </div>
                                         </div>
             
                                         <div>
-                                            <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
+                                            <label className={`${AGENT_FORM_LABEL} flex items-center gap-2`}>
                                                 <ImageIcon className="w-4 h-4" />
                                                 Images
                                                 {(propertyForm.images?.length ?? 0) > 0 && (
@@ -875,7 +876,7 @@ export default function AgentListedPropertiesWorkspace({
                                             {(propertyForm.images?.length ?? 0) > 0 && (
                                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-4">
                                                     {(propertyForm.images || []).map((url, idx) => (
-                                                        <div key={`${idx}-${url.slice(0, 30)}`} className="relative group aspect-square rounded-lg overflow-hidden border border-charcoal/20 bg-charcoal/5">
+                                                        <div key={`${idx}-${url.slice(0, 30)}`} className="relative group aspect-square rounded-2xl overflow-hidden border border-charcoal/20 bg-charcoal/5">
                                                             <img
                                                                 src={getProxiedImageUrl(url)}
                                                                 alt={`Property image ${idx + 1}`}
@@ -912,7 +913,7 @@ export default function AgentListedPropertiesWorkspace({
                                                     type="button"
                                                     onClick={() => imageInputRef.current?.click()}
                                                     disabled={imageUploading}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50"
+                                                    className={`${AGENT_SECONDARY_BTN} disabled:opacity-50`}
                                                 >
                                                     <Upload className="w-4 h-4" />
                                                     {imageUploading ? 'Compressing & uploading…' : 'Upload images'}
@@ -934,7 +935,7 @@ export default function AgentListedPropertiesWorkspace({
                                                             }
                                                         }}
                                                         placeholder="Paste image URL and press Enter or Add"
-                                                        className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
+                                                        className={`${AGENT_INPUT} flex-1 min-w-0 text-sm`}
                                                     />
                                                     <button
                                                         type="button"
@@ -947,7 +948,7 @@ export default function AgentListedPropertiesWorkspace({
                                                             }
                                                         }}
                                                         disabled={!singleImageUrl.trim()}
-                                                        className="px-3 py-2 rounded-lg bg-gold/10 border border-gold/30 text-gold font-semibold hover:bg-gold/20 transition disabled:opacity-50 shrink-0"
+                                                        className={`${AGENT_SECONDARY_BTN} shrink-0 disabled:opacity-50`}
                                                     >
                                                         Add
                                                     </button>
@@ -964,7 +965,7 @@ export default function AgentListedPropertiesWorkspace({
                                                         rows={2}
                                                         value={bulkImageUrls}
                                                         onChange={(e) => setBulkImageUrls(e.target.value)}
-                                                        className="w-full px-4 py-2 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold text-sm"
+                                                        className={`${AGENT_INPUT} text-sm`}
                                                     />
                                                     <button
                                                         type="button"
@@ -986,7 +987,7 @@ export default function AgentListedPropertiesWorkspace({
                                         </div>
             
                                         <div>
-                                            <label className="block text-charcoal font-semibold mb-2 flex items-center gap-2">
+                                            <label className={`${AGENT_FORM_LABEL} flex items-center gap-2`}>
                                                 <Video className="w-4 h-4" />
                                                 Video URL
                                             </label>
@@ -996,15 +997,15 @@ export default function AgentListedPropertiesWorkspace({
                                                 value={propertyForm.videoUrl}
                                                 onChange={(e) => setPropertyForm({ ...propertyForm, videoUrl: e.target.value })}
                                                 placeholder="e.g. https://www.youtube.com/watch?v=... or https://vimeo.com/..."
-                                                className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                className={AGENT_INPUT}
                                             />
                                         </div>
             
                                         <div>
-                                            <label className="block text-charcoal font-semibold mb-2">Features & amenities</label>
+                                            <label className={AGENT_FORM_LABEL}>Features & amenities</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {PROPERTY_FEATURES.map((f) => (
-                                                    <label key={f} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-charcoal/20 bg-white cursor-pointer hover:border-gold/50 transition">
+                                                    <label key={f} className="inline-flex items-center gap-2 px-3 py-2 rounded-2xl border border-charcoal/20 bg-white cursor-pointer hover:border-gold/50 transition">
                                                         <input
                                                             type="checkbox"
                                                             checked={(propertyForm.features || []).includes(f)}
@@ -1024,19 +1025,19 @@ export default function AgentListedPropertiesWorkspace({
             
                                         <div>
                                             <div className="flex items-center justify-between mb-2">
-                                                <label className="block text-charcoal font-semibold">Description</label>
+                                                <label className={AGENT_FORM_LABEL}>Description</label>
                                                 <button
                                                     type="button"
                                                     onClick={handleImproveWithAI}
                                                     disabled={improveLoading}
-                                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/30 hover:bg-gold/20 transition text-sm font-semibold disabled:opacity-50"
+                                                    className={`${AGENT_SECONDARY_BTN} h-8 px-3 text-sm disabled:opacity-50`}
                                                 >
                                                     <Sparkles className="w-4 h-4" />
                                                     {improveLoading ? 'Improving…' : 'Improve with AI'}
                                                 </button>
                                             </div>
                                             {improveResult && (
-                                                <div className="mb-3 p-3 rounded-lg bg-charcoal/5 border border-charcoal/10">
+                                                <div className="mb-3 p-3 rounded-2xl bg-charcoal/5 border border-charcoal/10">
                                                     <p className="text-sm font-semibold text-charcoal mb-1">
                                                         Listing score: <span className="text-gold">{improveResult.listingScore}/100</span>
                                                     </p>
@@ -1054,7 +1055,7 @@ export default function AgentListedPropertiesWorkspace({
                                                 onChange={(e) => setPropertyForm({ ...propertyForm, description: e.target.value })}
                                                 placeholder="Describe the property..."
                                                 rows={4}
-                                                className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                                className={AGENT_INPUT}
                                             />
                                         </div>
                                     </div>
@@ -1065,16 +1066,16 @@ export default function AgentListedPropertiesWorkspace({
             
                                     {/* Footer - only show when in manual form */}
                                     {addPropertyMode === 'manual' && (
-                                    <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
+                                    <div className="px-6 sm:px-8 py-5 border-t border-charcoal/[0.06] flex items-center justify-end gap-3">
                                         <button
                                             onClick={() => setShowPropertyModal(false)}
-                                            className="px-6 py-3 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition"
+                                            className={AGENT_SECONDARY_BTN}
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={handleAddProperty}
-                                            className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                                            className={AGENT_PRIMARY_BTN}
                                         >
                                             {editingPropertyId ? 'Save changes' : 'Save as Draft'}
                                         </button>
@@ -1086,12 +1087,8 @@ export default function AgentListedPropertiesWorkspace({
             
                         {/* View Property Modal */}
                         {showViewPropertyModal && (
-                            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                                </div>
-                                <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+                            <div className={AGENT_MODAL_BACKDROP}>
+                                <div className={`${AGENT_MODAL_PANEL_LG} flex flex-col overflow-hidden`}>
                                     <div className={AGENT_PANEL_HEADER}>
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1">
@@ -1106,7 +1103,7 @@ export default function AgentListedPropertiesWorkspace({
                                             </div>
                                             <button
                                                 onClick={() => setShowViewPropertyModal(null)}
-                                                className="flex-shrink-0 w-10 h-10 rounded-xl border border-charcoal/[0.08] bg-white text-charcoal/60 hover:bg-charcoal/[0.03] hover:text-charcoal transition-all duration-200 flex items-center justify-center"
+                                                className={`flex-shrink-0 ${AGENT_ICON_BTN}`}
                                                 aria-label="Close"
                                             >
                                                 <X className="w-5 h-5" />
@@ -1115,7 +1112,7 @@ export default function AgentListedPropertiesWorkspace({
                                     </div>
                                     <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY} space-y-6`}>
                                         {showViewPropertyModal.images?.length ? (
-                                            <div className="rounded-xl overflow-hidden border border-charcoal/10 relative">
+                                            <div className="rounded-2xl overflow-hidden border border-charcoal/10 relative">
                                                 <div className="relative aspect-[16/10] bg-charcoal/10 overflow-hidden">
                                                     {showViewPropertyModal.images.map((url, i) => (
                                                         <div
@@ -1171,7 +1168,7 @@ export default function AgentListedPropertiesWorkspace({
                                                 )}
                                             </div>
                                         ) : (
-                                            <div className="aspect-video bg-charcoal/10 rounded-xl flex items-center justify-center">
+                                            <div className="aspect-video bg-charcoal/10 rounded-2xl flex items-center justify-center">
                                                 <ImageIcon className="w-16 h-16 text-charcoal/30" />
                                             </div>
                                         )}
@@ -1226,32 +1223,32 @@ export default function AgentListedPropertiesWorkspace({
                                             </a>
                                         )}
                                     </div>
-                                    <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex flex-wrap items-center justify-between gap-4">
-                                        <div className="flex items-center gap-2">
+                                    <div className="px-6 sm:px-8 py-5 border-t border-charcoal/[0.06] flex flex-wrap items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <button
                                                 onClick={() => handleEditProperty(showViewPropertyModal)}
-                                                className="px-4 py-2 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition text-sm font-semibold flex items-center gap-2"
+                                                className={AGENT_SECONDARY_BTN}
                                             >
                                                 <Edit className="w-4 h-4" />
                                                 Edit
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteProperty(showViewPropertyModal)}
-                                                className="px-4 py-2 border border-red-500/30 text-red-600 rounded-xl hover:bg-red-500/10 transition text-sm font-semibold"
+                                                className={AGENT_DANGER_BTN}
                                             >
                                                 Delete
                                             </button>
                                             {showViewPropertyModal.published ? (
                                                 <button
                                                     onClick={() => handleUnpublishProperty(showViewPropertyModal)}
-                                                    className="px-4 py-2 border border-charcoal/20 text-charcoal rounded-xl hover:bg-charcoal/5 transition text-sm font-semibold"
+                                                    className={AGENT_SECONDARY_BTN}
                                                 >
                                                     Unpublish
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handlePublishProperty(showViewPropertyModal)}
-                                                    className="px-6 py-2 bg-gold text-white rounded-xl hover:bg-gold-600 transition text-sm font-semibold"
+                                                    className={AGENT_PRIMARY_BTN}
                                                 >
                                                     Publish
                                                 </button>
@@ -1261,7 +1258,7 @@ export default function AgentListedPropertiesWorkspace({
                                             onClick={() => {
                                                 scheduleViewingForProperty(showViewPropertyModal); setShowViewPropertyModal(null);
                                             }}
-                                            className="px-6 py-2 bg-gold/20 text-gold border border-gold/40 rounded-xl hover:bg-gold/30 transition text-sm font-semibold flex items-center gap-2"
+                                            className={AGENT_VIEW_BTN}
                                         >
                                             <CalendarIcon className="w-4 h-4" />
                                             Schedule Viewing

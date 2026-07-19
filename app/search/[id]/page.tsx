@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Home, MapPin, Bed, Bath, Square, Video, ChevronLeft, ChevronRight } from 'lucide-react';
+import BuyerPortalShell from '@/components/BuyerPortalShell';
+import PublicSiteHeader from '@/components/PublicSiteHeader';
+import PortalLoading from '@/components/PortalLoading';
+import {
+    PORTAL_CARD,
+    PORTAL_PAGE_CONTAINER,
+    PORTAL_PRIMARY_BTN,
+    PORTAL_SECONDARY_BTN,
+} from '@/lib/portal-ui';
 import { formatCurrency } from '@/lib/currency';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
 
@@ -74,67 +83,48 @@ export default function PropertyDetailPage() {
         loadProperty().finally(() => setLoading(false));
     }, [id]);
 
+    const publicChrome = (
+        <PublicSiteHeader
+            backHref="/search"
+            backLabel="Back to Properties"
+            showDesktopNav={false}
+            ctaHref="/dashboard"
+            ctaLabel="My Dashboard"
+            mobileLinks={[{ href: '/dashboard', label: 'My Dashboard', isButton: true }]}
+        />
+    );
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-charcoal/70">Loading...</p>
-                </div>
-            </div>
+            <BuyerPortalShell activePage="properties" title="Property" publicChrome={publicChrome}>
+                <PortalLoading variant="inline" message="Loading property…" />
+            </BuyerPortalShell>
         );
     }
 
     if (!property) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center px-4">
-                <div className="text-center max-w-md">
-                    <Home className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-charcoal mb-2">Property not found</h1>
-                    <p className="text-charcoal/70 mb-6">This property may have been removed or is no longer available.</p>
-                    <Link
-                        href="/search"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Properties
-                    </Link>
+            <BuyerPortalShell activePage="properties" title="Property" publicChrome={publicChrome}>
+                <div className="flex items-center justify-center px-4 py-16">
+                    <div className="text-center max-w-md">
+                        <Home className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
+                        <h1 className="text-2xl font-bold text-charcoal mb-2">Property not found</h1>
+                        <p className="text-charcoal/70 mb-6">This property may have been removed or is no longer available.</p>
+                        <Link href="/search" className={PORTAL_PRIMARY_BTN}>
+                            <ArrowLeft className="w-4 h-4" />
+                            Back to Properties
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </BuyerPortalShell>
         );
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                    <Link
-                        href="/search"
-                        className="flex items-center gap-2 text-charcoal hover:text-charcoal/80 transition"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Properties</span>
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
-                    </div>
-                    <Link
-                        href="/dashboard"
-                        className="px-4 py-2 rounded-lg bg-gold text-white font-semibold hover:bg-gold-600 transition"
-                    >
-                        My Dashboard
-                    </Link>
-                </nav>
-            </header>
-
-            <main className="pt-24 pb-12 px-4">
-                <div className="container mx-auto max-w-5xl">
+        <BuyerPortalShell activePage="properties" title={property.title} publicChrome={publicChrome}>
+            <div className={PORTAL_PAGE_CONTAINER}>
                     {/* Image slider */}
-                    <div className="mb-8 rounded-2xl overflow-hidden border border-charcoal/10 shadow-xl relative">
+                    <div className={`mb-8 ${PORTAL_CARD} relative`}>
                         {property.images?.length ? (
                             <>
                                 <div className="relative aspect-[16/10] bg-charcoal/10 overflow-hidden">
@@ -215,25 +205,25 @@ export default function PropertyDetailPage() {
 
                     {/* Quick stats */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="p-4 rounded-xl bg-charcoal/5 border border-charcoal/10">
+                        <div className={`${PORTAL_CARD} p-4`}>
                             <p className="text-charcoal/50 text-sm mb-1">Type</p>
                             <p className="text-charcoal font-semibold">{property.type}</p>
                         </div>
-                        <div className="p-4 rounded-xl bg-charcoal/5 border border-charcoal/10 flex items-center gap-2">
+                        <div className={`${PORTAL_CARD} p-4 flex items-center gap-2`}>
                             <Bed className="w-5 h-5 text-gold" />
                             <div>
                                 <p className="text-charcoal/50 text-sm">Bedrooms</p>
                                 <p className="text-charcoal font-semibold">{property.bedrooms}</p>
                             </div>
                         </div>
-                        <div className="p-4 rounded-xl bg-charcoal/5 border border-charcoal/10 flex items-center gap-2">
+                        <div className={`${PORTAL_CARD} p-4 flex items-center gap-2`}>
                             <Bath className="w-5 h-5 text-gold" />
                             <div>
                                 <p className="text-charcoal/50 text-sm">Bathrooms</p>
                                 <p className="text-charcoal font-semibold">{property.bathrooms}</p>
                             </div>
                         </div>
-                        <div className="p-4 rounded-xl bg-charcoal/5 border border-charcoal/10 flex items-center gap-2">
+                        <div className={`${PORTAL_CARD} p-4 flex items-center gap-2`}>
                             <Square className="w-5 h-5 text-gold" />
                             <div>
                                 <p className="text-charcoal/50 text-sm">Size</p>
@@ -271,7 +261,7 @@ export default function PropertyDetailPage() {
                                 href={property.videoUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gold/10 text-gold border border-gold/30 rounded-xl font-semibold hover:bg-gold/20 transition"
+                                className={PORTAL_SECONDARY_BTN}
                             >
                                 <Video className="w-5 h-5" />
                                 Watch video tour
@@ -280,26 +270,19 @@ export default function PropertyDetailPage() {
                     )}
 
                     {/* CTA - Contact agent */}
-                    <div className="p-8 rounded-2xl bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/20">
+                    <div className={`${PORTAL_CARD} p-8 bg-gradient-to-br from-gold/10 to-gold/5 border-gold/20`}>
                         <h2 className="text-xl font-bold text-charcoal mb-2">Interested in this property?</h2>
                         <p className="text-charcoal/70 mb-6">Complete the quiz to get pre-qualified and connect with verified agents who can arrange a viewing.</p>
                         <div className="flex flex-wrap gap-4">
-                            <Link
-                                href="/quiz"
-                                className="inline-flex items-center gap-2 px-8 py-4 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition shadow-lg"
-                            >
+                            <Link href="/quiz" className={PORTAL_PRIMARY_BTN}>
                                 Get Pre-Qualified
                             </Link>
-                            <Link
-                                href="/dashboard"
-                                className="inline-flex items-center gap-2 px-8 py-4 border border-charcoal/20 text-charcoal font-semibold rounded-xl hover:bg-charcoal/5 transition"
-                            >
+                            <Link href="/dashboard" className={PORTAL_SECONDARY_BTN}>
                                 My Dashboard
                             </Link>
                         </div>
                     </div>
-                </div>
-            </main>
-        </div>
+            </div>
+        </BuyerPortalShell>
     );
 }

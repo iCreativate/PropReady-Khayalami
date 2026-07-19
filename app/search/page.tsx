@@ -2,9 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Home, Search as SearchIcon, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
+import { Home, Search as SearchIcon, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
 import BuyerPortalShell from '@/components/BuyerPortalShell';
-import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
+import PublicSiteHeader from '@/components/PublicSiteHeader';
+import {
+    PORTAL_CARD,
+    PORTAL_PAGE_CONTAINER,
+    PORTAL_SEARCH_INPUT,
+    PORTAL_SECONDARY_BTN,
+} from '@/lib/portal-ui';
 import { formatCurrency } from '@/lib/currency';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
 
@@ -28,6 +34,12 @@ interface Property {
     matchScore?: number;
     isMatched?: boolean;
 }
+
+const FILTER_CHIP_BASE =
+    'px-4 py-2 rounded-full font-semibold shadow-sm transition-all border-2';
+const FILTER_CHIP_ACTIVE = 'bg-gold text-white border-gold';
+const FILTER_CHIP_IDLE =
+    'bg-white border-charcoal/30 text-charcoal hover:border-gold/40 hover:bg-gold/[0.06]';
 
 export default function SearchPage() {
     const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -186,29 +198,25 @@ export default function SearchPage() {
         return filtered;
     }, [propertiesWithScores, activeFilter, searchQuery]);
 
+    const filters: { id: FilterType; label: string }[] = [
+        { id: 'all', label: 'All Properties' },
+        { id: 'houses', label: 'Houses' },
+        { id: 'apartments', label: 'Apartments' },
+        { id: 'townhouses', label: 'Townhouses' },
+        { id: 'vacant-land', label: 'Vacant Land' },
+        { id: 'commercial', label: 'Commercial' },
+        { id: 'under-1m', label: 'Under R1M' },
+    ];
+
     const searchPublicHeader = (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-            <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-                <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Back to Home</span>
-                </Link>
-
-                <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                        <Home className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-charcoal text-xl font-bold">PropReady</span>
-                </div>
-
-                <Link
-                    href="/dashboard"
-                    className="px-4 py-2 rounded-lg bg-gold text-white font-semibold hover:bg-gold-600 transition"
-                >
-                    My Dashboard
-                </Link>
-            </nav>
-        </header>
+        <PublicSiteHeader
+            backHref="/"
+            backLabel="Back to Home"
+            showDesktopNav={false}
+            ctaHref="/dashboard"
+            ctaLabel="My Dashboard"
+            mobileLinks={[{ href: '/dashboard', label: 'My Dashboard', isButton: true }]}
+        />
     );
 
     return (
@@ -217,22 +225,22 @@ export default function SearchPage() {
                 <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Search Bar */}
                     <div className="mb-8">
-                        <div className="glass-effect rounded-xl p-6">
+                        <div className={`${PORTAL_CARD} p-6`}>
                             <div className="flex flex-col md:flex-row gap-4">
                                 <div className="flex-1 relative">
-                                    <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/50" />
+                                    <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-charcoal/35 pointer-events-none" />
                                     <input
                                         type="text"
                                         placeholder="Search by location, suburb, or property name..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                        className={PORTAL_SEARCH_INPUT}
                                     />
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setShowFilters((v) => !v)}
-                                    className="px-6 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal hover:bg-gold hover:text-white hover:border-gold transition-all font-semibold flex items-center space-x-2"
+                                    className={`${PORTAL_SECONDARY_BTN} shrink-0`}
                                 >
                                     <SlidersHorizontal className="w-5 h-5" />
                                     <span className="hidden sm:inline">Filters</span>
@@ -245,76 +253,18 @@ export default function SearchPage() {
                     {/* Quick Filters */}
                     <div className={`mb-8 ${showFilters ? 'block' : 'hidden'}`}>
                         <div className="flex flex-wrap gap-3">
-                        <button 
-                            onClick={() => setActiveFilter('all')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-md transition-all ${
-                                activeFilter === 'all'
-                                    ? 'bg-gold text-white'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold shadow-sm'
-                            }`}
-                        >
-                            All Properties
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('houses')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
-                                activeFilter === 'houses'
-                                    ? 'bg-gold text-white border-2 border-gold'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
-                            }`}
-                        >
-                            Houses
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('apartments')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
-                                activeFilter === 'apartments'
-                                    ? 'bg-gold text-white border-2 border-gold'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
-                            }`}
-                        >
-                            Apartments
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('townhouses')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
-                                activeFilter === 'townhouses'
-                                    ? 'bg-gold text-white border-2 border-gold'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
-                            }`}
-                        >
-                            Townhouses
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('vacant-land')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
-                                activeFilter === 'vacant-land'
-                                    ? 'bg-gold text-white border-2 border-gold'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
-                            }`}
-                        >
-                            Vacant Land
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('commercial')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
-                                activeFilter === 'commercial'
-                                    ? 'bg-gold text-white border-2 border-gold'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
-                            }`}
-                        >
-                            Commercial
-                        </button>
-                        <button 
-                            onClick={() => setActiveFilter('under-1m')}
-                            className={`px-4 py-2 rounded-full font-semibold shadow-sm transition-all ${
-                                activeFilter === 'under-1m'
-                                    ? 'bg-gold text-white border-2 border-gold'
-                                    : 'bg-white border-2 border-charcoal/30 text-charcoal hover:bg-gold hover:text-white hover:border-gold'
-                            }`}
-                        >
-                            Under R1M
-                        </button>
+                            {filters.map((filter) => (
+                                <button
+                                    key={filter.id}
+                                    type="button"
+                                    onClick={() => setActiveFilter(filter.id)}
+                                    className={`${FILTER_CHIP_BASE} ${
+                                        activeFilter === filter.id ? FILTER_CHIP_ACTIVE : FILTER_CHIP_IDLE
+                                    }`}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
@@ -350,7 +300,7 @@ export default function SearchPage() {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredProperties.filter(p => p.isMatched).map((property) => (
-                                            <Link key={property.id} href={`/search/${property.id}`} className="block premium-card rounded-xl overflow-hidden cursor-pointer group border-2 border-gold/30 relative hover:shadow-xl transition-shadow">
+                                            <Link key={property.id} href={`/search/${property.id}`} className={`block ${PORTAL_CARD} cursor-pointer group border-2 border-gold/30 relative hover:shadow-xl transition-shadow`}>
                                                 {/* Matched Badge */}
                                                 <div className="absolute top-3 right-3 z-10">
                                                     <span className="px-2 py-1 rounded-full bg-gold text-white text-xs font-semibold shadow-md">
@@ -436,7 +386,7 @@ export default function SearchPage() {
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredProperties.filter(p => !p.isMatched || !quizResult || quizResult.preQualAmount === 0).map((property) => (
-                                            <Link key={property.id} href={`/search/${property.id}`} className="block premium-card rounded-xl overflow-hidden cursor-pointer group hover:shadow-xl transition-shadow">
+                                            <Link key={property.id} href={`/search/${property.id}`} className={`block ${PORTAL_CARD} cursor-pointer group hover:shadow-xl transition-shadow`}>
                                                 {/* Property Image */}
                                                 <div className="h-48 bg-charcoal/10 relative overflow-hidden">
                                                     {property.images?.length && property.images[0] ? (
@@ -505,7 +455,7 @@ export default function SearchPage() {
                             )}
                         </div>
                     ) : (
-                        <div className="premium-card rounded-xl p-12 text-center">
+                        <div className={`${PORTAL_CARD} p-12 text-center`}>
                             <Home className="w-16 h-16 text-charcoal/20 mx-auto mb-4" />
                             <p className="text-charcoal/70 text-lg mb-2">
                                 {listedProperties.length === 0 ? 'No properties have been listed yet' : 'No properties found'}
@@ -520,7 +470,7 @@ export default function SearchPage() {
 
                     {/* Load More */}
                     <div className="mt-12 text-center">
-                        <button className="px-8 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal hover:bg-gold hover:text-white hover:border-gold transition-all font-semibold">
+                        <button type="button" className={PORTAL_SECONDARY_BTN}>
                             Load More Properties
                         </button>
                     </div>

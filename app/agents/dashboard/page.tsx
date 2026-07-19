@@ -41,6 +41,13 @@ import {
     AGENT_SEGMENT_WRAP,
     agentSegmentBtn,
     AGENT_REFRESH_BTN,
+    AGENT_PRIMARY_BTN,
+    AGENT_SECONDARY_BTN,
+    AGENT_MODAL_BACKDROP,
+    AGENT_MODAL_PANEL_LG,
+    AGENT_ICON_BTN,
+    AGENT_PANEL_HEADER,
+    AGENT_PANEL_BODY,
 } from '@/lib/agent-portal-ui';
 
 interface Lead {
@@ -1004,38 +1011,29 @@ export default function AgentsDashboardPage() {
 
             {/* Successful Leads Contacted Modal */}
             {showSuccessfulLeadsModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md transition-opacity duration-300">
-                    {/* Decorative background elements */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/5 rounded-full blur-3xl animate-pulse"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-                    </div>
-
-                    <div className="relative bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100">
-                        {/* Header with gradient */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-8 py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-start justify-between gap-4">
+                <div className={AGENT_MODAL_BACKDROP}>
+                    <div className={`${AGENT_MODAL_PANEL_LG} max-w-4xl flex flex-col overflow-hidden`}>
+                        <div className={AGENT_PANEL_HEADER}>
+                            <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">
+                                    <h2 className="text-xl md:text-2xl font-semibold text-charcoal tracking-tight leading-tight">
                                         Successful Leads Contacted
                                     </h2>
-                                    <p className="text-white/90 text-sm">
+                                    <p className="text-charcoal/45 text-sm mt-1">
                                         Leads that have been contacted or qualified, along with their viewing appointment outcomes
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setShowSuccessfulLeadsModal(false)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                    className={`flex-shrink-0 ${AGENT_ICON_BTN}`}
                                     aria-label="Close"
                                 >
-                                    <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
+                                    <X className="w-5 h-5" />
                                 </button>
                             </div>
                         </div>
 
-                        {/* Content area */}
-                        <div className="flex-1 overflow-y-auto px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                        <div className={`flex-1 overflow-y-auto ${AGENT_PANEL_BODY}`}>
                             <div className="space-y-4">
                             {leads.filter(l => l.status === 'contacted' || l.status === 'qualified').length === 0 ? (
                                 <div className="text-center py-12">
@@ -1061,7 +1059,7 @@ export default function AgentsDashboardPage() {
                                         return (
                                             <div
                                                 key={lead.id}
-                                                className="premium-card rounded-xl p-6 border border-charcoal/20"
+                                                className={`${AGENT_CARD} p-6`}
                                             >
                                                 <div className="flex items-start justify-between mb-4">
                                                     <div className="flex-1">
@@ -1089,7 +1087,7 @@ export default function AgentsDashboardPage() {
                                                             setShowActionsModal(lead);
                                                             setShowSuccessfulLeadsModal(false);
                                                         }}
-                                                        className="px-4 py-2 rounded-lg bg-white/10 border border-charcoal/20 text-charcoal hover:bg-charcoal/10 transition"
+                                                        className={AGENT_SECONDARY_BTN}
                                                     >
                                                         View Details
                                                     </button>
@@ -1103,7 +1101,7 @@ export default function AgentsDashboardPage() {
                                                             {leadViewings.map((viewing) => (
                                                                 <div
                                                                     key={viewing.id}
-                                                                    className="bg-white/10 rounded-lg p-4 border border-charcoal/20"
+                                                                    className="rounded-2xl p-4 border border-charcoal/[0.08] bg-charcoal/[0.02]"
                                                                 >
                                                                     <div className="flex items-start justify-between mb-2">
                                                                         <div>
@@ -1165,11 +1163,10 @@ export default function AgentsDashboardPage() {
                             </div>
                         </div>
 
-                        {/* Footer */}
-                        <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
+                        <div className="px-6 sm:px-8 py-5 border-t border-charcoal/[0.06] flex items-center justify-end gap-3">
                             <button
                                 onClick={() => setShowSuccessfulLeadsModal(false)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className={AGENT_PRIMARY_BTN}
                             >
                                 <span>Done</span>
                                 <X className="w-4 h-4" />

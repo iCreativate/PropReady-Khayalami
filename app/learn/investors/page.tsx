@@ -255,14 +255,14 @@ export default function InvestorsLearnPage() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
                                 href="/search"
-                                className="inline-flex items-center justify-center space-x-2 px-8 py-4 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                                className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]"
                             >
                                 <span>Browse Investment Properties</span>
                                 <ArrowLeft className="w-5 h-5 rotate-180" />
                             </Link>
                             <Link
                                 href="/learn"
-                                className="inline-flex items-center justify-center space-x-2 px-8 py-4 border-2 border-gold text-gold font-semibold rounded-lg hover:bg-gold/10 transform hover:scale-105 transition-all"
+                                className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-base font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200"
                             >
                                 <span>Buyer Learning Center</span>
                             </Link>

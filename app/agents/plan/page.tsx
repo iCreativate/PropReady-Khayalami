@@ -9,6 +9,7 @@ import PpraVerificationGate from '@/components/PpraVerificationGate';
 import { isAgentPpraVerified } from '@/lib/ppra';
 import { countVerifiedLeads } from '@/lib/lead-verification';
 import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 
 export default function AgentPlanPage() {
     const router = useRouter();
@@ -75,11 +76,7 @@ export default function AgentPlanPage() {
     const ppraVerified = useMemo(() => isAgentPpraVerified(currentAgent), [currentAgent]);
 
     if (!currentAgent) {
-        return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <p className="text-charcoal/60">Loading…</p>
-            </div>
-        );
+        return <PortalLoading />;
     }
 
     return (

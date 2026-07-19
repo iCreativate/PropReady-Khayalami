@@ -181,7 +181,7 @@ export default function ValuationBookingPage() {
                                     </p>
                                     <Link
                                         href="/sellers/dashboard"
-                                        className="inline-flex items-center gap-2 px-8 py-4 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transform hover:scale-105 transition-all shadow-xl"
+                                        className="inline-flex items-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]"
                                     >
                                         <Home className="w-5 h-5" />
                                         Go to My Dashboard
@@ -540,7 +540,7 @@ export default function ValuationBookingPage() {
                             <div className="space-y-3">
                                 <a
                                     href={`tel:${selectedAgent.phone.replace(/\s/g, '')}`}
-                                    className="w-full px-6 py-3 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center gap-2"
+                                    className="w-full inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                                 >
                                     <Phone className="w-5 h-5" />
                                     Call to Book
@@ -568,7 +568,7 @@ export default function ValuationBookingPage() {
                         <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
                             <button
                                 onClick={() => setSelectedAgent(null)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
                             >
                                 <span>Done</span>
                                 <X className="w-4 h-4" />

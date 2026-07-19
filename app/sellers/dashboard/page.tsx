@@ -10,7 +10,8 @@ import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 import PpraTrustSection from '@/components/PpraTrustSection';
 import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
-import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_STAT_ICON } from '@/lib/portal-ui';
+import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_SEARCH_INPUT } from '@/lib/portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import SellerPropertyOnboardingForm from '@/components/onboarding/SellerPropertyOnboardingForm';
@@ -155,14 +156,7 @@ export default function SellerDashboardPage() {
     }, []);
 
     if (isLoading && !(onboardingRequired && onboardingIntent === 'seller')) {
-        return (
-            <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-charcoal/60">Loading...</p>
-                </div>
-            </div>
-        );
+        return <PortalLoading message="Loading dashboard…" />;
     }
 
     const portalUser =
@@ -176,7 +170,7 @@ export default function SellerDashboardPage() {
             : null);
 
     if (!portalUser) {
-        return null;
+        return <PortalLoading message="Loading dashboard…" />;
     }
 
     const filteredAgents = availableAgents.filter(agent =>
@@ -246,7 +240,7 @@ export default function SellerDashboardPage() {
                     )}
                     {/* Property Summary Card */}
                     {sellerInfo && (
-                        <div className="premium-card p-8 mb-8 sm:mb-10 overflow-hidden">
+                        <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10 overflow-hidden`}>
                             <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <h2 className="text-2xl font-bold text-charcoal mb-2">Your Property</h2>
@@ -279,42 +273,42 @@ export default function SellerDashboardPage() {
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6 mb-8 sm:mb-10">
-                        <Link href="/sellers" className="premium-card p-6 text-center group">
+                        <Link href="/sellers" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <FileText className="w-6 h-6 text-gold" />
+                                <FileText className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Learning Center</h3>
                         </Link>
 
-                        <Link href="/sellers/valuation" className="premium-card p-6 text-center group">
+                        <Link href="/sellers/valuation" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Calendar className="w-6 h-6 text-gold" />
+                                <Calendar className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Book Valuation</h3>
                         </Link>
 
                         <button
                             onClick={() => setShowAgentModal(true)}
-                            className="premium-card p-6 text-center group"
+                            className={`${PORTAL_CARD} p-6 text-center group`}
                         >
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Users className="w-6 h-6 text-gold" />
+                                <Users className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">
                                 {selectedAgent ? 'My Agent' : 'Select Agent'}
                             </h3>
                         </button>
 
-                        <Link href="/dashboard" className="premium-card p-6 text-center group">
+                        <Link href="/dashboard" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Home className="w-6 h-6 text-gold" />
+                                <Home className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Buyer Dashboard</h3>
                         </Link>
 
-                        <Link href="/dashboard/viewings" className="premium-card p-6 text-center group">
+                        <Link href="/dashboard/viewings" className={`${PORTAL_CARD} p-6 text-center group`}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
-                                <Calendar className="w-6 h-6 text-gold" />
+                                <Calendar className="w-5 h-5 text-gold" />
                             </div>
                             <h3 className="text-charcoal font-semibold text-sm">Viewings</h3>
                             {viewingAppointments.length > 0 && (
@@ -327,11 +321,11 @@ export default function SellerDashboardPage() {
 
                     {/* Viewing Appointments Section */}
                     {viewingAppointments.length > 0 && (
-                        <div className="premium-card rounded-2xl p-8 mb-8">
+                        <div className={`${PORTAL_CARD} p-8 mb-8`}>
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
-                                        <Calendar className="w-6 h-6 text-gold" />
+                                        <Calendar className="w-5 h-5 text-gold" />
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold text-charcoal mb-1">Your Viewing Appointments</h2>
@@ -350,7 +344,7 @@ export default function SellerDashboardPage() {
                                 {viewingAppointments.map((viewing) => (
                                     <div
                                         key={viewing.id}
-                                        className="premium-card rounded-xl p-6 border border-charcoal/20 hover:border-gold/50 transition"
+                                        className={`${PORTAL_CARD} p-6 border border-charcoal/20 hover:border-gold/50 transition`}
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex-1">
@@ -395,7 +389,7 @@ export default function SellerDashboardPage() {
 
                     {/* Selected Agent Card */}
                     {selectedAgent && (
-                        <div className="premium-card rounded-2xl p-8 mb-8">
+                        <div className={`${PORTAL_CARD} p-8 mb-8`}>
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center">
@@ -414,7 +408,7 @@ export default function SellerDashboardPage() {
                                 </button>
                             </div>
 
-                            <div className="premium-card rounded-xl p-6">
+                            <div className={`${PORTAL_CARD} p-6`}>
                                 <div className="flex items-start justify-between mb-4">
                                     <div>
                                         <h3 className="text-xl font-bold text-charcoal mb-1">{selectedAgent.name}</h3>
@@ -474,14 +468,14 @@ export default function SellerDashboardPage() {
                                 <div className="flex gap-2">
                                     <a
                                         href={`tel:${selectedAgent.phone}`}
-                                        className="flex-1 px-4 py-2 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition flex items-center justify-center gap-2"
+                                        className={`flex-1 ${PORTAL_PRIMARY_BTN}`}
                                     >
                                         <Phone className="w-4 h-4" />
                                         Call Agent
                                     </a>
                                     <a
                                         href={`mailto:${selectedAgent.email}`}
-                                        className="px-4 py-2 border border-charcoal/20 text-charcoal font-semibold rounded-lg hover:bg-charcoal/5 transition flex items-center gap-2"
+                                        className={PORTAL_SECONDARY_BTN}
                                     >
                                         <Mail className="w-4 h-4" />
                                         Email
@@ -493,7 +487,7 @@ export default function SellerDashboardPage() {
 
                     {/* Property Details */}
                     {sellerInfo && (
-                        <div className="premium-card rounded-2xl p-8 mb-8">
+                        <div className={`${PORTAL_CARD} p-8 mb-8`}>
                             <h2 className="text-2xl font-bold text-charcoal mb-6">Property Details</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="md:col-span-2">
@@ -581,7 +575,7 @@ export default function SellerDashboardPage() {
                                 </div>
                                 <button
                                     onClick={() => setShowAgentModal(false)}
-                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                    className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group"
                                     aria-label="Close"
                                 >
                                     <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />
@@ -600,7 +594,7 @@ export default function SellerDashboardPage() {
                                 placeholder="Search agents by name, company, or location..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/50 focus:outline-none focus:ring-2 focus:ring-gold"
+                                className={PORTAL_SEARCH_INPUT}
                             />
                         </div>
 
@@ -615,7 +609,7 @@ export default function SellerDashboardPage() {
                                 filteredAgents.map((agent) => (
                                     <div
                                         key={agent.id}
-                                        className={`premium-card rounded-xl p-6 cursor-pointer transition ${
+                                        className={`${PORTAL_CARD} p-6 cursor-pointer transition ${
                                             selectedAgent?.id === agent.id
                                                 ? 'border-2 border-gold bg-gold/5'
                                                 : 'border border-charcoal/20 hover:border-gold/50'
@@ -678,7 +672,7 @@ export default function SellerDashboardPage() {
                         <div className="px-8 py-6 bg-white border-t border-charcoal/10 flex items-center justify-end gap-4">
                             <button
                                 onClick={() => setShowAgentModal(false)}
-                                className="px-8 py-3.5 bg-gradient-to-r from-gold to-gold/90 text-white font-semibold rounded-xl hover:from-gold-600 hover:to-gold-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                                className={PORTAL_PRIMARY_BTN}
                             >
                                 <span>Done</span>
                                 <X className="w-4 h-4" />

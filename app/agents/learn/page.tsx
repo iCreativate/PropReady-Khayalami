@@ -343,7 +343,6 @@ export default function AgentLearnPage() {
     }, [gridModules]);
 
     const totalReadMinutes = MODULES.reduce((sum, m) => sum + m.readMinutes, 0);
-    let cardIndex = 0;
 
     return (
         <AgentPortalLayout
@@ -368,31 +367,34 @@ export default function AgentLearnPage() {
 
                 <AgentLearnFeaturedCard {...featured} highlights={LEARN_MODULE_HIGHLIGHTS[featured.slug]} />
 
-                {groupedModules.map(({ category, modules }) => (
-                    <section key={category} className={AGENT_LEARN_SECTION}>
-                        <div className={AGENT_LEARN_SECTION_TITLE}>
-                            <span className="w-8 h-px bg-gold/50" />
-                            <h2 className={AGENT_SECTION_LABEL}>{category}</h2>
-                            <span className="flex-1 h-px bg-charcoal/[0.06]" />
-                            <span className="text-xs text-charcoal/35 font-medium tabular-nums">
-                                {modules.length} {modules.length === 1 ? 'guide' : 'guides'}
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
-                            {modules.map((module) => {
-                                const idx = cardIndex++;
-                                return (
+                {groupedModules.map(({ category, modules }, groupIndex) => {
+                    const baseIndex = groupedModules
+                        .slice(0, groupIndex)
+                        .reduce((sum, group) => sum + group.modules.length, 0);
+
+                    return (
+                        <section key={category} className={AGENT_LEARN_SECTION}>
+                            <div className={AGENT_LEARN_SECTION_TITLE}>
+                                <span className="w-8 h-px bg-gold/50" />
+                                <h2 className={AGENT_SECTION_LABEL}>{category}</h2>
+                                <span className="flex-1 h-px bg-charcoal/[0.06]" />
+                                <span className="text-xs text-charcoal/35 font-medium tabular-nums">
+                                    {modules.length} {modules.length === 1 ? 'guide' : 'guides'}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+                                {modules.map((module, moduleIndex) => (
                                     <AgentLearnModuleCard
                                         key={module.slug}
                                         {...module}
                                         highlights={LEARN_MODULE_HIGHLIGHTS[module.slug]}
-                                        index={idx}
+                                        index={baseIndex + moduleIndex}
                                     />
-                                );
-                            })}
-                        </div>
-                    </section>
-                ))}
+                                ))}
+                            </div>
+                        </section>
+                    );
+                })}
 
                 <div className={AGENT_LEARN_CTA}>
                     <div
