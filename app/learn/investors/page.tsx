@@ -1,279 +1,208 @@
 import Link from 'next/link';
-import { ArrowLeft, BookOpen, Home, TrendingUp, DollarSign, Building2, BarChart3, Target, PiggyBank, AlertTriangle } from 'lucide-react';
+import {
+    ArrowLeft,
+    ArrowUpRight,
+    BookOpen,
+    TrendingUp,
+    DollarSign,
+    Building2,
+    BarChart3,
+    Target,
+    PiggyBank,
+    AlertTriangle,
+    type LucideIcon,
+} from 'lucide-react';
+import PublicSiteHeader from '@/components/PublicSiteHeader';
+import {
+    PORTAL_MARKETING_CTA,
+    PORTAL_MODULE_CARD,
+    PORTAL_MODULE_CARD_ICON,
+    PORTAL_PAGE_CONTAINER,
+    PORTAL_SECONDARY_BTN,
+} from '@/lib/portal-ui';
+
+const INVESTOR_MODULES: {
+    href: string;
+    title: string;
+    description: string;
+    icon: LucideIcon;
+}[] = [
+    {
+        href: '/learn/investors/strategies',
+        title: 'Investment Strategies',
+        description:
+            'Learn about buy-to-let, fix-and-flip, commercial property, and other proven investment strategies for the South African market.',
+        icon: Target,
+    },
+    {
+        href: '/learn/investors/returns',
+        title: 'Calculating Returns',
+        description:
+            'Master ROI, rental yield, capital growth, and cash flow analysis to make informed investment decisions.',
+        icon: BarChart3,
+    },
+    {
+        href: '/learn/investors/financing',
+        title: 'Investment Financing',
+        description:
+            'Understand investment property loans, deposit requirements, interest rates, and leveraging strategies for portfolio growth.',
+        icon: DollarSign,
+    },
+    {
+        href: '/learn/investors/tax',
+        title: 'Tax & Legal Considerations',
+        description:
+            'Learn about rental income tax, capital gains tax, deductions, and legal structures for property investment in South Africa.',
+        icon: PiggyBank,
+    },
+    {
+        href: '/learn/investors/portfolio',
+        title: 'Portfolio Management',
+        description:
+            'Strategies for managing multiple properties, tenant relations, maintenance, and scaling your investment portfolio effectively.',
+        icon: Building2,
+    },
+    {
+        href: '/learn/investors/market-analysis',
+        title: 'Market Analysis',
+        description:
+            'Learn how to analyze property markets, identify growth areas, assess property values, and spot investment opportunities.',
+        icon: TrendingUp,
+    },
+    {
+        href: '/learn/investors/pre-purchase-mistakes',
+        title: 'Pre-Purchase Mistakes',
+        description:
+            'Avoid costly errors before you buy. Learn about insufficient research, emotional decisions, and poor location choices that can derail your investment.',
+        icon: AlertTriangle,
+    },
+    {
+        href: '/learn/investors/financial-mistakes',
+        title: 'Financial Mistakes',
+        description:
+            'Protect your finances. Understand how underestimating costs and over-leveraging can turn a promising investment into a financial burden.',
+        icon: AlertTriangle,
+    },
+    {
+        href: '/learn/investors/property-management-mistakes',
+        title: 'Property Management Mistakes',
+        description:
+            'Manage your properties effectively. Learn how inadequate tenant screening and maintenance neglect can cost you thousands and damage your investment.',
+        icon: AlertTriangle,
+    },
+    {
+        href: '/learn/investors/portfolio-strategy-mistakes',
+        title: 'Portfolio Strategy Mistakes',
+        description:
+            'Build a successful portfolio. Avoid mistakes in diversification, tax planning, and setting unrealistic expectations that undermine long-term success.',
+        icon: AlertTriangle,
+    },
+];
+
+function InvestorModuleCard({
+    href,
+    title,
+    description,
+    icon: Icon,
+    index,
+}: {
+    href: string;
+    title: string;
+    description: string;
+    icon: LucideIcon;
+    index: number;
+}) {
+    const displayIndex = String(index + 1).padStart(2, '0');
+
+    return (
+        <Link
+            href={href}
+            className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/30 focus-visible:ring-offset-2 rounded-3xl"
+        >
+            <article className={PORTAL_MODULE_CARD}>
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold/80 via-gold/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                <span
+                    className="absolute top-4 right-5 text-[3.5rem] font-bold leading-none text-charcoal/[0.04] group-hover:text-gold/[0.08] transition-colors duration-300 select-none tabular-nums"
+                    aria-hidden
+                >
+                    {displayIndex}
+                </span>
+
+                <div className="relative flex flex-col h-full min-h-[220px]">
+                    <div className={`${PORTAL_MODULE_CARD_ICON} mb-5`}>
+                        <Icon className="w-5 h-5 text-gold" strokeWidth={2} />
+                    </div>
+
+                    <h3 className="text-lg font-semibold text-charcoal mb-2 pr-12 group-hover:text-gold transition-colors duration-200 leading-snug tracking-tight">
+                        {title}
+                    </h3>
+
+                    <p className="flex-1 text-charcoal/45 text-sm leading-[1.65] line-clamp-3 mb-5">
+                        {description}
+                    </p>
+
+                    <div className="mt-auto flex items-center justify-between pt-1">
+                        <span className="text-sm font-semibold text-gold">Start learning</span>
+                        <ArrowUpRight className="w-4 h-4 text-charcoal/25 group-hover:text-gold group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-200" />
+                    </div>
+                </div>
+            </article>
+        </Link>
+    );
+}
 
 export default function InvestorsLearnPage() {
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-                    <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Home</span>
-                    </Link>
+            <PublicSiteHeader
+                backHref="/"
+                backLabel="Back to Home"
+                showDesktopNav={false}
+                mobileLinks={[]}
+            />
 
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
-                    </div>
-                </nav>
-            </header>
-
-            {/* Main Content */}
-            <main className="relative min-h-screen px-4 pt-32 pb-16">
-                <div className="container mx-auto max-w-6xl relative z-10">
-                    {/* Hero Section */}
-                    <div className="text-center mb-16">
-                        <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
+            <main className="relative min-h-screen px-4 pt-28 pb-16">
+                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
+                    <div className="text-center mb-12 sm:mb-16">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30 mb-6">
                             <BookOpen className="w-5 h-5 text-gold" />
-                            <span className="text-gold font-semibold">Learning Center - Property Investors</span>
+                            <span className="text-gold font-semibold">
+                                Learning Center — Investors
+                            </span>
                         </div>
-
-                        <h1 className="text-5xl md:text-6xl font-bold text-charcoal mb-6">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-charcoal mb-6 tracking-tight">
                             Build Your Property Portfolio
                         </h1>
-
-                        <p className="text-xl text-charcoal/90 max-w-3xl mx-auto">
-                            Master the art of property investment in South Africa. Learn strategies, analyze returns,
-                            and build wealth through real estate.
+                        <p className="text-lg sm:text-xl text-charcoal/70 max-w-3xl mx-auto leading-relaxed">
+                            Master the art of property investment in South Africa. Learn strategies,
+                            analyze returns, and build wealth through real estate.
                         </p>
                     </div>
 
-                    {/* Learning Modules Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Module 1 */}
-                        <Link href="/learn/investors/strategies" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
-                                    <Target className="w-8 h-8 text-gold" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gold mb-4">
-                                    Investment Strategies
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Learn about buy-to-let, fix-and-flip, commercial property, and other proven
-                                    investment strategies for the South African market.
-                                </p>
-                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 2 */}
-                        <Link href="/learn/investors/returns" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
-                                    <BarChart3 className="w-8 h-8 text-gold" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gold mb-4">
-                                    Calculating Returns
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Master ROI, rental yield, capital growth, and cash flow analysis to make
-                                    informed investment decisions.
-                                </p>
-                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 3 */}
-                        <Link href="/learn/investors/financing" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
-                                    <DollarSign className="w-8 h-8 text-gold" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gold mb-4">
-                                    Investment Financing
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Understand investment property loans, deposit requirements, interest rates,
-                                    and leveraging strategies for portfolio growth.
-                                </p>
-                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 4 */}
-                        <Link href="/learn/investors/tax" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
-                                    <PiggyBank className="w-8 h-8 text-gold" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gold mb-4">
-                                    Tax & Legal Considerations
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Learn about rental income tax, capital gains tax, deductions, and legal
-                                    structures for property investment in South Africa.
-                                </p>
-                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 5 */}
-                        <Link href="/learn/investors/portfolio" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
-                                    <Building2 className="w-8 h-8 text-gold" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gold mb-4">
-                                    Portfolio Management
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Strategies for managing multiple properties, tenant relations, maintenance,
-                                    and scaling your investment portfolio effectively.
-                                </p>
-                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 6 */}
-                        <Link href="/learn/investors/market-analysis" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-gold/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-gold/20 transition-colors border border-gold/20">
-                                    <TrendingUp className="w-8 h-8 text-gold" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-gold mb-4">
-                                    Market Analysis
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Learn how to analyze property markets, identify growth areas, assess
-                                    property values, and spot investment opportunities.
-                                </p>
-                                <div className="flex items-center text-gold font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 7 */}
-                        <Link href="/learn/investors/pre-purchase-mistakes" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
-                                    <AlertTriangle className="w-8 h-8 text-red-600" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-red-600 mb-4">
-                                    Pre-Purchase Mistakes
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Avoid costly errors before you buy. Learn about insufficient research,
-                                    emotional decisions, and poor location choices that can derail your investment.
-                                </p>
-                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 8 */}
-                        <Link href="/learn/investors/financial-mistakes" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
-                                    <AlertTriangle className="w-8 h-8 text-red-600" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-red-600 mb-4">
-                                    Financial Mistakes
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Protect your finances. Understand how underestimating costs and over-leveraging
-                                    can turn a promising investment into a financial burden.
-                                </p>
-                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 9 */}
-                        <Link href="/learn/investors/property-management-mistakes" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
-                                    <AlertTriangle className="w-8 h-8 text-red-600" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-red-600 mb-4">
-                                    Property Management Mistakes
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Manage your properties effectively. Learn how inadequate tenant screening
-                                    and maintenance neglect can cost you thousands and damage your investment.
-                                </p>
-                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Module 10 */}
-                        <Link href="/learn/investors/portfolio-strategy-mistakes" className="block">
-                            <div className="premium-card rounded-xl p-8 cursor-pointer h-full group">
-                                <div className="w-16 h-16 bg-red-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-500/20 transition-colors border border-red-500/20">
-                                    <AlertTriangle className="w-8 h-8 text-red-600" />
-                                </div>
-                                <h3 className="text-2xl font-bold text-red-600 mb-4">
-                                    Portfolio Strategy Mistakes
-                                </h3>
-                                <p className="text-charcoal/60 mb-6 leading-relaxed">
-                                    Build a successful portfolio. Avoid mistakes in diversification, tax planning,
-                                    and setting unrealistic expectations that undermine long-term success.
-                                </p>
-                                <div className="flex items-center text-red-600 font-semibold group-hover:gap-2 transition-all">
-                                    <span>Start Learning</span>
-                                    <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
-                                </div>
-                            </div>
-                        </Link>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+                        {INVESTOR_MODULES.map((module, index) => (
+                            <InvestorModuleCard key={module.href} {...module} index={index} />
+                        ))}
                     </div>
 
-                    {/* CTA Section */}
-                    <div className="mt-16 premium-card rounded-2xl p-12 text-center bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
-                        <h2 className="text-3xl font-bold text-charcoal mb-4">
+                    <div className="mt-14 sm:mt-16 rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/5 to-gold/10 p-8 sm:p-12 text-center">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-charcoal mb-3">
                             Ready to Start Investing?
                         </h2>
-                        <p className="text-lg text-charcoal/60 mb-8">
-                            Connect with verified agents and explore investment properties
+                        <p className="text-charcoal/60 mb-8 max-w-xl mx-auto">
+                            Connect with verified agents and explore investment properties.
                         </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link
-                                href="/search"
-                                className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-gold text-white text-base font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.25)]"
-                            >
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                            <Link href="/search" className={PORTAL_MARKETING_CTA}>
                                 <span>Browse Investment Properties</span>
                                 <ArrowLeft className="w-5 h-5 rotate-180" />
                             </Link>
-                            <Link
-                                href="/learn"
-                                className="inline-flex items-center justify-center gap-2 h-12 px-8 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/70 text-base font-medium hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal transition-all duration-200"
-                            >
-                                <span>Buyer Learning Center</span>
+                            <Link href="/learn" className={`${PORTAL_SECONDARY_BTN} !h-12 !px-8 !text-base`}>
+                                Buyer Learning Center
                             </Link>
                         </div>
                     </div>
-                </div>
-
-                {/* Background Pattern */}
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
                 </div>
             </main>
         </div>

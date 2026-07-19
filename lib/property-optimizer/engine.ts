@@ -1,6 +1,7 @@
 import { COMPARABLE_BENCHMARKS, DEMO_MARKET, DEMO_PROPERTY, SUBURB_INSIGHTS } from './demo-data';
 import { IMPROVEMENT_TEMPLATES, templateToRecommendation } from './improvements';
 import type {
+    AcquisitionType,
     BudgetPlan,
     CategoryScore,
     ForecastPoint,
@@ -11,6 +12,10 @@ import type {
     OptimizerSnapshot,
     PropertyHealthItem,
     PropertyProfile,
+    SaleDeductible,
+    SaleProceedsBreakdown,
+    CgtEstimate,
+    SellSuggestion,
     SimulatorMetrics,
     SmartAlert,
     ValuationBreakdownItem,
@@ -558,6 +563,522 @@ export function formatZAR(amount: number): string {
     }).format(amount);
 }
 
+/** Years (fractional) between purchase date and now */
+export function yearsSincePurchase(purchaseDate: string, asOf: Date = new Date()): number {
+    const purchased = new Date(purchaseDate);
+    if (Number.isNaN(purchased.getTime())) return 0;
+    const ms = asOf.getTime() - purchased.getTime();
+    return Math.max(0, ms / (365.25 * 24 * 60 * 60 * 1000));
+}
+
+const ACQUISITION_LABELS: Record<AcquisitionType, string> = {
+    purchased: 'Purchased',
+    bought_cash: 'Bought cash',
+    inherited: 'Inherited',
+    family_home: 'Family home',
+};
+
+/** Default agent rate before VAT — typical SA mid-range mandate */
+export const DEFAULT_AGENT_COMMISSION_PCT = 6.5;
+const VAT_RATE = 0.15;
+
+/** SA CGT parameters (individuals) — from 1 March 2026 */
+export const CGT_PRIMARY_RESIDENCE_EXCLUSION = 3_000_000;
+export const CGT_ANNUAL_EXCLUSION = 50_000;
+export const CGT_INCLUSION_RATE = 0.4;
+export const DEFAULT_MARGINAL_TAX_RATE_PCT = 45;
+
+/** IDs that are not disposal costs for CGT base (settled debts / the tax itself) */
+const NON_SELLING_DEDUCTIBLE_IDS = new Set(['cgt', 'rates-taxes']);
+
+/**
+ * Estimate capital gains tax payable to SARS on a residential property disposal (individual).
+ * Illustrative only — not a SARS assessment.
+ */
+export function estimateCapitalGainsTax(params: {
+    salePrice: number;
+    /** Acquisition / base cost (purchase or value at inheritance) + capital improvements */
+    baseCost: number;
+    baseCostAssumed?: boolean;
+    /** Agent commission + disposal-related fees (excludes bond settlement & rates arrears) */
+    sellingCosts: number;
+    isPrimaryResidence?: boolean;
+    marginalTaxRatePct?: number;
+}): CgtEstimate {
+    const proceeds = Math.max(0, Math.round(params.salePrice));
+    const baseCost = Math.max(0, Math.round(params.baseCost));
+    const sellingCosts = Math.max(0, Math.round(params.sellingCosts));
+    const isPrimaryResidence = params.isPrimaryResidence !== false;
+    const marginalTaxRatePct = clamp(
+        typeof params.marginalTaxRatePct === 'number' && Number.isFinite(params.marginalTaxRatePct)
+            ? params.marginalTaxRatePct
+            : DEFAULT_MARGINAL_TAX_RATE_PCT,
+        0,
+        45
+    );
+
+    const capitalGain = Math.max(0, proceeds - sellingCosts - baseCost);
+    const primaryResidenceExclusion = isPrimaryResidence ? CGT_PRIMARY_RESIDENCE_EXCLUSION : 0;
+    const primaryResidenceExclusionApplied = Math.min(capitalGain, primaryResidenceExclusion);
+    const afterPrimary = Math.max(0, capitalGain - primaryResidenceExclusionApplied);
+    const annualExclusionApplied = Math.min(afterPrimary, CGT_ANNUAL_EXCLUSION);
+    const netCapitalGain = Math.max(0, afterPrimary - annualExclusionApplied);
+    const taxableCapitalGain = Math.round(netCapitalGain * CGT_INCLUSION_RATE);
+    const estimatedCgt = Math.round(taxableCapitalGain * (marginalTaxRatePct / 100));
+    const maxEffectiveRatePct = Math.round(CGT_INCLUSION_RATE * 45 * 1000) / 10; // 18%
+
+    return {
+        proceeds,
+        baseCost,
+        baseCostAssumed: Boolean(params.baseCostAssumed),
+        sellingCosts,
+        capitalGain,
+        isPrimaryResidence,
+        primaryResidenceExclusion,
+        primaryResidenceExclusionApplied,
+        annualExclusion: annualExclusionApplied,
+        netCapitalGain,
+        inclusionRatePct: CGT_INCLUSION_RATE * 100,
+        taxableCapitalGain,
+        marginalTaxRatePct,
+        estimatedCgt,
+        maxEffectiveRatePct,
+    };
+}
+
+/** Illustrative SA seller fee defaults (overridable by the seller) */
+export function buildDefaultSellerDeductibles(params: {
+    grossSalePrice: number;
+    bondBalance: number;
+    underBond: boolean;
+}): SaleDeductible[] {
+    const { grossSalePrice, bondBalance, underBond } = params;
+    const toBank = underBond && bondBalance > 0 ? bondBalance : 0;
+    const bondCancellation =
+        toBank > 0 ? Math.min(15_000, Math.max(8_000, Math.round(grossSalePrice * 0.002))) : 0;
+    const complianceCertificates = Math.min(
+        10_000,
+        Math.max(5_000, Math.round(grossSalePrice * 0.0015))
+    );
+    const ratesClearance = Math.min(6_000, Math.max(2_000, Math.round(grossSalePrice * 0.001)));
+
+    const rows: SaleDeductible[] = [
+        {
+            id: 'rates-taxes',
+            label: 'Rates & taxes owed',
+            amount: 0,
+            note: 'Municipal rates / taxes arrears settled at clearance',
+        },
+        {
+            id: 'cgt',
+            label: 'SARS capital gains tax (est.)',
+            amount: 0,
+            note: 'Auto-calculated — see CGT working below',
+        },
+        {
+            id: 'bond-cancel',
+            label: 'Bond cancellation fees',
+            amount: bondCancellation,
+            note: 'Attorney & bank admin to cancel the bond',
+        },
+        {
+            id: 'compliance',
+            label: 'Compliance certificates',
+            amount: complianceCertificates,
+            note: 'Electrical, beetle, gas, plumbing (as required)',
+        },
+        {
+            id: 'rates-clearance',
+            label: 'Rates / levy clearance fee',
+            amount: ratesClearance,
+            note: 'Municipal or body corporate clearance admin',
+        },
+    ];
+
+    return rows.filter((r) => r.id !== 'bond-cancel' || r.amount > 0 || toBank > 0);
+}
+
+export function buildSaleProceedsBreakdown(params: {
+    grossSalePrice: number;
+    purchasePrice: number;
+    renovationSpend: number;
+    costBasis: number;
+    bondBalance: number;
+    underBond: boolean;
+    /** Use custom sale price label when user entered a target */
+    salePriceSource?: 'suggested' | 'custom';
+    agentCommissionPct?: number;
+    agentCommissionAmount?: number;
+    /** When true, % rate already includes VAT (do not add 15%) */
+    agentCommissionIncludesVat?: boolean;
+    /** When set, replaces illustrative fee defaults */
+    deductibles?: SaleDeductible[];
+    isPrimaryResidence?: boolean;
+    marginalTaxRatePct?: number;
+    /** Keep user-entered CGT instead of auto estimate */
+    cgtManualOverride?: boolean;
+    /** Base cost for CGT (defaults to costBasis) */
+    cgtBaseCost?: number;
+    cgtBaseCostAssumed?: boolean;
+}): SaleProceedsBreakdown {
+    const {
+        grossSalePrice,
+        purchasePrice,
+        renovationSpend,
+        costBasis,
+        bondBalance,
+        underBond,
+        salePriceSource = 'suggested',
+        agentCommissionAmount,
+        agentCommissionIncludesVat = false,
+        cgtManualOverride = false,
+    } = params;
+
+    const ratePct =
+        typeof params.agentCommissionPct === 'number' &&
+        Number.isFinite(params.agentCommissionPct) &&
+        params.agentCommissionPct >= 0
+            ? Math.round(params.agentCommissionPct * 100) / 100
+            : DEFAULT_AGENT_COMMISSION_PCT;
+
+    const useFixed =
+        typeof agentCommissionAmount === 'number' &&
+        Number.isFinite(agentCommissionAmount) &&
+        agentCommissionAmount > 0;
+
+    let toAgent: number;
+    let agentCommissionRatePct = ratePct;
+    let agentNote: string;
+    let agentLabel: string;
+
+    if (useFixed) {
+        toAgent = Math.round(agentCommissionAmount);
+        agentCommissionRatePct = grossSalePrice > 0 ? Math.round((toAgent / grossSalePrice) * 1000) / 10 : 0;
+        agentLabel = 'Estate agent commission (fixed)';
+        agentNote = 'Amount entered from your mandate / agreement';
+    } else if (agentCommissionIncludesVat) {
+        toAgent = Math.round(grossSalePrice * (ratePct / 100));
+        agentLabel = `Estate agent commission (${ratePct}% incl. VAT)`;
+        agentNote = 'Rate entered as all-in (VAT already included)';
+    } else {
+        const agentCommissionExVat = Math.round(grossSalePrice * (ratePct / 100));
+        const agentVat = Math.round(agentCommissionExVat * VAT_RATE);
+        toAgent = agentCommissionExVat + agentVat;
+        agentLabel = `Estate agent commission (${ratePct}% + VAT)`;
+        agentNote = 'Includes 15% VAT on commission';
+    }
+
+    const toBank = underBond && bondBalance > 0 ? bondBalance : 0;
+
+    let allDeductibles: SaleDeductible[] = (params.deductibles ??
+        buildDefaultSellerDeductibles({
+            grossSalePrice,
+            bondBalance,
+            underBond,
+        })).map((d) => ({
+        id: d.id,
+        label: (d.label || 'Deductible').trim(),
+        amount: Math.max(0, Math.round(d.amount || 0)),
+        note: d.note,
+    }));
+
+    // Selling costs for CGT = agent + disposal fees (not bond, rates arrears, or CGT itself)
+    const sellingCostsForCgt =
+        toAgent +
+        allDeductibles
+            .filter((d) => !NON_SELLING_DEDUCTIBLE_IDS.has(d.id))
+            .reduce((sum, d) => sum + d.amount, 0);
+
+    const cgtBaseCost =
+        typeof params.cgtBaseCost === 'number' && params.cgtBaseCost >= 0
+            ? params.cgtBaseCost
+            : costBasis;
+
+    const cgtEstimate = estimateCapitalGainsTax({
+        salePrice: grossSalePrice,
+        baseCost: cgtBaseCost,
+        baseCostAssumed: params.cgtBaseCostAssumed,
+        sellingCosts: sellingCostsForCgt,
+        isPrimaryResidence: params.isPrimaryResidence,
+        marginalTaxRatePct: params.marginalTaxRatePct,
+    });
+
+    if (!cgtManualOverride) {
+        const cgtNote = cgtEstimate.isPrimaryResidence
+            ? `Auto: gain after R${(CGT_PRIMARY_RESIDENCE_EXCLUSION / 1_000_000).toFixed(0)}m primary exclusion · ${cgtEstimate.marginalTaxRatePct}% marginal`
+            : `Auto: investment property (no primary exclusion) · ${cgtEstimate.marginalTaxRatePct}% marginal`;
+        const cgtRow: SaleDeductible = {
+            id: 'cgt',
+            label: 'SARS capital gains tax (est.)',
+            amount: cgtEstimate.estimatedCgt,
+            note: cgtNote,
+        };
+        const hasCgt = allDeductibles.some((d) => d.id === 'cgt');
+        allDeductibles = hasCgt
+            ? allDeductibles.map((d) => (d.id === 'cgt' ? cgtRow : d))
+            : [cgtRow, ...allDeductibles];
+    }
+
+    const activeDeductibles = allDeductibles.filter((d) => d.amount > 0);
+    const ratesAndTaxesOwed = allDeductibles.find((d) => d.id === 'rates-taxes')?.amount ?? 0;
+    const capitalGainsTax = allDeductibles.find((d) => d.id === 'cgt')?.amount ?? 0;
+    const otherSellerCosts = activeDeductibles.reduce((sum, d) => sum + d.amount, 0);
+
+    const totalDeductions = toBank + toAgent + otherSellerCosts;
+    const netToSeller = grossSalePrice - totalDeductions;
+    const estimatedProfit = grossSalePrice - toAgent - otherSellerCosts - costBasis;
+
+    const lines: SaleProceedsBreakdown['lines'] = [
+        {
+            id: 'gross',
+            label: salePriceSource === 'custom' ? 'Your target sale price' : 'Suggested selling price',
+            amount: grossSalePrice,
+            note:
+                salePriceSource === 'custom'
+                    ? 'Sale price you entered for this breakdown'
+                    : 'Gross proceeds before deductions',
+        },
+    ];
+
+    if (toBank > 0) {
+        lines.push({
+            id: 'bank',
+            label: 'To the bank (bond settlement)',
+            amount: -toBank,
+            note: 'Outstanding home loan settled at transfer',
+        });
+    }
+
+    lines.push({
+        id: 'agent',
+        label: agentLabel,
+        amount: -toAgent,
+        note: agentNote,
+    });
+
+    for (const d of activeDeductibles) {
+        lines.push({
+            id: d.id,
+            label: d.label,
+            amount: -d.amount,
+            note: d.note,
+        });
+    }
+
+    lines.push({
+        id: 'net',
+        label: 'Estimated cash to you',
+        amount: netToSeller,
+        note: 'After bank, agent, SARS CGT and other deductibles',
+    });
+
+    return {
+        grossSalePrice,
+        salePriceSource,
+        purchasePrice,
+        renovationSpend,
+        costBasis,
+        toBank,
+        toAgent,
+        agentCommissionRatePct,
+        agentCommissionIsFixed: useFixed,
+        agentCommissionIncludesVat: useFixed ? true : agentCommissionIncludesVat,
+        deductibles: allDeductibles,
+        ratesAndTaxesOwed,
+        capitalGainsTax,
+        cgtEstimate: cgtManualOverride ? { ...cgtEstimate, estimatedCgt: capitalGainsTax } : cgtEstimate,
+        otherSellerCosts,
+        totalDeductions,
+        netToSeller,
+        estimatedProfit,
+        lines,
+    };
+}
+
+function resolveAcquisitionType(params: {
+    acquisitionType?: AcquisitionType;
+    inherited?: boolean;
+}): AcquisitionType {
+    if (params.acquisitionType) return params.acquisitionType;
+    if (params.inherited) return 'inherited';
+    return 'bought_cash';
+}
+
+/**
+ * Suggest a selling price from:
+ * 1) purchase price grown with compound suburb appreciation
+ * 2) uplift from improvements already made
+ * 3) blend toward suburb average (location anchor)
+ */
+export function estimateSellSuggestion(params: {
+    purchasePrice: number;
+    purchaseDate: string;
+    annualAppreciationPct: number;
+    suburbAverage: number;
+    completedImprovementIds: string[];
+    improvements: ImprovementRecommendation[];
+    renovationSpend?: number;
+    otherImprovementLabels?: string[];
+    acquisitionType?: AcquisitionType;
+    inherited?: boolean;
+    underBond?: boolean;
+    bondBalance?: number;
+    expectedSalePrice?: number;
+    agentCommissionPct?: number;
+    agentCommissionAmount?: number;
+    agentCommissionIncludesVat?: boolean;
+    deductibles?: SaleDeductible[];
+    isPrimaryResidence?: boolean;
+    marginalTaxRatePct?: number;
+    cgtManualOverride?: boolean;
+}): SellSuggestion {
+    const acquisitionType = resolveAcquisitionType(params);
+    const noPurchaseCost =
+        acquisitionType === 'inherited' || acquisitionType === 'family_home';
+    const boughtCash = acquisitionType === 'bought_cash';
+    const underBond = boughtCash ? false : Boolean(params.underBond);
+    const bondBalance =
+        underBond && typeof params.bondBalance === 'number' && params.bondBalance > 0
+            ? Math.round(params.bondBalance)
+            : 0;
+
+    const yearsOwned = Math.round(yearsSincePurchase(params.purchaseDate) * 10) / 10;
+    const rate = Math.max(0, params.annualAppreciationPct) / 100;
+    const purchaseForCompound =
+        params.purchasePrice > 0
+            ? params.purchasePrice
+            : noPurchaseCost
+              ? Math.round(params.suburbAverage * 0.7)
+              : params.purchasePrice;
+
+    const compoundedPurchaseValue = Math.round(
+        purchaseForCompound * Math.pow(1 + rate, yearsOwned)
+    );
+
+    const completed = params.improvements.filter((i) =>
+        params.completedImprovementIds.includes(i.id)
+    );
+    const modelledUplift = Math.round(
+        completed.reduce((s, i) => s + i.estimatedValueIncrease, 0) * 0.9
+    );
+    const renovationSpend =
+        typeof params.renovationSpend === 'number' && params.renovationSpend > 0
+            ? Math.round(params.renovationSpend)
+            : 0;
+
+    let improvementContribution = modelledUplift;
+    if (renovationSpend > 0 && modelledUplift > 0) {
+        improvementContribution = Math.round(modelledUplift * 0.55 + renovationSpend * 0.85 * 0.45);
+    } else if (renovationSpend > 0) {
+        improvementContribution = Math.round(renovationSpend * 0.85);
+    }
+
+    const withImprovements = compoundedPurchaseValue + improvementContribution;
+    const suggestedSellPrice = Math.round(withImprovements * 0.7 + params.suburbAverage * 0.3);
+    const otherLabels = (params.otherImprovementLabels ?? []).filter(Boolean);
+
+    const acquisitionCost = noPurchaseCost ? 0 : Math.max(0, params.purchasePrice);
+    const costBasis = acquisitionCost + renovationSpend;
+
+    // CGT base cost: purchase/inheritance value + improvements (not R0 for inherited when unknown)
+    const cgtBaseCostAssumed = noPurchaseCost && !(params.purchasePrice > 0);
+    const cgtBaseCost =
+        (params.purchasePrice > 0
+            ? params.purchasePrice
+            : cgtBaseCostAssumed
+              ? Math.round(params.suburbAverage * 0.7)
+              : 0) + renovationSpend;
+
+    const customSale =
+        typeof params.expectedSalePrice === 'number' && params.expectedSalePrice > 0
+            ? Math.round(params.expectedSalePrice)
+            : undefined;
+    const salePriceForProceeds = customSale ?? suggestedSellPrice;
+
+    const proceeds = buildSaleProceedsBreakdown({
+        grossSalePrice: salePriceForProceeds,
+        purchasePrice: params.purchasePrice,
+        renovationSpend,
+        costBasis,
+        bondBalance,
+        underBond,
+        salePriceSource: customSale ? 'custom' : 'suggested',
+        agentCommissionPct: params.agentCommissionPct,
+        agentCommissionAmount: params.agentCommissionAmount,
+        agentCommissionIncludesVat: params.agentCommissionIncludesVat,
+        deductibles: params.deductibles,
+        isPrimaryResidence: params.isPrimaryResidence,
+        marginalTaxRatePct: params.marginalTaxRatePct,
+        cgtManualOverride: params.cgtManualOverride,
+        cgtBaseCost,
+        cgtBaseCostAssumed,
+    });
+
+    const standToGain = proceeds.netToSeller;
+    const gainVsInvestment = proceeds.estimatedProfit;
+
+    const suburb = Math.max(1, params.suburbAverage);
+    const renoShare = renovationSpend / suburb;
+    const recovery = renovationSpend > 0 ? improvementContribution / renovationSpend : 1;
+    const purchasePremium =
+        !noPurchaseCost && params.purchasePrice > 0 ? params.purchasePrice / suburb : 1;
+
+    let investmentSignal: SellSuggestion['investmentSignal'] = 'balanced';
+    let investmentSignalLabel = 'Spend looks reasonable for this location';
+    let investmentSignalDetail =
+        'Renovation spend and purchase price sit in a sensible range versus local suburb averages.';
+
+    if (renoShare >= 0.25 || recovery < 0.65 || purchasePremium >= 1.35) {
+        investmentSignal = 'over';
+        investmentSignalLabel = 'Likely over-invested for this area';
+        investmentSignalDetail =
+            renoShare >= 0.25
+                ? `Renovations are about ${Math.round(renoShare * 100)}% of the suburb average — buyers in this area may not pay that back in full.`
+                : purchasePremium >= 1.35
+                  ? 'The purchase price sits well above typical suburb values, so recovering the full investment may be harder.'
+                  : 'Modelled value uplift is well below what was spent on renovations for this location.';
+    } else if (renoShare >= 0.15 || recovery < 0.85 || purchasePremium >= 1.2) {
+        investmentSignal = 'caution';
+        investmentSignalLabel = 'Renovation spend is high for this location';
+        investmentSignalDetail =
+            'You may still do well, but further heavy spend is less likely to return full value in this suburb.';
+    } else if (
+        renovationSpend > 0 &&
+        recovery >= 1.1 &&
+        renoShare < 0.1 &&
+        purchasePremium <= 1.05
+    ) {
+        investmentSignal = 'under';
+        investmentSignalLabel = 'Room for selective further investment';
+        investmentSignalDetail =
+            'Spend so far looks efficient versus suburb norms — high-ROI upgrades could still add value.';
+    }
+
+    return {
+        purchasePrice: params.purchasePrice,
+        yearsOwned,
+        annualAppreciationPct: params.annualAppreciationPct,
+        compoundedPurchaseValue,
+        improvementContribution,
+        renovationSpend,
+        suburbAverage: params.suburbAverage,
+        suggestedSellPrice,
+        completedImprovementNames: [...completed.map((c) => c.name), ...otherLabels],
+        acquisitionType,
+        acquisitionLabel: ACQUISITION_LABELS[acquisitionType],
+        inherited: noPurchaseCost,
+        underBond,
+        bondBalance,
+        costBasis,
+        standToGain,
+        gainVsInvestment,
+        investmentSignal,
+        investmentSignalLabel,
+        investmentSignalDetail,
+        proceeds,
+    };
+}
+
 export function buildSnapshotForLocation(
     input: LocationInput,
     baseProperty: PropertyProfile = DEMO_PROPERTY
@@ -565,22 +1086,78 @@ export function buildSnapshotForLocation(
     const area = resolveAreaProfile(input);
     const market = buildMarketFromArea(area);
     const property = buildPropertyForLocation(baseProperty, input, area);
-    return buildOptimizerSnapshot(property, market);
+    const completedIds = input.completedImprovementIds ?? [];
+    const allForArea = buildImprovementRecommendations(property, market);
+
+    const resolvedType =
+        input.acquisitionType ??
+        (input.inherited ? ('inherited' as const) : ('bought_cash' as const));
+    const noPurchaseRequired =
+        resolvedType === 'inherited' || resolvedType === 'family_home';
+
+    const sellSuggestion =
+        (typeof input.purchasePrice === 'number' && input.purchasePrice > 0) || noPurchaseRequired
+            ? estimateSellSuggestion({
+                  purchasePrice: input.purchasePrice ?? 0,
+                  purchaseDate: input.purchaseDate || property.purchaseDate,
+                  annualAppreciationPct: market.historicalAppreciation,
+                  suburbAverage: market.avgPropertyPrice,
+                  completedImprovementIds: completedIds,
+                  improvements: allForArea,
+                  renovationSpend: input.renovationSpend,
+                  otherImprovementLabels: (input.otherImprovements ?? []).map((o) => o.label),
+                  acquisitionType: resolvedType,
+                  inherited: noPurchaseRequired,
+                  underBond: resolvedType === 'bought_cash' ? false : input.underBond,
+                  bondBalance: resolvedType === 'bought_cash' ? 0 : input.bondBalance,
+                  expectedSalePrice: input.expectedSalePrice,
+                  agentCommissionPct: input.agentCommissionPct,
+                  agentCommissionAmount: input.agentCommissionAmount,
+                  agentCommissionIncludesVat: input.agentCommissionIncludesVat,
+                  deductibles: input.deductibles,
+                  isPrimaryResidence: input.isPrimaryResidence,
+                  marginalTaxRatePct: input.marginalTaxRatePct,
+                  cgtManualOverride: input.cgtManualOverride,
+              })
+            : undefined;
+
+    return buildOptimizerSnapshot(property, market, {
+        completedImprovementIds: completedIds,
+        sellSuggestion,
+    });
 }
 
 export function buildOptimizerSnapshot(
     property: PropertyProfile = DEMO_PROPERTY,
-    market: MarketContext = DEMO_MARKET
+    market: MarketContext = DEMO_MARKET,
+    options?: {
+        completedImprovementIds?: string[];
+        sellSuggestion?: SellSuggestion;
+    }
 ): OptimizerSnapshot {
-    const estimatedMarketValue = computeHybridMarketValue(property, market);
+    const completedIds = options?.completedImprovementIds ?? [];
+    const sellSuggestion = options?.sellSuggestion;
+
+    const hybridValue = computeHybridMarketValue(
+        property,
+        market,
+        DEFAULT_VALUATION_WEIGHTS,
+        completedIds
+    );
+    const estimatedMarketValue = sellSuggestion?.suggestedSellPrice ?? hybridValue;
     const growthSincePurchase =
-        ((estimatedMarketValue - property.purchasePrice) / property.purchasePrice) * 100;
+        property.purchasePrice > 0
+            ? ((estimatedMarketValue - property.purchasePrice) / property.purchasePrice) * 100
+            : 0;
     const equity = estimatedMarketValue - property.bondBalance;
     const categoryScores = buildCategoryScores(property, market);
     const overallAiScore = Math.round(
         categoryScores.reduce((s, c) => s + c.score, 0) / categoryScores.length
     );
-    const improvements = buildImprovementRecommendations(property, market);
+    const allImprovements = buildImprovementRecommendations(property, market);
+    const improvements = completedIds.length
+        ? allImprovements.filter((i) => !completedIds.includes(i.id))
+        : allImprovements;
 
     const futureValues = {
         1: Math.round(estimatedMarketValue * (1 + market.historicalAppreciation / 100)),
@@ -597,13 +1174,15 @@ export function buildOptimizerSnapshot(
         market,
         estimatedMarketValue,
         estimatedRentalValue,
-        confidenceScore: 87,
+        confidenceScore: sellSuggestion ? 82 : 87,
         growthSincePurchase: Math.round(growthSincePurchase * 10) / 10,
         investmentGrade: gradeFromScore(overallAiScore),
         avgAnnualAppreciation: market.historicalAppreciation,
         equity,
         netWorthContribution: Math.round(equity * 0.94),
-        monthlyAppreciation: Math.round((estimatedMarketValue * (market.historicalAppreciation / 100)) / 12),
+        monthlyAppreciation: Math.round(
+            (estimatedMarketValue * (market.historicalAppreciation / 100)) / 12
+        ),
         annualAppreciation: Math.round(estimatedMarketValue * (market.historicalAppreciation / 100)),
         futureValues,
         breakdown: buildValuationBreakdown(property, market, estimatedMarketValue, property.bondBalance),
@@ -619,7 +1198,11 @@ export function buildOptimizerSnapshot(
         healthItems: buildPropertyHealth(property),
         alerts: buildSmartAlerts(market, property),
         lastUpdated: new Date().toISOString(),
-        marketStatus: market.marketTemperature.charAt(0).toUpperCase() + market.marketTemperature.slice(1) + ' market',
+        marketStatus:
+            market.marketTemperature.charAt(0).toUpperCase() +
+            market.marketTemperature.slice(1) +
+            ' market',
+        sellSuggestion,
     };
 
     return {

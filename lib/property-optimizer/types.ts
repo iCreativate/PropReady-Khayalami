@@ -149,6 +149,106 @@ export interface SmartAlert {
     timestamp: string;
 }
 
+/** Sell estimate from purchase price, compound growth, location & completed upgrades */
+export type InvestmentSignal = 'under' | 'balanced' | 'caution' | 'over';
+export type AcquisitionType = 'purchased' | 'bought_cash' | 'inherited' | 'family_home';
+
+export interface SaleProceedsLine {
+    id: string;
+    label: string;
+    amount: number;
+    note?: string;
+}
+
+/** Extra seller cost / tax line deducted from sale proceeds */
+export interface SaleDeductible {
+    id: string;
+    label: string;
+    amount: number;
+    note?: string;
+}
+
+/** Illustrative SARS CGT estimate for an individual disposing of SA residential property */
+export interface CgtEstimate {
+    proceeds: number;
+    baseCost: number;
+    /** True when base cost was assumed (e.g. inherited with no value entered) */
+    baseCostAssumed: boolean;
+    sellingCosts: number;
+    capitalGain: number;
+    isPrimaryResidence: boolean;
+    primaryResidenceExclusion: number;
+    primaryResidenceExclusionApplied: number;
+    annualExclusion: number;
+    netCapitalGain: number;
+    inclusionRatePct: number;
+    taxableCapitalGain: number;
+    marginalTaxRatePct: number;
+    /** Estimated amount payable to SARS */
+    estimatedCgt: number;
+    maxEffectiveRatePct: number;
+}
+
+/** Typical SA seller proceeds after bank, agent & selling costs */
+export interface SaleProceedsBreakdown {
+    grossSalePrice: number;
+    /** Whether gross came from user target sale or the model suggestion */
+    salePriceSource: 'suggested' | 'custom';
+    purchasePrice: number;
+    renovationSpend: number;
+    costBasis: number;
+    toBank: number;
+    toAgent: number;
+    /** Commission % before VAT (0 when fixed amount used) */
+    agentCommissionRatePct: number;
+    /** True when commission was entered as a fixed rand amount */
+    agentCommissionIsFixed: boolean;
+    /** Whether VAT was added on top of the % commission */
+    agentCommissionIncludesVat: boolean;
+    /** All non-bank, non-agent deductions (fees, rates, taxes, custom) */
+    deductibles: SaleDeductible[];
+    ratesAndTaxesOwed: number;
+    capitalGainsTax: number;
+    /** Auto SARS CGT working (null if manually overridden with no calc) */
+    cgtEstimate: CgtEstimate | null;
+    otherSellerCosts: number;
+    totalDeductions: number;
+    /** Cash left after bond, agent commission and typical seller costs */
+    netToSeller: number;
+    /** Economic profit vs cost basis (sale − agent − other costs − cost basis) */
+    estimatedProfit: number;
+    lines: SaleProceedsLine[];
+}
+
+export interface SellSuggestion {
+    purchasePrice: number;
+    yearsOwned: number;
+    annualAppreciationPct: number;
+    compoundedPurchaseValue: number;
+    improvementContribution: number;
+    /** Rough amount the owner spent on renovations (ZAR), if provided */
+    renovationSpend: number;
+    suburbAverage: number;
+    suggestedSellPrice: number;
+    completedImprovementNames: string[];
+    acquisitionType: AcquisitionType;
+    acquisitionLabel: string;
+    /** True when inherited or family home (no / optional purchase cost) */
+    inherited: boolean;
+    underBond: boolean;
+    bondBalance: number;
+    /** Purchase (if any) + renovation spend */
+    costBasis: number;
+    /** Cash left after settling the bond, agent fees and typical selling costs */
+    standToGain: number;
+    /** Profit vs cost basis after selling costs (excludes bond as it settles liability) */
+    gainVsInvestment: number;
+    investmentSignal: InvestmentSignal;
+    investmentSignalLabel: string;
+    investmentSignalDetail: string;
+    proceeds: SaleProceedsBreakdown;
+}
+
 export interface OptimizerSnapshot {
     property: PropertyProfile;
     market: MarketContext;
@@ -173,6 +273,8 @@ export interface OptimizerSnapshot {
     alerts: SmartAlert[];
     lastUpdated: string;
     marketStatus: string;
+    /** Present when user entered purchase price / completed upgrades */
+    sellSuggestion?: SellSuggestion;
 }
 
 export interface ValuationEngineWeights {

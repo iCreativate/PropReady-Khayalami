@@ -70,9 +70,6 @@ export function PvoSection({
         <section id={id} className="pvo-section learn-animate-in">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 sm:mb-8">
                 <div>
-                    <p className="pvo-eyebrow text-[11px] font-semibold uppercase tracking-[0.14em] mb-2">
-                        PropReady AI
-                    </p>
                     <h2 className="pvo-heading text-2xl sm:text-3xl font-semibold tracking-tight">{title}</h2>
                     {subtitle && <p className="pvo-muted mt-2 text-sm sm:text-base max-w-2xl">{subtitle}</p>}
                 </div>

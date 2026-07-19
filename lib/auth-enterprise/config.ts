@@ -33,6 +33,10 @@ export function getAuthSecret(): string {
 }
 
 export function getAppUrl(): string {
+    // Local dev must never send OAuth/magic-link callbacks to production.
+    if (process.env.NODE_ENV === 'development') {
+        return (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/$/, '');
+    }
     return (
         process.env.NEXT_PUBLIC_APP_URL ||
         process.env.NEXTAUTH_URL ||

@@ -66,6 +66,7 @@ function fromViewingRow(row: Record<string, unknown>) {
         notes: row.notes ?? '',
         chatMessages: Array.isArray(row.chat_messages) ? row.chat_messages : [],
         timestamp: row.created_at ?? row.updated_at,
+        agentId: row.agent_id ?? null,
     };
 }
 

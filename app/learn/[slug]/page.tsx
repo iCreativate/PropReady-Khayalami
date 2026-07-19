@@ -1693,6 +1693,7 @@ export default async function LearningModulePage({
     return (
         <LearnArticleShell
             title={learningModule.title}
+            icon={learningModule.icon}
             nextSlug={nextSlug}
             nextTitle={nextModule?.title ?? null}
             toolkit={

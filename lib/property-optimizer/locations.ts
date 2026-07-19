@@ -1,5 +1,6 @@
 import type { MarketContext, PropertyProfile } from './types';
 import { DEMO_MARKET, DEMO_PROPERTY } from './demo-data';
+import { IMPROVEMENT_TEMPLATES } from './improvements';
 import {
     findSuburbMarketRecord,
     getLocationSuggestions as getSuburbLocationSuggestions,
@@ -12,7 +13,67 @@ export interface LocationInput {
     municipality?: string;
     province?: string;
     streetAddress?: string;
+    /** What the owner paid (ZAR) */
+    purchasePrice?: number;
+    /** ISO date YYYY-MM-DD */
+    purchaseDate?: string;
+    /** Improvement template IDs already completed on the property */
+    completedImprovementIds?: string[];
+    /** Rough spend per selected improvement template id (ZAR) */
+    improvementSpendById?: Record<string, number>;
+    /** Custom “other” improvements the owner added */
+    otherImprovements?: { id: string; label: string; spend: number }[];
+    /** Total renovation spend (sum of per-card amounts) — preferred for engine */
+    renovationSpend?: number;
+    /** @deprecated Prefer otherImprovements — kept for older callers */
+    otherImprovementsNote?: string;
+    /**
+     * How the owner acquired the property.
+     * - purchased: standard purchase (default) — may still have a bond
+     * - bought_cash: paid in full, no bond
+     * - inherited: received via inheritance
+     * - family_home: family / generational home
+     */
+    acquisitionType?: 'purchased' | 'bought_cash' | 'inherited' | 'family_home';
+    /** @deprecated Prefer acquisitionType === 'inherited' | 'family_home' */
+    inherited?: boolean;
+    /** Property currently has a bond / mortgage (ignored when bought_cash) */
+    underBond?: boolean;
+    /** Outstanding bond balance (ZAR) */
+    bondBalance?: number;
+    /**
+     * Target / expected sale price for proceeds (ZAR).
+     * When set, deductions use this instead of the model suggestion.
+     */
+    expectedSalePrice?: number;
+    /** Agent commission % before VAT (typical 5–7.5). Default 6.5 */
+    agentCommissionPct?: number;
+    /**
+     * Fixed commission amount in ZAR (overrides %).
+     * Enter the total the agent will receive (as agreed on the mandate).
+     */
+    agentCommissionAmount?: number;
+    /**
+     * When using %, if false (default) add 15% VAT on commission.
+     * Set true if your mandate rate already includes VAT.
+     */
+    agentCommissionIncludesVat?: boolean;
+    /**
+     * Seller deductibles: rates/taxes owed, CGT, clearance fees, custom costs.
+     * When provided, these replace the engine’s illustrative fee estimates.
+     * The `cgt` line is normally auto-calculated unless cgtManualOverride is true.
+     */
+    deductibles?: { id: string; label: string; amount: number; note?: string }[];
+    /** Ordinarily occupied as your main home — unlocks primary residence CGT exclusion */
+    isPrimaryResidence?: boolean;
+    /** Your top marginal income tax rate % (used for CGT). Default 45 */
+    marginalTaxRatePct?: number;
+    /** When true, keep the cgt deductible amount as entered (do not auto-replace) */
+    cgtManualOverride?: boolean;
 }
+
+/** Alias used by the property-details form */
+export type PropertyDetailsInput = LocationInput;
 
 export interface AreaProfile {
     key: string;
@@ -409,7 +470,30 @@ export function buildPropertyForLocation(
 
     const scale = area.avgPropertyPrice / (DEMO_PROPERTY.purchasePrice * 1.35);
     const municipalValuation = Math.round(area.avgPropertyPrice * 0.92);
-    const purchasePrice = Math.round(base.purchasePrice * scale * 0.85);
+    const scaledDefault = Math.round(base.purchasePrice * scale * 0.85);
+    const purchasePrice =
+        typeof input.purchasePrice === 'number' && input.purchasePrice > 0
+            ? Math.round(input.purchasePrice)
+            : scaledDefault > 0
+              ? scaledDefault
+              : Math.round(area.avgPropertyPrice * 0.7);
+
+    const completedIds = input.completedImprovementIds ?? [];
+    const namedFeatures = completedIds.map((id) => {
+        const tpl = IMPROVEMENT_TEMPLATES.find((t) => t.id === id);
+        return tpl?.name ?? id;
+    });
+    const otherItems = input.otherImprovements ?? [];
+    const otherLabels = otherItems.map((o) => o.label.trim()).filter(Boolean);
+    const legacyOther = input.otherImprovementsNote?.trim();
+    const existingFeatures =
+        completedIds.length || otherLabels.length || legacyOther
+            ? [
+                  ...namedFeatures,
+                  ...otherLabels,
+                  ...(legacyOther && !otherLabels.includes(legacyOther) ? [legacyOther] : []),
+              ]
+            : base.existingFeatures;
 
     return {
         ...base,
@@ -420,7 +504,14 @@ export function buildPropertyForLocation(
         landSizeSqm: area.typicalLandSqm,
         floorSizeSqm: area.typicalFloorSqm,
         municipalValuation,
-        purchasePrice: purchasePrice > 0 ? purchasePrice : Math.round(area.avgPropertyPrice * 0.7),
+        purchasePrice,
+        purchaseDate: input.purchaseDate?.trim() || base.purchaseDate,
+        bondBalance:
+            input.underBond && typeof input.bondBalance === 'number' && input.bondBalance > 0
+                ? Math.round(input.bondBalance)
+                : 0,
+        existingFeatures,
+        conditionScore: Math.min(95, base.conditionScore + Math.min(18, completedIds.length * 3)),
     };
 }
 

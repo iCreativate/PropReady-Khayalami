@@ -361,9 +361,9 @@ export default function DocumentsPageContent() {
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        eyebrow="FICA & pre-qualification"
-                        title="My Documents"
-                        description="Upload your FICA documents to get prequalified with bond originators."
+                        eyebrow="Extensive bond pre-qualification"
+                        title="Bond Originators & Documents"
+                        description="Upload your FICA documents and prequalify thoroughly with a bond originator — free for you."
                     >
                         <div className="mt-6 flex flex-wrap gap-3">
                             <div className="px-4 py-2 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.08]">
