@@ -11,7 +11,7 @@ import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 export default function OriginatorLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
-    const [organizationId, setOrganizationId] = useState(BOND_ORIGINATORS[0]?.id || '');
+    const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
     const [staffNumber, setStaffNumber] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);

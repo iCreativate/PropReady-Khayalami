@@ -136,7 +136,7 @@ export function getDemoViewingsForAccount(type: 'buyer' | 'seller') {
         }
         return (
             v.sellerEmail?.toLowerCase() === email ||
-            (v.contactType === 'seller' && v.contactEmail?.toLowerCase() === email)
+            ((v.contactType as string) === 'seller' && v.contactEmail?.toLowerCase() === email)
         );
     });
 }

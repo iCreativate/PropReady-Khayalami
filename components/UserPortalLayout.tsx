@@ -46,6 +46,7 @@ export interface UserPortalUser {
     fullName: string;
     email?: string;
     id?: string;
+    phone?: string;
 }
 
 interface UserPortalLayoutProps {

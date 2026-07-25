@@ -12,6 +12,15 @@ import { createServiceClient } from '@/lib/supabase-admin';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { normalizeFfcNumber, validateFfcNumber } from '@/lib/ppra';
 
+type ProfileRow = {
+    id: string;
+    email: string;
+    password?: string | null;
+    ffc_number?: string | null;
+    organization_id?: string | null;
+    staff_number?: string | null;
+};
+
 function toLegacyUser(user: Awaited<ReturnType<typeof createSession>>['user']) {
     if (user.accountType === 'agent') {
         return {
@@ -92,25 +101,16 @@ export async function POST(request: NextRequest) {
         }
 
         const table = profileTableForAccountType(accountType);
-        const selectCols =
-            accountType === 'agent'
-                ? 'id, email, password, ffc_number'
-                : accountType === 'originator'
-                  ? 'id, email, password, organization_id, staff_number'
-                  : 'id, email, password';
+        const { data, error } = await supabase.from(table).select('*').eq('email', email).maybeSingle();
 
-        const { data: profile, error } = await supabase
-            .from(table)
-            .select(selectCols)
-            .eq('email', email)
-            .maybeSingle();
-
-        if (error || !profile) {
+        if (error || !data) {
             return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
         }
 
+        const profile = data as ProfileRow;
+
         if (accountType === 'agent') {
-            const storedFfc = normalizeFfcNumber(String((profile as { ffc_number?: string }).ffc_number || ''));
+            const storedFfc = normalizeFfcNumber(String(profile.ffc_number || ''));
             if (storedFfc && storedFfc !== ffcNumber) {
                 return NextResponse.json(
                     { success: false, error: 'FFC number does not match this agent account' },
@@ -129,14 +129,13 @@ export async function POST(request: NextRequest) {
         }
 
         if (accountType === 'originator') {
-            const row = profile as { organization_id?: string; staff_number?: string };
-            if (row.organization_id && row.organization_id !== organizationId) {
+            if (profile.organization_id && profile.organization_id !== organizationId) {
                 return NextResponse.json(
                     { success: false, error: 'Organisation does not match this staff account' },
                     { status: 401 }
                 );
             }
-            const storedStaff = String(row.staff_number || '')
+            const storedStaff = String(profile.staff_number || '')
                 .trim()
                 .toUpperCase();
             if (storedStaff && storedStaff !== staffNumber) {
@@ -154,7 +153,10 @@ export async function POST(request: NextRequest) {
                     console.error('auth/login originator staff save:', staffUpdateError);
                     if (staffUpdateError.code === '23505') {
                         return NextResponse.json(
-                            { success: false, error: 'That staff number is already registered for this organisation' },
+                            {
+                                success: false,
+                                error: 'That staff number is already registered for this organisation',
+                            },
                             { status: 409 }
                         );
                     }

@@ -31,7 +31,7 @@ function CompleteProfileInner() {
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [company, setCompany] = useState('');
-    const [organizationId, setOrganizationId] = useState(BOND_ORIGINATORS[0]?.id || '');
+    const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
     const [eaabNumber, setEaabNumber] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');

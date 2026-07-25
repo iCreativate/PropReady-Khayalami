@@ -11,7 +11,7 @@ export default function OriginatorRegisterPage() {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [organizationId, setOrganizationId] = useState(BOND_ORIGINATORS[0]?.id || '');
+    const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
     const [staffNumber, setStaffNumber] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
