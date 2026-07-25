@@ -192,7 +192,7 @@ export async function resetPasswordWithToken(
 
 async function sendAuthEmail(to: string, subject: string, html: string) {
     const key = process.env.RESEND_API_KEY?.trim();
-    const from = process.env.RESEND_FROM_EMAIL?.trim() || 'noreply@updates.prop-ready.co.za';
+    const from = process.env.RESEND_FROM_EMAIL?.trim() || 'PropReady <onboarding@resend.dev>';
     if (!key) {
         console.warn('[auth] RESEND_API_KEY missing — email not sent to', to);
         return;
