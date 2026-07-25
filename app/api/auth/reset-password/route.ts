@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validatePassword } from '@/lib/password';
 import { resetPasswordWithToken } from '@/lib/auth-enterprise/magic-link';
-import type { AccountType } from '@/lib/auth-enterprise';
+import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
 export async function POST(request: NextRequest) {
     const { token, password, type = 'user' } = await request.json();
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: pw.errors.join(', ') }, { status: 400 });
     }
 
-    const accountType: AccountType = type === 'agent' ? 'agent' : 'user';
+    const accountType = parseAccountType(type);
     const result = await resetPasswordWithToken(String(token), accountType, String(password));
 
     if (!result.success) {

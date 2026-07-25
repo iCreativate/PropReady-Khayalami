@@ -696,17 +696,17 @@ export default async function SellersLearningModulePage({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-semibold text-charcoal/70">Offer Price</label>
-                                        <p className="text-charcoal/50 text-xs mt-1">R _________________</p>
+                                        <p className="form-hint">R _________________</p>
                                     </div>
 
                                     <div>
                                         <label className="text-sm font-semibold text-charcoal/70">Deposit Amount</label>
-                                        <p className="text-charcoal/50 text-xs mt-1">R _________________</p>
+                                        <p className="form-hint">R _________________</p>
                                     </div>
 
                                     <div>
                                         <label className="text-sm font-semibold text-charcoal/70">Occupancy Date</label>
-                                        <p className="text-charcoal/50 text-xs mt-1">_________________</p>
+                                        <p className="form-hint">_________________</p>
                                     </div>
 
                                     <div>
@@ -815,7 +815,7 @@ export default async function SellersLearningModulePage({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-semibold text-charcoal/70">Selling Price</label>
-                                        <p className="text-charcoal/50 text-xs mt-1">R _________________</p>
+                                        <p className="form-hint">R _________________</p>
                                     </div>
 
                                     <div className="border-t border-charcoal/10 pt-4">

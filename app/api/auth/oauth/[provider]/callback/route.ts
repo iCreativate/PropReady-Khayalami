@@ -4,9 +4,10 @@ import {
     getAppUrl,
     handleOAuthCallback,
     hashOAuthState,
+    loginPathForAccountType,
+    parseAccountType,
     setAuthCookies,
     type OAuthProvider,
-    type AccountType,
 } from '@/lib/auth-enterprise';
 import { getRequestMeta } from '@/lib/auth-enterprise/request-meta';
 
@@ -19,9 +20,9 @@ export async function GET(
     const code = request.nextUrl.searchParams.get('code');
     const state = request.nextUrl.searchParams.get('state');
     const storedState = request.cookies.get(AUTH_CONFIG.cookieNames.oauthState)?.value;
-    const accountType = (request.cookies.get('pr_oauth_type')?.value || 'user') as AccountType;
+    const accountType = parseAccountType(request.cookies.get('pr_oauth_type')?.value || 'user');
 
-    const loginPath = accountType === 'agent' ? '/auth/login?type=agent' : '/auth/login';
+    const loginPath = loginPathForAccountType(accountType);
     const loginError = (err: string) =>
         `${getAppUrl()}${loginPath}${loginPath.includes('?') ? '&' : '?'}error=${err}`;
 
@@ -41,8 +42,13 @@ export async function GET(
         return NextResponse.redirect(loginError('oauth_failed'));
     }
 
-    const redirectTo =
-        accountType === 'agent' ? '/auth/complete?type=agent' : '/auth/complete';
+    const typeQ =
+        accountType === 'agent'
+            ? '?type=agent'
+            : accountType === 'originator'
+              ? '?type=originator'
+              : '';
+    const redirectTo = `/auth/complete${typeQ}`;
     const response = NextResponse.redirect(`${getAppUrl()}${redirectTo}`);
     setAuthCookies(response, session.accessToken, session.refreshToken, true);
     response.cookies.delete(AUTH_CONFIG.cookieNames.oauthState);

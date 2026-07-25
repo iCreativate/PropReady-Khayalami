@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import imageCompression from 'browser-image-compression';
 import {
-    Building2, Plus, MapPin, DollarSign, Bed, Bath, Square, Calendar as CalendarIcon,
+    Building2, Plus, MapPin, Bed, Bath, Square, Calendar as CalendarIcon,
     Edit, Trash2, Sparkles, Image as ImageIcon, Video, Upload, Link2, FileEdit,
     AlertCircle, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -36,6 +36,19 @@ import {
     AGENT_MODAL_PANEL_LG,
     AGENT_ICON_BTN,
 } from '@/lib/agent-portal-ui';
+import {
+    PROPERTY_CARD_AGENT,
+    PROPERTY_CARD_MEDIA,
+    PROPERTY_CARD_IMG,
+    PROPERTY_CARD_PLACEHOLDER,
+    PROPERTY_CARD_PHOTO_COUNT,
+    PROPERTY_CARD_PRICE,
+    PROPERTY_CARD_LOCATION,
+    PROPERTY_CARD_TITLE,
+    PROPERTY_CARD_META,
+    PROPERTY_CARD_CHIP_STATUS,
+    PROPERTY_CARD_CHIP_MATCH,
+} from '@/lib/property-card-ui';
 import { isAgentPpraVerified } from '@/lib/ppra';
 
 interface AgentListedPropertiesWorkspaceProps {
@@ -505,61 +518,72 @@ export default function AgentListedPropertiesWorkspace({
                                             ) : (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
                                                     {listedProperties.map((property) => (
-                                                        <div key={property.id} className="rounded-3xl overflow-hidden border border-charcoal/[0.07] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03),0_6px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.07)] hover:border-charcoal/[0.12] transition-all duration-300 flex flex-col">
+                                                        <div key={property.id} className={PROPERTY_CARD_AGENT}>
                                                             {property.images?.length && property.images[0] ? (
-                                                                <div className="relative w-full aspect-[16/10] bg-charcoal/10">
+                                                                <div className={PROPERTY_CARD_MEDIA}>
                                                                     <img
                                                                         src={getProxiedImageUrl(property.images[0])}
                                                                         alt={property.title}
-                                                                        className="w-full h-full object-cover"
+                                                                        className={PROPERTY_CARD_IMG}
                                                                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                                     />
                                                                     {property.images.length > 1 && (
-                                                                        <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                                        <span className={PROPERTY_CARD_PHOTO_COUNT}>
                                                                             {property.images.length} photos
                                                                         </span>
                                                                     )}
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-full aspect-[16/10] bg-charcoal/10 flex items-center justify-center">
-                                                                    <ImageIcon className="w-12 h-12 text-charcoal/30" />
-                                                                </div>
-                                                            )}
-                                                            <div className="p-4 flex-1 flex flex-col">
-                                                                <div className="flex items-start justify-between gap-2 mb-2">
-                                                                    <h3 className="text-charcoal font-semibold">{property.title}</h3>
-                                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                                    <div className="absolute top-3 right-3 z-[3] flex items-center gap-1.5">
                                                                         {!property.published && (
-                                                                            <span className={`${AGENT_BADGE} bg-amber-500/10 text-amber-800 border border-amber-500/15`}>
+                                                                            <span className={PROPERTY_CARD_CHIP_STATUS}>
                                                                                 Draft
                                                                             </span>
                                                                         )}
                                                                         {property.listingScore != null && (
-                                                                            <span className={`${AGENT_BADGE} bg-gold/[0.08] text-gold border border-gold/10`}>
+                                                                            <span className={`${PROPERTY_CARD_CHIP_MATCH} !bg-white/92 !backdrop-blur-sm shadow-sm`}>
                                                                                 {property.listingScore}/100
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                <div className="space-y-1 text-sm text-charcoal/70 mb-3">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <MapPin className="w-4 h-4 flex-shrink-0" />
+                                                            ) : (
+                                                                <div className={`${PROPERTY_CARD_MEDIA}`}>
+                                                                    <div className={PROPERTY_CARD_PLACEHOLDER}>
+                                                                        <ImageIcon className="w-12 h-12 text-charcoal/30" />
+                                                                    </div>
+                                                                    <div className="absolute top-3 right-3 z-[3] flex items-center gap-1.5">
+                                                                        {!property.published && (
+                                                                            <span className={PROPERTY_CARD_CHIP_STATUS}>
+                                                                                Draft
+                                                                            </span>
+                                                                        )}
+                                                                        {property.listingScore != null && (
+                                                                            <span className={PROPERTY_CARD_CHIP_MATCH}>
+                                                                                {property.listingScore}/100
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                            <div className="p-4 flex-1 flex flex-col">
+                                                                <h3 className={`${PROPERTY_CARD_TITLE} !mb-2`}>{property.title}</h3>
+                                                                <div className="space-y-1.5 mb-3">
+                                                                    <div className={`${PROPERTY_CARD_LOCATION} !mb-0`}>
+                                                                        <MapPin />
                                                                         <span className="truncate">{property.address}</span>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <DollarSign className="w-4 h-4" />
-                                                                        <span>{formatCurrency(property.price)}</span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-4">
-                                                                        <div className="flex items-center gap-1">
+                                                                    <span className={`${PROPERTY_CARD_PRICE} !mb-0 !text-xl`}>
+                                                                        {formatCurrency(property.price)}
+                                                                    </span>
+                                                                    <div className={`${PROPERTY_CARD_META} !mb-0`}>
+                                                                        <div>
                                                                             <Bed className="w-4 h-4" />
                                                                             <span>{property.bedrooms}</span>
                                                                         </div>
-                                                                        <div className="flex items-center gap-1">
+                                                                        <div>
                                                                             <Bath className="w-4 h-4" />
                                                                             <span>{property.bathrooms}</span>
                                                                         </div>
-                                                                        <div className="flex items-center gap-1">
+                                                                        <div>
                                                                             <Square className="w-4 h-4" />
                                                                             <span>{property.size}m²</span>
                                                                         </div>
@@ -568,12 +592,12 @@ export default function AgentListedPropertiesWorkspace({
                                                                 {property.features?.length ? (
                                                                     <div className="flex flex-wrap gap-1 mb-3">
                                                                         {property.features.slice(0, 5).map((f) => (
-                                                                            <span key={f} className="px-2 py-0.5 rounded-md bg-charcoal/5 text-charcoal/70 text-xs border border-charcoal/8">
+                                                                            <span key={f} className="px-2 py-0.5 rounded-full bg-charcoal/[0.04] text-charcoal/60 text-[11px] font-medium border border-charcoal/[0.06]">
                                                                                 {f}
                                                                             </span>
                                                                         ))}
                                                                         {property.features.length > 5 && (
-                                                                            <span className="text-charcoal/50 text-xs">+{property.features.length - 5}</span>
+                                                                            <span className="text-charcoal/45 text-xs self-center">+{property.features.length - 5}</span>
                                                                         )}
                                                                     </div>
                                                                 ) : null}
@@ -1124,13 +1148,7 @@ export default function AgentListedPropertiesWorkspace({
                                                             <img
                                                                 src={getProxiedImageUrl(url)}
                                                                 alt={`${showViewPropertyModal.title} - ${i + 1}`}
-                                                                className="w-full h-full object-cover"
-                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                {showViewPropertyModal.images.length > 1 && (
+                                                                className="w-full h-full object-cover gallery-zoom"
                                                     <>
                                                         <button
                                                             type="button"

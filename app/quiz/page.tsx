@@ -538,11 +538,11 @@ export default function QuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., John Mthembu"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.fullName ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.fullName  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.fullName && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.fullName}
                                 </p>
@@ -562,11 +562,11 @@ export default function QuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., john@example.com"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.email ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.email  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.email && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.email}
                                 </p>
@@ -586,11 +586,11 @@ export default function QuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 082 123 4567"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.phone ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.phone  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.phone && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.phone}
                                 </p>
@@ -612,7 +612,7 @@ export default function QuizPage() {
                                         onChange={handleInputChange}
                                         placeholder="e.g., Johannesburg, Sandton, Cape Town"
                                         autoComplete="address-level2"
-                                        className={`w-full min-w-0 pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold text-base`}
+                                        className={`w-full min-w-0 pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control text-base`}
                                     />
                                 </div>
                                 <button
@@ -640,7 +640,7 @@ export default function QuizPage() {
                                 </button>
                             </div>
                             {errors.city && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.city}
                                 </p>
@@ -686,7 +686,7 @@ export default function QuizPage() {
                                 </button>
                             </div>
                             {errors.inMarketForProperty && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.inMarketForProperty}
                                 </p>
@@ -713,11 +713,11 @@ export default function QuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 45000"
                                     required
-                                    className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.monthlyIncome ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.monthlyIncome  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.monthlyIncome && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.monthlyIncome}
                                 </p>
@@ -733,7 +733,7 @@ export default function QuizPage() {
                                 value={formData.employmentStatus}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.employmentStatus ? 'border-red-500' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.employmentStatus  ? 'form-control-error' : ''} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select status</option>
                                 <option value="permanent">Permanent Employee</option>
@@ -742,7 +742,7 @@ export default function QuizPage() {
                                 <option value="other">Other</option>
                             </select>
                             {errors.employmentStatus && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.employmentStatus}
                                 </p>
@@ -786,7 +786,7 @@ export default function QuizPage() {
                                 </button>
                             </div>
                             {errors.hasDebt && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.hasDebt}
                                 </p>
@@ -808,11 +808,11 @@ export default function QuizPage() {
                                         onChange={handleInputChange}
                                         placeholder="e.g., 5000"
                                         required
-                                        className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.expenses ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                        className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.expenses  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                     />
                                 </div>
                                 {errors.expenses && (
-                                    <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                    <p className="form-error">
                                         <AlertCircle className="w-4 h-4" />
                                         {errors.expenses}
                                     </p>
@@ -841,11 +841,11 @@ export default function QuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 100000"
                                     required
-                                    className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.depositSaved ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-lg bg-white border ${errors.depositSaved  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.depositSaved && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.depositSaved}
                                 </p>
@@ -870,7 +870,7 @@ export default function QuizPage() {
                                 name="creditScore"
                                 value={formData.creditScore}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal"
+                                className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal form-control [&>option]:text-charcoal"
                             >
                                 <option value="">I&apos;m not sure</option>
                                 <option value="excellent">Excellent (650+)</option>
@@ -919,7 +919,7 @@ export default function QuizPage() {
                                             onChange={handleInputChange}
                                             placeholder="At least 8 characters"
                                             required
-                                            className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.password ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.password  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                         />
                                         <button
                                             type="button"
@@ -931,7 +931,7 @@ export default function QuizPage() {
                                     </div>
                                     <p className="text-charcoal/50 text-xs mt-2">{getPasswordRequirementsText()}</p>
                                     {errors.password && (
-                                        <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                        <p className="form-error">
                                             <AlertCircle className="w-4 h-4" />
                                             {errors.password}
                                         </p>
@@ -951,7 +951,7 @@ export default function QuizPage() {
                                             onChange={handleInputChange}
                                             placeholder="Re-enter your password"
                                             required
-                                            className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.confirmPassword ? 'border-red-500' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                            className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.confirmPassword  ? 'form-control-error' : ''} text-charcoal placeholder:text-charcoal/35 form-control`}
                                         />
                                         <button
                                             type="button"
@@ -962,7 +962,7 @@ export default function QuizPage() {
                                         </button>
                                     </div>
                                     {errors.confirmPassword && (
-                                        <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                        <p className="form-error">
                                             <AlertCircle className="w-4 h-4" />
                                             {errors.confirmPassword}
                                         </p>

@@ -47,73 +47,73 @@ export default function TotalCostCalculator() {
             <h4 className="font-bold text-charcoal text-lg mb-4">Property Investment Cost Breakdown</h4>
             <div className="space-y-3">
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Purchase Price</label>
+                    <label className="form-label !font-semibold !text-charcoal">Purchase Price</label>
                     <input
                         type="text"
                         value={purchasePrice}
                         onChange={(e) => setPurchasePrice(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Transfer Costs (8-10%)</label>
+                    <label className="form-label !font-semibold !text-charcoal">Transfer Costs (8-10%)</label>
                     <input
                         type="text"
                         value={transferCosts}
                         onChange={(e) => setTransferCosts(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Municipal Rates</label>
+                    <label className="form-label !font-semibold !text-charcoal">Monthly Municipal Rates</label>
                     <input
                         type="text"
                         value={monthlyRates}
                         onChange={(e) => setMonthlyRates(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Levies (if applicable)</label>
+                    <label className="form-label !font-semibold !text-charcoal">Monthly Levies (if applicable)</label>
                     <input
                         type="text"
                         value={monthlyLevies}
                         onChange={(e) => setMonthlyLevies(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Monthly Insurance</label>
+                    <label className="form-label !font-semibold !text-charcoal">Monthly Insurance</label>
                     <input
                         type="text"
                         value={monthlyInsurance}
                         onChange={(e) => setMonthlyInsurance(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Annual Maintenance Budget (1-2% of value)</label>
+                    <label className="form-label !font-semibold !text-charcoal">Annual Maintenance Budget (1-2% of value)</label>
                     <input
                         type="text"
                         value={annualMaintenance}
                         onChange={(e) => setAnnualMaintenance(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Property Management (8-12% of rental)</label>
+                    <label className="form-label !font-semibold !text-charcoal">Property Management (8-12% of rental)</label>
                     <input
                         type="text"
                         value={propertyManagement}
                         onChange={(e) => setPropertyManagement(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">

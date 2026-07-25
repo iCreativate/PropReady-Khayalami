@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createPasswordReset } from '@/lib/auth-enterprise';
-import type { AccountType } from '@/lib/auth-enterprise';
+import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
 export async function POST(request: NextRequest) {
     const { email, type = 'user' } = await request.json();
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Email required' }, { status: 400 });
     }
 
-    const accountType: AccountType = type === 'agent' ? 'agent' : 'user';
+    const accountType = parseAccountType(type);
     await createPasswordReset(String(email).trim(), accountType);
 
     return NextResponse.json({

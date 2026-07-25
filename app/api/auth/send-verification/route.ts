@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
     generateVerificationCode,
     saveVerificationCode,
-    type AccountType,
 } from '@/lib/verification-store';
+import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 import { sendVerificationEmail } from '@/lib/send-verification-email';
 
 export async function POST(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
         }
 
-        const type: AccountType = accountType === 'agent' ? 'agent' : 'user';
+        const type = parseAccountType(accountType);
         const code = generateVerificationCode();
         await saveVerificationCode(email, type, code);
 

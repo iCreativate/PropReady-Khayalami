@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from '@/lib/storage-keys';
 export type BuyerDocumentType =
     | 'pre-qualification'
     | 'id'
+    | 'residence'
     | 'income'
     | 'bank-statement'
     | 'other';
@@ -25,13 +26,23 @@ export const BUYER_DOCUMENT_MIME_TYPES = [
     'image/jpg',
     'image/png',
 ] as const;
-export const BUYER_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+export const BUYER_DOCUMENT_MAX_BYTES = 3 * 1024 * 1024;
 
-export const BUYER_DOCUMENT_SLOTS: { type: BuyerDocumentType; label: string }[] = [
-    { type: 'pre-qualification', label: 'Pre-Qualification Letter' },
-    { type: 'id', label: 'ID Document' },
-    { type: 'income', label: 'Proof of Income' },
+/** Named FICA upload slots — filename is ignored; display name = label. */
+export const BUYER_DOCUMENT_SLOTS: { type: BuyerDocumentType; label: string; hint?: string }[] = [
+    { type: 'id', label: 'ID Copy', hint: 'ID book or smart ID card (both sides if needed)' },
+    {
+        type: 'residence',
+        label: 'Proof of Residence',
+        hint: 'Utility bill or bank letter ≤ 3 months',
+    },
+    { type: 'income', label: 'Proof of Income', hint: 'Latest payslips or income confirmation' },
+    { type: 'bank-statement', label: 'Bank Statements', hint: 'Latest 3 months primary account' },
+    { type: 'other', label: 'Additional Document', hint: 'Marriage certificate or other requests' },
 ];
+
+/** Types buyers can upload (excludes originator-issued pre-qualification letters). */
+export const BUYER_DOCUMENT_TYPES: BuyerDocumentType[] = BUYER_DOCUMENT_SLOTS.map((s) => s.type);
 
 export function formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
@@ -42,24 +53,45 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function inferBuyerDocumentType(fileName: string, hint?: BuyerDocumentType): BuyerDocumentType {
-    if (hint && hint !== 'other') return hint;
+    if (hint) return hint;
     const lower = fileName.toLowerCase();
     if (lower.includes('id') || lower.includes('passport') || lower.includes('identity')) return 'id';
+    if (
+        lower.includes('residence') ||
+        lower.includes('address') ||
+        lower.includes('utility') ||
+        lower.includes('rates')
+    ) {
+        return 'residence';
+    }
     if (lower.includes('payslip') || lower.includes('salary') || lower.includes('income')) return 'income';
     if (lower.includes('bank') || lower.includes('statement')) return 'bank-statement';
-    if (lower.includes('pre-qual') || lower.includes('prequal')) return 'pre-qualification';
-    return hint ?? 'other';
+    return 'other';
 }
 
 export function buyerDocumentTypeLabel(type: BuyerDocumentType): string {
+    const slot = BUYER_DOCUMENT_SLOTS.find((s) => s.type === type);
+    if (slot) return slot.label;
     const labels: Record<BuyerDocumentType, string> = {
-        'pre-qualification': 'Pre-Qualification',
-        id: 'ID Document',
+        'pre-qualification': 'Pre-Qualification Letter',
+        id: 'ID Copy',
+        residence: 'Proof of Residence',
         income: 'Proof of Income',
-        'bank-statement': 'Bank Statement',
-        other: 'Other',
+        'bank-statement': 'Bank Statements',
+        other: 'Additional Document',
     };
     return labels[type];
+}
+
+/** Stable download/display filename for a slot + original file extension. */
+export function buyerDocumentDisplayFileName(
+    type: BuyerDocumentType,
+    originalFileName?: string
+): string {
+    const label = buyerDocumentTypeLabel(type);
+    const extMatch = originalFileName?.match(/\.([a-zA-Z0-9]+)$/);
+    const ext = extMatch?.[1]?.toLowerCase() || 'pdf';
+    return `${label}.${ext}`;
 }
 
 function sortBuyerDocuments(docs: BuyerDocument[]): BuyerDocument[] {
@@ -131,7 +163,7 @@ export function validateBuyerDocumentFile(file: File): string | null {
         return `Invalid file type: ${file.name}. Please upload PDF, JPG, or PNG files only.`;
     }
     if (file.size > BUYER_DOCUMENT_MAX_BYTES) {
-        return `File too large: ${file.name}. Maximum size is 10MB.`;
+        return `File too large: ${file.name}. Maximum size is 3MB.`;
     }
     return null;
 }

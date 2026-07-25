@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase-admin';
 import { Resend } from 'resend';
 import { AUTH_CONFIG, getAppUrl } from './config';
 import type { AccountType } from './config';
+import { profileTableForAccountType } from './account-profile';
 import { generateSecureToken, hashToken } from './password';
 import { createSession, findAccountByEmail, upsertAccountFromProfile } from './sessions';
 import type { LoginResult } from './types';
@@ -17,7 +18,7 @@ async function ensureProfileAndAccount(email: string, accountType: AccountType) 
     let account = await findAccountByEmail(normalized, accountType);
     if (account) return account;
 
-    const table = accountType === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(accountType);
     const existing = await db().from(table).select('id, full_name').eq('email', normalized).maybeSingle();
 
     let profileId = existing.data?.id as string | undefined;
@@ -32,12 +33,21 @@ async function ensureProfileAndAccount(email: string, accountType: AccountType) 
                       password: '',
                       status: 'pending',
                   }
-                : {
-                      id,
-                      full_name: normalized.split('@')[0],
-                      email: normalized,
-                      password: '',
-                  };
+                : accountType === 'originator'
+                  ? {
+                        id,
+                        full_name: normalized.split('@')[0],
+                        email: normalized,
+                        password: '',
+                        organization_id: 'betterbond',
+                        status: 'active',
+                    }
+                  : {
+                        id,
+                        full_name: normalized.split('@')[0],
+                        email: normalized,
+                        password: '',
+                    };
         const { data, error } = await db()
             .from(table)
             .insert(row as Record<string, unknown>)

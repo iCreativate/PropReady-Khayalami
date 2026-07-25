@@ -5,12 +5,29 @@ import Link from 'next/link';
 import { Home, Search as SearchIcon, SlidersHorizontal, MapPin, Bed, Bath, Square, TrendingUp } from 'lucide-react';
 import BuyerPortalShell from '@/components/BuyerPortalShell';
 import PublicSiteHeader from '@/components/PublicSiteHeader';
+import PropertyFavouriteButton from '@/components/PropertyFavouriteButton';
 import {
     PORTAL_CARD,
     PORTAL_PAGE_CONTAINER,
     PORTAL_SEARCH_INPUT,
     PORTAL_SECONDARY_BTN,
 } from '@/lib/portal-ui';
+import {
+    PROPERTY_CARD,
+    PROPERTY_CARD_MATCHED,
+    PROPERTY_CARD_MEDIA_TALL,
+    PROPERTY_CARD_IMG,
+    PROPERTY_CARD_PLACEHOLDER,
+    PROPERTY_CARD_BODY,
+    PROPERTY_CARD_PRICE,
+    PROPERTY_CARD_LOCATION,
+    PROPERTY_CARD_TITLE,
+    PROPERTY_CARD_META,
+    PROPERTY_CARD_FOOTER,
+    PROPERTY_CARD_BADGE_MATCH,
+    PROPERTY_CARD_CHIP_MATCH,
+    PROPERTY_CARD_PHOTO_COUNT,
+} from '@/lib/property-card-ui';
 import { formatCurrency } from '@/lib/currency';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
 
@@ -300,73 +317,60 @@ export default function SearchPage() {
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredProperties.filter(p => p.isMatched).map((property) => (
-                                            <Link key={property.id} href={`/search/${property.id}`} className={`block ${PORTAL_CARD} cursor-pointer group border-2 border-gold/30 relative hover:shadow-xl transition-shadow`}>
-                                                {/* Matched Badge */}
-                                                <div className="absolute top-3 right-3 z-10">
-                                                    <span className="px-2 py-1 rounded-full bg-gold text-white text-xs font-semibold shadow-md">
-                                                        Best Match
-                                                    </span>
-                                                </div>
-                                                
-                                                {/* Property Image */}
-                                                <div className="h-48 bg-charcoal/10 relative overflow-hidden">
+                                            <Link key={property.id} href={`/search/${property.id}`} className={PROPERTY_CARD_MATCHED}>
+                                                <span className={PROPERTY_CARD_BADGE_MATCH}>Best Match</span>
+                                                <PropertyFavouriteButton propertyId={property.id} />
+
+                                                <div className={PROPERTY_CARD_MEDIA_TALL}>
                                                     {property.images?.length && property.images[0] ? (
                                                         <img
                                                             src={getProxiedImageUrl(property.images[0])}
                                                             alt={property.title}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            className={PROPERTY_CARD_IMG}
                                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
                                                         />
                                                     ) : null}
-                                                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-gold/20 to-gold/10 ${property.images?.length && property.images[0] ? 'hidden' : ''}`}>
+                                                    <div className={`${PROPERTY_CARD_PLACEHOLDER} ${property.images?.length && property.images[0] ? 'hidden' : ''}`}>
                                                         <Home className="w-16 h-16 text-gold/40" />
                                                     </div>
                                                     {property.images && property.images.length > 1 && (
-                                                        <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                        <span className={PROPERTY_CARD_PHOTO_COUNT}>
                                                             {property.images.length} photos
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                {/* Property Details */}
-                                                <div className="p-6">
-                                                    {/* Price */}
-                                                    <div className="mb-4">
-                                                        <span className="text-2xl font-bold text-gold">{formatCurrency(property.price)}</span>
-                                                    </div>
+                                                <div className={PROPERTY_CARD_BODY}>
+                                                    <span className={PROPERTY_CARD_PRICE}>{formatCurrency(property.price)}</span>
 
-                                                    {/* Location */}
-                                                    <div className="flex items-center text-charcoal/50 mb-3 text-sm">
-                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                    <div className={PROPERTY_CARD_LOCATION}>
+                                                        <MapPin />
                                                         <span className="truncate">{property.address}</span>
                                                     </div>
 
-                                                    {/* Property Type */}
-                                                    <p className="text-charcoal font-semibold mb-4 text-base">
+                                                    <p className={PROPERTY_CARD_TITLE}>
                                                         {property.title}
                                                     </p>
 
-                                                    {/* Features */}
-                                                    <div className="flex items-center space-x-4 text-charcoal/50 mb-4 text-sm">
-                                                        <div className="flex items-center space-x-1.5">
+                                                    <div className={PROPERTY_CARD_META}>
+                                                        <div>
                                                             <Bed className="w-4 h-4" />
                                                             <span>{property.bedrooms}</span>
                                                         </div>
-                                                        <div className="flex items-center space-x-1.5">
+                                                        <div>
                                                             <Bath className="w-4 h-4" />
                                                             <span>{property.bathrooms}</span>
                                                         </div>
-                                                        <div className="flex items-center space-x-1.5">
+                                                        <div>
                                                             <Square className="w-4 h-4" />
                                                             <span>{property.size}m²</span>
                                                         </div>
                                                     </div>
 
-                                                    {/* Match Score & PropReady Score */}
-                                                    <div className="pt-4 border-t border-charcoal/10 space-y-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-charcoal/50 text-xs font-medium">Match Score</span>
-                                                            <span className="px-3 py-1.5 rounded-full bg-gold/20 border border-gold/30 text-gold font-semibold text-sm">
+                                                    <div className={PROPERTY_CARD_FOOTER}>
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="text-charcoal/45 text-xs font-medium">Match Score</span>
+                                                            <span className={PROPERTY_CARD_CHIP_MATCH}>
                                                                 {property.matchScore}% Match
                                                             </span>
                                                         </div>
@@ -386,64 +390,57 @@ export default function SearchPage() {
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {filteredProperties.filter(p => !p.isMatched || !quizResult || quizResult.preQualAmount === 0).map((property) => (
-                                            <Link key={property.id} href={`/search/${property.id}`} className={`block ${PORTAL_CARD} cursor-pointer group hover:shadow-xl transition-shadow`}>
-                                                {/* Property Image */}
-                                                <div className="h-48 bg-charcoal/10 relative overflow-hidden">
+                                            <Link key={property.id} href={`/search/${property.id}`} className={PROPERTY_CARD}>
+                                                <PropertyFavouriteButton propertyId={property.id} />
+
+                                                <div className={PROPERTY_CARD_MEDIA_TALL}>
                                                     {property.images?.length && property.images[0] ? (
                                                         <img
                                                             src={getProxiedImageUrl(property.images[0])}
                                                             alt={property.title}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            className={PROPERTY_CARD_IMG}
                                                             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden'); }}
                                                         />
                                                     ) : null}
-                                                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-gold/20 to-gold/10 border-b border-charcoal/10 ${property.images?.length && property.images[0] ? 'hidden' : ''}`}>
+                                                    <div className={`${PROPERTY_CARD_PLACEHOLDER} ${property.images?.length && property.images[0] ? 'hidden' : ''}`}>
                                                         <Home className="w-16 h-16 text-gold/40" />
                                                     </div>
                                                     {property.images && property.images.length > 1 && (
-                                                        <span className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                        <span className={PROPERTY_CARD_PHOTO_COUNT}>
                                                             {property.images.length} photos
                                                         </span>
                                                     )}
                                                 </div>
 
-                                                {/* Property Details */}
-                                                <div className="p-6">
-                                                    {/* Price */}
-                                                    <div className="mb-4">
-                                                        <span className="text-2xl font-bold text-gold">{formatCurrency(property.price)}</span>
-                                                    </div>
+                                                <div className={PROPERTY_CARD_BODY}>
+                                                    <span className={PROPERTY_CARD_PRICE}>{formatCurrency(property.price)}</span>
 
-                                                    {/* Location */}
-                                                    <div className="flex items-center text-charcoal/50 mb-3 text-sm">
-                                                        <MapPin className="w-4 h-4 mr-2" />
+                                                    <div className={PROPERTY_CARD_LOCATION}>
+                                                        <MapPin />
                                                         <span className="truncate">{property.address}</span>
                                                     </div>
 
-                                                    {/* Property Type */}
-                                                    <p className="text-charcoal font-semibold mb-4 text-base">
+                                                    <p className={PROPERTY_CARD_TITLE}>
                                                         {property.title}
                                                     </p>
 
-                                                    {/* Features */}
-                                                    <div className="flex items-center space-x-4 text-charcoal/50 mb-4 text-sm">
-                                                        <div className="flex items-center space-x-1.5">
+                                                    <div className={PROPERTY_CARD_META}>
+                                                        <div>
                                                             <Bed className="w-4 h-4" />
                                                             <span>{property.bedrooms}</span>
                                                         </div>
-                                                        <div className="flex items-center space-x-1.5">
+                                                        <div>
                                                             <Bath className="w-4 h-4" />
                                                             <span>{property.bathrooms}</span>
                                                         </div>
-                                                        <div className="flex items-center space-x-1.5">
+                                                        <div>
                                                             <Square className="w-4 h-4" />
                                                             <span>{property.size}m²</span>
                                                         </div>
                                                     </div>
 
-                                                    {/* Listed by agent */}
-                                                    <div className="pt-4 border-t border-charcoal/10">
-                                                        <p className="text-xs text-charcoal/50">
+                                                    <div className={PROPERTY_CARD_FOOTER}>
+                                                        <p className="text-xs text-charcoal/45 leading-relaxed">
                                                             Listed by an agent{property.timestamp ? ` • ${new Date(property.timestamp).toLocaleDateString('en-ZA')}` : ''}
                                                         </p>
                                                     </div>

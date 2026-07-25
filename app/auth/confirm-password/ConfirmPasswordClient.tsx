@@ -5,11 +5,16 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff, KeyRound } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
+import {
+    dashboardPathForAccountType,
+    loginPathForAccountType,
+    parseAccountType,
+} from '@/lib/auth-enterprise/account-profile';
 
 function ConfirmPasswordInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const accountType = searchParams.get('type') === 'agent' ? 'agent' : 'user';
+    const accountType = parseAccountType(searchParams.get('type'));
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -24,7 +29,7 @@ function ConfirmPasswordInner() {
             try {
                 const res = await fetch('/api/auth/session', { credentials: 'include' });
                 if (!res.ok) {
-                    router.replace(`/auth/login?type=${accountType}`);
+                    router.replace(loginPathForAccountType(accountType));
                     return;
                 }
                 const data = await res.json();
@@ -32,25 +37,19 @@ function ConfirmPasswordInner() {
 
                 if (!data.user?.hasPassword) {
                     router.replace(
-                        accountType === 'agent'
-                            ? '/auth/complete-profile?type=agent'
-                            : '/auth/complete-profile'
+                        `/auth/complete-profile?type=${accountType === 'user' ? 'user' : accountType}`
                     );
                     return;
                 }
 
                 if (data.user.passwordOk !== false && data.user.profileComplete) {
-                    router.replace(
-                        data.user.accountType === 'agent' ? '/agents/dashboard' : '/dashboard'
-                    );
+                    router.replace(dashboardPathForAccountType(data.user.accountType || accountType));
                     return;
                 }
 
                 if (data.user.passwordOk !== false && !data.user.profileComplete) {
                     router.replace(
-                        accountType === 'agent'
-                            ? '/auth/complete-profile?type=agent'
-                            : '/auth/complete-profile'
+                        `/auth/complete-profile?type=${accountType === 'user' ? 'user' : accountType}`
                     );
                     return;
                 }
@@ -58,7 +57,7 @@ function ConfirmPasswordInner() {
                 setEmail(data.user?.email || '');
                 setReady(true);
             } catch {
-                if (!cancelled) router.replace(`/auth/login?type=${accountType}`);
+                if (!cancelled) router.replace(loginPathForAccountType(accountType));
             }
         })();
         return () => {

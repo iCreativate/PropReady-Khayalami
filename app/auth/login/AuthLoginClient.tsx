@@ -1,19 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
+import { loginPathForAccountType, parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
 type AuthMode = 'password' | 'magic';
 
 export default function AuthLoginClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const accountType = searchParams.get('type') === 'agent' ? 'agent' : 'user';
+    const requestedType = parseAccountType(searchParams.get('type'));
     const errorParam = searchParams.get('error');
 
     const [mode, setMode] = useState<AuthMode>('password');
@@ -34,7 +35,19 @@ export default function AuthLoginClient() {
     const [loading, setLoading] = useState(false);
     const [devMagicLink, setDevMagicLink] = useState('');
 
-    const dashboard = accountType === 'agent' ? '/agents/dashboard' : '/dashboard';
+    useEffect(() => {
+        if (requestedType === 'agent' || requestedType === 'originator') {
+            router.replace(loginPathForAccountType(requestedType));
+        }
+    }, [requestedType, router]);
+
+    if (requestedType === 'agent' || requestedType === 'originator') {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-charcoal/55 text-sm">
+                Redirecting to professional sign-in…
+            </div>
+        );
+    }
 
     async function handlePasswordLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -47,19 +60,19 @@ export default function AuthLoginClient() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email: email.trim(), password, type: accountType, rememberDevice }),
+                body: JSON.stringify({ email: email.trim(), password, type: 'user', rememberDevice }),
             });
             const data = await res.json();
             if (res.status === 403 && data.needsVerification) {
-                router.push(`/verify-email?email=${encodeURIComponent(email)}&type=${accountType}`);
+                router.push(`/verify-email?email=${encodeURIComponent(email)}&type=user`);
                 return;
             }
             if (!res.ok || !data.success) {
                 setError(data.error || 'Invalid email or password');
                 return;
             }
-            syncLegacySession(data.user, accountType);
-            router.push(dashboard);
+            syncLegacySession(data.user, 'user');
+            router.push('/dashboard');
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {
@@ -77,7 +90,7 @@ export default function AuthLoginClient() {
             const res = await fetch('/api/auth/magic-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email.trim(), type: accountType }),
+                body: JSON.stringify({ email: email.trim(), type: 'user' }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -99,24 +112,32 @@ export default function AuthLoginClient() {
     }
 
     return (
-        <AuthShell
-            title="Welcome back"
-            subtitle={accountType === 'agent' ? 'Sign in to your agent portal' : 'Sign in to your PropReady account'}
-            accountType={accountType}
-        >
+        <AuthShell title="Welcome back" subtitle="Sign in to your PropReady account" accountType="user">
             <div className="auth-tabs mb-6">
-                <button type="button" className={mode === 'password' ? 'auth-tab auth-tab-active' : 'auth-tab'} onClick={() => setMode('password')}>Password</button>
-                <button type="button" className={mode === 'magic' ? 'auth-tab auth-tab-active' : 'auth-tab'} onClick={() => setMode('magic')}>
+                <button
+                    type="button"
+                    className={mode === 'password' ? 'auth-tab auth-tab-active' : 'auth-tab'}
+                    onClick={() => setMode('password')}
+                >
+                    Password
+                </button>
+                <button
+                    type="button"
+                    className={mode === 'magic' ? 'auth-tab auth-tab-active' : 'auth-tab'}
+                    onClick={() => setMode('magic')}
+                >
                     <Sparkles className="w-3.5 h-3.5 inline mr-1" /> Magic link
                 </button>
             </div>
-            {error && <div className="auth-alert auth-alert-error mb-4"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+            {error && (
+                <div className="auth-alert auth-alert-error mb-4">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    {error}
+                </div>
+            )}
             {info && <div className="auth-alert auth-alert-info mb-4">{info}</div>}
             {devMagicLink && (
-                <a
-                    href={devMagicLink}
-                    className="block mb-4 text-sm text-gold font-medium hover:underline break-all"
-                >
+                <a href={devMagicLink} className="block mb-4 text-sm text-gold font-medium hover:underline break-all">
                     Open magic link
                 </a>
             )}
@@ -124,24 +145,52 @@ export default function AuthLoginClient() {
                 <label className="auth-label">Email</label>
                 <div className="auth-input-wrap mb-4">
                     <Mail className="auth-input-icon" />
-                    <input type="email" required autoComplete="email" className="auth-input" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input
+                        type="email"
+                        required
+                        autoComplete="email"
+                        className="auth-input"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
                 </div>
                 {mode === 'password' && (
                     <>
                         <label className="auth-label">Password</label>
                         <div className="auth-input-wrap mb-4">
                             <Lock className="auth-input-icon" />
-                            <input type={showPassword ? 'text' : 'password'} required autoComplete="current-password" className="auth-input pr-10" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
-                            <button type="button" className="auth-input-toggle" onClick={() => setShowPassword((v) => !v)} aria-label="Toggle password">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                required
+                                autoComplete="current-password"
+                                className="auth-input pr-10"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="auth-input-toggle"
+                                onClick={() => setShowPassword((v) => !v)}
+                                aria-label="Toggle password"
+                            >
                                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                         </div>
                         <div className="flex items-center justify-between mb-6 text-sm">
                             <label className="flex items-center gap-2 text-charcoal/70 cursor-pointer">
-                                <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} className="rounded border-charcoal/20 text-gold focus:ring-gold" />
+                                <input
+                                    type="checkbox"
+                                    checked={rememberDevice}
+                                    onChange={(e) => setRememberDevice(e.target.checked)}
+                                    className="rounded border-charcoal/20 text-gold focus:ring-gold"
+                                />
                                 Trust this device
                             </label>
-                            <Link href={`/auth/forgot-password?type=${accountType}`} className="text-gold hover:underline">Forgot password?</Link>
+                            <Link href="/auth/forgot-password" className="text-gold hover:underline">
+                                Forgot password?
+                            </Link>
                         </div>
                     </>
                 )}
@@ -149,14 +198,24 @@ export default function AuthLoginClient() {
                     {loading ? 'Please wait…' : mode === 'password' ? 'Sign in securely' : 'Email me a link'}
                 </button>
             </form>
-            <div className="auth-divider mb-6"><span>or continue with</span></div>
-            <OAuthButtons accountType={accountType} />
+            <div className="auth-divider mb-6">
+                <span>or continue with</span>
+            </div>
+            <OAuthButtons accountType="user" />
             <p className="text-center text-sm text-charcoal/55 mt-8">
-                {accountType === 'agent' ? (
-                    <>New agent? <Link href="/agents/register" className="text-gold font-medium hover:underline">Register</Link></>
-                ) : (
-                    <>New here? <Link href="/auth/register" className="text-gold font-medium hover:underline">Create account</Link></>
-                )}
+                New here?{' '}
+                <Link href="/auth/register" className="text-gold font-medium hover:underline">
+                    Create account
+                </Link>
+            </p>
+            <p className="text-center text-xs text-charcoal/40 mt-4 space-x-3">
+                <Link href="/agents/login" className="hover:text-gold transition">
+                    Agent portal
+                </Link>
+                <span aria-hidden>·</span>
+                <Link href="/originators/login" className="hover:text-gold transition">
+                    Bond originator portal
+                </Link>
             </p>
         </AuthShell>
     );

@@ -120,11 +120,11 @@ export default function PropertyQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 123 Main Street, Sandton, Johannesburg"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.propertyAddress ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.propertyAddress ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.propertyAddress && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.propertyAddress}
                                 </p>
@@ -152,11 +152,11 @@ export default function PropertyQuizPage() {
                                     required
                                     min="0"
                                     step="0.01"
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.propertySize ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.propertySize ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.propertySize && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.propertySize}
                                 </p>
@@ -172,7 +172,7 @@ export default function PropertyQuizPage() {
                                 value={formData.propertyCondition}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.propertyCondition ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.propertyCondition ? 'form-control-error' : 'border-charcoal/20'} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select property condition</option>
                                 <option value="excellent">Excellent - Like new, recently renovated</option>
@@ -182,7 +182,7 @@ export default function PropertyQuizPage() {
                                 <option value="needs-work">Needs Work - Requires significant repairs</option>
                             </select>
                             {errors.propertyCondition && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.propertyCondition}
                                 </p>
@@ -210,7 +210,7 @@ export default function PropertyQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="Describe your property... Include features like number of bedrooms, bathrooms, garden, pool, security features, recent renovations, etc."
                                     rows={8}
-                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder:text-charcoal/35 form-control"
                                 />
                             </div>
                         </div>

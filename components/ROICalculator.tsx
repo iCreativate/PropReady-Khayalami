@@ -35,7 +35,7 @@ export default function ROICalculator() {
                         value={purchasePrice}
                         onChange={(e) => setPurchasePrice(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
@@ -45,7 +45,7 @@ export default function ROICalculator() {
                         value={annualRental}
                         onChange={(e) => setAnnualRental(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-4 bg-charcoal/5 rounded-lg border border-charcoal/10">
@@ -55,7 +55,7 @@ export default function ROICalculator() {
                         value={annualExpenses}
                         onChange={(e) => setAnnualExpenses(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-4 bg-gold/10 rounded-lg border border-gold/30">

@@ -57,8 +57,6 @@ export default function AgentLearnModuleCard({
             className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/30 focus-visible:ring-offset-2 rounded-3xl"
         >
             <article className={AGENT_MODULE_CARD}>
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold/80 via-gold/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
                 <span
                     className="absolute top-4 right-5 text-[3.5rem] font-bold leading-none text-charcoal/[0.04] group-hover:text-gold/[0.08] transition-colors duration-300 select-none tabular-nums"
                     aria-hidden

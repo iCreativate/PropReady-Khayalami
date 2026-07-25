@@ -4,9 +4,11 @@ import {
     findAccountById,
     setAuthCookies,
 } from '@/lib/auth-enterprise';
+import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { resolveSessionFromRequest } from '@/lib/auth-enterprise/server-session';
 
 function redirectForIntent(accountType: string, intent?: 'buyer' | 'seller') {
+    if (accountType === 'originator') return '/originators/dashboard';
     if (accountType === 'agent') return '/agents/dashboard';
     if (intent === 'seller') return '/sellers/dashboard';
     return '/dashboard';
@@ -33,6 +35,7 @@ export async function POST(request: NextRequest) {
             fullName: String(body.fullName || ''),
             phone: String(body.phone || ''),
             company: body.company ? String(body.company) : undefined,
+            organizationId: body.organizationId ? String(body.organizationId) : undefined,
             eaabNumber: body.eaabNumber ? String(body.eaabNumber) : undefined,
             password: body.password ? String(body.password) : undefined,
             intent,
@@ -50,6 +53,7 @@ export async function POST(request: NextRequest) {
                 fullName: result.user.fullName,
                 email: result.user.email,
                 company: result.user.company,
+                organizationId: result.user.organizationId,
                 phone: result.user.phone,
                 accountType: result.user.accountType,
                 profileComplete: true,
@@ -64,7 +68,9 @@ export async function POST(request: NextRequest) {
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Could not save profile';
         const status =
-            /full legal name|phone number|company|password|buying or selling/i.test(message)
+            /full legal name|phone number|company|organisation|organization|password|buying or selling/i.test(
+                message
+            )
                 ? 400
                 : 500;
         if (status === 500) console.error('auth/complete-profile:', err);

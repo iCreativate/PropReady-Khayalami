@@ -60,6 +60,8 @@ export interface SessionUser {
     ppraNumber?: string;
     verificationStatus?: string;
     status?: string;
+    /** Bond originator brand id for staff accounts */
+    organizationId?: string;
 }
 
 export type OnboardingIntent = 'buyer' | 'seller';

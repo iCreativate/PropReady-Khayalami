@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-admin';
 import { AUTH_CONFIG, getAppUrl, type OAuthProvider } from './config';
+import { profileTableForAccountType } from './account-profile';
 import { generateSecureToken, hashToken } from './password';
 import {
     createSession,
@@ -39,14 +40,6 @@ export function getOAuthAuthorizationUrl(
         return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     }
 
-    if (provider === 'microsoft') {
-        const clientId = process.env.MICROSOFT_CLIENT_ID;
-        if (!clientId) return null;
-        const tenant = process.env.MICROSOFT_TENANT_ID || 'common';
-        params.set('client_id', clientId);
-        return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${params}`;
-    }
-
     if (provider === 'apple') {
         const clientId = process.env.APPLE_CLIENT_ID;
         if (!clientId) return null;
@@ -60,7 +53,6 @@ export function getOAuthAuthorizationUrl(
 
 function providerScopes(provider: OAuthProvider): string {
     if (provider === 'google') return 'openid email profile';
-    if (provider === 'microsoft') return 'openid email profile User.Read';
     return 'name email';
 }
 
@@ -119,7 +111,7 @@ async function createProfileForOAuth(
     name: string | undefined,
     accountType: AccountType
 ): Promise<string | null> {
-    const table = accountType === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(accountType);
     const normalized = email.toLowerCase().trim();
 
     const existing = await db().from(table).select('id').eq('email', normalized).maybeSingle();
@@ -137,12 +129,21 @@ async function createProfileForOAuth(
                   password: '',
                   status: 'pending',
               }
-            : {
-                  id,
-                  full_name: name || normalized.split('@')[0],
-                  email: normalized,
-                  password: '',
-              };
+            : accountType === 'originator'
+              ? {
+                    id,
+                    full_name: name || normalized.split('@')[0],
+                    email: normalized,
+                    password: '',
+                    organization_id: 'betterbond',
+                    status: 'active',
+                }
+              : {
+                    id,
+                    full_name: name || normalized.split('@')[0],
+                    email: normalized,
+                    password: '',
+                };
 
     const { data, error } = await db().from(table).insert(row as Record<string, unknown>).select('id').single();
     if (error || !data) {
@@ -186,40 +187,6 @@ async function exchangeCodeForProfile(provider: OAuthProvider, code: string) {
             return null;
         }
         return { email: user.email as string, name: user.name as string, providerId: String(user.id) };
-    }
-
-    if (provider === 'microsoft') {
-        const clientId = process.env.MICROSOFT_CLIENT_ID;
-        const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
-        const tenant = process.env.MICROSOFT_TENANT_ID || 'common';
-        if (!clientId || !clientSecret) return null;
-
-        const tokenRes = await fetch(
-            `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    code,
-                    client_id: clientId,
-                    client_secret: clientSecret,
-                    redirect_uri: redirectUri,
-                    grant_type: 'authorization_code',
-                }),
-            }
-        );
-        const tokens = await tokenRes.json();
-        if (!tokens.access_token) return null;
-
-        const userRes = await fetch('https://graph.microsoft.com/v1.0/me', {
-            headers: { Authorization: `Bearer ${tokens.access_token}` },
-        });
-        const user = await userRes.json();
-        return {
-            email: (user.mail || user.userPrincipalName) as string,
-            name: user.displayName as string,
-            providerId: user.id as string,
-        };
     }
 
     if (provider === 'apple') {

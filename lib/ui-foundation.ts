@@ -4,6 +4,13 @@
  * Polish tokens that mirror CSS variables in `app/globals.css`.
  * Do not invent new colours or layout recipes here — keep the existing
  * charcoal / gold brand language and rounded-3xl portal surfaces.
+ *
+ * Motion hierarchy (CSS transforms only — GPU friendly):
+ * - Buttons: --lift-btn (−1px) + --brightness-hover
+ * - Soft surfaces: --lift-soft (−2px)
+ * - Cards: --lift-card (−3px) + accent sweep
+ * - Media: --scale-media (1.06)
+ * - Icons: --scale-icon (1.08)
  */
 
 /** Spacing scale (4px base) → Tailwind: space-foundation-*, p-foundation-*, m-foundation-* */
@@ -43,7 +50,12 @@ export const SHADOW = {
     hover: 'var(--shadow-hover)',
     lift: 'var(--shadow-lift)',
     gold: 'var(--shadow-gold)',
+    goldHover: 'var(--shadow-gold-hover)',
     focus: 'var(--shadow-focus)',
+    btn: 'var(--shadow-btn)',
+    btnHover: 'var(--shadow-btn-hover)',
+    card: 'var(--shadow-card)',
+    cardHover: 'var(--shadow-card-hover)',
 } as const;
 
 /** Motion durations */
@@ -51,6 +63,7 @@ export const DURATION = {
     instant: 'var(--duration-instant)',
     fast: 'var(--duration-fast)',
     base: 'var(--duration-base)',
+    card: 'var(--duration-card)',
     moderate: 'var(--duration-moderate)',
     slow: 'var(--duration-slow)',
 } as const;
@@ -60,6 +73,17 @@ export const EASE = {
     standard: 'var(--ease-standard)',
     out: 'var(--ease-out)',
     inOut: 'var(--ease-in-out)',
+} as const;
+
+/** Interaction constants (mirror CSS vars — transforms only) */
+export const MOTION = {
+    liftBtn: 'var(--lift-btn)',
+    liftSoft: 'var(--lift-soft)',
+    liftCard: 'var(--lift-card)',
+    scalePress: 'var(--scale-press)',
+    scaleIcon: 'var(--scale-icon)',
+    scaleMedia: 'var(--scale-media)',
+    brightnessHover: 'var(--brightness-hover)',
 } as const;
 
 /** Icon glyph sizes (Lucide / SVG) */
@@ -83,19 +107,79 @@ export const UI_TRANSITION_FAST =
 export const UI_TRANSITION_MODERATE =
     'transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-300 ease-out-soft';
 
+export const UI_TRANSITION_CARD =
+    'transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-250 ease-out-soft';
+
 export const UI_FOCUS_RING =
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/25 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
-export const UI_FOCUS_RING_INPUT =
-    'focus:outline-none focus:ring-2 focus:ring-gold/20 focus:border-gold/25 focus:bg-white';
+/** Text/select/textarea — pair with `form-control` in globals.css */
+export const UI_FOCUS_RING_INPUT = 'form-control';
 
 export const UI_HOVER_SURFACE =
     'hover:bg-charcoal/[0.03] hover:border-charcoal/15 hover:text-charcoal';
 
-export const UI_ELEVATION_CARD = 'shadow-elevation-md';
-export const UI_ELEVATION_CARD_HOVER = 'hover:shadow-elevation-hover';
+/**
+ * Form system — motion / focus / a11y only.
+ * Colour fills stay light; focus uses brand gold (see globals.css).
+ * Invalid: set `aria-invalid="true"` or add `form-control-error`.
+ * Loading: set `aria-busy="true"`.
+ */
+export const UI_FORM_CONTROL = 'form-control';
+export const UI_FORM_CONTROL_ERROR = 'form-control-error';
+export const UI_FORM_FIELD = 'form-field';
+export const UI_FORM_LABEL = 'form-label';
+export const UI_FORM_HINT = 'form-hint';
+export const UI_FORM_ERROR = 'form-error';
+export const UI_FORM_SEARCH = 'form-control';
+export const UI_FORM_CHECKBOX = 'form-checkbox';
+export const UI_FORM_RADIO = 'form-radio';
+export const UI_FORM_SWITCH = 'form-switch';
+
+/**
+ * Button system — motion / density / a11y only.
+ * Colour fills stay on each variant. Pair with `btn-interactive` in globals.css.
+ * Loading: set `aria-busy="true"` and optionally `btn-loading` for a spinner.
+ */
+export const UI_BTN_INTERACTIVE = 'btn-interactive';
+export const UI_BTN_LOADING = 'btn-loading';
+
+export const UI_BTN_BASE =
+    `inline-flex items-center justify-center gap-2 select-none cursor-pointer ${UI_BTN_INTERACTIVE} ${UI_FOCUS_RING}`;
+
+export const UI_BTN_DISABLED =
+    'disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none disabled:brightness-100';
+
+export const UI_BTN_BUSY =
+    'aria-[busy=true]:cursor-wait aria-[busy=true]:pointer-events-none aria-[busy=true]:opacity-80';
+
+export const UI_BTN_SIZE_SM =
+    'h-9 min-h-9 px-4 text-xs font-semibold tracking-[-0.01em] rounded-full';
+export const UI_BTN_SIZE_MD =
+    'h-10 min-h-10 px-5 text-sm font-semibold tracking-[-0.01em] rounded-full';
+export const UI_BTN_SIZE_LG =
+    'h-11 min-h-11 px-7 text-sm font-semibold tracking-[-0.01em] rounded-full';
+export const UI_BTN_SIZE_XL =
+    'h-12 min-h-12 px-8 text-base font-semibold tracking-[-0.01em] rounded-full';
+export const UI_BTN_SIZE_ICON =
+    'w-10 h-10 min-w-10 min-h-10 rounded-full';
+
+export const UI_BTN_FILLED =
+    `${UI_BTN_BASE} ${UI_BTN_DISABLED} ${UI_BTN_BUSY} shadow-elevation-gold hover:shadow-elevation-gold-hover`;
+
+export const UI_BTN_OUTLINE =
+    `${UI_BTN_BASE} ${UI_BTN_DISABLED} ${UI_BTN_BUSY} shadow-btn hover:shadow-btn-hover`;
+
+export const UI_ELEVATION_CARD = 'shadow-card';
+export const UI_ELEVATION_CARD_HOVER = 'hover:shadow-card-hover';
 export const UI_ELEVATION_SOFT = 'shadow-elevation-sm';
 export const UI_ELEVATION_MODAL = 'shadow-elevation-xl';
+
+/** Card surfaces — polish tokens; pair interactive ones with `card-interactive` or use as `<a>` / `<button>` */
+export const UI_CARD_SURFACE = 'card-surface';
+export const UI_CARD_INTERACTIVE = 'card-interactive';
+export const UI_CARD_RADIUS = 'rounded-3xl';
+export const UI_CARD_RADIUS_INNER = 'rounded-2xl';
 
 export const UI_RADIUS_SURFACE = 'rounded-3xl';
 export const UI_RADIUS_INNER = 'rounded-2xl';

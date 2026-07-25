@@ -4,6 +4,7 @@ import {
     findAccountById,
     setAuthCookies,
 } from '@/lib/auth-enterprise';
+import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { getRequestMeta } from '@/lib/auth-enterprise/request-meta';
 import { resolveSessionFromRequest } from '@/lib/auth-enterprise/server-session';
 
@@ -20,14 +21,17 @@ export async function POST(request: NextRequest) {
         }
 
         if (!account.password_hash) {
+            const typeQ =
+                account.account_type === 'agent'
+                    ? '?type=agent'
+                    : account.account_type === 'originator'
+                      ? '?type=originator'
+                      : '';
             return NextResponse.json(
                 {
                     success: false,
                     error: 'No password on this account yet',
-                    redirectTo:
-                        account.account_type === 'agent'
-                            ? '/auth/complete-profile?type=agent'
-                            : '/auth/complete-profile',
+                    redirectTo: `/auth/complete-profile${typeQ}`,
                 },
                 { status: 400 }
             );
@@ -46,13 +50,15 @@ export async function POST(request: NextRequest) {
         });
 
         const needsProfile = result.user.profileComplete === false;
+        const typeQ =
+            result.user.accountType === 'agent'
+                ? '?type=agent'
+                : result.user.accountType === 'originator'
+                  ? '?type=originator'
+                  : '';
         const redirectTo = needsProfile
-            ? result.user.accountType === 'agent'
-                ? '/auth/complete-profile?type=agent'
-                : '/auth/complete-profile'
-            : result.user.accountType === 'agent'
-              ? '/agents/dashboard'
-              : '/dashboard';
+            ? `/auth/complete-profile${typeQ}`
+            : dashboardPathForAccountType(result.user.accountType);
 
         const response = NextResponse.json({
             success: true,
@@ -63,7 +69,7 @@ export async function POST(request: NextRequest) {
         return response;
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Could not confirm password';
-        const status = /incorrect password/i.test(message) ? 401 : 500;
+        const status = /Incorrect password/i.test(message) ? 401 : 500;
         if (status === 500) console.error('auth/confirm-password:', err);
         return NextResponse.json({ success: false, error: message }, { status });
     }

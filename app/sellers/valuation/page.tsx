@@ -247,7 +247,7 @@ export default function ValuationBookingPage() {
                                     placeholder={selectedAgency ? "Search agents..." : "Search by agency name or location..."}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder:text-charcoal/35 form-control"
                                 />
                             </div>
 

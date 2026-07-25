@@ -30,6 +30,9 @@ import {
     PORTAL_SECONDARY_BTN,
     PORTAL_STAT_ICON,
     PORTAL_TEXT_SECONDARY,
+    PORTAL_DASH_SECTION_TITLE,
+    PORTAL_DASH_STAT_LABEL,
+    PORTAL_DASH_STAT_VALUE_MD,
 } from '@/lib/portal-ui';
 
 interface PropReadyScoreCardProps {
@@ -129,8 +132,8 @@ export default function PropReadyScoreCard({
     }
 
     return (
-        <div className={`${PORTAL_CARD} p-6 sm:p-8 mb-8 sm:mb-10 overflow-hidden`}>
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
+        <div className={`${PORTAL_CARD} p-6 sm:p-8 overflow-hidden`}>
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 sm:gap-8 mb-6 sm:mb-8">
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-3">
                         {insights.prequal.isFull ? (
@@ -149,18 +152,18 @@ export default function PropReadyScoreCard({
                             AI readiness insight
                         </span>
                     </div>
-                    <h2 className="text-2xl font-semibold text-charcoal tracking-tight mb-2">
+                    <h2 className={`${PORTAL_DASH_SECTION_TITLE} mb-2`}>
                         Your PropReady Score
                     </h2>
-                    <p className={`text-sm max-w-xl ${PORTAL_TEXT_SECONDARY}`}>{insights.summary}</p>
+                    <p className={`text-sm max-w-xl leading-relaxed ${PORTAL_TEXT_SECONDARY}`}>{insights.summary}</p>
                 </div>
                 <div className="text-left lg:text-right shrink-0">
-                    <div className="text-5xl font-bold text-gold mb-1 tabular-nums">
+                    <div className="text-5xl sm:text-6xl font-bold text-gold mb-1.5 tabular-nums tracking-tight leading-none">
                         {insights.score}%
                     </div>
-                    <p className={`text-sm font-medium ${PORTAL_TEXT_SECONDARY}`}>{insights.label}</p>
+                    <p className={`text-sm font-semibold ${PORTAL_TEXT_SECONDARY}`}>{insights.label}</p>
                     {insights.projectedBoost > 0 && hasScore ? (
-                        <p className="text-xs text-emerald-700 mt-2 inline-flex items-center gap-1">
+                        <p className="text-xs text-emerald-700 mt-2.5 inline-flex items-center gap-1 font-medium">
                             <TrendingUp className="w-3.5 h-3.5" />
                             Up to +{insights.projectedBoost} pts possible
                         </p>
@@ -224,34 +227,34 @@ export default function PropReadyScoreCard({
                 </form>
             ) : null}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 mb-8">
                 <div className="portal-stat-inner">
-                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">
+                    <p className={PORTAL_DASH_STAT_LABEL}>
                         {insights.prequal.isFull ? 'Full Pre-Qualification' : 'Soft Pre-Qualification'}
                     </p>
-                    <p className="text-charcoal font-bold text-xl">{formatCurrency(displayPreQual)}</p>
+                    <p className={PORTAL_DASH_STAT_VALUE_MD}>{formatCurrency(displayPreQual)}</p>
                 </div>
                 <div className="portal-stat-inner">
-                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">
+                    <p className={PORTAL_DASH_STAT_LABEL}>
                         Monthly Budget
                     </p>
-                    <p className="text-charcoal font-bold text-xl">
+                    <p className={PORTAL_DASH_STAT_VALUE_MD}>
                         {formatCurrency(insights.monthlyBudget)}
                     </p>
                 </div>
                 <div className="portal-stat-inner">
-                    <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">
+                    <p className={PORTAL_DASH_STAT_LABEL}>
                         Deposit Saved
                     </p>
-                    <p className="text-charcoal font-bold text-xl whitespace-nowrap">
+                    <p className={`${PORTAL_DASH_STAT_VALUE_MD} whitespace-nowrap`}>
                         {depositSavedLabel ?? formatCurrency(insights.depositAmount)}
                     </p>
                     {showDebtNote && monthlyDebtLabel ? (
-                        <p className="text-charcoal/45 text-xs mt-2">
+                        <p className="text-charcoal/45 text-xs mt-2.5">
                             Monthly debt: {monthlyDebtLabel}
                         </p>
                     ) : insights.depositPctOfPreQual != null ? (
-                        <p className="text-charcoal/45 text-xs mt-2">
+                        <p className="text-charcoal/45 text-xs mt-2.5">
                             ~{insights.depositPctOfPreQual}% of pre-qual
                         </p>
                     ) : null}

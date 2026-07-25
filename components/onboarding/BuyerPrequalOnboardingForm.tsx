@@ -200,7 +200,7 @@ export default function BuyerPrequalOnboardingForm({
             </div>
 
             {error && (
-                <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                <div className="form-error bg-red-50 border border-red-200/80 rounded-xl px-3 py-2.5 !mt-0 mb-1">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     {error}
                 </div>

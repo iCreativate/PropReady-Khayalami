@@ -398,7 +398,7 @@ export default function AgentLeadDetailModal({
                                 setStatus(next);
                                 onStatusChange(lead.id, next);
                             }}
-                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal focus:outline-none focus:ring-2 focus:ring-gold"
+                            className="w-full px-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal form-control"
                         >
                             <option value="new">New</option>
                             <option value="contacted">Contacted</option>

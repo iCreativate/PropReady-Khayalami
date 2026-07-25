@@ -127,7 +127,7 @@ export default function TransferCostCalculator() {
                             inputMode="numeric"
                             value={price === 0 ? '' : formatNumberInput(price.toString())}
                             onChange={handlePriceChange}
-                            className="w-full bg-white border border-charcoal/20 rounded-lg py-2.5 sm:py-3 pl-8 sm:pl-10 pr-3 sm:pr-4 text-charcoal placeholder-charcoal/30 focus:outline-none focus:ring-2 focus:ring-gold transition text-base sm:text-lg font-semibold"
+                            className="w-full bg-white border border-charcoal/20 rounded-lg py-2.5 sm:py-3 pl-8 sm:pl-10 pr-3 sm:pr-4 text-charcoal placeholder-charcoal/30 form-control transition text-base sm:text-lg font-semibold"
                             placeholder="e.g. 1,000,000"
                         />
                     </div>

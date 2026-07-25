@@ -3,6 +3,11 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
+import {
+    dashboardPathForAccountType,
+    loginPathForAccountType,
+    parseAccountType,
+} from '@/lib/auth-enterprise/account-profile';
 
 function AuthCompleteInner() {
     const router = useRouter();
@@ -13,7 +18,7 @@ function AuthCompleteInner() {
         let cancelled = false;
 
         async function run() {
-            const type = searchParams.get('type') === 'agent' ? 'agent' : 'user';
+            const type = parseAccountType(searchParams.get('type'));
             const next = searchParams.get('next');
 
             const user = await hydrateSessionFromCookies();
@@ -21,7 +26,7 @@ function AuthCompleteInner() {
 
             if (!user) {
                 setMessage('Session expired. Redirecting to sign in…');
-                router.replace(type === 'agent' ? '/auth/login?type=agent' : '/auth/login');
+                router.replace(loginPathForAccountType(type));
                 return;
             }
 
@@ -31,27 +36,20 @@ function AuthCompleteInner() {
                 if (cancelled) return;
 
                 const u = data?.user;
+                const resolvedType = parseAccountType(u?.accountType || type);
                 if (u?.passwordOk === false) {
                     setMessage('Confirming your password…');
                     router.replace(
                         u.hasPassword === false
-                            ? type === 'agent' || u.accountType === 'agent'
-                                ? '/auth/complete-profile?type=agent'
-                                : '/auth/complete-profile'
-                            : type === 'agent' || u.accountType === 'agent'
-                              ? '/auth/confirm-password?type=agent'
-                              : '/auth/confirm-password'
+                            ? `/auth/complete-profile?type=${resolvedType}`
+                            : `/auth/confirm-password?type=${resolvedType}`
                     );
                     return;
                 }
 
                 if (u && u.profileComplete === false) {
                     setMessage('Confirming your identity…');
-                    router.replace(
-                        type === 'agent' || u.accountType === 'agent'
-                            ? '/auth/complete-profile?type=agent'
-                            : '/auth/complete-profile'
-                    );
+                    router.replace(`/auth/complete-profile?type=${resolvedType}`);
                     return;
                 }
             } catch {
@@ -59,10 +57,7 @@ function AuthCompleteInner() {
             }
 
             const destination =
-                next ||
-                (user.accountType === 'agent' || type === 'agent'
-                    ? '/agents/dashboard'
-                    : '/dashboard');
+                next || dashboardPathForAccountType(user.accountType || type);
             router.replace(destination);
         }
 

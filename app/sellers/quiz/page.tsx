@@ -297,11 +297,11 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., John Mthembu"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.fullName ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.fullName ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.fullName && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.fullName}
                                 </p>
@@ -321,11 +321,11 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., john@example.com"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.email ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.email ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.email && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.email}
                                 </p>
@@ -345,11 +345,11 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 082 123 4567"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.phone ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.phone ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.phone && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.phone}
                                 </p>
@@ -376,11 +376,11 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 123 Main Street, Sandton, Johannesburg"
                                     required
-                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.propertyAddress ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.propertyAddress ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.propertyAddress && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.propertyAddress}
                                 </p>
@@ -402,7 +402,7 @@ export default function SellersQuizPage() {
                                         onChange={handleInputChange}
                                         placeholder="e.g., Johannesburg, Sandton, Cape Town"
                                         autoComplete="address-level2"
-                                        className={`w-full min-w-0 pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold text-base`}
+                                        className={`w-full min-w-0 pl-12 pr-4 py-3 rounded-lg bg-white border ${errors.city ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control text-base`}
                                     />
                                 </div>
                                 <div className="flex flex-wrap gap-2">
@@ -447,7 +447,7 @@ export default function SellersQuizPage() {
                                 </div>
                             </div>
                             {errors.city && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.city}
                                 </p>
@@ -463,7 +463,7 @@ export default function SellersQuizPage() {
                                 value={formData.propertyType}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.propertyType ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.propertyType ? 'form-control-error' : 'border-charcoal/20'} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select property type</option>
                                 <option value="house">House</option>
@@ -474,7 +474,7 @@ export default function SellersQuizPage() {
                                 <option value="commercial">Commercial</option>
                             </select>
                             {errors.propertyType && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.propertyType}
                                 </p>
@@ -496,7 +496,7 @@ export default function SellersQuizPage() {
                                 value={formData.bedrooms}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.bedrooms ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.bedrooms ? 'form-control-error' : 'border-charcoal/20'} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select bedrooms</option>
                                 <option value="1">1 Bedroom</option>
@@ -506,7 +506,7 @@ export default function SellersQuizPage() {
                                 <option value="5+">5+ Bedrooms</option>
                             </select>
                             {errors.bedrooms && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.bedrooms}
                                 </p>
@@ -522,7 +522,7 @@ export default function SellersQuizPage() {
                                 value={formData.bathrooms}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.bathrooms ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.bathrooms ? 'form-control-error' : 'border-charcoal/20'} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select bathrooms</option>
                                 <option value="1">1 Bathroom</option>
@@ -531,7 +531,7 @@ export default function SellersQuizPage() {
                                 <option value="4+">4+ Bathrooms</option>
                             </select>
                             {errors.bathrooms && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.bathrooms}
                                 </p>
@@ -552,7 +552,7 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 500"
                                     min="0"
-                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder:text-charcoal/35 form-control"
                                 />
                             </div>
                         </div>
@@ -570,7 +570,7 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="e.g., 150"
                                     min="0"
-                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full pl-12 pr-4 py-3 rounded-lg bg-white border border-charcoal/20 text-charcoal placeholder:text-charcoal/35 form-control"
                                 />
                             </div>
                         </div>
@@ -602,11 +602,11 @@ export default function SellersQuizPage() {
                                     }}
                                     placeholder="e.g., 1,500,000"
                                     required
-                                    className={`w-full pl-16 pr-4 py-3 rounded-lg bg-white border ${errors.currentValue ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-16 pr-4 py-3 rounded-lg bg-white border ${errors.currentValue ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                             </div>
                             {errors.currentValue && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.currentValue}
                                 </p>
@@ -624,7 +624,7 @@ export default function SellersQuizPage() {
                                     className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.hasBond === true
                                             ? 'bg-gold text-white border-gold'
                                             : errors.hasBond 
-                                            ? 'bg-white border-2 border-red-500/30 text-charcoal hover:bg-red-500/10'
+                                            ? 'bg-white border-2 form-control-error text-charcoal hover:bg-red-500/10'
                                             : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
                                         }`}
                                 >
@@ -636,7 +636,7 @@ export default function SellersQuizPage() {
                                     className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.hasBond === false
                                             ? 'bg-gold text-white border-gold'
                                             : errors.hasBond 
-                                            ? 'bg-white border-2 border-red-500/30 text-charcoal hover:bg-red-500/10'
+                                            ? 'bg-white border-2 form-control-error text-charcoal hover:bg-red-500/10'
                                             : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
                                         }`}
                                 >
@@ -644,7 +644,7 @@ export default function SellersQuizPage() {
                                 </button>
                             </div>
                             {errors.hasBond && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.hasBond}
                                 </p>
@@ -668,11 +668,11 @@ export default function SellersQuizPage() {
                                         required
                                         min="0"
                                         step="10000"
-                                        className={`w-full pl-16 pr-4 py-3 rounded-lg bg-white border ${errors.bondBalance ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                        className={`w-full pl-16 pr-4 py-3 rounded-lg bg-white border ${errors.bondBalance ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                     />
                                 </div>
                                 {errors.bondBalance && (
-                                    <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                    <p className="form-error">
                                         <AlertCircle className="w-4 h-4" />
                                         {errors.bondBalance}
                                     </p>
@@ -695,7 +695,7 @@ export default function SellersQuizPage() {
                                 value={formData.reasonForSelling}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.reasonForSelling ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.reasonForSelling ? 'form-control-error' : 'border-charcoal/20'} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select reason</option>
                                 <option value="upgrading">Upgrading to larger home</option>
@@ -707,7 +707,7 @@ export default function SellersQuizPage() {
                                 <option value="other">Other</option>
                             </select>
                             {errors.reasonForSelling && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.reasonForSelling}
                                 </p>
@@ -723,7 +723,7 @@ export default function SellersQuizPage() {
                                 value={formData.timeline}
                                 onChange={handleInputChange}
                                 required
-                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.timeline ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal focus:outline-none focus:ring-2 focus:ring-gold [&>option]:text-charcoal`}
+                                className={`w-full px-4 py-3 rounded-lg bg-white border ${errors.timeline ? 'form-control-error' : 'border-charcoal/20'} text-charcoal form-control [&>option]:text-charcoal`}
                             >
                                 <option value="">Select timeline</option>
                                 <option value="immediately">Immediately</option>
@@ -733,7 +733,7 @@ export default function SellersQuizPage() {
                                 <option value="flexible">Flexible/No rush</option>
                             </select>
                             {errors.timeline && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.timeline}
                                 </p>
@@ -762,7 +762,7 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="Enter password (min. 8 characters)"
                                     required
-                                    className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.password ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.password ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                                 <button
                                     type="button"
@@ -774,7 +774,7 @@ export default function SellersQuizPage() {
                             </div>
                             <p className="text-charcoal/50 text-xs mt-2">{getPasswordRequirementsText()}</p>
                             {errors.password && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.password}
                                 </p>
@@ -794,7 +794,7 @@ export default function SellersQuizPage() {
                                     onChange={handleInputChange}
                                     placeholder="Confirm your password"
                                     required
-                                    className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.confirmPassword ? 'border-red-500/30' : 'border-charcoal/20'} text-charcoal placeholder-charcoal/40 focus:outline-none focus:ring-2 focus:ring-gold`}
+                                    className={`w-full pl-12 pr-12 py-3 rounded-lg bg-white border ${errors.confirmPassword ? 'form-control-error' : 'border-charcoal/20'} text-charcoal placeholder:text-charcoal/35 form-control`}
                                 />
                                 <button
                                     type="button"
@@ -805,7 +805,7 @@ export default function SellersQuizPage() {
                                 </button>
                             </div>
                             {errors.confirmPassword && (
-                                <p className="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <p className="form-error">
                                     <AlertCircle className="w-4 h-4" />
                                     {errors.confirmPassword}
                                 </p>

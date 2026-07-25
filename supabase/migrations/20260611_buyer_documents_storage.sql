@@ -8,10 +8,13 @@ VALUES (
     'buyer-documents',
     'buyer-documents',
     false,
-    10485760,
+    3145728,
     ARRAY['application/pdf', 'image/jpeg', 'image/png']
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+    file_size_limit = EXCLUDED.file_size_limit,
+    allowed_mime_types = EXCLUDED.allowed_mime_types,
+    public = EXCLUDED.public;
 
 DROP POLICY IF EXISTS "Service role buyer document access" ON storage.objects;
 CREATE POLICY "Service role buyer document access"

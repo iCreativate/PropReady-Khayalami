@@ -3,18 +3,13 @@ import { createServiceClient } from '@/lib/supabase-admin';
 import {
     BUYER_DOCUMENT_MAX_BYTES,
     BUYER_DOCUMENT_MIME_TYPES,
+    BUYER_DOCUMENT_TYPES,
+    buyerDocumentDisplayFileName,
+    buyerDocumentTypeLabel,
     type BuyerDocumentType,
 } from '@/lib/buyer-documents';
 
 const BUCKET = 'buyer-documents';
-
-const VALID_TYPES: BuyerDocumentType[] = [
-    'pre-qualification',
-    'id',
-    'income',
-    'bank-statement',
-    'other',
-];
 
 export async function POST(request: NextRequest) {
     try {
@@ -42,7 +37,7 @@ export async function POST(request: NextRequest) {
         }
 
         if (file.size > BUYER_DOCUMENT_MAX_BYTES) {
-            return NextResponse.json({ success: false, error: 'File must be 10MB or smaller' }, { status: 400 });
+            return NextResponse.json({ success: false, error: 'File must be 3MB or smaller' }, { status: 400 });
         }
 
         const mime = file.type || 'application/pdf';
@@ -50,10 +45,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Use PDF, JPG, JPEG, or PNG format' }, { status: 400 });
         }
 
-        const type = VALID_TYPES.includes(docType) ? docType : 'other';
-        const ext = mime === 'application/pdf' ? 'pdf' : mime === 'image/png' ? 'png' : 'jpg';
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120);
-        const storagePath = `${userId}/${documentId}/${safeName || `document.${ext}`}`;
+        const type = BUYER_DOCUMENT_TYPES.includes(docType) ? docType : 'other';
+        const displayName = buyerDocumentTypeLabel(type);
+        const fileName = buyerDocumentDisplayFileName(type, file.name);
+        const safeName = fileName.replace(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 120);
+        const storagePath = `${userId}/${documentId}/${safeName}`;
 
         const supabase = createServiceClient();
         if (!supabase) {
@@ -82,7 +78,7 @@ export async function POST(request: NextRequest) {
         const row = {
             id: documentId,
             user_id: userId,
-            name: file.name,
+            name: displayName,
             type,
             status: 'uploaded',
             size: `${Math.round((file.size / 1024) * 10) / 10} KB`,
@@ -101,7 +97,7 @@ export async function POST(request: NextRequest) {
             success: true,
             document: {
                 id: documentId,
-                name: file.name,
+                name: displayName,
                 type,
                 status: 'uploaded',
                 size: row.size,

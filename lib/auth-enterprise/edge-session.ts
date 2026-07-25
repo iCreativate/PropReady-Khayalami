@@ -44,23 +44,27 @@ export async function getEdgeAuthFromRequest(
 }
 
 export function edgeLoginPath(pathname: string) {
-    return pathname.startsWith('/agents') ? '/auth/login?type=agent' : '/auth/login';
+    if (pathname.startsWith('/agents')) return '/agents/login';
+    if (pathname.startsWith('/originators')) return '/originators/login';
+    return '/auth/login';
 }
 
 export function edgeDashboardPath(accountType?: string) {
-    return accountType === 'agent' ? '/agents/dashboard' : '/dashboard';
+    if (accountType === 'agent') return '/agents/dashboard';
+    if (accountType === 'originator') return '/originators/dashboard';
+    return '/dashboard';
 }
 
 export function edgeProfileCompletePath(accountType?: string) {
-    return accountType === 'agent'
-        ? '/auth/complete-profile?type=agent'
-        : '/auth/complete-profile';
+    if (accountType === 'agent') return '/auth/complete-profile?type=agent';
+    if (accountType === 'originator') return '/auth/complete-profile?type=originator';
+    return '/auth/complete-profile';
 }
 
 export function edgeConfirmPasswordPath(accountType?: string) {
-    return accountType === 'agent'
-        ? '/auth/confirm-password?type=agent'
-        : '/auth/confirm-password';
+    if (accountType === 'agent') return '/auth/confirm-password?type=agent';
+    if (accountType === 'originator') return '/auth/confirm-password?type=originator';
+    return '/auth/confirm-password';
 }
 
 /** Where to send a magic-link session that still needs a password step. */

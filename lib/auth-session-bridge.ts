@@ -6,12 +6,13 @@ export type BridgedSessionUser = {
     fullName?: string;
     email: string;
     company?: string;
-    accountType?: 'user' | 'agent';
+    organizationId?: string;
+    accountType?: 'user' | 'agent' | 'originator';
 };
 
 export function syncLegacySession(
     user: BridgedSessionUser,
-    accountType: 'user' | 'agent' = user.accountType || 'user'
+    accountType: 'user' | 'agent' | 'originator' = user.accountType || 'user'
 ) {
     if (typeof window === 'undefined') return;
     if (accountType === 'agent') {
@@ -22,6 +23,16 @@ export function syncLegacySession(
                 fullName: user.fullName,
                 email: user.email,
                 company: user.company,
+            })
+        );
+    } else if (accountType === 'originator') {
+        localStorage.setItem(
+            'propReady_currentOriginator',
+            JSON.stringify({
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                organizationId: user.organizationId || user.company,
             })
         );
     } else {
@@ -45,13 +56,18 @@ export async function hydrateSessionFromCookies(): Promise<BridgedSessionUser | 
         const data = await res.json();
         if (!data?.authenticated || !data.user) return null;
 
-        const accountType: 'user' | 'agent' =
-            data.user.accountType === 'agent' ? 'agent' : 'user';
+        const accountType: 'user' | 'agent' | 'originator' =
+            data.user.accountType === 'agent'
+                ? 'agent'
+                : data.user.accountType === 'originator'
+                  ? 'originator'
+                  : 'user';
         const bridged: BridgedSessionUser = {
             id: data.user.profileId || data.user.accountId,
             fullName: data.user.fullName,
             email: data.user.email,
             company: data.user.company,
+            organizationId: data.user.organizationId,
             accountType,
         };
         syncLegacySession(bridged, accountType);

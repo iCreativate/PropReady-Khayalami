@@ -21,8 +21,8 @@ export const AUTH_CONFIG = {
     },
 } as const;
 
-export type AccountType = 'user' | 'agent';
-export type OAuthProvider = 'google' | 'apple' | 'microsoft';
+export type AccountType = 'user' | 'agent' | 'originator';
+export type OAuthProvider = 'google' | 'apple';
 
 export function getAuthSecret(): string {
     const secret = process.env.AUTH_JWT_SECRET || process.env.NEXTAUTH_SECRET;

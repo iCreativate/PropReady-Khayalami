@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validatePassword } from '@/lib/password';
 import {
     createSession,
     ensureAuthAccountForProfile,
@@ -8,8 +7,10 @@ import {
     verifyAccountPassword,
     getRequestMeta,
 } from '@/lib/auth-enterprise';
+import { parseAccountType, profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { createServiceClient } from '@/lib/supabase-admin';
-import type { AccountType } from '@/lib/auth-enterprise';
+import { BOND_ORIGINATORS } from '@/lib/bond-originators';
+import { normalizeFfcNumber, validateFfcNumber } from '@/lib/ppra';
 
 function toLegacyUser(user: Awaited<ReturnType<typeof createSession>>['user']) {
     if (user.accountType === 'agent') {
@@ -24,9 +25,22 @@ function toLegacyUser(user: Awaited<ReturnType<typeof createSession>>['user']) {
             ppraNumber: user.ppraNumber,
             verificationStatus: user.verificationStatus,
             status: user.status,
+            accountType: 'agent' as const,
         };
     }
-    return { id: user.profileId, fullName: user.fullName, email: user.email };
+    if (user.accountType === 'originator') {
+        return {
+            id: user.profileId,
+            fullName: user.fullName,
+            email: user.email,
+            organizationId: user.organizationId,
+            company: user.company,
+            phone: user.phone,
+            status: user.status,
+            accountType: 'originator' as const,
+        };
+    }
+    return { id: user.profileId, fullName: user.fullName, email: user.email, accountType: 'user' as const };
 }
 
 export async function POST(request: NextRequest) {
@@ -34,12 +48,42 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         const email = String(body.email || '').trim().toLowerCase();
         const password = String(body.password || '');
-        const accountType: AccountType = body.type === 'agent' ? 'agent' : 'user';
+        const accountType = parseAccountType(body.type);
         const rememberDevice = Boolean(body.rememberDevice ?? body.rememberMe);
+        const ffcNumber = normalizeFfcNumber(String(body.ffcNumber || ''));
+        const organizationId = String(body.organizationId || '').trim();
+        const staffNumber = String(body.staffNumber || '')
+            .trim()
+            .toUpperCase();
         const meta = getRequestMeta(request);
 
         if (!email || !password) {
             return NextResponse.json({ success: false, error: 'Email and password required' }, { status: 400 });
+        }
+
+        if (accountType === 'agent') {
+            if (!ffcNumber || ffcNumber.length !== 15 || !validateFfcNumber(ffcNumber)) {
+                return NextResponse.json(
+                    { success: false, error: 'A valid 15-digit FFC number is required' },
+                    { status: 400 }
+                );
+            }
+        }
+
+        if (accountType === 'originator') {
+            const validOrg = BOND_ORIGINATORS.some((o) => o.id === organizationId);
+            if (!validOrg) {
+                return NextResponse.json(
+                    { success: false, error: 'Select a valid bond originator organisation' },
+                    { status: 400 }
+                );
+            }
+            if (staffNumber.length < 4) {
+                return NextResponse.json(
+                    { success: false, error: 'Originator staff number is required' },
+                    { status: 400 }
+                );
+            }
         }
 
         const supabase = createServiceClient();
@@ -47,15 +91,75 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
         }
 
-        const table = accountType === 'agent' ? 'agents' : 'users';
+        const table = profileTableForAccountType(accountType);
+        const selectCols =
+            accountType === 'agent'
+                ? 'id, email, password, ffc_number'
+                : accountType === 'originator'
+                  ? 'id, email, password, organization_id, staff_number'
+                  : 'id, email, password';
+
         const { data: profile, error } = await supabase
             .from(table)
-            .select('id, email, password')
+            .select(selectCols)
             .eq('email', email)
             .maybeSingle();
 
         if (error || !profile) {
             return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
+        }
+
+        if (accountType === 'agent') {
+            const storedFfc = normalizeFfcNumber(String((profile as { ffc_number?: string }).ffc_number || ''));
+            if (storedFfc && storedFfc !== ffcNumber) {
+                return NextResponse.json(
+                    { success: false, error: 'FFC number does not match this agent account' },
+                    { status: 401 }
+                );
+            }
+            if (!storedFfc) {
+                const { error: ffcUpdateError } = await supabase
+                    .from('agents')
+                    .update({ ffc_number: ffcNumber })
+                    .eq('id', profile.id);
+                if (ffcUpdateError) {
+                    console.error('auth/login agent ffc save:', ffcUpdateError);
+                }
+            }
+        }
+
+        if (accountType === 'originator') {
+            const row = profile as { organization_id?: string; staff_number?: string };
+            if (row.organization_id && row.organization_id !== organizationId) {
+                return NextResponse.json(
+                    { success: false, error: 'Organisation does not match this staff account' },
+                    { status: 401 }
+                );
+            }
+            const storedStaff = String(row.staff_number || '')
+                .trim()
+                .toUpperCase();
+            if (storedStaff && storedStaff !== staffNumber) {
+                return NextResponse.json(
+                    { success: false, error: 'Staff number does not match this originator account' },
+                    { status: 401 }
+                );
+            }
+            if (!storedStaff) {
+                const { error: staffUpdateError } = await supabase
+                    .from('originators')
+                    .update({ staff_number: staffNumber, organization_id: organizationId })
+                    .eq('id', profile.id);
+                if (staffUpdateError) {
+                    console.error('auth/login originator staff save:', staffUpdateError);
+                    if (staffUpdateError.code === '23505') {
+                        return NextResponse.json(
+                            { success: false, error: 'That staff number is already registered for this organisation' },
+                            { status: 409 }
+                        );
+                    }
+                }
+            }
         }
 
         const account = await ensureAuthAccountForProfile(email, accountType, profile.id);

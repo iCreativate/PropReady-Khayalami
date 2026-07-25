@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase-admin';
 import { AUTH_CONFIG } from './config';
+import { profileTableForAccountType } from './account-profile';
 import { generateSecureToken, hashPassword, hashToken, verifyPassword } from './password';
 import { isProfileCompleteFromData, isValidPhone, looksLikePlaceholderName } from './profile-gate';
 import { signAccessToken } from './tokens';
@@ -98,7 +99,7 @@ export async function migrateLegacyPassword(
 }
 
 async function getLegacyPlainPassword(account: AuthAccount): Promise<string | null> {
-    const table = account.account_type === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(account.account_type);
     const { data } = await db()
         .from(table)
         .select('password')
@@ -170,6 +171,26 @@ export async function loadSessionUser(account: AuthAccount): Promise<SessionUser
                 accountType: 'agent',
             });
         }
+    } else if (account.account_type === 'originator') {
+        const { data } = await db()
+            .from('originators')
+            .select('full_name, email, phone, organization_id, status')
+            .eq('id', account.profile_id)
+            .maybeSingle();
+        if (data) {
+            base.fullName = data.full_name;
+            base.phone = data.phone;
+            base.organizationId = data.organization_id;
+            base.company = data.organization_id;
+            base.status = data.status;
+            base.profileComplete = isProfileCompleteFromData({
+                account,
+                fullName: data.full_name,
+                phone: data.phone,
+                company: data.organization_id,
+                accountType: 'originator',
+            });
+        }
     } else {
         const { data } = await db()
             .from('users')
@@ -199,7 +220,7 @@ export async function ensureAuthAccountForProfile(
     const existing = await findAccountByEmail(email, accountType);
     if (existing) return existing;
 
-    const table = accountType === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(accountType);
     const { data: profile } = await db()
         .from(table)
         .select('password')
@@ -414,6 +435,7 @@ export async function completeVerifiedProfile(
         fullName: string;
         phone: string;
         company?: string;
+        organizationId?: string;
         eaabNumber?: string;
         password?: string;
         intent?: 'buyer' | 'seller';
@@ -422,6 +444,7 @@ export async function completeVerifiedProfile(
     const fullName = input.fullName.trim();
     const phone = input.phone.trim();
     const company = input.company?.trim();
+    const organizationId = input.organizationId?.trim() || company;
     const needsPassword = !account.password_hash;
 
     if (looksLikePlaceholderName(fullName, account.email)) {
@@ -432,6 +455,9 @@ export async function completeVerifiedProfile(
     }
     if (account.account_type === 'agent' && !company) {
         throw new Error('Agency / company name is required');
+    }
+    if (account.account_type === 'originator' && !organizationId) {
+        throw new Error('Bond originator organisation is required');
     }
     if (needsPassword) {
         if (!input.password) {
@@ -447,7 +473,7 @@ export async function completeVerifiedProfile(
         throw new Error('Please choose whether you are buying or selling');
     }
 
-    const table = account.account_type === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(account.account_type);
     const patch: Record<string, unknown> = {
         full_name: fullName,
         phone,
@@ -456,6 +482,9 @@ export async function completeVerifiedProfile(
     if (account.account_type === 'agent') {
         patch.company = company;
         if (input.eaabNumber?.trim()) patch.eaab_number = input.eaabNumber.trim();
+    }
+    if (account.account_type === 'originator') {
+        patch.organization_id = organizationId;
     }
 
     const { error } = await db().from(table).update(patch).eq('id', account.profile_id);

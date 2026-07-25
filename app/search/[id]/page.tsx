@@ -138,7 +138,7 @@ export default function PropertyDetailPage() {
                                             <img
                                                 src={getProxiedImageUrl(url)}
                                                 alt={`${property.title} - ${i + 1}`}
-                                                className="w-full h-full object-cover"
+                                                className="w-full h-full object-cover gallery-zoom"
                                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                             />
                                         </div>

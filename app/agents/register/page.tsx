@@ -16,7 +16,7 @@ import {
     AlertCircle,
     MapPin,
 } from 'lucide-react';
-import AuthShell from '@/components/auth/AuthShell';
+import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
 import {
     validatePpraNumber,
@@ -253,17 +253,17 @@ export default function AgentRegisterPage() {
 
     const fieldError = (key: string) =>
         errors[key] ? (
-            <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+            <p className="form-error">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {errors[key]}
             </p>
         ) : null;
 
     return (
-        <AuthShell
+        <ProfessionalAuthShell
+            role="agent"
             title="Join our network"
             subtitle={`Register as a verified PropReady agent — 100% free. ${PRICING_SUMMARY}`}
-            accountType="agent"
             wide
         >
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -279,7 +279,7 @@ export default function AgentRegisterPage() {
                             placeholder="e.g., John Mthembu"
                             value={formData.fullName}
                             onChange={handleInputChange}
-                            className={`auth-input ${errors.fullName ? 'border-red-500/40' : ''}`}
+                            className={`auth-input ${errors.fullName ? 'form-control-error' : ''}`}
                         />
                     </div>
                     {fieldError('fullName')}
@@ -297,7 +297,7 @@ export default function AgentRegisterPage() {
                             placeholder="agent@example.com"
                             value={formData.email}
                             onChange={handleInputChange}
-                            className={`auth-input ${errors.email ? 'border-red-500/40' : ''}`}
+                            className={`auth-input ${errors.email ? 'form-control-error' : ''}`}
                         />
                     </div>
                     {fieldError('email')}
@@ -315,7 +315,7 @@ export default function AgentRegisterPage() {
                             placeholder="082 123 4567"
                             value={formData.phone}
                             onChange={handleInputChange}
-                            className={`auth-input ${errors.phone ? 'border-red-500/40' : ''}`}
+                            className={`auth-input ${errors.phone ? 'form-control-error' : ''}`}
                         />
                     </div>
                     {fieldError('phone')}
@@ -356,7 +356,7 @@ export default function AgentRegisterPage() {
                                     }}
                                     maxLength={7}
                                     inputMode="numeric"
-                                    className={`auth-input ${errors.ppraNumber ? 'border-red-500/40' : ''}`}
+                                    className={`auth-input ${errors.ppraNumber ? 'form-control-error' : ''}`}
                                 />
                             </div>
                             {fieldError('ppraNumber')}
@@ -377,7 +377,7 @@ export default function AgentRegisterPage() {
                                 onChange={handleInputChange}
                                 maxLength={15}
                                 inputMode="numeric"
-                                className={`auth-input !pl-4 font-mono ${errors.ffcNumber ? 'border-red-500/40' : ''}`}
+                                className={`auth-input !pl-4 font-mono ${errors.ffcNumber ? 'form-control-error' : ''}`}
                             />
                             {fieldError('ffcNumber')}
                         </div>
@@ -420,7 +420,7 @@ export default function AgentRegisterPage() {
                             placeholder="e.g., ABC Real Estate"
                             value={formData.company}
                             onChange={handleInputChange}
-                            className={`auth-input ${errors.company ? 'border-red-500/40' : ''}`}
+                            className={`auth-input ${errors.company ? 'form-control-error' : ''}`}
                         />
                     </div>
                     {fieldError('company')}
@@ -456,7 +456,7 @@ export default function AgentRegisterPage() {
                             placeholder="At least 8 characters"
                             value={formData.password}
                             onChange={handleInputChange}
-                            className={`auth-input pr-10 ${errors.password ? 'border-red-500/40' : ''}`}
+                            className={`auth-input pr-10 ${errors.password ? 'form-control-error' : ''}`}
                         />
                         <button
                             type="button"
@@ -483,7 +483,7 @@ export default function AgentRegisterPage() {
                             placeholder="Re-enter your password"
                             value={formData.confirmPassword}
                             onChange={handleInputChange}
-                            className={`auth-input pr-10 ${errors.confirmPassword ? 'border-red-500/40' : ''}`}
+                            className={`auth-input pr-10 ${errors.confirmPassword ? 'form-control-error' : ''}`}
                         />
                         <button
                             type="button"
@@ -539,7 +539,7 @@ export default function AgentRegisterPage() {
             <p className="text-center text-sm text-charcoal/55 mt-8">
                 Already have an account?{' '}
                 <Link
-                    href="/auth/login?type=agent"
+                    href="/agents/login"
                     className="text-gold font-medium hover:underline"
                 >
                     Sign in
@@ -553,6 +553,6 @@ export default function AgentRegisterPage() {
             <p className="text-charcoal/45 text-xs text-center mt-2">
                 Your registration will be reviewed and approved by our team
             </p>
-        </AuthShell>
+        </ProfessionalAuthShell>
     );
 }

@@ -162,7 +162,7 @@ export default function PortfolioDiversificationTracker() {
                         value={property1Type}
                         onChange={(e) => setProperty1Type(e.target.value)}
                         placeholder="Type (e.g., Residential, Commercial)"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
 
@@ -187,7 +187,7 @@ export default function PortfolioDiversificationTracker() {
                         value={property2Type}
                         onChange={(e) => setProperty2Type(e.target.value)}
                         placeholder="Type (e.g., Residential, Commercial)"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
 
@@ -212,18 +212,18 @@ export default function PortfolioDiversificationTracker() {
                         value={property3Type}
                         onChange={(e) => setProperty3Type(e.target.value)}
                         placeholder="Type"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
 
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Cash Reserves</label>
+                    <label className="form-label !font-semibold !text-charcoal">Cash Reserves</label>
                     <input
                         type="text"
                         value={cashReserves}
                         onChange={(e) => setCashReserves(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
 

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
     verifyCode,
     markEmailVerified,
-    type AccountType,
 } from '@/lib/verification-store';
+import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const type: AccountType = accountType === 'agent' ? 'agent' : 'user';
+        const type = parseAccountType(accountType);
         const valid = await verifyCode(email, type, String(code));
 
         if (!valid) {

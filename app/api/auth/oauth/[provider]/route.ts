@@ -4,11 +4,12 @@ import {
     createOAuthState,
     getOAuthAuthorizationUrl,
     hashOAuthState,
+    parseAccountType,
     type OAuthProvider,
     type AccountType,
 } from '@/lib/auth-enterprise';
 
-const providers: OAuthProvider[] = ['google', 'apple', 'microsoft'];
+const providers: OAuthProvider[] = ['google', 'apple'];
 
 export async function GET(
     request: NextRequest,
@@ -20,8 +21,9 @@ export async function GET(
         return NextResponse.json({ error: 'Unknown provider' }, { status: 404 });
     }
 
-    const accountType: AccountType =
-        request.nextUrl.searchParams.get('type') === 'agent' ? 'agent' : 'user';
+    const accountType: AccountType = parseAccountType(
+        request.nextUrl.searchParams.get('type')
+    );
     const state = createOAuthState();
     const url = getOAuthAuthorizationUrl(provider, accountType, state);
 

@@ -91,7 +91,7 @@ export default function ForgotPasswordModal({
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg border border-charcoal/20 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full px-4 py-3 rounded-lg border border-charcoal/20 form-control"
                                     placeholder="you@example.com"
                                 />
                             </div>

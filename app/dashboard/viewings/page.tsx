@@ -12,6 +12,7 @@ import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
 import { PORTAL_PAGE_CONTAINER, PORTAL_STAT_CARD, PORTAL_STAT_ICON } from '@/lib/portal-ui';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import { formatLocalYmd, todayLocalYmd, parseLocalYmd } from '@/lib/local-date';
 
 interface Viewing {
     id: string;
@@ -104,7 +105,8 @@ export default function ViewingsPage() {
     };
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
+        const date = parseLocalYmd(dateString);
+        if (isNaN(date.getTime())) return dateString;
         return date.toLocaleDateString('en-ZA', { 
             weekday: 'long', 
             year: 'numeric', 
@@ -119,9 +121,7 @@ export default function ViewingsPage() {
     };
 
     const isToday = (dateString: string) => {
-        const today = new Date();
-        const viewingDate = new Date(dateString);
-        return viewingDate.toDateString() === today.toDateString();
+        return dateString === todayLocalYmd();
     };
 
     const isPast = (dateString: string, timeString: string) => {
@@ -137,9 +137,8 @@ export default function ViewingsPage() {
         const viewingDateTime = new Date(`${dateString}T${timeString}`);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const viewingDate = new Date(viewingDateTime);
-        viewingDate.setHours(0, 0, 0, 0);
-        return viewingDate > today;
+        viewingDateTime.setHours(0, 0, 0, 0);
+        return viewingDateTime > today;
     };
 
     const confirmedViewings = viewings.filter(v => v.status === 'confirmed');
@@ -178,7 +177,7 @@ export default function ViewingsPage() {
 
     const getViewingsForDate = (date: Date) => {
         if (!date || isNaN(date.getTime())) return [];
-        const dateString = date.toISOString().split('T')[0];
+        const dateString = formatLocalYmd(date);
         return viewings.filter(v => v && v.date === dateString);
     };
 
@@ -340,10 +339,11 @@ export default function ViewingsPage() {
                             {/* Calendar days */}
                             {days.map((day) => {
                                 const date = new Date(year, month, day);
-                                const dateString = date.toISOString().split('T')[0];
+                                const dateString = formatLocalYmd(date);
                                 const dayViewings = getViewingsForDate(date);
-                                const isToday = dateString === new Date().toISOString().split('T')[0];
-                                const isPast = date < new Date() && !isToday;
+                                const isToday = dateString === todayLocalYmd();
+                                const todayStart = parseLocalYmd(todayLocalYmd());
+                                const isPast = date < todayStart && !isToday;
                                 
                                 return (
                                     <div

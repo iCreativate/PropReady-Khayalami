@@ -37,7 +37,7 @@ export const LEARN_TYPE = {
 export const LEARN_MOTION = {
     base: 'transition-all duration-[250ms] ease-out',
     icon: 'transition-transform duration-[250ms] ease-out group-hover:scale-110',
-    card: 'transition-all duration-[250ms] ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]',
+    card: 'card-interactive',
     progress: 'transition-[width] duration-[250ms] ease-out',
     fadeIn: 'learn-animate-in',
     slideIn: 'learn-slide-in',
@@ -45,21 +45,21 @@ export const LEARN_MOTION = {
 } as const;
 
 export const LEARN_SHADOW = {
-    card: 'shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)]',
-    cardHover: 'hover:shadow-[0_4px_12px_rgba(0,0,0,0.06),0_16px_40px_rgba(0,0,0,0.06)]',
+    card: 'shadow-card',
+    cardHover: 'hover:shadow-card-hover',
 } as const;
 
 export const LEARN_STEP_CARD =
-    `learn-step-card group relative rounded-2xl border border-[#E5E7EB] bg-white ${LEARN_SHADOW.card} ${LEARN_MOTION.card} ${LEARN_MOTION.fadeIn} ${LEARN_LAYOUT.cardPadding}`;
+    `learn-step-card card-surface card-interactive group relative rounded-2xl bg-white ${LEARN_MOTION.fadeIn} ${LEARN_LAYOUT.cardPadding}`;
 
 export const LEARN_CALLOUT_CARD =
-    `rounded-2xl border border-[#E5E7EB] bg-white ${LEARN_SHADOW.card} ${LEARN_MOTION.card} ${LEARN_MOTION.slideIn} ${LEARN_LAYOUT.cardPadding}`;
+    `card-surface card-interactive rounded-2xl bg-white ${LEARN_MOTION.slideIn} ${LEARN_LAYOUT.cardPadding}`;
 
 export const LEARN_QUOTE_CARD =
-    'learn-quote-card learn-slide-in flex gap-5 rounded-2xl border border-red-100 border-l-4 border-l-[#EF4444] bg-red-50/70 py-6 pl-6 pr-8 sm:py-7 sm:pl-8 sm:pr-10';
+    'learn-quote-card learn-slide-in flex gap-5 rounded-2xl border border-red-100 border-l-4 border-l-[#EF4444] bg-red-50/70 py-6 pl-6 pr-8 sm:py-7 sm:pl-8 sm:pr-10 shadow-card';
 
 export const LEARN_TIP_CARD =
-    'learn-tip-card learn-slide-in rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-yellow-50/40 p-8 sm:p-10';
+    'learn-tip-card learn-slide-in rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-yellow-50/40 p-8 sm:p-10 shadow-card';
 
 export const LEARN_SUCCESS_CALLOUT =
     'rounded-2xl border border-green-200/80 bg-green-50/60 p-6 sm:p-7';

@@ -61,7 +61,7 @@ export default function CommissionCalculator() {
                         value={sellingPrice}
                         onChange={handleSellingPriceChange}
                         placeholder="Enter selling price (e.g., 1,000,000)"
-                        className="w-full px-4 py-3 border border-charcoal/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition"
+                        className="w-full px-4 py-3 border border-charcoal/20 rounded-xl form-control transition"
                     />
                 </div>
 
@@ -77,7 +77,7 @@ export default function CommissionCalculator() {
                         max="10"
                         step="0.1"
                         placeholder="e.g., 5"
-                        className="w-full px-4 py-3 border border-charcoal/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition"
+                        className="w-full px-4 py-3 border border-charcoal/20 rounded-xl form-control transition"
                     />
                     <p className="text-xs text-charcoal/50 mt-1">
                         Typical range: 3% - 8% (plus VAT)

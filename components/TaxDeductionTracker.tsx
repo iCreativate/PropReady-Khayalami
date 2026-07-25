@@ -29,33 +29,33 @@ export default function TaxDeductionTracker() {
             <h4 className="font-bold text-charcoal text-lg mb-4">Annual Expense Tracking</h4>
             <div className="space-y-3">
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Bond Interest (not capital)</label>
+                    <label className="form-label !font-semibold !text-charcoal">Bond Interest (not capital)</label>
                     <input
                         type="text"
                         value={bondInterest}
                         onChange={(e) => setBondInterest(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Rates & Taxes</label>
+                    <label className="form-label !font-semibold !text-charcoal">Rates & Taxes</label>
                     <input
                         type="text"
                         value={ratesTaxes}
                         onChange={(e) => setRatesTaxes(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-charcoal/5 rounded-lg border border-charcoal/10">
-                    <label className="block text-sm font-semibold text-charcoal mb-1">Maintenance & Repairs</label>
+                    <label className="form-label !font-semibold !text-charcoal">Maintenance & Repairs</label>
                     <input
                         type="text"
                         value={maintenanceRepairs}
                         onChange={(e) => setMaintenanceRepairs(formatNumberInput(e.target.value))}
                         placeholder="R 0"
-                        className="w-full px-3 py-2 border border-charcoal/20 rounded-lg"
+                        className="form-control w-full px-3 py-2 border border-charcoal/20 rounded-lg"
                     />
                 </div>
                 <div className="p-3 bg-gold/10 rounded-lg border border-gold/30">

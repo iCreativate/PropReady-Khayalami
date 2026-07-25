@@ -16,7 +16,7 @@ import { resolveBuyerQuizResultSync, type BuyerQuizResult } from '@/lib/quiz-res
 import { resolvePrequalMode } from '@/lib/buyer-full-prequal';
 import type { ListedProperty } from '@/lib/listed-property';
 import { getProxiedImageUrl } from '@/lib/image-proxy';
-import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD } from '@/lib/portal-ui';
+import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_DASH_STACK, PORTAL_DASH_SECTION_TITLE, PORTAL_DASH_SECTION_SUB, PORTAL_DASH_WIDGET, PORTAL_DASH_WIDGET_LG, PORTAL_DASH_STAT_LABEL, PORTAL_DASH_STAT_VALUE_MD, PORTAL_DASH_QUICK_ACTION, PORTAL_DASH_ACTIVITY_ROW, PORTAL_DASH_LINK, PORTAL_DASH_EMPTY, PORTAL_DASH_EMPTY_ICON, PORTAL_DASH_EMPTY_TITLE, PORTAL_DASH_EMPTY_DESC } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
@@ -24,6 +24,14 @@ import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 import PortalLoading from '@/components/PortalLoading';
 import PropReadyScoreCard from '@/components/PropReadyScoreCard';
+import PropertyFavouriteButton from '@/components/PropertyFavouriteButton';
+import {
+    PROPERTY_CARD_ROW,
+    PROPERTY_CARD_MEDIA_THUMB,
+    PROPERTY_CARD_IMG,
+    PROPERTY_CARD_PRICE,
+    PROPERTY_CARD_CHIP_MATCH,
+} from '@/lib/property-card-ui';
 
 type MatchedListing = ListedProperty & { matchScore: number };
 
@@ -238,7 +246,7 @@ export default function DashboardPage() {
     const showSuggestedProperties = agentListings.length > 0 && suggestedProperties.length > 0;
 
     if (!isHydrated || !currentUser) {
-        return <PortalLoading message="Loading dashboard…" />;
+        return <PortalLoading message="Loading dashboard…" variant="dashboard" />;
     }
 
     return (
@@ -262,40 +270,41 @@ export default function DashboardPage() {
                 }
             >
                 <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
+                    <div className={PORTAL_DASH_STACK}>
                     {/* Seller Information Section (if user is also a seller) */}
                     {isSeller && sellerInfo && (
-                        <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10 overflow-hidden`}>
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-4">
+                        <div className={`${PORTAL_DASH_WIDGET_LG} overflow-hidden`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-7">
+                                <div className="flex items-center gap-4 min-w-0">
                                     <div className={PORTAL_STAT_ICON}>
                                         <Building2 className="w-5 h-5 text-gold" />
                                     </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-charcoal mb-1">Your Property Listing</h2>
-                                        <p className="text-charcoal/50 text-sm">Selling your property</p>
+                                    <div className="min-w-0">
+                                        <h2 className={PORTAL_DASH_SECTION_TITLE}>Your Property Listing</h2>
+                                        <p className={PORTAL_DASH_SECTION_SUB}>Selling your property</p>
                                     </div>
                                 </div>
-                                <Link href="/sellers/dashboard" className={PORTAL_PRIMARY_BTN}>
+                                <Link href="/sellers/dashboard" className={`${PORTAL_PRIMARY_BTN} shrink-0 self-start sm:self-auto`}>
                                     Go to Seller Dashboard
                                 </Link>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                                     <div className="portal-stat-inner">
-                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Property Value</p>
-                                        <p className="text-charcoal font-bold text-xl">
+                                        <p className={PORTAL_DASH_STAT_LABEL}>Property Value</p>
+                                        <p className={PORTAL_DASH_STAT_VALUE_MD}>
                                             {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
                                         </p>
                                     </div>
                                     <div className="portal-stat-inner">
-                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Property Type</p>
-                                        <p className="text-charcoal font-bold text-xl capitalize">
+                                        <p className={PORTAL_DASH_STAT_LABEL}>Property Type</p>
+                                        <p className={`${PORTAL_DASH_STAT_VALUE_MD} capitalize`}>
                                             {sellerInfo.propertyType || 'N/A'}
                                         </p>
                                     </div>
                                     <div className="portal-stat-inner">
-                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Selling Timeline</p>
-                                        <p className="text-charcoal font-bold text-sm capitalize">
+                                        <p className={PORTAL_DASH_STAT_LABEL}>Selling Timeline</p>
+                                        <p className="text-charcoal font-bold text-lg sm:text-xl tracking-tight capitalize leading-snug">
                                             {sellerInfo.timeline ? sellerInfo.timeline.replace('-', ' to ') : 'N/A'}
                                         </p>
                                     </div>
@@ -327,97 +336,101 @@ export default function DashboardPage() {
                     />
 
                     {/* Quick Actions */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6 mb-8 sm:mb-10">
-                        <Link href="/search" className={`${PORTAL_CARD} p-6 text-center group`}>
-                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+                        <Link href="/search" className={PORTAL_DASH_QUICK_ACTION}>
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-3.5 sm:mb-4`}>
                                 <Home className="w-5 h-5 text-gold" />
                             </div>
-                            <h3 className="text-charcoal font-semibold text-sm">Browse Properties</h3>
+                            <h3 className="text-charcoal font-semibold text-sm tracking-tight">Browse Properties</h3>
+                            <p className="text-[11px] text-charcoal/40 mt-1.5 hidden sm:block">Search listings</p>
                         </Link>
 
-                        <Link href="/dashboard/documents" className={`${PORTAL_CARD} p-6 text-center group border-red-200 ring-1 ring-red-100`}>
-                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4 bg-red-50 border-red-100`}>
+                        <Link href="/dashboard/documents" className={`${PORTAL_DASH_QUICK_ACTION} border-red-200 ring-1 ring-red-100`}>
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-3.5 sm:mb-4 bg-red-50 border-red-100`}>
                                 <FileText className="w-5 h-5 text-red-600" />
                             </div>
-                            <h3 className="text-red-700 font-semibold text-sm">Bond Originators</h3>
-                            <p className="text-[11px] text-red-600/80 mt-1 font-medium">Full prequal</p>
+                            <h3 className="text-red-700 font-semibold text-sm tracking-tight">Bond Originators</h3>
+                            <p className="text-[11px] text-red-600/80 mt-1.5 font-medium">Full prequal</p>
                         </Link>
 
-                        <Link href="/dashboard/agent" className={`${PORTAL_CARD} p-6 text-center group`}>
-                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
+                        <Link href="/dashboard/agent" className={PORTAL_DASH_QUICK_ACTION}>
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-3.5 sm:mb-4`}>
                                 <Users className="w-5 h-5 text-gold" />
                             </div>
-                            <h3 className="text-charcoal font-semibold text-sm">My Agent</h3>
+                            <h3 className="text-charcoal font-semibold text-sm tracking-tight">My Agent</h3>
+                            <p className="text-[11px] text-charcoal/40 mt-1.5 hidden sm:block">Your match</p>
                         </Link>
 
-                        <Link href="/dashboard/viewings" className={`${PORTAL_CARD} p-6 text-center group`}>
-                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-4`}>
+                        <Link href="/dashboard/viewings" className={PORTAL_DASH_QUICK_ACTION}>
+                            <div className={`${PORTAL_STAT_ICON} mx-auto mb-3.5 sm:mb-4`}>
                                 <Calendar className="w-5 h-5 text-gold" />
                             </div>
-                            <h3 className="text-charcoal font-semibold text-sm">Viewings</h3>
+                            <h3 className="text-charcoal font-semibold text-sm tracking-tight">Viewings</h3>
+                            <p className="text-[11px] text-charcoal/40 mt-1.5 hidden sm:block">Appointments</p>
                         </Link>
                     </div>
 
                     {/* Viewing Appointments Section */}
                     {viewingAppointments.length > 0 && (
-                        <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10`}>
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-4">
+                        <div className={PORTAL_DASH_WIDGET_LG}>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-7">
+                                <div className="flex items-center gap-4 min-w-0">
                                     <div className={PORTAL_STAT_ICON}>
                                         <Calendar className="w-5 h-5 text-gold" />
                                     </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-charcoal mb-1">Your Viewing Appointments</h2>
-                                        <p className="text-charcoal/50 text-sm">Appointments scheduled by agents</p>
+                                    <div className="min-w-0">
+                                        <h2 className={PORTAL_DASH_SECTION_TITLE}>Your Viewing Appointments</h2>
+                                        <p className={PORTAL_DASH_SECTION_SUB}>Appointments scheduled by agents</p>
                                     </div>
                                 </div>
-                                <Link
-                                    href="/dashboard/viewings"
-                                    className="px-4 py-2 text-gold hover:underline text-sm font-semibold"
-                                >
+                                <Link href="/dashboard/viewings" className={PORTAL_DASH_LINK}>
                                     View All
                                 </Link>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {viewingAppointments.slice(0, 3).map((viewing) => (
                                     <div
                                         key={viewing.id}
-                                        className={`${PORTAL_CARD} p-6 border border-charcoal/20 hover:border-gold/50 transition`}
+                                        className={`${PORTAL_CARD} p-5 sm:p-6`}
                                     >
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex-1">
-                                                <h3 className="text-xl font-bold text-charcoal mb-2">{viewing.propertyTitle}</h3>
-                                                <div className="flex items-center gap-2 text-charcoal/60 text-sm mb-2">
-                                                    <MapPin className="w-4 h-4" />
-                                                    <span>{viewing.propertyAddress}</span>
+                                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3 sm:mb-4">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-lg sm:text-xl font-semibold text-charcoal tracking-tight mb-2">
+                                                    {viewing.propertyTitle}
+                                                </h3>
+                                                <div className="flex items-center gap-2 text-charcoal/55 text-sm mb-2">
+                                                    <MapPin className="w-4 h-4 shrink-0" />
+                                                    <span className="truncate">{viewing.propertyAddress}</span>
                                                 </div>
                                                 {(viewing.propertyPrice ?? 0) > 0 && (
-                                                    <p className="text-gold font-bold text-lg mb-2">{formatCurrency(viewing.propertyPrice!)}</p>
+                                                    <p className="text-gold font-bold text-xl tabular-nums tracking-tight mb-2">
+                                                        {formatCurrency(viewing.propertyPrice!)}
+                                                    </p>
                                                 )}
-                                                <div className="flex items-center gap-4 text-sm text-charcoal/70">
+                                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-charcoal/55">
                                                     <div className="flex items-center gap-2">
-                                                        <Calendar className="w-4 h-4" />
+                                                        <Calendar className="w-4 h-4 shrink-0" />
                                                         <span>{new Date(viewing.date).toLocaleDateString()}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <Clock className="w-4 h-4" />
+                                                        <Clock className="w-4 h-4 shrink-0" />
                                                         <span>{viewing.time}</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                viewing.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                                                viewing.status === 'confirmed' ? 'bg-blue-500/20 text-blue-400' :
-                                                viewing.status === 'cancelled' ? 'bg-gradient-to-r from-red-500/20 to-red-500/10 text-red-600 border border-red-500/30' :
-                                                'bg-gold/20 text-gold'
+                                            <span className={`self-start px-3 py-1 rounded-full text-xs font-semibold ${
+                                                viewing.status === 'completed' ? 'bg-green-500/20 text-green-700' :
+                                                viewing.status === 'confirmed' ? 'bg-blue-500/20 text-blue-700' :
+                                                viewing.status === 'cancelled' ? 'bg-red-500/10 text-red-700 border border-red-500/20' :
+                                                'bg-gold/15 text-gold'
                                             }`}>
                                                 {viewing.status.charAt(0).toUpperCase() + viewing.status.slice(1)}
                                             </span>
                                         </div>
                                         {viewing.notes && (
-                                            <div className="mt-4 pt-4 border-t border-charcoal/10">
-                                                <p className="text-charcoal/60 text-sm">{viewing.notes}</p>
+                                            <div className="mt-3 pt-3 border-t border-charcoal/[0.08]">
+                                                <p className="text-charcoal/55 text-sm leading-relaxed">{viewing.notes}</p>
                                             </div>
                                         )}
                                     </div>
@@ -427,7 +440,7 @@ export default function DashboardPage() {
                     )}
 
                     {/* Bond Originators Section */}
-                    <div className={`${PORTAL_CARD} p-6 sm:p-8 mb-8 sm:mb-10 border-red-200 ring-1 ring-red-100`}>
+                    <div className={`${PORTAL_DASH_WIDGET_LG} border-red-200 ring-1 ring-red-100`}>
                         <PortalPageHeader
                             variant="premium"
                             eyebrow="Extensive pre-qualification"
@@ -441,13 +454,13 @@ export default function DashboardPage() {
                             onContact={setSelectedOriginator}
                         />
 
-                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                            <p className="text-red-800 text-sm">
+                        <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
+                            <p className="text-red-800 text-sm leading-relaxed">
                                 Ready for a full bond prequal? Send your FICA pack to an originator.
                             </p>
                             <Link
                                 href="/dashboard/documents"
-                                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition shrink-0"
+                                className={`${PORTAL_PRIMARY_BTN} !bg-red-600 hover:!bg-red-700 shrink-0`}
                             >
                                 Open Bond Originators
                             </Link>
@@ -456,30 +469,27 @@ export default function DashboardPage() {
 
                     {/* Main Dashboard Grid */}
                     <div
-                        className={`grid grid-cols-1 gap-8 ${
+                        className={`grid grid-cols-1 gap-8 sm:gap-10 ${
                             showSuggestedProperties ? 'lg:grid-cols-3' : 'lg:grid-cols-1 lg:max-w-md'
                         }`}
                     >
                         {showSuggestedProperties ? (
                             <div className="lg:col-span-2">
-                                <div className={`${PORTAL_CARD} p-6`}>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div>
-                                            <h2 className="text-2xl font-bold text-charcoal flex items-center mb-1">
-                                                <Heart className="w-6 h-6 mr-2 text-gold" />
+                                <div className={PORTAL_DASH_WIDGET}>
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5 sm:mb-6">
+                                        <div className="min-w-0">
+                                            <h2 className={`${PORTAL_DASH_SECTION_TITLE} flex items-center gap-2`}>
+                                                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-gold shrink-0" />
                                                 Suggested Properties
                                             </h2>
-                                            <p className="text-charcoal/60 text-sm ml-8">
+                                            <p className={`${PORTAL_DASH_SECTION_SUB} sm:ml-8`}>
                                                 From agent listings
                                                 {quizResult && quizResult.preQualAmount > 0
                                                     ? ` · matched to your ${formatCurrency(quizResult.preQualAmount)} prequalification`
                                                     : ''}
                                             </p>
                                         </div>
-                                        <Link
-                                            href="/search"
-                                            className="text-gold hover:text-gold-600 font-semibold text-sm transition-colors"
-                                        >
+                                        <Link href="/search" className={PORTAL_DASH_LINK}>
                                             View All
                                         </Link>
                                     </div>
@@ -491,38 +501,44 @@ export default function DashboardPage() {
                                                 <Link
                                                     key={property.id}
                                                     href={`/search?property=${encodeURIComponent(property.id)}`}
-                                                    className={`${PORTAL_CARD} p-4 flex items-center space-x-4 group transition-all cursor-pointer`}
+                                                    className={`${PROPERTY_CARD_ROW} relative`}
                                                 >
-                                                    <div className="w-20 h-20 bg-gradient-to-br from-gold/10 to-gold/5 rounded-xl flex items-center justify-center flex-shrink-0 border border-gold/20 group-hover:border-gold/40 transition-colors overflow-hidden">
+                                                    <div className={`${PROPERTY_CARD_MEDIA_THUMB} overflow-hidden`}>
                                                         {thumb ? (
                                                             // eslint-disable-next-line @next/next/no-img-element
                                                             <img
                                                                 src={getProxiedImageUrl(thumb)}
                                                                 alt=""
-                                                                className="w-full h-full object-cover"
+                                                                className={PROPERTY_CARD_IMG}
                                                             />
                                                         ) : (
-                                                            <Home className="w-8 h-8 text-gold/70" />
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                <Home className="w-7 h-7 sm:w-8 sm:h-8 text-gold/70" />
+                                                            </div>
                                                         )}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <h3 className="text-charcoal font-semibold mb-1 truncate">
+                                                        <h3 className="text-charcoal font-semibold tracking-tight mb-1 truncate">
                                                             {property.title}
                                                         </h3>
-                                                        <p className="text-charcoal/50 text-sm mb-2 truncate">
+                                                        <p className="text-charcoal/45 text-sm mb-2 truncate tracking-[0.01em]">
                                                             {property.address || property.type}
                                                         </p>
                                                         <div className="flex items-center justify-between gap-3">
-                                                            <span className="text-gold font-bold text-lg">
+                                                            <span className={PROPERTY_CARD_PRICE}>
                                                                 {formatCurrency(property.price)}
                                                             </span>
                                                             {property.matchScore > 0 ? (
-                                                                <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold shrink-0">
+                                                                <span className={PROPERTY_CARD_CHIP_MATCH}>
                                                                     {property.matchScore}% Match
                                                                 </span>
                                                             ) : null}
                                                         </div>
                                                     </div>
+                                                    <PropertyFavouriteButton
+                                                        propertyId={property.id}
+                                                        variant="inline"
+                                                    />
                                                 </Link>
                                             );
                                         })}
@@ -532,46 +548,51 @@ export default function DashboardPage() {
                         ) : null}
 
                         {/* Activity & Documents */}
-                        <div className="space-y-6">
+                        <div className="space-y-6 sm:space-y-7">
                             {/* Recent Activity */}
-                            <div className={`${PORTAL_CARD} p-6`}>
-                                <h2 className="text-xl font-bold text-charcoal mb-5 flex items-center">
-                                    <TrendingUp className="w-5 h-5 mr-2 text-gold" />
+                            <div className={PORTAL_DASH_WIDGET}>
+                                <h2 className={`${PORTAL_DASH_SECTION_TITLE} !text-lg sm:!text-xl mb-5 flex items-center gap-2`}>
+                                    <TrendingUp className="w-5 h-5 text-gold shrink-0" />
                                     Recent Activity
                                 </h2>
-                                <div className="space-y-4">
-                                    {showSuggestedProperties ? (
-                                        <div className="text-sm pb-3 border-b border-charcoal/10 last:border-0">
-                                            <p className="text-charcoal font-medium mb-1">
-                                                {suggestedProperties.length} agent listing
-                                                {suggestedProperties.length === 1 ? '' : 's'} matched for you
-                                            </p>
-                                            <p className="text-charcoal/40 text-xs">Just now</p>
-                                        </div>
-                                    ) : null}
-                                    {quizResult ? (
-                                        <div className="text-sm pb-3 border-b border-charcoal/10 last:border-0">
-                                            <p className="text-charcoal font-medium mb-1">
-                                                Completed qualification quiz
-                                            </p>
-                                            <p className="text-charcoal/40 text-xs">On file</p>
-                                        </div>
-                                    ) : null}
-                                    {buyerDocuments.length > 0 ? (
-                                        <div className="text-sm">
-                                            <p className="text-charcoal font-medium mb-1">
-                                                {buyerDocuments.length} document
-                                                {buyerDocuments.length === 1 ? '' : 's'} uploaded
-                                            </p>
-                                            <p className="text-charcoal/40 text-xs">Documents</p>
-                                        </div>
+                                <div>
+                                    {showSuggestedProperties || quizResult || buyerDocuments.length > 0 ? (
+                                        <>
+                                            {showSuggestedProperties ? (
+                                                <div className={PORTAL_DASH_ACTIVITY_ROW}>
+                                                    <p className="text-charcoal font-medium mb-1 leading-snug">
+                                                        {suggestedProperties.length} agent listing
+                                                        {suggestedProperties.length === 1 ? '' : 's'} matched for you
+                                                    </p>
+                                                    <p className="text-charcoal/40 text-xs">Just now</p>
+                                                </div>
+                                            ) : null}
+                                            {quizResult ? (
+                                                <div className={PORTAL_DASH_ACTIVITY_ROW}>
+                                                    <p className="text-charcoal font-medium mb-1 leading-snug">
+                                                        Completed qualification quiz
+                                                    </p>
+                                                    <p className="text-charcoal/40 text-xs">On file</p>
+                                                </div>
+                                            ) : null}
+                                            {buyerDocuments.length > 0 ? (
+                                                <div className={PORTAL_DASH_ACTIVITY_ROW}>
+                                                    <p className="text-charcoal font-medium mb-1 leading-snug">
+                                                        {buyerDocuments.length} document
+                                                        {buyerDocuments.length === 1 ? '' : 's'} uploaded
+                                                    </p>
+                                                    <p className="text-charcoal/40 text-xs">Documents</p>
+                                                </div>
+                                            ) : null}
+                                        </>
                                     ) : (
-                                        <div className="text-sm">
-                                            <p className="text-charcoal font-medium mb-1">
-                                                No recent activity yet
-                                            </p>
-                                            <p className="text-charcoal/40 text-xs">
-                                                Suggested homes appear when agents publish listings
+                                        <div className={PORTAL_DASH_EMPTY}>
+                                            <div className={PORTAL_DASH_EMPTY_ICON}>
+                                                <TrendingUp className="w-6 h-6 text-charcoal/30" />
+                                            </div>
+                                            <p className={PORTAL_DASH_EMPTY_TITLE}>No recent activity yet</p>
+                                            <p className={PORTAL_DASH_EMPTY_DESC}>
+                                                Suggested homes appear when agents publish listings. Complete your quiz to get started.
                                             </p>
                                         </div>
                                     )}
@@ -579,16 +600,13 @@ export default function DashboardPage() {
                             </div>
 
                             {/* Documents */}
-                            <div className={`${PORTAL_CARD} p-6`}>
-                                <div className="flex items-center justify-between mb-5">
-                                    <h2 className="text-xl font-bold text-charcoal flex items-center">
-                                        <Download className="w-5 h-5 mr-2 text-gold" />
+                            <div className={PORTAL_DASH_WIDGET}>
+                                <div className="flex items-center justify-between gap-3 mb-5">
+                                    <h2 className={`${PORTAL_DASH_SECTION_TITLE} !text-lg sm:!text-xl flex items-center gap-2`}>
+                                        <Download className="w-5 h-5 text-gold shrink-0" />
                                         My Documents
                                     </h2>
-                                    <Link
-                                        href="/dashboard/documents"
-                                        className="text-sm font-semibold text-gold hover:text-gold-600 transition"
-                                    >
+                                    <Link href="/dashboard/documents" className={PORTAL_DASH_LINK}>
                                         Manage
                                     </Link>
                                 </div>
@@ -598,21 +616,21 @@ export default function DashboardPage() {
                                         return (
                                             <div
                                                 key={type}
-                                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-charcoal/5 hover:bg-charcoal/10 transition text-charcoal text-sm group"
+                                                className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] hover:bg-charcoal/[0.05] hover:border-charcoal/[0.1] transition text-charcoal text-sm group"
                                             >
                                                 <Link
                                                     href={`/dashboard/documents?type=${type}`}
                                                     className="flex items-center justify-between flex-1 min-w-0"
                                                 >
-                                                    <span className="flex items-center gap-2 min-w-0">
+                                                    <span className="flex items-center gap-2.5 min-w-0">
                                                         {uploaded ? (
                                                             <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
                                                         ) : (
                                                             <Upload className="w-4 h-4 text-charcoal/40 group-hover:text-gold shrink-0" />
                                                         )}
-                                                        <span className="truncate">{label}</span>
+                                                        <span className="truncate font-medium">{label}</span>
                                                     </span>
-                                                    <span className="text-xs font-medium text-charcoal/50 group-hover:text-gold shrink-0 ml-2">
+                                                    <span className="text-xs font-semibold text-charcoal/45 group-hover:text-gold shrink-0 ml-2">
                                                         {uploaded ? 'Uploaded' : 'Upload'}
                                                     </span>
                                                 </Link>
@@ -620,7 +638,7 @@ export default function DashboardPage() {
                                                     <button
                                                         type="button"
                                                         onClick={() => setPreviewDoc(uploaded)}
-                                                        className="p-1.5 rounded-lg bg-gold/[0.06] hover:bg-gold/10 text-gold border border-gold/10 shrink-0"
+                                                        className="p-1.5 rounded-xl bg-gold/[0.06] hover:bg-gold/10 text-gold border border-gold/10 shrink-0"
                                                         title="Preview"
                                                     >
                                                         <Eye className="w-4 h-4" />
@@ -632,6 +650,7 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             </UserPortalLayout>

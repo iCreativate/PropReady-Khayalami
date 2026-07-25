@@ -1,8 +1,81 @@
+'use client';
+
 import Link from 'next/link';
 import { Home, Mail, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 
 interface FooterProps {
     variant?: 'default' | 'portal';
+}
+
+function GooglePlayBadge() {
+    return (
+        <a
+            href="#"
+            onClick={(e) => e.preventDefault()}
+            className="footer-play-badge"
+            aria-label="Get it on Google Play (coming soon)"
+            title="Coming soon"
+        >
+            <svg viewBox="0 0 155 46" className="h-11 w-auto" aria-hidden="true">
+                <rect width="155" height="46" rx="6" fill="#000" />
+                <rect x="0.5" y="0.5" width="154" height="45" rx="5.5" fill="none" stroke="rgba(255,255,255,0.22)" />
+                <g transform="translate(12 8)">
+                    <path
+                        d="M1.2 1.1c-.3.3-.5.8-.5 1.5v24.8c0 .7.2 1.2.5 1.5l.1.1 13.9-13.9v-.3L1.3 1z"
+                        fill="#00A0FF"
+                    />
+                    <path
+                        d="M20.4 20.3l-5.2-5.2v-.3l5.2-5.2.1.1 6.2 3.5c1.8 1 1.8 2.7 0 3.7l-6.3 3.4z"
+                        fill="#FFCE00"
+                    />
+                    <path
+                        d="M20.5 20.2L15.2 15 1.2 29c.5.5 1.2.6 2 .1l17.3-9z"
+                        fill="#FF3A44"
+                    />
+                    <path
+                        d="M20.5 9.7L3.2.8C2.4.3 1.7.4 1.2.9L15.2 15l5.3-5.3z"
+                        fill="#00F076"
+                    />
+                </g>
+                <g fill="#fff" fontFamily="Arial, Helvetica, sans-serif">
+                    <text x="48" y="17" fontSize="8" fill="rgba(255,255,255,0.75)">
+                        GET IT ON
+                    </text>
+                    <text x="48" y="33" fontSize="16" fontWeight="600">
+                        Google Play
+                    </text>
+                </g>
+            </svg>
+        </a>
+    );
+}
+
+function AppStoreBadge() {
+    return (
+        <a
+            href="#"
+            onClick={(e) => e.preventDefault()}
+            className="footer-play-badge"
+            aria-label="Download on the App Store (coming soon)"
+            title="Coming soon"
+        >
+            <svg viewBox="0 0 155 46" className="h-11 w-auto" aria-hidden="true">
+                <rect width="155" height="46" rx="6" fill="#000" />
+                <rect x="0.5" y="0.5" width="154" height="45" rx="5.5" fill="none" stroke="rgba(255,255,255,0.22)" />
+                <g transform="translate(14 9)" fill="#fff">
+                    <path d="M16.2 7.3c-.1-1.3.6-2.5 1.5-3.3-.9-1.3-2.4-2-3.8-2.1-1.6-.2-3.2 1-4 1-.8 0-2.2-.9-3.6-.9-1.8 0-3.5 1.1-4.4 2.7-1.9 3.3-.5 8.1 1.4 10.8.9 1.3 2 2.7 3.4 2.7 1.4 0 1.9-.9 3.5-.9s2.1.9 3.6.9c1.5 0 2.4-1.3 3.3-2.6.7-1 1-1.9 1-2 0 0-2.5-1-2.5-3.8zm-2.4-5.7c.7-.9 1.2-2.1 1.1-3.3-1.1.1-2.4.7-3.2 1.6-.7.8-1.3 2-1.1 3.2 1.2.1 2.4-.6 3.2-1.5z" />
+                </g>
+                <g fill="#fff" fontFamily="Arial, Helvetica, sans-serif">
+                    <text x="48" y="17" fontSize="8" fill="rgba(255,255,255,0.75)">
+                        Download on the
+                    </text>
+                    <text x="48" y="33" fontSize="16" fontWeight="600">
+                        App Store
+                    </text>
+                </g>
+            </svg>
+        </a>
+    );
 }
 
 export default function Footer({ variant = 'default' }: FooterProps) {
@@ -50,7 +123,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                     href={href}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-9 h-9 rounded-full bg-white/[0.07] border border-white/[0.08] flex items-center justify-center text-white/55 hover:text-gold hover:bg-gold/10 hover:border-gold/20 transition-all duration-200"
+                                    className="icon-clickable w-9 h-9 rounded-full bg-white/[0.07] border border-white/[0.08] flex items-center justify-center text-white/55 hover:text-gold hover:bg-gold/10 hover:border-gold/20 transition-all duration-200"
                                     aria-label={label}
                                     title={`${label} (update URL when social accounts are live)`}
                                 >
@@ -76,7 +149,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 <li key={href}>
                                     <Link
                                         href={href}
-                                        className="text-white/55 hover:text-gold transition text-sm leading-relaxed"
+                                        className="link-animated text-white/55 hover:text-gold transition text-sm leading-relaxed"
                                     >
                                         {label}
                                     </Link>
@@ -100,7 +173,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 <li key={label}>
                                     <Link
                                         href={href}
-                                        className="text-white/55 hover:text-gold transition text-sm leading-relaxed"
+                                        className="link-animated text-white/55 hover:text-gold transition text-sm leading-relaxed"
                                     >
                                         {label}
                                     </Link>
@@ -128,10 +201,22 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                         </ul>
                         <Link
                             href="/agents/login"
-                            className="inline-flex items-center justify-center px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition text-sm shadow-sm"
+                            className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition text-sm shadow-sm"
                         >
                             Agent Login
                         </Link>
+
+                        {!isPortal ? (
+                            <div className="mt-7">
+                                <h3 className="text-white font-semibold text-sm uppercase tracking-[0.12em] mb-4">
+                                    Get the App
+                                </h3>
+                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                    <GooglePlayBadge />
+                                    <AppStoreBadge />
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
 
@@ -142,13 +227,13 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                             Protection of Personal Information Act (POPI Act) of South Africa.
                         </p>
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm shrink-0">
-                            <Link href="/privacy" className="text-white/45 hover:text-gold transition">
+                            <Link href="/privacy" className="link-animated text-white/45 hover:text-gold transition">
                                 Privacy Policy
                             </Link>
-                            <Link href="/terms" className="text-white/45 hover:text-gold transition">
+                            <Link href="/terms" className="link-animated text-white/45 hover:text-gold transition">
                                 Terms of Service
                             </Link>
-                            <Link href="/popi" className="text-white/45 hover:text-gold transition">
+                            <Link href="/popi" className="link-animated text-white/45 hover:text-gold transition">
                                 POPI Act
                             </Link>
                         </div>

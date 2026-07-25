@@ -6,7 +6,7 @@ interface AuthShellProps {
     children: React.ReactNode;
     title: string;
     subtitle?: string;
-    accountType?: 'user' | 'agent';
+    accountType?: 'user' | 'agent' | 'originator';
     /** Wider form column for multi-step agent registration */
     wide?: boolean;
 }
@@ -18,7 +18,8 @@ export default function AuthShell({
     accountType = 'user',
     wide = false,
 }: AuthShellProps) {
-    const homeHref = accountType === 'agent' ? '/agents' : '/';
+    const homeHref =
+        accountType === 'agent' ? '/agents' : accountType === 'originator' ? '/originators' : '/';
 
     return (
         <div className="auth-shell min-h-screen flex">

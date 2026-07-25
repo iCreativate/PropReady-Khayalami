@@ -3,6 +3,7 @@ import { STORAGE_KEYS } from '@/lib/storage-keys';
 export type LeadDocumentType =
     | 'pre-qualification'
     | 'id'
+    | 'residence'
     | 'income'
     | 'bank-statement'
     | 'title-deed'
@@ -145,12 +146,13 @@ export function saveLeadDocumentsLocally(leadId: string, documents: LeadDocument
 export function leadDocumentTypeLabel(type: LeadDocumentType): string {
     const labels: Record<LeadDocumentType, string> = {
         'pre-qualification': 'Pre-qualification',
-        id: 'ID document',
-        income: 'Income / payslip',
-        'bank-statement': 'Bank statement',
+        id: 'ID Copy',
+        residence: 'Proof of Residence',
+        income: 'Proof of Income',
+        'bank-statement': 'Bank Statements',
         'title-deed': 'Title deed',
         rates: 'Rates & taxes',
-        other: 'Other',
+        other: 'Additional Document',
     };
     return labels[type] ?? 'Document';
 }

@@ -805,7 +805,7 @@ export default async function LearningModulePage({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-semibold text-charcoal/70">Monthly Gross Income</label>
-                                        <p className="text-charcoal/50 text-xs mt-1">R _________________</p>
+                                        <p className="form-hint">R _________________</p>
                                     </div>
 
                                     <div className="border-t border-charcoal/20 pt-4">
@@ -1002,7 +1002,7 @@ export default async function LearningModulePage({
                                 <div className="space-y-4">
                                     <div>
                                         <label className="text-sm font-semibold text-charcoal/70">Purchase Price</label>
-                                        <p className="text-charcoal/50 text-xs mt-1">R _________________</p>
+                                        <p className="form-hint">R _________________</p>
                                     </div>
 
                                     <div className="border-t border-charcoal/20 pt-4">

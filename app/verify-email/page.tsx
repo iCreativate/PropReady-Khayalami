@@ -4,12 +4,13 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Home, Mail, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
 function VerifyEmailForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const emailParam = searchParams.get('email') || '';
-    const typeParam = searchParams.get('type') === 'agent' ? 'agent' : 'user';
+    const typeParam = parseAccountType(searchParams.get('type'));
 
     const [email, setEmail] = useState(emailParam);
     const [code, setCode] = useState('');
@@ -19,7 +20,8 @@ function VerifyEmailForm() {
     const [isResending, setIsResending] = useState(false);
     const [resendMessage, setResendMessage] = useState('');
 
-    const loginPath = typeParam === 'agent' ? '/agents/login' : '/login';
+    const loginPath =
+        typeParam === 'agent' ? '/agents/login' : typeParam === 'originator' ? '/originators/login' : '/login';
 
     const markLocalVerified = () => {
         if (typeof window === 'undefined' || !email) return;
@@ -150,7 +152,7 @@ function VerifyEmailForm() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg border border-charcoal/20 focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full px-4 py-3 rounded-lg border border-charcoal/20 form-control"
                                 />
                             </div>
 
@@ -167,7 +169,7 @@ function VerifyEmailForm() {
                                     onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     required
                                     placeholder="000000"
-                                    className="w-full px-4 py-3 rounded-lg border border-charcoal/20 text-center text-2xl tracking-[0.5em] font-mono focus:outline-none focus:ring-2 focus:ring-gold"
+                                    className="w-full px-4 py-3 rounded-lg border border-charcoal/20 text-center text-2xl tracking-[0.5em] font-mono form-control"
                                 />
                             </div>
 

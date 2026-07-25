@@ -15,16 +15,23 @@ import {
 } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
+import {
+    dashboardPathForAccountType,
+    loginPathForAccountType,
+    parseAccountType,
+} from '@/lib/auth-enterprise/account-profile';
+import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { getPasswordRequirementsText, validatePassword } from '@/lib/password';
 
 function CompleteProfileInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const accountType = searchParams.get('type') === 'agent' ? 'agent' : 'user';
+    const accountType = parseAccountType(searchParams.get('type'));
 
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [company, setCompany] = useState('');
+    const [organizationId, setOrganizationId] = useState(BOND_ORIGINATORS[0]?.id || '');
     const [eaabNumber, setEaabNumber] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,7 +49,7 @@ function CompleteProfileInner() {
             try {
                 const res = await fetch('/api/auth/session', { credentials: 'include' });
                 if (!res.ok) {
-                    router.replace(`/auth/login?type=${accountType}`);
+                    router.replace(loginPathForAccountType(accountType));
                     return;
                 }
                 const data = await res.json();
@@ -54,9 +61,7 @@ function CompleteProfileInner() {
                     user?.passwordOk !== false &&
                     user?.hasPassword
                 ) {
-                    router.replace(
-                        user.accountType === 'agent' ? '/agents/dashboard' : '/dashboard'
-                    );
+                    router.replace(dashboardPathForAccountType(user.accountType));
                     return;
                 }
 
@@ -65,7 +70,9 @@ function CompleteProfileInner() {
                     router.replace(
                         accountType === 'agent'
                             ? '/auth/confirm-password?type=agent'
-                            : '/auth/confirm-password'
+                            : accountType === 'originator'
+                              ? '/auth/confirm-password?type=originator'
+                              : '/auth/confirm-password'
                     );
                     return;
                 }
@@ -78,10 +85,11 @@ function CompleteProfileInner() {
                 );
                 setPhone(user?.phone || '');
                 setCompany(user?.company || '');
+                if (user?.organizationId) setOrganizationId(user.organizationId);
                 setNeedsPassword(!user?.hasPassword);
                 setReady(true);
             } catch {
-                if (!cancelled) router.replace(`/auth/login?type=${accountType}`);
+                if (!cancelled) router.replace(loginPathForAccountType(accountType));
             }
         })();
         return () => {
@@ -119,6 +127,7 @@ function CompleteProfileInner() {
                     fullName,
                     phone,
                     company: accountType === 'agent' ? company : undefined,
+                    organizationId: accountType === 'originator' ? organizationId : undefined,
                     eaabNumber: accountType === 'agent' ? eaabNumber : undefined,
                     password: needsPassword ? password : undefined,
                     intent: needsPassword && accountType === 'user' ? intent : undefined,
@@ -136,12 +145,13 @@ function CompleteProfileInner() {
                         fullName: data.user.fullName,
                         email: data.user.email,
                         company: data.user.company,
+                        organizationId: data.user.organizationId,
                         accountType: data.user.accountType,
                     },
                     data.user.accountType
                 );
             }
-            router.replace(data.redirectTo || '/dashboard');
+            router.replace(data.redirectTo || dashboardPathForAccountType(accountType));
         } catch {
             setError('Could not save your details. Please try again.');
         } finally {
@@ -251,6 +261,30 @@ function CompleteProfileInner() {
                             />
                         </div>
                     </>
+                )}
+
+                {accountType === 'originator' && (
+                    <div>
+                        <label className="auth-label" htmlFor="cp-org">
+                            Bond originator organisation
+                        </label>
+                        <div className="auth-input-wrap">
+                            <Building2 className="auth-input-icon" />
+                            <select
+                                id="cp-org"
+                                className="auth-input"
+                                required
+                                value={organizationId}
+                                onChange={(e) => setOrganizationId(e.target.value)}
+                            >
+                                {BOND_ORIGINATORS.map((org) => (
+                                    <option key={org.id} value={org.id}>
+                                        {org.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 )}
 
                 {needsPassword && (

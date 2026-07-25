@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { Sparkles, RefreshCw, Lightbulb } from 'lucide-react';
-import { AGENT_CARD } from '@/lib/agent-portal-ui';
+import {
+    AGENT_CARD,
+    AGENT_DASH_EMPTY,
+    AGENT_DASH_EMPTY_ICON,
+    AGENT_DASH_EMPTY_TITLE,
+    AGENT_DASH_EMPTY_DESC,
+    AGENT_ICON_BTN,
+} from '@/lib/agent-portal-ui';
 
 export interface AiSuggestionsContext {
     newBuyers?: number;
@@ -59,8 +66,8 @@ export default function AgentAiSuggestions({ context }: AgentAiSuggestionsProps)
     ]);
 
     return (
-        <section className={`mb-10 sm:mb-12 ${AGENT_CARD}`}>
-            <div className="px-6 sm:px-8 pt-6 sm:pt-7 pb-5 border-b border-charcoal/[0.06] bg-gradient-to-r from-gold/[0.04] via-white to-white">
+        <section className={AGENT_CARD}>
+            <div className="px-6 sm:px-8 pt-6 sm:pt-7 pb-5 border-b border-charcoal/[0.08] bg-gradient-to-r from-gold/[0.04] via-white to-white">
                 <div className="flex items-start justify-between gap-5">
                     <div className="flex items-start gap-4 min-w-0">
                         <div className="w-11 h-11 rounded-2xl bg-gold/[0.08] border border-gold/10 flex items-center justify-center shrink-0">
@@ -70,7 +77,7 @@ export default function AgentAiSuggestions({ context }: AgentAiSuggestionsProps)
                             <h3 className="text-lg font-semibold text-charcoal tracking-tight">
                                 AI insights
                             </h3>
-                            <p className="text-charcoal/45 text-sm mt-1 leading-relaxed">
+                            <p className="text-charcoal/45 text-sm mt-1.5 leading-relaxed">
                                 Personalized recommendations for your pipeline
                                 {source === 'ai' ? ' · powered by AI' : ''}
                             </p>
@@ -80,7 +87,7 @@ export default function AgentAiSuggestions({ context }: AgentAiSuggestionsProps)
                         type="button"
                         onClick={load}
                         disabled={loading}
-                        className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-charcoal/[0.08] bg-white text-charcoal/45 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:text-charcoal hover:border-charcoal/15 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] disabled:opacity-50 transition-all duration-200 shrink-0"
+                        className={AGENT_ICON_BTN}
                         title="Refresh suggestions"
                         aria-label="Refresh suggestions"
                     >
@@ -91,14 +98,24 @@ export default function AgentAiSuggestions({ context }: AgentAiSuggestionsProps)
 
             <div className="px-6 sm:px-8 py-6 sm:py-7">
                 {loading ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3.5" aria-busy="true" aria-label="Loading insights">
                         {[1, 2, 3].map((i) => (
                             <div
                                 key={i}
-                                className="h-[18px] rounded-full bg-charcoal/[0.05] animate-pulse"
+                                className="h-4 rounded-full bg-charcoal/[0.05] animate-pulse"
                                 style={{ width: `${88 - i * 14}%` }}
                             />
                         ))}
+                    </div>
+                ) : suggestions.length === 0 ? (
+                    <div className={AGENT_DASH_EMPTY}>
+                        <div className={AGENT_DASH_EMPTY_ICON}>
+                            <Lightbulb className="w-6 h-6 text-charcoal/30" />
+                        </div>
+                        <p className={AGENT_DASH_EMPTY_TITLE}>No insights yet</p>
+                        <p className={AGENT_DASH_EMPTY_DESC}>
+                            Refresh to generate recommendations for your current pipeline.
+                        </p>
                     </div>
                 ) : (
                     <ul className="space-y-5">

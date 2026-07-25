@@ -23,9 +23,11 @@ import { logActivity } from '@/lib/activity';
 import { bondOriginatorLabel, type BondOriginator } from '@/lib/bond-originators';
 import {
     BUYER_DOCUMENT_ACCEPT,
+    BUYER_DOCUMENT_SLOTS,
+    BUYER_DOCUMENT_TYPES,
+    buyerDocumentDisplayFileName,
     buyerDocumentTypeLabel,
     formatFileSize,
-    inferBuyerDocumentType,
     readBuyerDocumentsLocal,
     refreshBuyerDocumentsFromApi,
     validateBuyerDocumentFile,
@@ -39,10 +41,7 @@ import {
     saveDocumentBlob,
 } from '@/lib/document-blobs';
 import { saveLeadDocumentsLocally } from '@/lib/lead-documents';
-import {
-    markOriginatorLetterUploaded,
-    markOriginatorPrequalPending,
-} from '@/lib/buyer-full-prequal';
+import { markOriginatorPrequalPending } from '@/lib/buyer-full-prequal';
 import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
 import {
     PORTAL_CALLOUT,
@@ -50,21 +49,14 @@ import {
     PORTAL_CARD_HEADER,
     PORTAL_PAGE_CONTAINER,
     PORTAL_PRIMARY_BTN,
+    PORTAL_SECONDARY_BTN,
     PORTAL_STAT_ICON,
 } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 
-const VALID_UPLOAD_TYPES: BuyerDocumentType[] = [
-    'pre-qualification',
-    'id',
-    'income',
-    'bank-statement',
-    'other',
-];
-
 function parseUploadTypeHint(value: string | null): BuyerDocumentType | undefined {
     if (!value) return undefined;
-    return VALID_UPLOAD_TYPES.includes(value as BuyerDocumentType)
+    return BUYER_DOCUMENT_TYPES.includes(value as BuyerDocumentType)
         ? (value as BuyerDocumentType)
         : undefined;
 }
@@ -116,9 +108,10 @@ export default function DocumentsPageContent() {
     const { success, error: toastError } = useToast();
 
     const [documents, setDocuments] = useState<BuyerDocument[]>([]);
-    const [isDragging, setIsDragging] = useState(false);
     const [uploadError, setUploadError] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadingType, setUploadingType] = useState<BuyerDocumentType | null>(null);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
     const [selectedOriginator, setSelectedOriginator] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [sendSuccess, setSendSuccess] = useState(false);
@@ -151,31 +144,40 @@ export default function DocumentsPageContent() {
     }, [isHydrated, user, router]);
 
     const uploadSingleFile = useCallback(
-        async (file: File, userId: string): Promise<BuyerDocument> => {
+        async (
+            file: File,
+            userId: string,
+            docType: BuyerDocumentType,
+            existing?: BuyerDocument | null
+        ): Promise<BuyerDocument> => {
             const validationError = validateBuyerDocumentFile(file);
             if (validationError) {
                 throw new Error(validationError);
             }
 
-            const documentId = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-            const docType = inferBuyerDocumentType(file.name, uploadTypeHint);
+            const documentId =
+                existing?.id ?? `doc-${docType}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            const displayName = buyerDocumentTypeLabel(docType);
 
             const optimisticDoc: BuyerDocument = {
                 id: documentId,
-                name: file.name,
+                name: displayName,
                 type: docType,
                 status: 'uploaded',
                 uploadedAt: new Date().toISOString(),
                 size: formatFileSize(file.size),
             };
 
+            if (existing?.id && existing.id !== documentId) {
+                await deleteDocumentBlob(existing.id);
+            }
             await saveDocumentBlob(documentId, file);
 
             const formData = new FormData();
             formData.append('userId', userId);
             formData.append('documentId', documentId);
             formData.append('type', docType);
-            formData.append('file', file);
+            formData.append('file', file, buyerDocumentDisplayFileName(docType, file.name));
 
             const res = await fetch('/api/documents/upload', {
                 method: 'POST',
@@ -190,80 +192,79 @@ export default function DocumentsPageContent() {
 
             return (data.document as BuyerDocument) ?? optimisticDoc;
         },
-        [uploadTypeHint]
+        []
     );
 
-    const handleFileUpload = async (files: FileList | null) => {
-        if (!files || files.length === 0 || !user?.id) return;
+    const handleSlotUpload = async (docType: BuyerDocumentType, files: FileList | null) => {
+        const file = files?.[0];
+        if (!file || !user?.id) return;
 
         setUploadError('');
         setIsUploading(true);
+        setUploadingType(docType);
+        setUploadTypeHint(docType);
 
-        const uploaded: BuyerDocument[] = [];
-        const errors: string[] = [];
-
-        for (const file of Array.from(files)) {
-            try {
-                const doc = await uploadSingleFile(file, user.id);
-                uploaded.push(doc);
-            } catch (err) {
-                errors.push(err instanceof Error ? err.message : `Failed to upload ${file.name}`);
-            }
-        }
-
-        if (uploaded.length > 0) {
-            const updatedDocs = [...documents, ...uploaded];
+        try {
+            const existing = documents.find((d) => d.type === docType) ?? null;
+            const doc = await uploadSingleFile(file, user.id, docType, existing);
+            const updatedDocs = [
+                ...documents.filter((d) => d.type !== docType && d.id !== doc.id),
+                doc,
+            ];
             setDocuments(updatedDocs);
             persistBuyerDocuments(user.id, updatedDocs);
-            logActivity(`Uploaded ${uploaded.length} document(s)`, user.id);
-            success(`${uploaded.length} file(s) uploaded successfully`);
-
-            if (uploaded.some((d) => d.type === 'pre-qualification')) {
-                const quiz = resolveBuyerQuizResultSync(user);
-                markOriginatorLetterUploaded({
-                    userId: user.id,
-                    softAmount: quiz?.preQualAmount ?? null,
-                });
-            }
-        }
-
-        if (errors.length > 0) {
-            const message = errors[0];
+            logActivity(`Uploaded ${doc.name}`, user.id);
+            success(`${doc.name} uploaded`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : `Failed to upload ${file.name}`;
             setUploadError(message);
             toastError(message);
         }
 
+        setUploadingType(null);
         setIsUploading(false);
     };
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-    };
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        void handleFileUpload(e.dataTransfer.files);
-    };
-
-    const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        void handleFileUpload(e.target.files);
-        e.target.value = '';
-    };
+    const handleSlotFileInput =
+        (docType: BuyerDocumentType) => (e: React.ChangeEvent<HTMLInputElement>) => {
+            void handleSlotUpload(docType, e.target.files);
+            e.target.value = '';
+        };
 
     const handleDelete = async (docId: string) => {
-        if (!user?.id) return;
+        if (!user?.id || deletingId) return;
 
-        const updatedDocs = documents.filter((doc) => doc.id !== docId);
-        setDocuments(updatedDocs);
-        persistBuyerDocuments(user.id, updatedDocs);
-        await deleteDocumentBlob(docId);
+        const target = documents.find((doc) => doc.id === docId);
+        if (!target) return;
+
+        setDeletingId(docId);
+        setUploadError('');
+
+        try {
+            const res = await fetch('/api/documents/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, documentId: docId }),
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Failed to remove document');
+            }
+
+            const updatedDocs = documents.filter((doc) => doc.id !== docId);
+            setDocuments(updatedDocs);
+            persistBuyerDocuments(user.id, updatedDocs);
+            await deleteDocumentBlob(docId);
+            logActivity(`Removed ${target.name}`, user.id);
+            success(`${target.name} removed`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to remove document';
+            setUploadError(message);
+            toastError(message);
+        } finally {
+            setDeletingId(null);
+        }
     };
 
     const handleDownload = async (doc: BuyerDocument) => {
@@ -322,12 +323,31 @@ export default function DocumentsPageContent() {
 
         try {
             const originatorName = bondOriginatorLabel(selectedOriginator) || 'bond originator';
+            const quiz = resolveBuyerQuizResultSync(user);
 
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const res = await fetch('/api/prequal/cases', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    userId: user.id,
+                    organizationId: selectedOriginator,
+                    documentIds: documents.map((d) => d.id),
+                    softAmount: quiz?.preQualAmount ?? null,
+                    buyerName: user.fullName,
+                    buyerEmail: user.email,
+                    buyerPhone: user.phone,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.error || 'Failed to send documents');
+            }
 
             const sentData = {
                 originatorId: selectedOriginator,
                 originatorName,
+                caseId: data.case?.id,
                 documents: documents.map((doc) => ({
                     id: doc.id,
                     name: doc.name,
@@ -338,7 +358,6 @@ export default function DocumentsPageContent() {
             };
 
             localStorage.setItem(STORAGE_KEYS.documentsSent, JSON.stringify(sentData));
-            const quiz = resolveBuyerQuizResultSync(user);
             markOriginatorPrequalPending({
                 userId: user.id,
                 softAmount: quiz?.preQualAmount ?? null,
@@ -346,13 +365,17 @@ export default function DocumentsPageContent() {
             });
             logActivity(`Documents sent to ${originatorName}`, user.id);
             setSendSuccess(true);
-            success(`Documents sent to ${originatorName}. When you receive your letter, upload it and enter the official amount on your dashboard.`);
+success(
+                `Documents sent to ${originatorName}. Open My Prequal to message them.`
+            );
+            router.push('/dashboard/prequal');
 
             setTimeout(() => {
                 setSendSuccess(false);
             }, 5000);
-        } catch {
-            const message = 'Failed to send documents. Please try again.';
+        } catch (err) {
+            const message =
+                err instanceof Error ? err.message : 'Failed to send documents. Please try again.';
             setSendError(message);
             toastError(message);
         } finally {
@@ -462,14 +485,10 @@ export default function DocumentsPageContent() {
                                         <Upload className="w-6 h-6 text-gold" />
                                         Upload FICA Documents
                                     </h2>
-                                    {uploadTypeHint && (
-                                        <p className="text-charcoal/60 text-sm mt-2">
-                                            Uploading as:{' '}
-                                            <span className="font-semibold text-gold">
-                                                {buyerDocumentTypeLabel(uploadTypeHint)}
-                                            </span>
-                                        </p>
-                                    )}
+                                    <p className="text-charcoal/60 text-sm mt-2">
+                                        Upload one file per document type. Files are saved under that document
+                                        name (for example, ID Copy).
+                                    </p>
                                 </div>
 
                                 <div className="p-6">
@@ -482,39 +501,97 @@ export default function DocumentsPageContent() {
                                         </div>
                                     )}
 
-                                    <div
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={handleDrop}
-                                        className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                                            isDragging
-                                                ? 'border-gold bg-gold/5'
-                                                : 'border-charcoal/20 hover:border-gold/50'
-                                        } ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}
-                                    >
-                                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/70 border border-charcoal/10 flex items-center justify-center">
-                                            <Upload
-                                                className={`w-8 h-8 ${isDragging ? 'text-gold' : 'text-charcoal/50'}`}
-                                            />
-                                        </div>
-                                        <p className="text-charcoal/70 mb-2">
-                                            {isUploading ? 'Uploading…' : 'Drag and drop files here, or'}
-                                        </p>
-                                        <label className="inline-flex items-center justify-center px-6 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition cursor-pointer shadow-sm">
-                                            Browse Files
-                                            <input
-                                                type="file"
-                                                multiple
-                                                accept={BUYER_DOCUMENT_ACCEPT}
-                                                onChange={handleFileInput}
-                                                className="hidden"
-                                                disabled={isUploading}
-                                            />
-                                        </label>
-                                        <p className="text-charcoal/50 text-sm mt-4">
-                                            Supported formats: PDF, JPG, PNG (Max 10MB per file)
-                                        </p>
+                                    <div className="space-y-3">
+                                        {BUYER_DOCUMENT_SLOTS.map(({ type, label, hint }) => {
+                                            const uploaded = documents.find((d) => d.type === type);
+                                            const isActive = uploadTypeHint === type;
+                                            const isThisUploading = uploadingType === type;
+
+                                            return (
+                                                <div
+                                                    key={type}
+                                                    className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-2xl border p-4 transition ${
+                                                        isActive
+                                                            ? 'border-gold/40 bg-gold/[0.04]'
+                                                            : 'border-charcoal/[0.08] bg-white'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                                        <div
+                                                            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                                                                uploaded
+                                                                    ? 'bg-green-500/10 border-green-500/20 text-green-600'
+                                                                    : 'bg-charcoal/[0.04] border-charcoal/10 text-charcoal/40'
+                                                            }`}
+                                                        >
+                                                            {uploaded ? (
+                                                                <CheckCircle className="w-5 h-5" />
+                                                            ) : (
+                                                                <FileText className="w-5 h-5" />
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-semibold text-charcoal">{label}</p>
+                                                            {hint ? (
+                                                                <p className="text-sm text-charcoal/55 mt-0.5">
+                                                                    {hint}
+                                                                </p>
+                                                            ) : null}
+                                                            {uploaded?.size ? (
+                                                                <p className="text-xs text-charcoal/45 mt-1">
+                                                                    {uploaded.size} ·{' '}
+                                                                    {new Date(
+                                                                        uploaded.uploadedAt
+                                                                    ).toLocaleDateString()}
+                                                                </p>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <label
+                                                            className={`${
+                                                                uploaded
+                                                                    ? PORTAL_SECONDARY_BTN
+                                                                    : PORTAL_PRIMARY_BTN
+                                                            } !h-auto !py-2.5 !px-4 cursor-pointer justify-center ${
+                                                                isUploading || deletingId
+                                                                    ? 'opacity-60 pointer-events-none'
+                                                                    : ''
+                                                            }`}
+                                                        >
+                                                            {isThisUploading
+                                                                ? 'Uploading…'
+                                                                : uploaded
+                                                                  ? 'Replace'
+                                                                  : 'Upload'}
+                                                            <input
+                                                                type="file"
+                                                                accept={BUYER_DOCUMENT_ACCEPT}
+                                                                onChange={handleSlotFileInput(type)}
+                                                                className="hidden"
+                                                                disabled={isUploading || !!deletingId}
+                                                            />
+                                                        </label>
+                                                        {uploaded ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => void handleDelete(uploaded.id)}
+                                                                disabled={isUploading || !!deletingId}
+                                                                className="!h-auto !py-2.5 !px-4 rounded-xl border border-red-500/25 bg-red-500/[0.06] text-red-600 text-sm font-semibold hover:bg-red-500/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            >
+                                                                {deletingId === uploaded.id
+                                                                    ? 'Removing…'
+                                                                    : 'Remove'}
+                                                            </button>
+                                                        ) : null}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+                                    <p className="text-charcoal/50 text-sm mt-4">
+                                        Supported formats: PDF, JPG, PNG (Max 3MB per file)
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -544,7 +621,10 @@ export default function DocumentsPageContent() {
                                     ) : (
                                         <>
                                             <div className="space-y-4 mb-6">
-                                                {documents.map((doc) => (
+                                                {BUYER_DOCUMENT_SLOTS.map(({ type }) => {
+                                                    const doc = documents.find((d) => d.type === type);
+                                                    if (!doc) return null;
+                                                    return (
                                                     <div
                                                         key={doc.id}
                                                         className="bg-white rounded-2xl p-5 border border-charcoal/10 hover:border-gold/40 transition-all shadow-sm"
@@ -565,10 +645,9 @@ export default function DocumentsPageContent() {
                                                                         {getStatusBadge(doc.status)}
                                                                     </div>
                                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-charcoal/70 text-sm">
-                                                                        <span>{buyerDocumentTypeLabel(doc.type)}</span>
-                                                                        {doc.size && <span>• {doc.size}</span>}
+                                                                        {doc.size && <span>{doc.size}</span>}
                                                                         <span>
-                                                                            • Uploaded{' '}
+                                                                            Uploaded{' '}
                                                                             {new Date(doc.uploadedAt).toLocaleDateString()}
                                                                         </span>
                                                                     </div>
@@ -594,15 +673,22 @@ export default function DocumentsPageContent() {
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => void handleDelete(doc.id)}
-                                                                    className="p-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition text-red-600 border border-red-500/30"
-                                                                    title="Delete"
+                                                                    disabled={!!deletingId}
+                                                                    className="p-2.5 rounded-xl bg-gradient-to-r from-red-500/10 to-red-500/5 hover:from-red-500/20 hover:to-red-500/10 transition text-red-600 border border-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                    title="Remove"
+                                                                    aria-label={`Remove ${doc.name}`}
                                                                 >
-                                                                    <X className="w-5 h-5" />
+                                                                    {deletingId === doc.id ? (
+                                                                        <div className="w-5 h-5 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" />
+                                                                    ) : (
+                                                                        <X className="w-5 h-5" />
+                                                                    )}
                                                                 </button>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
 
                                             <div className="pt-6 border-t border-charcoal/10">
@@ -676,48 +762,21 @@ export default function DocumentsPageContent() {
 
                                 <div className="p-6">
                                     <ul className="space-y-3 text-charcoal/80">
-                                        <li className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                                            <div>
-                                                <span className="font-semibold text-charcoal">
-                                                    Valid South African ID Document
-                                                </span>
-                                                <p className="text-sm text-charcoal/60 mt-1">
-                                                    A clear copy of your ID book or smart ID card (both sides if
-                                                    applicable)
-                                                </p>
-                                            </div>
-                                        </li>
-                                        <li className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                                            <div>
-                                                <span className="font-semibold text-charcoal">Proof of Residence</span>
-                                                <p className="text-sm text-charcoal/60 mt-1">
-                                                    Utility bill, bank statement, or municipal account (not older than
-                                                    3 months) showing your name and address
-                                                </p>
-                                            </div>
-                                        </li>
-                                        <li className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                                            <div>
-                                                <span className="font-semibold text-charcoal">Proof of Income</span>
-                                                <p className="text-sm text-charcoal/60 mt-1">
-                                                    Latest 3 months payslips (if employed) or 3 months bank statements
-                                                    showing regular income deposits
-                                                </p>
-                                            </div>
-                                        </li>
-                                        <li className="flex items-start gap-3">
-                                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                                            <div>
-                                                <span className="font-semibold text-charcoal">Bank Statements</span>
-                                                <p className="text-sm text-charcoal/60 mt-1">
-                                                    Latest 3 months bank statements from your primary account (must show
-                                                    your name and account number)
-                                                </p>
-                                            </div>
-                                        </li>
+                                        {BUYER_DOCUMENT_SLOTS.filter((s) =>
+                                            ['id', 'residence', 'income', 'bank-statement'].includes(s.type)
+                                        ).map(({ type, label, hint }) => (
+                                                <li key={type} className="flex items-start gap-3">
+                                                    <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                                                    <div>
+                                                        <span className="font-semibold text-charcoal">
+                                                            {label}
+                                                        </span>
+                                                        {hint ? (
+                                                            <p className="text-sm text-charcoal/60 mt-1">{hint}</p>
+                                                        ) : null}
+                                                    </div>
+                                                </li>
+                                        ))}
                                         <li className="flex items-start gap-3">
                                             <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
                                             <div>
@@ -725,8 +784,8 @@ export default function DocumentsPageContent() {
                                                     Additional Documents (if applicable)
                                                 </span>
                                                 <p className="text-sm text-charcoal/60 mt-1">
-                                                    Marriage certificate (if married), proof of divorce (if applicable),
-                                                    or any other documents requested by the bond originator
+                                                    Marriage certificate, divorce decree, or anything else your
+                                                    originator requests
                                                 </p>
                                             </div>
                                         </li>

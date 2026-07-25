@@ -31,5 +31,6 @@ export function isProfileCompleteFromData(input: {
     if (looksLikePlaceholderName(input.fullName || undefined, email)) return false;
     if (!input.phone || !isValidPhone(input.phone)) return false;
     if (input.accountType === 'agent' && !input.company?.trim()) return false;
+    if (input.accountType === 'originator' && !input.company?.trim()) return false;
     return true;
 }

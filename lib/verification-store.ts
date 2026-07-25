@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
+import { profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 
-export type AccountType = 'user' | 'agent';
+export type AccountType = 'user' | 'agent' | 'originator';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey =
@@ -98,7 +99,7 @@ export async function markEmailVerified(email: string, accountType: AccountType)
     if (!supabaseUrl || !supabaseKey) return;
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const table = accountType === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(accountType);
 
     await supabase
         .from(table)
@@ -115,7 +116,7 @@ export async function isEmailVerified(
     if (!supabaseUrl || !supabaseKey) return null;
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const table = accountType === 'agent' ? 'agents' : 'users';
+    const table = profileTableForAccountType(accountType);
 
     const { data, error } = await supabase
         .from(table)

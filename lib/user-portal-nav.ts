@@ -21,6 +21,7 @@ export type BuyerPortalPage =
     | 'properties'
     | 'viewings'
     | 'documents'
+    | 'prequal'
     | 'agent'
     | 'property-optimizer'
     | 'calculator'
@@ -58,11 +59,12 @@ export const BUYER_PORTAL_LINKS: UserPortalNavLink[] = [
         icon: FileText,
         emphasize: 'alert',
     },
+    { page: 'prequal', href: '/dashboard/prequal', label: 'My Prequal', icon: ClipboardCheck },
     { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
     { page: 'calculator', href: '/calculator', label: 'Bond Calculator', icon: Calculator },
     { page: 'learn', href: '/learn', label: 'Learning Center', icon: BookOpen },
-    { page: 'quiz', href: '/quiz', label: 'Pre-Qualification', icon: ClipboardCheck },
+    { page: 'quiz', href: '/quiz', label: 'Pre-Qualification Quiz', icon: ClipboardCheck },
 ];
 
 export const SELLER_PORTAL_LINKS: UserPortalNavLink[] = [

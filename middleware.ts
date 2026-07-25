@@ -19,6 +19,9 @@ const PROTECTED_PREFIXES = [
     '/agents/plan',
     '/agents/verification',
     '/agents/learn',
+    '/originators/dashboard',
+    '/originators/cases',
+    '/originators/settings',
 ];
 
 const AUTH_PAGES = [
@@ -28,6 +31,10 @@ const AUTH_PAGES = [
     '/auth/reset-password',
     '/auth/magic-link',
     '/login',
+    '/agents/login',
+    '/agents/register',
+    '/originators/login',
+    '/originators/register',
 ];
 
 export async function middleware(request: NextRequest) {

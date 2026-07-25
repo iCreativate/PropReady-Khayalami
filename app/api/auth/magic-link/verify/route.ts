@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyMagicLink, setAuthCookies } from '@/lib/auth-enterprise';
+import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 import { getRequestMeta } from '@/lib/auth-enterprise/request-meta';
-import type { AccountType } from '@/lib/auth-enterprise';
 
 export async function POST(request: NextRequest) {
     const { token, type = 'user', trustedDevice = true } = await request.json();
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Invalid link' }, { status: 400 });
     }
 
-    const accountType: AccountType = type === 'agent' ? 'agent' : 'user';
+    const accountType = parseAccountType(type);
     const meta = getRequestMeta(request);
     const session = await verifyMagicLink(String(token), accountType, {
         ...meta,
@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     const hasPassword = Boolean(session.user.hasPassword);
-    const typeQ = accountType === 'agent' ? '?type=agent' : '';
+    const typeQ =
+        accountType === 'agent'
+            ? '?type=agent'
+            : accountType === 'originator'
+              ? '?type=originator'
+              : '';
 
     // Always require a password step after magic link
     const redirectTo = hasPassword

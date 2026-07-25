@@ -48,6 +48,15 @@ import {
     AGENT_ICON_BTN,
     AGENT_PANEL_HEADER,
     AGENT_PANEL_BODY,
+    AGENT_DASH_STACK,
+    AGENT_DASH_STAT_LABEL,
+    AGENT_DASH_STAT_VALUE,
+    AGENT_DASH_EMPTY,
+    AGENT_DASH_EMPTY_ICON,
+    AGENT_DASH_EMPTY_TITLE,
+    AGENT_DASH_EMPTY_DESC,
+    AGENT_DASH_SECTION_TITLE,
+    AGENT_DASH_SECTION_SUB,
 } from '@/lib/agent-portal-ui';
 
 interface Lead {
@@ -583,20 +592,22 @@ export default function AgentsDashboardPage() {
             }
         >
             <div className={`${AGENT_PAGE_CONTAINER} relative z-10`}>
+                <div className={AGENT_DASH_STACK}>
                     <PpraVerificationGate agent={currentAgent} />
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5 sm:gap-6 mb-10 sm:mb-12">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-5 gap-4 sm:gap-5">
                         <button
                             onClick={() => {
                                 setShowSuccessfulLeadsModal(true);
                             }}
                             className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-start justify-between gap-4 w-full">
+                            <div className="flex items-start justify-between gap-3 sm:gap-4 w-full">
                                 <div className="min-w-0">
-                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2 leading-snug">Successful Leads Contacted</p>
-                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalBuyers}</p>
+                                    <p className={AGENT_DASH_STAT_LABEL}>Successful Leads</p>
+                                    <p className={AGENT_DASH_STAT_VALUE}>{stats.totalBuyers}</p>
+                                    <p className="text-charcoal/40 text-[11px] mt-2.5 leading-snug hidden sm:block">Contacted pipeline</p>
                                 </div>
                                 <div className={AGENT_STAT_ICON}>
                                     <User className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
@@ -617,10 +628,13 @@ export default function AgentsDashboardPage() {
                             }}
                             className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-start justify-between gap-4 w-full">
+                            <div className="flex items-start justify-between gap-3 sm:gap-4 w-full">
                                 <div className="min-w-0">
-                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Total Sellers</p>
-                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalSellers}</p>
+                                    <p className={AGENT_DASH_STAT_LABEL}>Total Sellers</p>
+                                    <p className={AGENT_DASH_STAT_VALUE}>{stats.totalSellers}</p>
+                                    <p className="text-charcoal/40 text-[11px] mt-2.5 leading-snug hidden sm:block">
+                                        {stats.newSellers} new
+                                    </p>
                                 </div>
                                 <div className={AGENT_STAT_ICON}>
                                     <Building2 className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
@@ -631,10 +645,11 @@ export default function AgentsDashboardPage() {
                             href="/agents/properties"
                             className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-start justify-between gap-4 w-full">
+                            <div className="flex items-start justify-between gap-3 sm:gap-4 w-full">
                                 <div className="min-w-0">
-                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Listed Properties</p>
-                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalProperties}</p>
+                                    <p className={AGENT_DASH_STAT_LABEL}>Listed Properties</p>
+                                    <p className={AGENT_DASH_STAT_VALUE}>{stats.totalProperties}</p>
+                                    <p className="text-charcoal/40 text-[11px] mt-2.5 leading-snug hidden sm:block">Active listings</p>
                                 </div>
                                 <div className={AGENT_STAT_ICON}>
                                     <Home className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
@@ -645,10 +660,11 @@ export default function AgentsDashboardPage() {
                             href="/agents/viewings"
                             className={`${AGENT_STAT_CARD} cursor-pointer`}
                         >
-                            <div className="flex items-start justify-between gap-4 w-full">
+                            <div className="flex items-start justify-between gap-3 sm:gap-4 w-full">
                                 <div className="min-w-0">
-                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Viewings</p>
-                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{stats.totalViewings}</p>
+                                    <p className={AGENT_DASH_STAT_LABEL}>Viewings</p>
+                                    <p className={AGENT_DASH_STAT_VALUE}>{stats.totalViewings}</p>
+                                    <p className="text-charcoal/40 text-[11px] mt-2.5 leading-snug hidden sm:block">All appointments</p>
                                 </div>
                                 <div className={AGENT_STAT_ICON}>
                                     <Calendar className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
@@ -657,14 +673,15 @@ export default function AgentsDashboardPage() {
                         </Link>
                         <Link
                             href="/agents/learn"
-                            className={`${AGENT_STAT_CARD} cursor-pointer`}
+                            className={`${AGENT_STAT_CARD} cursor-pointer col-span-2 xl:col-span-1`}
                         >
-                            <div className="flex items-start justify-between gap-4 w-full">
+                            <div className="flex items-start justify-between gap-3 sm:gap-4 w-full">
                                 <div className="min-w-0">
-                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Learning Hub</p>
-                                    <p className="text-charcoal font-medium text-base sm:text-lg group-hover:text-gold transition-colors duration-200">
+                                    <p className={AGENT_DASH_STAT_LABEL}>Learning Hub</p>
+                                    <p className="text-charcoal font-semibold text-lg sm:text-xl tracking-tight group-hover:text-gold transition-colors duration-200">
                                         Learn more →
                                     </p>
+                                    <p className="text-charcoal/40 text-[11px] mt-2.5 leading-snug hidden sm:block">Guides & playbooks</p>
                                 </div>
                                 <div className={AGENT_STAT_ICON}>
                                     <BookOpen className="w-5 h-5 text-gold/80 group-hover:text-gold transition-colors" />
@@ -682,8 +699,8 @@ export default function AgentsDashboardPage() {
                         <div className={AGENT_CARD_HEADER}>
                             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8">
                                 <div className="min-w-0">
-                                    <h2 className="text-xl sm:text-2xl font-semibold text-charcoal tracking-tight">Prequalified Leads</h2>
-                                    <p className="text-charcoal/45 text-sm mt-2 leading-relaxed">
+                                    <h2 className={AGENT_DASH_SECTION_TITLE}>Prequalified Leads</h2>
+                                    <p className={AGENT_DASH_SECTION_SUB}>
                                         {activeTab === 'buyers'
                                             ? `${filteredLeads.length} buyer${filteredLeads.length === 1 ? '' : 's'} · ${stats.newBuyers} new`
                                             : `${filteredSellers.length} seller${filteredSellers.length === 1 ? '' : 's'} · ${stats.newSellers} new`}
@@ -761,12 +778,12 @@ export default function AgentsDashboardPage() {
                         <div className={AGENT_CARD_BODY}>
                         {activeTab === 'buyers' ? (
                             filteredLeads.length === 0 ? (
-                            <div className="text-center py-14 px-4">
-                                <div className="w-16 h-16 rounded-2xl bg-charcoal/5 flex items-center justify-center mx-auto mb-4">
-                                    <User className="w-8 h-8 text-charcoal/25" />
+                            <div className={AGENT_DASH_EMPTY}>
+                                <div className={AGENT_DASH_EMPTY_ICON}>
+                                    <User className="w-7 h-7 text-charcoal/30" />
                                 </div>
-                                    <p className="text-charcoal font-medium text-lg">No buyers found</p>
-                                <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
+                                    <p className={AGENT_DASH_EMPTY_TITLE}>No buyers found</p>
+                                <p className={AGENT_DASH_EMPTY_DESC}>
                                     {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
                                         ? 'Try adjusting your filters (search, status, or area)'
                                         : 'Buyers will appear here once they complete the prequalification'}
@@ -823,7 +840,7 @@ export default function AgentsDashboardPage() {
                                                 <td className={AGENT_TABLE_CELL}>
                                                     <div className="flex items-center gap-1.5">
                                                         <TrendingUp className="w-3.5 h-3.5 text-gold/70 shrink-0" />
-                                                            <span className="text-charcoal font-medium text-sm tabular-nums">{lead.score != null ? `${lead.score}%` : '—'}</span>
+                                                            <span className="text-charcoal font-semibold text-base tabular-nums tracking-tight">{lead.score != null ? `${lead.score}%` : '—'}</span>
                                                     </div>
                                                 </td>
                                                 <td className={AGENT_TABLE_CELL}>
@@ -864,12 +881,12 @@ export default function AgentsDashboardPage() {
                             )
                         ) : (
                             filteredSellers.length === 0 ? (
-                                <div className="text-center py-14 px-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-charcoal/5 flex items-center justify-center mx-auto mb-4">
-                                        <Building2 className="w-8 h-8 text-charcoal/25" />
+                                <div className={AGENT_DASH_EMPTY}>
+                                    <div className={AGENT_DASH_EMPTY_ICON}>
+                                        <Building2 className="w-7 h-7 text-charcoal/30" />
                                     </div>
-                                    <p className="text-charcoal font-medium text-lg">No sellers found</p>
-                                    <p className="text-charcoal/50 text-sm mt-2 max-w-md mx-auto">
+                                    <p className={AGENT_DASH_EMPTY_TITLE}>No sellers found</p>
+                                    <p className={AGENT_DASH_EMPTY_DESC}>
                                         {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
                                             ? 'Try adjusting your filters (search, status, or area)'
                                             : <>Sellers come from the database when they complete the seller quiz. Use Refresh above, or check <a href="/api/leads/debug" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">/api/leads/debug</a> to verify the database.</>}
@@ -984,6 +1001,7 @@ export default function AgentsDashboardPage() {
                     </div>
                     </PpraVerificationGate>
                 </div>
+            </div>
 
             {showActionsModal && (
                 <AgentLeadDetailModal

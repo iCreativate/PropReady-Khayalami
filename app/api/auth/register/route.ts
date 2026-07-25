@@ -4,8 +4,9 @@ import {
     findAccountByEmail,
     upsertAccountFromProfile,
 } from '@/lib/auth-enterprise';
+import { parseAccountType, profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { createServiceClient } from '@/lib/supabase-admin';
-import type { AccountType } from '@/lib/auth-enterprise/config';
+import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,10 +14,30 @@ export async function POST(request: NextRequest) {
         const email = String(body.email || '').trim().toLowerCase();
         const password = String(body.password || '');
         const fullName = String(body.fullName || '').trim();
-        const accountType: AccountType = body.type === 'agent' ? 'agent' : 'user';
+        const accountType = parseAccountType(body.type);
+        const organizationId = String(body.organizationId || '').trim();
+        const staffNumber = String(body.staffNumber || '')
+            .trim()
+            .toUpperCase();
 
         if (!email || !password || !fullName) {
             return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
+        }
+
+        if (accountType === 'originator') {
+            const validOrg = BOND_ORIGINATORS.some((o) => o.id === organizationId);
+            if (!validOrg) {
+                return NextResponse.json(
+                    { success: false, error: 'Select a valid bond originator organisation' },
+                    { status: 400 }
+                );
+            }
+            if (staffNumber.length < 4) {
+                return NextResponse.json(
+                    { success: false, error: 'Originator staff number is required' },
+                    { status: 400 }
+                );
+            }
         }
 
         const pw = validatePassword(password);
@@ -34,7 +55,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
         }
 
-        const table = accountType === 'agent' ? 'agents' : 'users';
+        const table = profileTableForAccountType(accountType);
         const { data: dup } = await supabase.from(table).select('id').eq('email', email).maybeSingle();
         if (dup) {
             return NextResponse.json({ success: false, error: 'An account with this email already exists' }, { status: 409 });
@@ -44,7 +65,17 @@ export async function POST(request: NextRequest) {
         const row =
             accountType === 'agent'
                 ? { id, full_name: fullName, email, password: '', status: 'pending' }
-                : { id, full_name: fullName, email, password: '' };
+                : accountType === 'originator'
+                  ? {
+                        id,
+                        full_name: fullName,
+                        email,
+                        password: '',
+                        organization_id: organizationId,
+                        staff_number: staffNumber,
+                        status: 'active',
+                    }
+                  : { id, full_name: fullName, email, password: '' };
 
         const { data: profile, error } = await supabase
             .from(table)
@@ -52,12 +83,20 @@ export async function POST(request: NextRequest) {
             .select('id')
             .single();
         if (error || !profile) {
+            console.error('auth/register profile insert:', error);
+            if (error?.code === '23505' && accountType === 'originator') {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        error: 'That staff number is already registered for this organisation, or the email is taken',
+                    },
+                    { status: 409 }
+                );
+            }
             return NextResponse.json({ success: false, error: 'Registration failed' }, { status: 500 });
         }
 
-        const account = await upsertAccountFromProfile(email, accountType, profile.id, password);
-
-        void account;
+        await upsertAccountFromProfile(email, accountType, profile.id, password);
 
         return NextResponse.json({
             success: true,

@@ -1,12 +1,11 @@
 'use client';
 
 interface OAuthButtonsProps {
-    accountType?: 'user' | 'agent';
+    accountType?: 'user' | 'agent' | 'originator';
 }
 
 const providers = [
     { id: 'google', label: 'Google' },
-    { id: 'microsoft', label: 'Microsoft' },
     { id: 'apple', label: 'Apple' },
 ] as const;
 
@@ -22,11 +21,16 @@ function ProviderIcon({ provider }: { provider: (typeof providers)[number]['id']
         );
     }
 
-    return <span className="text-sm font-bold">{provider === 'microsoft' ? 'M' : ''}</span>;
+    return <span className="text-sm font-bold"></span>;
 }
 
 export default function OAuthButtons({ accountType = 'user' }: OAuthButtonsProps) {
-    const type = accountType === 'agent' ? 'agent' : 'user';
+    const type =
+        accountType === 'agent'
+            ? 'agent'
+            : accountType === 'originator'
+              ? 'originator'
+              : 'user';
 
     return (
         <div className="space-y-3">
