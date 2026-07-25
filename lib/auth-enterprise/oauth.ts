@@ -11,6 +11,11 @@ import {
 } from './sessions';
 import type { LoginResult } from './types';
 import type { AccountType } from './config';
+import {
+    isProfessionalAccountApproved,
+    isProfessionalAccountType,
+} from '@/lib/professional-approval';
+import { validateProfessionalWorkEmail } from '@/lib/professional-email';
 
 function db() {
     const client = createServiceClient();
@@ -69,6 +74,17 @@ export async function handleOAuthCallback(
             return null;
         }
 
+        if (isProfessionalAccountType(accountType)) {
+            const emailError = validateProfessionalWorkEmail(profile.email);
+            if (emailError) {
+                console.error('oauth: free email blocked for professional account', {
+                    accountType,
+                    email: profile.email,
+                });
+                return null;
+            }
+        }
+
         let account = await findAccountByEmail(profile.email, accountType);
 
         if (!account) {
@@ -97,6 +113,22 @@ export async function handleOAuthCallback(
         if (oauthLinkError) {
             console.error('oauth: link provider failed', oauthLinkError);
             // Continue — session can still be created even if link upsert fails transiently
+        }
+
+        if (isProfessionalAccountType(accountType)) {
+            const table = profileTableForAccountType(accountType);
+            const { data: row } = await db()
+                .from(table)
+                .select('status')
+                .eq('id', account.profile_id)
+                .maybeSingle();
+            if (!isProfessionalAccountApproved(row?.status as string | undefined)) {
+                console.error('oauth: professional account not approved', {
+                    accountType,
+                    status: row?.status,
+                });
+                return null;
+            }
         }
 
         return createSession(account, meta);
@@ -136,7 +168,7 @@ async function createProfileForOAuth(
                     email: normalized,
                     password: '',
                     organization_id: 'betterbond',
-                    status: 'active',
+                    status: 'pending',
                 }
               : {
                     id,

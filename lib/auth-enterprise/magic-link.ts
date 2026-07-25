@@ -6,6 +6,11 @@ import { profileTableForAccountType } from './account-profile';
 import { generateSecureToken, hashToken } from './password';
 import { createSession, findAccountByEmail, upsertAccountFromProfile } from './sessions';
 import type { LoginResult } from './types';
+import {
+    isProfessionalAccountApproved,
+    isProfessionalAccountType,
+} from '@/lib/professional-approval';
+import { validateProfessionalWorkEmail } from '@/lib/professional-email';
 
 function db() {
     const client = createServiceClient();
@@ -40,7 +45,7 @@ async function ensureProfileAndAccount(email: string, accountType: AccountType) 
                         email: normalized,
                         password: '',
                         organization_id: 'betterbond',
-                        status: 'active',
+                        status: 'pending',
                     }
                   : {
                         id,
@@ -70,6 +75,12 @@ export async function createMagicLink(
     options?: { appUrl?: string }
 ): Promise<{ sent: boolean; link?: string }> {
     const normalized = email.toLowerCase().trim();
+    if (isProfessionalAccountType(accountType)) {
+        const emailError = validateProfessionalWorkEmail(normalized);
+        if (emailError) {
+            throw new Error(emailError);
+        }
+    }
     await ensureProfileAndAccount(normalized, accountType);
 
     const token = generateSecureToken(32);
@@ -119,6 +130,18 @@ export async function verifyMagicLink(
 
     const account = await findAccountByEmail(link.email, accountType);
     if (!account) return null;
+
+    if (isProfessionalAccountType(accountType)) {
+        const table = profileTableForAccountType(accountType);
+        const { data: row } = await db()
+            .from(table)
+            .select('status')
+            .eq('id', account.profile_id)
+            .maybeSingle();
+        if (!isProfessionalAccountApproved(row?.status as string | undefined)) {
+            return null;
+        }
+    }
 
     if (!account.email_verified_at) {
         await db()

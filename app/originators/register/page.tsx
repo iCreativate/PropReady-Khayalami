@@ -6,6 +6,7 @@ import { AlertCircle, Building2, Hash, Lock, Mail, User } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { getPasswordRequirementsText, validatePassword } from '@/lib/password';
+import { validateProfessionalWorkEmail } from '@/lib/professional-email';
 
 export default function OriginatorRegisterPage() {
     const [fullName, setFullName] = useState('');
@@ -23,6 +24,12 @@ export default function OriginatorRegisterPage() {
         const staff = staffNumber.trim().toUpperCase();
         if (staff.length < 4) {
             setError('Enter your bond originator staff number (at least 4 characters).');
+            return;
+        }
+
+        const emailError = validateProfessionalWorkEmail(email);
+        if (emailError) {
+            setError(emailError);
             return;
         }
 
@@ -63,7 +70,7 @@ export default function OriginatorRegisterPage() {
         <ProfessionalAuthShell
             role="originator"
             title="Register as originator staff"
-            subtitle="Create a staff account with your organisation and official staff number."
+            subtitle="Create a staff account with your organisation and staff number. Access requires PropReady admin approval."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -128,10 +135,14 @@ export default function OriginatorRegisterPage() {
                             type="email"
                             className="auth-input"
                             required
+                            placeholder="you@yourcompany.co.za"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
                     </div>
+                    <p className="text-xs text-charcoal/45 mt-1.5">
+                        Company email only — Gmail and other free addresses are not accepted.
+                    </p>
                 </div>
 
                 <div>
@@ -159,6 +170,9 @@ export default function OriginatorRegisterPage() {
                 <Link href="/originators/login" className="text-gold font-medium hover:underline">
                     Sign in
                 </Link>
+            </p>
+            <p className="text-charcoal/45 text-xs text-center mt-4 leading-relaxed">
+                Your registration is reviewed by PropReady before you can access buyer prequal cases.
             </p>
         </ProfessionalAuthShell>
     );

@@ -27,6 +27,7 @@ import {
     FFC_NUMBER_ERROR,
     FFC_DOCUMENT_MAX_BYTES,
 } from '@/lib/ppra';
+import { validateProfessionalWorkEmail } from '@/lib/professional-email';
 import { PRICING_SUMMARY } from '@/lib/agent-plans';
 
 interface AgentRegistration {
@@ -79,6 +80,9 @@ export default function AgentRegisterPage() {
             newErrors.email = 'Email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
             newErrors.email = 'Please enter a valid email address';
+        } else {
+            const workEmailError = validateProfessionalWorkEmail(formData.email);
+            if (workEmailError) newErrors.email = workEmailError;
         }
 
         if (!formData.phone.trim()) {
@@ -294,12 +298,15 @@ export default function AgentRegisterPage() {
                         <input
                             type="email"
                             name="email"
-                            placeholder="agent@example.com"
+                            placeholder="you@youragency.co.za"
                             value={formData.email}
                             onChange={handleInputChange}
                             className={`auth-input ${errors.email ? 'form-control-error' : ''}`}
                         />
                     </div>
+                    <p className="text-xs text-charcoal/45 mt-1.5">
+                        Agency email only — Gmail and other free addresses are not accepted.
+                    </p>
                     {fieldError('email')}
                 </div>
 
@@ -551,7 +558,7 @@ export default function AgentRegisterPage() {
                 <span>EAAB registered agents only</span>
             </div>
             <p className="text-charcoal/45 text-xs text-center mt-2">
-                Your registration will be reviewed and approved by our team
+                PropReady reviews and approves agent registrations before portal access is enabled
             </p>
         </ProfessionalAuthShell>
     );

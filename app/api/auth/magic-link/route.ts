@@ -32,6 +32,10 @@ export async function POST(request: NextRequest) {
             ...(result.link ? { link: result.link } : {}),
         });
     } catch (err) {
+        const message = err instanceof Error ? err.message : 'Could not send magic link';
+        if (message.includes('company email') || message.includes('Gmail') || message.includes('Free addresses')) {
+            return NextResponse.json({ success: false, error: message }, { status: 400 });
+        }
         console.error('auth/magic-link:', err);
         return NextResponse.json({ success: false, error: 'Could not send magic link' }, { status: 500 });
     }

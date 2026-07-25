@@ -25,7 +25,7 @@ const ROLE_COPY: Record<
     }
 > = {
     agent: {
-        homeHref: '/agents',
+        homeHref: '/',
         badge: 'Agent portal',
         headline: 'PPRA-verified agent access',
         body: 'Sign in with your Fidelity Fund Certificate details. Consumer accounts use a separate login.',
@@ -37,7 +37,7 @@ const ROLE_COPY: Record<
         Icon: BadgeCheck,
     },
     originator: {
-        homeHref: '/originators',
+        homeHref: '/',
         badge: 'Bond originator portal',
         headline: 'Staff access for bond originators',
         body: 'Use your organisation and staff originator number. This portal is separate from buyer and agent login.',

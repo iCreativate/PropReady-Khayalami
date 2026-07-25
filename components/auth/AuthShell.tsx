@@ -15,11 +15,10 @@ export default function AuthShell({
     children,
     title,
     subtitle,
-    accountType = 'user',
+    accountType: _accountType = 'user',
     wide = false,
 }: AuthShellProps) {
-    const homeHref =
-        accountType === 'agent' ? '/agents' : accountType === 'originator' ? '/originators' : '/';
+    const homeHref = '/';
 
     return (
         <div className="auth-shell min-h-screen flex">

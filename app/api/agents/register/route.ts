@@ -11,6 +11,7 @@ import {
 import { createServiceClient } from '@/lib/supabase-admin';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
+import { validateProfessionalWorkEmail } from '@/lib/professional-email';
 
 export async function POST(request: NextRequest) {
     const supabaseUrl = getSupabaseUrl();
@@ -33,6 +34,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const emailError = validateProfessionalWorkEmail(String(agentData.email));
+        if (emailError) {
+            return NextResponse.json({ success: false, error: emailError }, { status: 400 });
+        }
         const ppra = normalizePpraNumber(String(agentData.ppraNumber || agentData.eaabNumber || ''));
         if (!validatePpraNumber(ppra)) {
             return NextResponse.json({ success: false, error: PPRA_NUMBER_ERROR }, { status: 400 });

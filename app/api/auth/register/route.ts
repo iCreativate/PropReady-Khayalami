@@ -7,6 +7,7 @@ import {
 import { parseAccountType, profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
+import { validateProfessionalWorkEmail } from '@/lib/professional-email';
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,6 +25,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
         }
 
+        if (accountType === 'agent' || accountType === 'originator') {
+            const emailError = validateProfessionalWorkEmail(email);
+            if (emailError) {
+                return NextResponse.json({ success: false, error: emailError }, { status: 400 });
+            }
+        }
         if (accountType === 'originator') {
             const validOrg = BOND_ORIGINATORS.some((o) => o.id === organizationId);
             if (!validOrg) {
@@ -73,7 +80,7 @@ export async function POST(request: NextRequest) {
                         password: '',
                         organization_id: organizationId,
                         staff_number: staffNumber,
-                        status: 'active',
+                        status: 'pending',
                     }
                   : { id, full_name: fullName, email, password: '' };
 
@@ -101,9 +108,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             needsVerification: true,
+            needsApproval: accountType === 'agent' || accountType === 'originator',
             email,
             accountType,
-            message: 'Check your email to verify your account before signing in.',
+            message:
+                accountType === 'agent' || accountType === 'originator'
+                    ? 'Verify your email, then wait for PropReady admin approval before signing in.'
+                    : 'Check your email to verify your account before signing in.',
         });
     } catch (err) {
         console.error('auth/register:', err);

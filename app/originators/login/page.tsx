@@ -66,7 +66,7 @@ export default function OriginatorLoginPage() {
         <ProfessionalAuthShell
             role="originator"
             title="Bond originator sign-in"
-            subtitle="Staff login requires your organisation and originator staff number."
+            subtitle="Staff login requires organisation, staff number, and PropReady admin approval."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -74,6 +74,11 @@ export default function OriginatorLoginPage() {
                     {error}
                 </div>
             ) : null}
+
+            <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
+                After you register and verify email, PropReady must approve your staff account before portal
+                access is enabled.
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>

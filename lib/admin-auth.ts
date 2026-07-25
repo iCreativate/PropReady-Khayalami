@@ -1,5 +1,5 @@
 /**
- * Admin access for PPRA review dashboard (email allowlist from env).
+ * Admin access for PropReady approval dashboards (email allowlist from env).
  */
 export function getAdminEmails(): string[] {
     return (process.env.ADMIN_EMAILS || process.env.PROPREADY_ADMIN_EMAILS || '')

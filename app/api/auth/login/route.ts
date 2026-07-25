@@ -11,11 +11,17 @@ import { parseAccountType, profileTableForAccountType } from '@/lib/auth-enterpr
 import { createServiceClient } from '@/lib/supabase-admin';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { normalizeFfcNumber, validateFfcNumber } from '@/lib/ppra';
+import {
+    isProfessionalAccountApproved,
+    isProfessionalAccountType,
+    professionalApprovalError,
+} from '@/lib/professional-approval';
 
 type ProfileRow = {
     id: string;
     email: string;
     password?: string | null;
+    status?: string | null;
     ffc_number?: string | null;
     organization_id?: string | null;
     staff_number?: string | null;
@@ -169,6 +175,18 @@ export async function POST(request: NextRequest) {
         const valid = await verifyAccountPassword(account, password);
         if (!valid) {
             return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
+        }
+
+        if (isProfessionalAccountType(accountType) && !isProfessionalAccountApproved(profile.status)) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: professionalApprovalError(profile.status),
+                    needsApproval: true,
+                    status: profile.status || 'pending',
+                },
+                { status: 403 }
+            );
         }
 
         if (!account.email_verified_at) {

@@ -137,12 +137,20 @@ export default function AdminPpraPage() {
                         <span className="text-charcoal text-lg font-semibold block leading-tight">
                             PropReady
                         </span>
-                        <span className={`text-xs ${PORTAL_TEXT_SECONDARY}`}>PPRA Admin</span>
+                        <span className={`text-xs ${PORTAL_TEXT_SECONDARY}`}>Agent Approvals</span>
                     </div>
                 </Link>
-                {authenticated ? (
-                    <span className={`text-sm truncate ${PORTAL_TEXT_SECONDARY}`}>{adminEmail}</span>
-                ) : null}
+                <div className="flex items-center gap-3 min-w-0">
+                    <Link
+                        href="/admin/originators"
+                        className={`text-sm shrink-0 ${PORTAL_TEXT_SECONDARY} hover:text-gold`}
+                    >
+                        Originator Approvals
+                    </Link>
+                    {authenticated ? (
+                        <span className={`text-sm truncate ${PORTAL_TEXT_SECONDARY}`}>{adminEmail}</span>
+                    ) : null}
+                </div>
             </div>
         </header>
     );
@@ -155,11 +163,11 @@ export default function AdminPpraPage() {
                     <div className={`${PORTAL_CARD} max-w-md w-full p-8`}>
                         <div className="flex items-center gap-2 mb-6">
                             <Shield className="w-7 h-7 text-gold" />
-                            <h1 className="text-2xl font-semibold text-charcoal">PPRA Admin</h1>
+                            <h1 className="text-2xl font-semibold text-charcoal">Agent Approvals</h1>
                         </div>
                         <p className={`text-sm mb-4 ${PORTAL_TEXT_SECONDARY}`}>
-                            Sign in with an email listed in <code className="text-xs">ADMIN_EMAILS</code> on
-                            the server.
+                            PropReady admin access. Sign in with an email listed in{' '}
+                            <code className="text-xs">ADMIN_EMAILS</code> on the server.
                         </p>
                         <input
                             type="email"
@@ -189,9 +197,11 @@ export default function AdminPpraPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-2xl sm:text-3xl font-semibold text-charcoal tracking-tight">
-                            PPRA verification queue
+                            Agent registration approvals
                         </h1>
-                        <p className={PORTAL_TEXT_SECONDARY}>Review practitioner applications</p>
+                        <p className={PORTAL_TEXT_SECONDARY}>
+                            PropReady review of agent applications, including FFC and practitioner details
+                        </p>
                     </div>
                     <button type="button" onClick={loadApplications} className={PORTAL_REFRESH_BTN}>
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />

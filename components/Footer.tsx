@@ -199,12 +199,20 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 </a>
                             </li>
                         </ul>
-                        <Link
-                            href="/agents/login"
-                            className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition text-sm shadow-sm"
-                        >
-                            Agent Login
-                        </Link>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Link
+                                href="/agents/login"
+                                className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition text-sm shadow-sm"
+                            >
+                                Agent Login
+                            </Link>
+                            <Link
+                                href="/originators/login"
+                                className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-white/10 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/15 hover:border-gold/40 transition text-sm"
+                            >
+                                Bond Originator
+                            </Link>
+                        </div>
 
                         {!isPortal ? (
                             <div className="mt-7">

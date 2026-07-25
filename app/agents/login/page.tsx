@@ -64,7 +64,7 @@ export default function AgentLoginPage() {
         <ProfessionalAuthShell
             role="agent"
             title="Agent sign-in"
-            subtitle="Enter your work email, Fidelity Fund Certificate number, and password."
+            subtitle="Enter your work email, Fidelity Fund Certificate number, and password. Access opens only after PropReady admin approval."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -72,6 +72,11 @@ export default function AgentLoginPage() {
                     {error}
                 </div>
             ) : null}
+
+            <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
+                New registrations stay pending until a PropReady admin reviews your details and FFC and
+                approves your account.
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
