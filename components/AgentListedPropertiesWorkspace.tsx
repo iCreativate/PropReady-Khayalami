@@ -1142,48 +1142,72 @@ export default function AgentListedPropertiesWorkspace({
                                                         <div
                                                             key={i}
                                                             className={`absolute inset-0 transition-transform duration-300 ease-out ${
-                                                                i === viewPropertyImageIndex ? 'translate-x-0 z-10' : i < viewPropertyImageIndex ? '-translate-x-full' : 'translate-x-full'
+                                                                i === viewPropertyImageIndex
+                                                                    ? 'translate-x-0 z-10'
+                                                                    : i < viewPropertyImageIndex
+                                                                      ? '-translate-x-full'
+                                                                      : 'translate-x-full'
                                                             }`}
                                                         >
                                                             <img
                                                                 src={getProxiedImageUrl(url)}
                                                                 alt={`${showViewPropertyModal.title} - ${i + 1}`}
                                                                 className="w-full h-full object-cover gallery-zoom"
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setViewPropertyImageIndex((prev) => (prev === 0 ? showViewPropertyModal.images!.length - 1 : prev - 1))}
-                                                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
-                                                            aria-label="Previous image"
-                                                        >
-                                                            <ChevronLeft className="w-5 h-5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setViewPropertyImageIndex((prev) => (prev === showViewPropertyModal.images!.length - 1 ? 0 : prev + 1))}
-                                                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
-                                                            aria-label="Next image"
-                                                        >
-                                                            <ChevronRight className="w-5 h-5" />
-                                                        </button>
-                                                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
-                                                            {showViewPropertyModal.images.map((_, i) => (
-                                                                <button
-                                                                    key={i}
-                                                                    type="button"
-                                                                    onClick={() => setViewPropertyImageIndex(i)}
-                                                                    className={`w-2 h-2 rounded-full transition-colors ${
-                                                                        i === viewPropertyImageIndex ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/70'
-                                                                    }`}
-                                                                    aria-label={`Go to image ${i + 1}`}
-                                                                />
-                                                            ))}
+                                                            />
                                                         </div>
-                                                        <span className="absolute top-2 right-2 z-20 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
-                                                            {viewPropertyImageIndex + 1} / {showViewPropertyModal.images.length}
-                                                        </span>
-                                                    </>
-                                                )}
+                                                    ))}
+                                                    {showViewPropertyModal.images.length > 1 ? (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setViewPropertyImageIndex((prev) =>
+                                                                        prev === 0
+                                                                            ? showViewPropertyModal.images!.length - 1
+                                                                            : prev - 1
+                                                                    )
+                                                                }
+                                                                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
+                                                                aria-label="Previous image"
+                                                            >
+                                                                <ChevronLeft className="w-5 h-5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setViewPropertyImageIndex((prev) =>
+                                                                        prev === showViewPropertyModal.images!.length - 1
+                                                                            ? 0
+                                                                            : prev + 1
+                                                                    )
+                                                                }
+                                                                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg border border-charcoal/10 flex items-center justify-center text-charcoal hover:text-gold transition"
+                                                                aria-label="Next image"
+                                                            >
+                                                                <ChevronRight className="w-5 h-5" />
+                                                            </button>
+                                                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                                                                {showViewPropertyModal.images.map((_, i) => (
+                                                                    <button
+                                                                        key={i}
+                                                                        type="button"
+                                                                        onClick={() => setViewPropertyImageIndex(i)}
+                                                                        className={`w-2 h-2 rounded-full transition-colors ${
+                                                                            i === viewPropertyImageIndex
+                                                                                ? 'bg-white scale-125'
+                                                                                : 'bg-white/50 hover:bg-white/70'
+                                                                        }`}
+                                                                        aria-label={`Go to image ${i + 1}`}
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    ) : null}
+                                                    <span className="absolute top-2 right-2 z-20 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                                                        {viewPropertyImageIndex + 1} /{' '}
+                                                        {showViewPropertyModal.images.length}
+                                                    </span>
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="aspect-video bg-charcoal/10 rounded-2xl flex items-center justify-center">
