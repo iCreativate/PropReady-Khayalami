@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="color-scheme" content="light dark" />
+    <title>PropReady</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #2c2c2c;
+        color: #fafafa;
+        font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      }
+      .shell {
+        min-height: 100%;
+        display: grid;
+        place-items: center;
+        padding: 2rem;
+        text-align: center;
+      }
+      .mark {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        background: #dc2626;
+        margin: 0 auto 1rem;
+      }
+      p {
+        opacity: 0.7;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        max-width: 28rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Capacitor loads CAPACITOR_SERVER_URL / NEXT_PUBLIC_APP_URL (see capacitor.config.ts).
+      This page is only a fallback if the remote server URL is unset.
+    -->
+    <div class="shell">
+      <div>
+        <div class="mark" aria-hidden="true"></div>
+        <h1>PropReady</h1>
+        <p>
+          Native shell is ready. Configure <code>CAPACITOR_SERVER_URL</code> or
+          <code>NEXT_PUBLIC_APP_URL</code> to load the live app.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

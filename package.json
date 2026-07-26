@@ -14,10 +14,21 @@
         "seed:demo-leads": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-leads | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
         "seed:demo-users": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-users | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
         "scrape:suburbs": "node scripts/scrape-property24-suburbs.mjs",
-        "scrape:suburbs:sample": "node scripts/scrape-property24-suburbs.mjs --limit=500"
+        "scrape:suburbs:sample": "node scripts/scrape-property24-suburbs.mjs --limit=500",
+        "mobile:sync": "npx cap sync",
+        "mobile:android": "npx cap open android",
+        "mobile:ios": "npx cap open ios",
+        "mobile:add": "npx cap add android && npx cap add ios",
+        "mobile:build:android": "npx cap sync && cd android && ./gradlew assembleDebug",
+        "mobile:build:ios": "npx cap sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build"
     },
     "dependencies": {
         "@auth/supabase-adapter": "^1.7.0",
+        "@capacitor/app": "^8.1.1",
+        "@capacitor/core": "^8.4.2",
+        "@capacitor/keyboard": "^8.0.5",
+        "@capacitor/splash-screen": "^8.0.2",
+        "@capacitor/status-bar": "^8.0.3",
         "@opentelemetry/api": "^1.9.1",
         "@supabase/ssr": "^0.10.3",
         "@supabase/supabase-js": "^2.107.0",
@@ -40,6 +51,9 @@
         "zod": "^3.22.4"
     },
     "devDependencies": {
+        "@capacitor/android": "^8.4.2",
+        "@capacitor/cli": "^8.4.2",
+        "@capacitor/ios": "^8.4.2",
         "@netlify/plugin-nextjs": "^5.15.5",
         "@types/node": "^20",
         "@types/qrcode": "^1.5.5",

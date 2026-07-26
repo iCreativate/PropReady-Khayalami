@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import SiteFooter from '@/components/SiteFooter';
 import AppProviders from '@/components/providers/AppProviders';
+import NativeShellInit from '@/components/NativeShellInit';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
         <html lang="en">
             <body className={`${inter.className} flex flex-col min-h-screen`}>
                 <AppProviders>
+                    <NativeShellInit />
                     <div className="flex-1">{children}</div>
                     <SiteFooter />
                 </AppProviders>

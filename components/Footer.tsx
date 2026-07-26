@@ -7,74 +7,68 @@ interface FooterProps {
     variant?: 'default' | 'portal';
 }
 
+const PLAY_STORE_URL =
+    process.env.NEXT_PUBLIC_PLAY_STORE_URL?.trim() ||
+    'https://play.google.com/store/apps';
+const APP_STORE_URL =
+    process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() ||
+    'https://apps.apple.com/app';
+
+/** Official Google Play badge artwork (Google Play branding guidelines). */
 function GooglePlayBadge() {
     return (
         <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="footer-play-badge"
-            aria-label="Get it on Google Play (coming soon)"
-            title="Coming soon"
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-store-badge"
+            aria-label="Get it on Google Play"
         >
-            <svg viewBox="0 0 155 46" className="h-11 w-auto" aria-hidden="true">
-                <rect width="155" height="46" rx="6" fill="#000" />
-                <rect x="0.5" y="0.5" width="154" height="45" rx="5.5" fill="none" stroke="rgba(255,255,255,0.22)" />
-                <g transform="translate(12 8)">
-                    <path
-                        d="M1.2 1.1c-.3.3-.5.8-.5 1.5v24.8c0 .7.2 1.2.5 1.5l.1.1 13.9-13.9v-.3L1.3 1z"
-                        fill="#00A0FF"
-                    />
-                    <path
-                        d="M20.4 20.3l-5.2-5.2v-.3l5.2-5.2.1.1 6.2 3.5c1.8 1 1.8 2.7 0 3.7l-6.3 3.4z"
-                        fill="#FFCE00"
-                    />
-                    <path
-                        d="M20.5 20.2L15.2 15 1.2 29c.5.5 1.2.6 2 .1l17.3-9z"
-                        fill="#FF3A44"
-                    />
-                    <path
-                        d="M20.5 9.7L3.2.8C2.4.3 1.7.4 1.2.9L15.2 15l5.3-5.3z"
-                        fill="#00F076"
-                    />
-                </g>
-                <g fill="#fff" fontFamily="Arial, Helvetica, sans-serif">
-                    <text x="48" y="17" fontSize="8" fill="rgba(255,255,255,0.75)">
-                        GET IT ON
-                    </text>
-                    <text x="48" y="33" fontSize="16" fontWeight="600">
-                        Google Play
-                    </text>
-                </g>
-            </svg>
+            <img
+                src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                alt="Get it on Google Play"
+                width={155}
+                height={60}
+                className="footer-store-badge-img footer-store-badge-img--play"
+                loading="lazy"
+            />
         </a>
     );
 }
 
+/** Official App Store badge artwork (Apple Marketing Tools). */
 function AppStoreBadge() {
     return (
         <a
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="footer-play-badge"
-            aria-label="Download on the App Store (coming soon)"
-            title="Coming soon"
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-store-badge"
+            aria-label="Download on the App Store"
         >
-            <svg viewBox="0 0 155 46" className="h-11 w-auto" aria-hidden="true">
-                <rect width="155" height="46" rx="6" fill="#000" />
-                <rect x="0.5" y="0.5" width="154" height="45" rx="5.5" fill="none" stroke="rgba(255,255,255,0.22)" />
-                <g transform="translate(14 9)" fill="#fff">
-                    <path d="M16.2 7.3c-.1-1.3.6-2.5 1.5-3.3-.9-1.3-2.4-2-3.8-2.1-1.6-.2-3.2 1-4 1-.8 0-2.2-.9-3.6-.9-1.8 0-3.5 1.1-4.4 2.7-1.9 3.3-.5 8.1 1.4 10.8.9 1.3 2 2.7 3.4 2.7 1.4 0 1.9-.9 3.5-.9s2.1.9 3.6.9c1.5 0 2.4-1.3 3.3-2.6.7-1 1-1.9 1-2 0 0-2.5-1-2.5-3.8zm-2.4-5.7c.7-.9 1.2-2.1 1.1-3.3-1.1.1-2.4.7-3.2 1.6-.7.8-1.3 2-1.1 3.2 1.2.1 2.4-.6 3.2-1.5z" />
-                </g>
-                <g fill="#fff" fontFamily="Arial, Helvetica, sans-serif">
-                    <text x="48" y="17" fontSize="8" fill="rgba(255,255,255,0.75)">
-                        Download on the
-                    </text>
-                    <text x="48" y="33" fontSize="16" fontWeight="600">
-                        App Store
-                    </text>
-                </g>
-            </svg>
+            <img
+                src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
+                alt="Download on the App Store"
+                width={148}
+                height={44}
+                className="footer-store-badge-img footer-store-badge-img--apple"
+                loading="lazy"
+            />
         </a>
+    );
+}
+
+function StoreDownloadButtons() {
+    return (
+        <div>
+            <h3 className="text-white font-semibold text-sm uppercase tracking-[0.12em] mb-4">
+                Get the App
+            </h3>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <AppStoreBadge />
+                <GooglePlayBadge />
+            </div>
+        </div>
     );
 }
 
@@ -214,17 +208,9 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                             </Link>
                         </div>
 
-                        {!isPortal ? (
-                            <div className="mt-7">
-                                <h3 className="text-white font-semibold text-sm uppercase tracking-[0.12em] mb-4">
-                                    Get the App
-                                </h3>
-                                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                                    <GooglePlayBadge />
-                                    <AppStoreBadge />
-                                </div>
-                            </div>
-                        ) : null}
+                        <div className="mt-7">
+                            <StoreDownloadButtons />
+                        </div>
                     </div>
                 </div>
 

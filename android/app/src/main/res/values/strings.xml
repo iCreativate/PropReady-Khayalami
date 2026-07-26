@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PropReady</string>
+    <string name="title_activity_main">PropReady</string>
+    <string name="package_name">za.co.propready.app</string>
+    <string name="custom_url_scheme">za.co.propready.app</string>
+</resources>

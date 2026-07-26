@@ -1557,7 +1557,8 @@
     .icon-clickable:hover svg,
     summary:hover > svg,
     .footer-app-btn:hover,
-    .footer-play-badge:hover {
+    .footer-play-badge:hover,
+    .footer-store-badge:hover {
       transform: none !important;
     }
 
@@ -2188,7 +2189,49 @@
 .auth-oauth-icon {
   @apply w-8 h-8 rounded-lg bg-charcoal/[0.05] flex items-center justify-center text-xs font-bold;
 }
-/* ── Footer app download buttons ── */
+/* ── Footer official store download badges ── */
+.footer-store-badge {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  border-radius: 0.5rem;
+  transition:
+    transform var(--duration-base) var(--ease-out),
+    opacity var(--duration-base) var(--ease-out),
+    filter var(--duration-base) var(--ease-out);
+}
+
+.footer-store-badge:hover {
+  transform: translate3d(0, var(--lift-soft), 0);
+  filter: brightness(var(--brightness-hover));
+}
+
+.footer-store-badge:active {
+  transform: translate3d(0, 0, 0) scale(var(--scale-press));
+}
+
+.footer-store-badge:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.35);
+}
+
+.footer-store-badge-img {
+  display: block;
+  width: auto;
+  height: 44px;
+  object-fit: contain;
+}
+
+/* Google's generic badge includes large transparent padding */
+.footer-store-badge-img--play {
+  height: 64px;
+  margin: -10px -8px -10px -14px;
+}
+
+.footer-store-badge-img--apple {
+  height: 44px;
+}
+
 .footer-play-badge {
   display: inline-flex;
   align-items: center;
