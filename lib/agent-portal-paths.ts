@@ -1,6 +1,7 @@
 /** Routes that use AgentPortalLayout (fixed sidebar on desktop). */
 export const AGENT_PORTAL_ROUTES = new Set([
     '/agents/dashboard',
+    '/agents/messages',
     '/agents/my-leads',
     '/agents/properties',
     '/agents/viewings',

@@ -107,7 +107,7 @@ export default function OriginatorPortalLayout({
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${ORIGINATOR_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${ORIGINATOR_SHELL_DIVIDER} shrink-0`}>
-                    <BrandLogo />
+                    <BrandLogo tone="dark" />
                     <p className={ORIGINATOR_SHELL_SUBTITLE}>Originator portal</p>
                 </div>
                 <div className={ORIGINATOR_SHELL_NAV_SCROLL}>
@@ -132,7 +132,7 @@ export default function OriginatorPortalLayout({
                     } transition-transform`}
                 >
                     <div className={`flex items-center justify-between px-5 py-4 border-b ${ORIGINATOR_SHELL_DIVIDER}`}>
-                        <BrandLogo size="sm" onClick={() => setMobileOpen(false)} />
+                        <BrandLogo tone="dark" size="sm" onClick={() => setMobileOpen(false)} />
                         <button
                             type="button"
                             onClick={() => setMobileOpen(false)}
@@ -166,7 +166,8 @@ export default function OriginatorPortalLayout({
                             </h1>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <PortalAppBarAlerts role="originator" />
                         {user && (
                             <div className="hidden sm:block text-right">
                                 <p className="text-sm font-medium text-charcoal truncate max-w-[160px]">

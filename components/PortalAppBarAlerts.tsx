@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Bell, MessageSquare, X } from 'lucide-react';
 
 export type PortalAppBarRole = 'buyer' | 'seller' | 'agent' | 'originator';
@@ -10,38 +11,34 @@ type PanelKind = 'messages' | 'notifications' | null;
 
 type PortalAppBarAlertsProps = {
     role: PortalAppBarRole;
-    /** Optional unread counts for badges */
+    /** Optional unread counts for badges — if omitted, messages load from API */
     messageCount?: number;
     notificationCount?: number;
 };
 
-const COPY: Record<
-    PortalAppBarRole,
-    { messagesEmpty: string; notificationsEmpty: string; messagesHref: string; notificationsHref: string }
-> = {
+const HREF: Record<PortalAppBarRole, { messages: string; notifications: string }> = {
+    buyer: { messages: '/dashboard/messages', notifications: '/dashboard' },
+    seller: { messages: '/sellers/messages', notifications: '/sellers/dashboard' },
+    agent: { messages: '/agents/messages', notifications: '/agents/dashboard' },
+    originator: { messages: '/originators/messages', notifications: '/originators/dashboard' },
+};
+
+const COPY: Record<PortalAppBarRole, { messagesEmpty: string; notificationsEmpty: string }> = {
     buyer: {
-        messagesEmpty: 'No messages yet. Viewing chats and agent updates will show up here.',
+        messagesEmpty: 'No unread messages. Open your inbox to chat with agents and originators.',
         notificationsEmpty: 'You’re all caught up. We’ll notify you about viewings and document requests.',
-        messagesHref: '/dashboard/viewings',
-        notificationsHref: '/dashboard',
     },
     seller: {
-        messagesEmpty: 'No messages yet. Agent replies about your listing will appear here.',
+        messagesEmpty: 'No unread messages. Open your inbox to chat about your listing.',
         notificationsEmpty: 'You’re all caught up. Listing and valuation updates will show here.',
-        messagesHref: '/sellers/dashboard',
-        notificationsHref: '/sellers/dashboard',
     },
     agent: {
-        messagesEmpty: 'No messages yet. Lead and viewing conversations will appear here.',
+        messagesEmpty: 'No unread messages. Open your inbox for buyer, seller, and originator chats.',
         notificationsEmpty: 'You’re all caught up. New leads and viewing reminders will show here.',
-        messagesHref: '/agents/my-leads',
-        notificationsHref: '/agents/dashboard',
     },
     originator: {
-        messagesEmpty: 'No messages yet. Buyer prequal case chats will appear here.',
+        messagesEmpty: 'No unread messages. Open your inbox to talk with buyers, sellers, and agents.',
         notificationsEmpty: 'You’re all caught up. New cases and document uploads will show here.',
-        messagesHref: '/originators/dashboard',
-        notificationsHref: '/originators/dashboard',
     },
 };
 
@@ -103,14 +100,38 @@ function Panel({
  */
 export default function PortalAppBarAlerts({
     role,
-    messageCount = 0,
+    messageCount: messageCountProp,
     notificationCount = 0,
 }: PortalAppBarAlertsProps) {
+    const router = useRouter();
     const [open, setOpen] = useState<PanelKind>(null);
+    const [messageCount, setMessageCount] = useState(messageCountProp ?? 0);
     const rootRef = useRef<HTMLDivElement>(null);
     const messagesId = useId();
     const notificationsId = useId();
+    const hrefs = HREF[role];
     const copy = COPY[role];
+
+    useEffect(() => {
+        if (typeof messageCountProp === 'number') {
+            setMessageCount(messageCountProp);
+            return;
+        }
+        let cancelled = false;
+        void fetch('/api/messages/conversations?unread=1', { credentials: 'include' })
+            .then((r) => r.json())
+            .then((data) => {
+                if (!cancelled && typeof data.unreadTotal === 'number') {
+                    setMessageCount(data.unreadTotal);
+                }
+            })
+            .catch(() => {
+                /* ignore */
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [messageCountProp]);
 
     useEffect(() => {
         if (!open) return;
@@ -139,7 +160,14 @@ export default function PortalAppBarAlerts({
                 aria-label="Messages"
                 aria-expanded={open === 'messages'}
                 aria-controls={messagesId}
-                onClick={() => setOpen((v) => (v === 'messages' ? null : 'messages'))}
+                onClick={() => {
+                    // Prefer opening the dedicated inbox on click when unread / desktop
+                    if (open !== 'messages' && messageCount > 0) {
+                        router.push(hrefs.messages);
+                        return;
+                    }
+                    setOpen((v) => (v === 'messages' ? null : 'messages'));
+                }}
             >
                 <MessageSquare className="w-5 h-5" />
                 <Badge count={messageCount} />
@@ -161,7 +189,7 @@ export default function PortalAppBarAlerts({
                     <Panel
                         title="Messages"
                         empty={copy.messagesEmpty}
-                        href={copy.messagesHref}
+                        href={hrefs.messages}
                         hrefLabel="Open inbox"
                         onClose={() => setOpen(null)}
                     />
@@ -172,7 +200,7 @@ export default function PortalAppBarAlerts({
                     <Panel
                         title="Notifications"
                         empty={copy.notificationsEmpty}
-                        href={copy.notificationsHref}
+                        href={hrefs.notifications}
                         hrefLabel="View dashboard"
                         onClose={() => setOpen(null)}
                     />

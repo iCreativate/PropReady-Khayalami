@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { LogOut, Menu, X } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import UserProfileCompact from '@/components/UserProfileCompact';
+import LeadRequiredGate from '@/components/onboarding/LeadRequiredGate';
+import { useLeadGate } from '@/hooks/useLeadGate';
+import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import {
     getUserPortalLabel,
     getUserPortalLinks,
@@ -38,6 +42,17 @@ import {
 } from '@/lib/portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
 
+function isQuizEscapePath(pathname: string | null): boolean {
+    if (!pathname) return false;
+    return (
+        pathname === '/quiz' ||
+        pathname.startsWith('/quiz/') ||
+        pathname.startsWith('/sellers/property-quiz') ||
+        pathname.startsWith('/sellers/quiz') ||
+        pathname.startsWith('/get-started')
+    );
+}
+
 export interface UserPortalUser {
     fullName: string;
     email?: string;
@@ -56,12 +71,12 @@ interface UserPortalLayoutProps {
 
 /** Visual groups only — link order unchanged */
 const BUYER_NAV_GROUPS: { label: string; pages: UserPortalPage[] }[] = [
-    { label: 'Workspace', pages: ['dashboard', 'properties', 'viewings', 'documents', 'agent'] },
+    { label: 'Workspace', pages: ['dashboard', 'messages', 'properties', 'viewings', 'documents', 'agent'] },
     { label: 'Tools', pages: ['property-optimizer', 'calculator', 'learn', 'quiz'] },
 ];
 
 const SELLER_NAV_GROUPS: { label: string; pages: UserPortalPage[] }[] = [
-    { label: 'Workspace', pages: ['dashboard', 'valuation', 'property-quiz', 'agent'] },
+    { label: 'Workspace', pages: ['dashboard', 'messages', 'valuation', 'property-quiz', 'agent'] },
     { label: 'Tools', pages: ['property-optimizer', 'learn', 'buyer-dashboard'] },
 ];
 
@@ -144,10 +159,19 @@ export default function UserPortalLayout({
     pageHeader,
     children,
 }: UserPortalLayoutProps) {
+    const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
     const links = getUserPortalLinks(portal);
     const activeLabel = links.find((l) => l.page === activePage)?.label ?? 'Dashboard';
     const portalLabel = getUserPortalLabel(portal);
+    const { loading: onboardingLoading, required: onboardingRequired } = useOnboardingGate();
+    const quizEscape = isQuizEscapePath(pathname);
+    const { loading: leadGateLoading, needsQuiz } = useLeadGate({
+        skip: onboardingLoading || onboardingRequired || quizEscape || !user,
+    });
+    const showQuizGate = Boolean(
+        user && !quizEscape && !onboardingLoading && !onboardingRequired && !leadGateLoading && needsQuiz
+    );
 
     useEffect(() => {
         if (!mobileOpen) return;
@@ -172,7 +196,7 @@ export default function UserPortalLayout({
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${PORTAL_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${PORTAL_SHELL_DIVIDER} shrink-0`}>
-                    <BrandLogo />
+                    <BrandLogo tone="dark" />
                     <p className={PORTAL_SHELL_SUBTITLE}>{portalLabel}</p>
                 </div>
                 <div className={PORTAL_SHELL_NAV_SCROLL}>
@@ -211,7 +235,7 @@ export default function UserPortalLayout({
                     aria-label="Navigation menu"
                 >
                     <div className={`flex items-center justify-between px-5 py-4 border-b ${PORTAL_SHELL_DIVIDER} shrink-0`}>
-                        <BrandLogo size="sm" onClick={() => setMobileOpen(false)} />
+                        <BrandLogo tone="dark" size="sm" onClick={() => setMobileOpen(false)} />
                         <button
                             type="button"
                             onClick={() => setMobileOpen(false)}
@@ -292,6 +316,8 @@ export default function UserPortalLayout({
                 )}
                 <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">{children}</div>
             </main>
+
+            <LeadRequiredGate open={showQuizGate} />
         </div>
     );
 }

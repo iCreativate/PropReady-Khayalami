@@ -20,9 +20,7 @@ import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
-import { useLeadGate } from '@/hooks/useLeadGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
-import LeadRequiredGate from '@/components/onboarding/LeadRequiredGate';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 import PortalLoading from '@/components/PortalLoading';
 import PropReadyScoreCard from '@/components/PropReadyScoreCard';
@@ -176,9 +174,6 @@ export default function DashboardPage() {
         user: onboardingUser,
         completeOnboarding,
     } = useOnboardingGate();
-    const { loading: leadGateLoading, needsQuiz } = useLeadGate({
-        skip: onboardingLoading || onboardingRequired,
-    });
     const [selectedOriginator, setSelectedOriginator] = useState<BondOriginator | null>(null);
     const [quizResult, setQuizResult] = useState<ReturnType<typeof readQuizSummary> | null>(null);
     const [sellerInfo, setSellerInfo] = useState<any>(null);
@@ -750,16 +745,6 @@ export default function DashboardPage() {
                     </div>
                 </div>
             )}
-
-            <LeadRequiredGate
-                open={Boolean(
-                    !onboardingLoading &&
-                        !onboardingRequired &&
-                        !leadGateLoading &&
-                        needsQuiz &&
-                        currentUser
-                )}
-            />
 
             <OnboardingGateModal
                 open={Boolean(onboardingRequired && onboardingIntent === 'buyer' && onboardingUser)}

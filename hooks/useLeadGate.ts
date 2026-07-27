@@ -36,8 +36,8 @@ function hasLocalSellerInfo(): boolean {
 }
 
 /**
- * Soft gate: after login, consumers without any lead (and without local quiz data)
- * should finish Get Started. Skips when onboarding intent quiz forms already handle it.
+ * Compulsory quiz gate: signed-in consumers without buyer/seller lead (and without
+ * local quiz data) must complete Get Started before using the portal.
  */
 export function useLeadGate(options?: { skip?: boolean }) {
     const skip = Boolean(options?.skip);

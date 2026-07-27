@@ -11,7 +11,9 @@ import {
 const PROTECTED_PREFIXES = [
     '/dashboard',
     '/sellers/dashboard',
+    '/sellers/messages',
     '/agents/dashboard',
+    '/agents/messages',
     '/agents/my-leads',
     '/agents/properties',
     '/agents/viewings',
@@ -20,6 +22,7 @@ const PROTECTED_PREFIXES = [
     '/agents/verification',
     '/agents/learn',
     '/originators/dashboard',
+    '/originators/messages',
     '/originators/cases',
     '/originators/settings',
 ];

@@ -9,13 +9,13 @@ interface LeadRequiredGateProps {
     open: boolean;
 }
 
-/** Blocking prompt when a signed-in consumer has no buyer/seller lead yet. */
+/** Blocking prompt when a signed-in consumer has never completed a quiz. No dismiss. */
 export default function LeadRequiredGate({ open }: LeadRequiredGateProps) {
     return (
         <OnboardingGateModal
             open={open}
             title="Complete a short quiz first"
-            subtitle="Your answers power your PropReady score or listing details, and become a lead for verified agents."
+            subtitle="First-time users must finish a buyer or seller quiz before using the portal. Your answers power your PropReady score or listing details, and become a lead for verified agents."
         >
             <div className="space-y-3">
                 <Link
@@ -34,12 +34,6 @@ export default function LeadRequiredGate({ open }: LeadRequiredGateProps) {
                     I&apos;m selling
                     <ArrowRight className="w-4 h-4" />
                 </Link>
-                <p className="text-center text-xs text-charcoal/45 pt-2">
-                    Or open{' '}
-                    <Link href="/get-started?resume=1" className="text-gold font-medium hover:underline">
-                        Get Started
-                    </Link>
-                </p>
             </div>
         </OnboardingGateModal>
     );

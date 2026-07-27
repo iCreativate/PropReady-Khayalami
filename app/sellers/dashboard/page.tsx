@@ -13,9 +13,7 @@ import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
 import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_SEARCH_INPUT } from '@/lib/portal-ui';
 import PortalLoading from '@/components/PortalLoading';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
-import { useLeadGate } from '@/hooks/useLeadGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
-import LeadRequiredGate from '@/components/onboarding/LeadRequiredGate';
 import SellerPropertyOnboardingForm from '@/components/onboarding/SellerPropertyOnboardingForm';
 
 interface Agent {
@@ -46,9 +44,6 @@ export default function SellerDashboardPage() {
         user: onboardingUser,
         completeOnboarding,
     } = useOnboardingGate();
-    const { loading: leadGateLoading, needsQuiz } = useLeadGate({
-        skip: onboardingLoading || onboardingRequired,
-    });
     const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id: string } | null>(null);
     const [sellerInfo, setSellerInfo] = useState<any>(null);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
@@ -686,16 +681,6 @@ export default function SellerDashboardPage() {
                     </div>
                 </div>
             )}
-
-            <LeadRequiredGate
-                open={Boolean(
-                    !onboardingLoading &&
-                        !onboardingRequired &&
-                        !leadGateLoading &&
-                        needsQuiz &&
-                        currentUser
-                )}
-            />
 
             <OnboardingGateModal
                 open={Boolean(onboardingRequired && onboardingIntent === 'seller' && onboardingUser)}

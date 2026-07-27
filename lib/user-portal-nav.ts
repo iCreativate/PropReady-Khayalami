@@ -9,6 +9,7 @@ import {
     FileText,
     Home,
     LayoutDashboard,
+    MessageSquare,
     Search,
     Sparkles,
     Users,
@@ -18,6 +19,7 @@ export type UserPortalKind = 'buyer' | 'seller';
 
 export type BuyerPortalPage =
     | 'dashboard'
+    | 'messages'
     | 'properties'
     | 'viewings'
     | 'documents'
@@ -30,6 +32,7 @@ export type BuyerPortalPage =
 
 export type SellerPortalPage =
     | 'dashboard'
+    | 'messages'
     | 'valuation'
     | 'property-quiz'
     | 'property-optimizer'
@@ -50,6 +53,7 @@ export interface UserPortalNavLink {
 
 export const BUYER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'dashboard', href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { page: 'messages', href: '/dashboard/messages', label: 'Messages', icon: MessageSquare },
     { page: 'properties', href: '/search', label: 'Properties', icon: Search },
     { page: 'viewings', href: '/dashboard/viewings', label: 'Viewings', icon: Calendar },
     {
@@ -69,6 +73,7 @@ export const BUYER_PORTAL_LINKS: UserPortalNavLink[] = [
 
 export const SELLER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'dashboard', href: '/sellers/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { page: 'messages', href: '/sellers/messages', label: 'Messages', icon: MessageSquare },
     { page: 'valuation', href: '/sellers/valuation', label: 'Property Valuation', icon: DollarSign },
     { page: 'property-quiz', href: '/sellers/property-quiz', label: 'List Property', icon: Building2 },
     { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },

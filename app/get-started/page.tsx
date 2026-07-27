@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Home, KeyRound, ArrowRight } from 'lucide-react';
 import PublicSiteHeader from '@/components/PublicSiteHeader';
-import { PORTAL_SECONDARY_BTN, PORTAL_TEXT_SECONDARY } from '@/lib/portal-ui';
+import { PORTAL_TEXT_SECONDARY } from '@/lib/portal-ui';
 
 function GetStartedContent() {
     const searchParams = useSearchParams();
@@ -77,14 +77,6 @@ function GetStartedContent() {
                             Sign in
                         </Link>
                     </p>
-
-                    {!resume ? (
-                        <div className="mt-6">
-                            <Link href="/learn" className={PORTAL_SECONDARY_BTN}>
-                                Explore Learner Hub
-                            </Link>
-                        </div>
-                    ) : null}
                 </div>
 
                 <div className="absolute inset-0 opacity-5 pointer-events-none" aria-hidden>

@@ -4,10 +4,12 @@ import { BUYER_PORTAL_LINKS, SELLER_PORTAL_LINKS } from '@/lib/user-portal-nav';
 /** Routes that always use the portal sidebar (login required). */
 export const USER_PORTAL_ALWAYS_FOOTER_ROUTES = new Set([
     '/dashboard',
+    '/dashboard/messages',
     '/dashboard/viewings',
     '/dashboard/documents',
     '/dashboard/property-optimizer',
     '/sellers/dashboard',
+    '/sellers/messages',
 ]);
 
 export const USER_PORTAL_ROUTES = new Set([

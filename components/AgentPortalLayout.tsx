@@ -13,6 +13,7 @@ import {
     CreditCard,
     BookOpen,
     Settings,
+    MessageSquare,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
@@ -44,6 +45,7 @@ import { signOutClient } from '@/lib/auth-signout';
 
 export type AgentPortalPage =
     | 'dashboard'
+    | 'messages'
     | 'my-leads'
     | 'properties'
     | 'viewings'
@@ -78,6 +80,7 @@ const SIDEBAR_LINKS: {
     icon: typeof LayoutDashboard;
 }[] = [
     { page: 'dashboard', href: '/agents/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { page: 'messages', href: '/agents/messages', label: 'Messages', icon: MessageSquare },
     { page: 'my-leads', href: '/agents/my-leads', label: 'My Leads', icon: Users },
     { page: 'properties', href: '/agents/properties', label: 'Properties', icon: Building2 },
     { page: 'viewings', href: '/agents/viewings', label: 'Viewings', icon: Calendar },
@@ -88,7 +91,7 @@ const SIDEBAR_LINKS: {
 
 /** Visual groups only — link order unchanged */
 const NAV_GROUPS: { label: string; pages: AgentPortalPage[] }[] = [
-    { label: 'Workspace', pages: ['dashboard', 'my-leads', 'properties', 'viewings'] },
+    { label: 'Workspace', pages: ['dashboard', 'messages', 'my-leads', 'properties', 'viewings'] },
     { label: 'Account', pages: ['plan', 'learn', 'settings'] },
 ];
 
@@ -168,7 +171,7 @@ export default function AgentPortalLayout({
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${AGENT_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${AGENT_SHELL_DIVIDER} shrink-0`}>
-                    <BrandLogo />
+                    <BrandLogo tone="dark" />
                     <p className={AGENT_SHELL_SUBTITLE}>Agent portal</p>
                 </div>
                 <div className={AGENT_SHELL_NAV_SCROLL}>
@@ -199,7 +202,7 @@ export default function AgentPortalLayout({
                     aria-label="Navigation menu"
                 >
                     <div className={`flex items-center justify-between px-5 py-4 border-b ${AGENT_SHELL_DIVIDER} shrink-0`}>
-                        <BrandLogo size="sm" onClick={() => setMobileOpen(false)} />
+                        <BrandLogo tone="dark" size="sm" onClick={() => setMobileOpen(false)} />
                         <button
                             type="button"
                             onClick={() => setMobileOpen(false)}
