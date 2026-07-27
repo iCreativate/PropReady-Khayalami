@@ -204,8 +204,8 @@ export default function AuthLoginClient() {
             <OAuthButtons accountType="user" />
             <p className="text-center text-sm text-charcoal/55 mt-8">
                 New here?{' '}
-                <Link href="/auth/register" className="text-gold font-medium hover:underline">
-                    Create account
+                <Link href="/get-started" className="text-gold font-medium hover:underline">
+                    Get started with a quiz
                 </Link>
             </p>
             <p className="text-center text-xs text-charcoal/40 mt-4 space-x-3">

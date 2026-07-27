@@ -1,12 +1,27 @@
 import { Resend } from 'resend';
 
 function getResend() {
-    if (!process.env.RESEND_API_KEY) return null;
+    const key = process.env.RESEND_API_KEY?.trim();
+    if (!key) return null;
     try {
-        return new Resend(process.env.RESEND_API_KEY);
+        return new Resend(key);
     } catch {
         return null;
     }
+}
+
+function friendlyResendError(message: string): string {
+    const m = message || '';
+    if (/testing email|domains like|only send.*your own/i.test(m)) {
+        return 'Email provider is in test mode. Verify your domain in Resend, or send only to the Resend account email.';
+    }
+    if (/not verified|unverified|domain/i.test(m)) {
+        return 'Sending domain is not verified in Resend. Verify the domain used in RESEND_FROM_EMAIL, then try again.';
+    }
+    if (/invalid.*from|from.*field/i.test(m)) {
+        return 'RESEND_FROM_EMAIL is invalid. Use a verified sender like PropReady <noreply@your-domain.com>.';
+    }
+    return m || 'Failed to send verification email';
 }
 
 export async function sendVerificationEmail(
@@ -16,10 +31,11 @@ export async function sendVerificationEmail(
 ): Promise<{ ok: boolean; error?: string }> {
     const resend = getResend();
     if (!resend) {
-        return { ok: false, error: 'RESEND_API_KEY not configured' };
+        return { ok: false, error: 'RESEND_API_KEY not configured on the server' };
     }
 
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'PropReady <onboarding@resend.dev>';
+    const fromEmail =
+        process.env.RESEND_FROM_EMAIL?.trim() || 'PropReady <onboarding@resend.dev>';
     const greeting = fullName ? `Hi ${fullName},` : 'Hi there,';
 
     const html = `
@@ -43,15 +59,24 @@ export async function sendVerificationEmail(
 </body>
 </html>`;
 
-    const { error } = await resend.emails.send({
-        from: fromEmail,
-        to: email,
-        subject: 'Verify your PropReady account',
-        html,
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: fromEmail,
+            to: email,
+            subject: 'Verify your PropReady account',
+            html,
+        });
 
-    if (error) {
-        return { ok: false, error: error.message };
+        if (error) {
+            console.error('Resend verification email error:', error);
+            return { ok: false, error: friendlyResendError(error.message || String(error)) };
+        }
+
+        console.info('Verification email sent', { to: email, id: data?.id });
+        return { ok: true };
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to send verification email';
+        console.error('Resend verification email threw:', err);
+        return { ok: false, error: friendlyResendError(message) };
     }
-    return { ok: true };
 }

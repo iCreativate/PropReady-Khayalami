@@ -133,12 +133,13 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                         </h3>
                         <ul className="space-y-3">
                             {[
+                                { href: '/get-started', label: 'Get Started' },
                                 { href: '/learn', label: 'Learning Center - Buyers' },
                                 { href: '/learn/investors', label: 'Learning Center - Investors' },
                                 { href: '/sellers', label: 'For Sellers' },
                                 { href: '/search', label: 'Properties' },
                                 { href: '/calculator', label: 'Bond Calculator' },
-                                { href: '/dashboard', label: 'Dashboard' },
+                                { href: '/auth/login', label: 'Sign in' },
                             ].map(({ href, label }) => (
                                 <li key={href}>
                                     <Link
@@ -161,7 +162,8 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 { href: '/learn', label: 'Home Buying Guide' },
                                 { href: '/sellers', label: 'Selling Guide' },
                                 { href: '/calculator', label: 'Transfer Costs' },
-                                { href: '/quiz', label: 'PropReady Quiz' },
+                                { href: '/get-started', label: 'Get Started' },
+                                { href: '/quiz', label: 'Buyer Quiz' },
                                 { href: '/popi', label: 'POPI Act' },
                             ].map(({ href, label }) => (
                                 <li key={label}>

@@ -29,9 +29,10 @@ interface PublicSiteHeaderProps {
 }
 
 const DEFAULT_MOBILE: PublicNavLink[] = [
+    { href: '/get-started', label: 'Get Started', isButton: true },
     { href: '/learn', label: 'Learning Center - Buyers' },
     { href: '/learn/investors', label: 'Learning Center - Investors' },
-    { href: '/sellers', label: 'For Sellers', isButton: true },
+    { href: '/sellers', label: 'For Sellers' },
     { href: '/search', label: 'Properties' },
     { href: '/calculator', label: 'Bond Calculator' },
     { href: '/dashboard', label: 'Dashboard' },
@@ -77,7 +78,10 @@ export default function PublicSiteHeader({
                 {showDesktopNav ? (
                     <div className="hidden md:flex items-center gap-6 lg:gap-8">
                         <LearningCenterDropdown />
-                        <Link href="/sellers" className={PORTAL_PRIMARY_BTN}>
+                        <Link href="/get-started" className={PORTAL_PRIMARY_BTN}>
+                            Get Started
+                        </Link>
+                        <Link href="/sellers" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition">
                             For Sellers
                         </Link>
                         <Link
@@ -93,10 +97,10 @@ export default function PublicSiteHeader({
                             Bond Calculator
                         </Link>
                         <Link
-                            href="/dashboard"
+                            href="/auth/login"
                             className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
                         >
-                            Dashboard
+                            Sign in
                         </Link>
                         <Link href="/agents/login" className={PORTAL_SECONDARY_BTN}>
                             Agent Login

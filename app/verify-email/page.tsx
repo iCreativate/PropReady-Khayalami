@@ -11,17 +11,22 @@ function VerifyEmailForm() {
     const searchParams = useSearchParams();
     const emailParam = searchParams.get('email') || '';
     const typeParam = parseAccountType(searchParams.get('type'));
+    const emailErrorParam = searchParams.get('emailError') || '';
 
     const [email, setEmail] = useState(emailParam);
     const [code, setCode] = useState('');
-    const [error, setError] = useState('');
+    const [error, setError] = useState(emailErrorParam);
     const [success, setSuccess] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [isResending, setIsResending] = useState(false);
     const [resendMessage, setResendMessage] = useState('');
 
     const loginPath =
-        typeParam === 'agent' ? '/agents/login' : typeParam === 'originator' ? '/originators/login' : '/login';
+        typeParam === 'agent'
+            ? '/agents/login'
+            : typeParam === 'originator'
+              ? '/originators/login'
+              : '/auth/login';
 
     const markLocalVerified = () => {
         if (typeof window === 'undefined' || !email) return;

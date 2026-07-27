@@ -246,8 +246,9 @@ export default function SellersQuizPage() {
             localStorage.setItem('propReady_sellers', JSON.stringify(filteredSellers));
 
             if (isNewAccount) {
+                let emailWarning = '';
                 try {
-                    await fetch('/api/auth/send-verification', {
+                    const verifyRes = await fetch('/api/auth/send-verification', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -256,10 +257,22 @@ export default function SellersQuizPage() {
                             fullName: formData.fullName,
                         }),
                     });
+                    const verifyJson = await verifyRes.json().catch(() => ({}));
+                    if (!verifyRes.ok || !verifyJson.success) {
+                        emailWarning = String(
+                            verifyJson.error ||
+                                'Could not send verification email. Use Resend on the next page.'
+                        );
+                    }
                 } catch {
-                    /* non-blocking */
+                    emailWarning = 'Could not send verification email. Use Resend on the next page.';
                 }
-                router.push(`/verify-email?email=${encodeURIComponent(formData.email)}&type=user`);
+                const emailQs = emailWarning
+                    ? `&emailError=${encodeURIComponent(emailWarning)}`
+                    : '';
+                router.push(
+                    `/verify-email?email=${encodeURIComponent(formData.email)}&type=user${emailQs}`
+                );
                 return;
             }
 
@@ -746,7 +759,7 @@ export default function SellersQuizPage() {
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
                         <h2 className="text-2xl font-bold text-charcoal mb-6">Create Your Account</h2>
                         <p className="text-charcoal/60 mb-6 text-center">
-                            Create an account to access your seller dashboard and manage your property listing
+                            Set a password, then verify your email and sign in to manage your listing
                         </p>
 
                         <div className="premium-card rounded-xl p-6">
@@ -823,7 +836,7 @@ export default function SellersQuizPage() {
                         <h2 className="text-3xl font-bold text-charcoal mb-4">You&apos;re All Set!</h2>
 
                         <p className="text-xl text-charcoal/70 mb-8">
-                            Your account has been created. Access your dashboard to manage your property listing and connect with verified agents.
+                            Next: verify your email, then sign in to manage your listing and connect with verified agents.
                         </p>
 
                         <div className="premium-card rounded-xl p-6 text-left max-w-md mx-auto bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">

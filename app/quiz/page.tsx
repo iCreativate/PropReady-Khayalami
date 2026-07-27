@@ -414,6 +414,7 @@ export default function QuizPage() {
         // Calculate score and prequal amount based on user data
         const score = calculatePropReadyScore();
         const preQualAmount = calculatePreQualAmount();
+        let emailWarning = '';
 
         // Store result in localStorage to simulate persistence
         if (typeof window !== 'undefined') {
@@ -464,7 +465,7 @@ export default function QuizPage() {
 
             // Send email verification code (required before sign-in)
             try {
-                await fetch('/api/auth/send-verification', {
+                const verifyRes = await fetch('/api/auth/send-verification', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -473,7 +474,15 @@ export default function QuizPage() {
                         fullName: formData.fullName,
                     }),
                 });
+                const verifyJson = await verifyRes.json().catch(() => ({}));
+                if (!verifyRes.ok || !verifyJson.success) {
+                    emailWarning = String(
+                        verifyJson.error || 'Could not send verification email. Use Resend on the next page.'
+                    );
+                    console.error('Verification email failed:', emailWarning);
+                }
             } catch (err) {
+                emailWarning = 'Could not send verification email. Use Resend on the next page.';
                 console.error('Error sending verification email:', err);
             }
 
@@ -511,7 +520,12 @@ export default function QuizPage() {
 
         }
 
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}&type=user`);
+        const emailQs = emailWarning
+            ? `&emailError=${encodeURIComponent(emailWarning)}`
+            : '';
+        router.push(
+            `/verify-email?email=${encodeURIComponent(formData.email)}&type=user${emailQs}`
+        );
     };
 
     // Render step content based on currentStep
@@ -901,7 +915,7 @@ export default function QuizPage() {
                         <h2 className="text-3xl font-bold text-charcoal mb-4">Create Your Account</h2>
 
                         <p className="text-xl text-charcoal/70 mb-8">
-                            Create a secure account to access your PropReady dashboard and track your home buying journey.
+                            Set a password, then verify your email and sign in to track your home buying journey.
                         </p>
 
                         <div className="premium-card rounded-xl p-6 text-left max-w-md mx-auto">

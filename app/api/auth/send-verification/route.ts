@@ -16,21 +16,35 @@ export async function POST(request: NextRequest) {
 
         const type = parseAccountType(accountType);
         const code = generateVerificationCode();
-        await saveVerificationCode(email, type, code);
+        const saved = await saveVerificationCode(email, type, code);
+
+        if (!saved.ok) {
+            console.error('send-verification store failed:', saved.error);
+            return NextResponse.json(
+                { success: false, error: saved.error || 'Could not save verification code' },
+                { status: 503 }
+            );
+        }
 
         const sent = await sendVerificationEmail(email, code, fullName);
 
         if (!sent.ok) {
+            console.error('send-verification email failed:', sent.error);
             if (process.env.NODE_ENV === 'development') {
                 return NextResponse.json({
                     success: true,
                     message: 'Verification code generated (email not sent — check server logs)',
+                    warning: sent.error,
                     devCode: code,
                 });
             }
             return NextResponse.json(
-                { success: false, error: sent.error || 'Failed to send verification email' },
-                { status: 500 }
+                {
+                    success: false,
+                    error: sent.error || 'Failed to send verification email',
+                    codeSaved: true,
+                },
+                { status: 502 }
             );
         }
 

@@ -238,7 +238,7 @@ export default function LearnPage() {
                             <p className="text-charcoal/60 mb-8 max-w-xl mx-auto">
                                 Take our quick quiz to get pre-qualified and see your property matches.
                             </p>
-                            <Link href="/quiz" className={PORTAL_MARKETING_CTA}>
+                            <Link href="/get-started" className={PORTAL_MARKETING_CTA}>
                                 <span>Get Started Now</span>
                                 <ArrowLeft className="w-5 h-5 rotate-180" />
                             </Link>

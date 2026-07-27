@@ -32,12 +32,24 @@ export default function HomePage() {
                         property market. Connect with verified agents and find your dream home.
                     </p>
 
-                    <Link href="/learn" className={PORTAL_MARKETING_CTA}>
-                        <span>Explore Learner Hub</span>
-                        <ArrowRight className="w-5 h-5" />
-                    </Link>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+                        <Link href="/get-started" className={PORTAL_MARKETING_CTA}>
+                            <span>Get started</span>
+                            <ArrowRight className="w-5 h-5" />
+                        </Link>
+                        <Link
+                            href="/learn"
+                            className="inline-flex items-center gap-2 text-charcoal/70 font-medium hover:text-gold transition"
+                        >
+                            Explore Learner Hub
+                            <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
+                    <p className={`text-sm ${PORTAL_TEXT_SECONDARY} mb-12`}>
+                        New buyers and sellers start with a short quiz — then create your account.
+                    </p>
 
-                    <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                         {[
                             {
                                 icon: ShieldCheck,

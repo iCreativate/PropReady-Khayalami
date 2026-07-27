@@ -1,17 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase-admin';
 import { profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 
 export type AccountType = 'user' | 'agent' | 'originator';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    '';
-
 const OTP_TTL_MS = 15 * 60 * 1000; // 15 minutes
 
-/** Dev-only in-memory fallback when Supabase is not configured */
+/** Dev-only in-memory fallback when Supabase service role is not configured */
 const memoryStore = new Map<string, { code: string; expiresAt: number; accountType: AccountType }>();
 
 function storeKey(email: string, accountType: AccountType) {
@@ -26,13 +20,13 @@ export async function saveVerificationCode(
     email: string,
     accountType: AccountType,
     code: string
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string }> {
     const normalizedEmail = email.toLowerCase().trim();
     const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
     const key = storeKey(normalizedEmail, accountType);
 
-    if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createServiceClient();
+    if (supabase) {
         const { error } = await supabase.from('email_verification_codes').upsert(
             {
                 email: normalizedEmail,
@@ -42,15 +36,29 @@ export async function saveVerificationCode(
             },
             { onConflict: 'email,account_type' }
         );
-        if (!error) return;
-        console.warn('Supabase verification store failed, using memory fallback:', error.message);
+        if (!error) return { ok: true };
+        console.error('Supabase verification store failed:', error);
+        return {
+            ok: false,
+            error:
+                error.message ||
+                'Could not save verification code. Check email_verification_codes table and SUPABASE_SERVICE_ROLE_KEY.',
+        };
     }
 
-    memoryStore.set(key, {
-        code,
-        expiresAt: Date.now() + OTP_TTL_MS,
-        accountType,
-    });
+    if (process.env.NODE_ENV === 'development') {
+        memoryStore.set(key, {
+            code,
+            expiresAt: Date.now() + OTP_TTL_MS,
+            accountType,
+        });
+        return { ok: true };
+    }
+
+    return {
+        ok: false,
+        error: 'Database not configured. Set SUPABASE_SERVICE_ROLE_KEY on Netlify.',
+    };
 }
 
 export async function verifyCode(
@@ -61,8 +69,8 @@ export async function verifyCode(
     const normalizedEmail = email.toLowerCase().trim();
     const key = storeKey(normalizedEmail, accountType);
 
-    if (supabaseUrl && supabaseKey) {
-        const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createServiceClient();
+    if (supabase) {
         const { data, error } = await supabase
             .from('email_verification_codes')
             .select('code, expires_at')
@@ -80,6 +88,9 @@ export async function verifyCode(
                 .eq('account_type', accountType);
             return true;
         }
+        if (error) {
+            console.error('Supabase verifyCode error:', error);
+        }
     }
 
     const entry = memoryStore.get(key);
@@ -95,12 +106,10 @@ export async function verifyCode(
 
 export async function markEmailVerified(email: string, accountType: AccountType): Promise<void> {
     const normalizedEmail = email.toLowerCase().trim();
+    const supabase = createServiceClient();
+    if (!supabase) return;
 
-    if (!supabaseUrl || !supabaseKey) return;
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const table = profileTableForAccountType(accountType);
-
     await supabase
         .from(table)
         .update({ email_verified: true, updated_at: new Date().toISOString() })
@@ -112,12 +121,10 @@ export async function isEmailVerified(
     accountType: AccountType
 ): Promise<boolean | null> {
     const normalizedEmail = email.toLowerCase().trim();
+    const supabase = createServiceClient();
+    if (!supabase) return null;
 
-    if (!supabaseUrl || !supabaseKey) return null;
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
     const table = profileTableForAccountType(accountType);
-
     const { data, error } = await supabase
         .from(table)
         .select('email_verified')
