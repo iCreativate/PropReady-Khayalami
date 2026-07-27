@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
-import { Menu, X, Home } from 'lucide-react';
-import { PORTAL_ICON_BTN, PORTAL_ICON_LOGO, PORTAL_PRIMARY_BTN } from '@/lib/portal-ui';
+import { Menu, X } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
+import { PORTAL_ICON_BTN, PORTAL_PRIMARY_BTN } from '@/lib/portal-ui';
 
 interface MobileNavProps {
     links: Array<{
@@ -62,12 +63,7 @@ export default function MobileNav({ links }: MobileNavProps) {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="sticky top-0 bg-white border-b border-charcoal/[0.06] px-5 py-4 flex items-center justify-between z-10">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-9 h-9 bg-gold rounded-lg flex items-center justify-center shadow-sm">
-                                        <Home className={`${PORTAL_ICON_LOGO} text-white !w-5 !h-5`} />
-                                    </div>
-                                    <span className="text-charcoal text-lg font-bold">PropReady</span>
-                                </div>
+                                <BrandLogo href="/" size="sm" onClick={closeMenu} />
                                 <button
                                     onClick={closeMenu}
                                     className={PORTAL_ICON_BTN}

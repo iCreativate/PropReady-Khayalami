@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-    Home,
     LogOut,
     Menu,
     X,
@@ -15,14 +14,11 @@ import {
     BookOpen,
     Settings,
 } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
 import {
     AGENT_PAGE_CONTAINER,
     AGENT_PAGE_HEADER_BAND,
-    AGENT_LOGO_MARK,
-    AGENT_LOGO_MARK_SM,
-    AGENT_ICON_LOGO,
-    AGENT_ICON_LOGO_SM,
     AGENT_SECONDARY_BTN,
     AGENT_ICON_BTN,
     AGENT_SHELL_SIDEBAR,
@@ -30,8 +26,6 @@ import {
     AGENT_SHELL_CONTENT,
     AGENT_SHELL_TOPBAR,
     AGENT_SHELL_DIVIDER,
-    AGENT_SHELL_BRAND,
-    AGENT_SHELL_BRAND_SM,
     AGENT_SHELL_SUBTITLE,
     AGENT_SHELL_ICON_BTN,
     AGENT_SHELL_NAV,
@@ -173,12 +167,7 @@ export default function AgentPortalLayout({
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 ${AGENT_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${AGENT_SHELL_DIVIDER} shrink-0`}>
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className={AGENT_LOGO_MARK}>
-                            <Home className={`${AGENT_ICON_LOGO} text-white`} />
-                        </div>
-                        <span className={AGENT_SHELL_BRAND}>PropReady</span>
-                    </Link>
+                    <BrandLogo />
                     <p className={AGENT_SHELL_SUBTITLE}>Agent portal</p>
                 </div>
                 <div className={AGENT_SHELL_NAV_SCROLL}>
@@ -209,12 +198,7 @@ export default function AgentPortalLayout({
                     aria-label="Navigation menu"
                 >
                     <div className={`flex items-center justify-between px-5 py-4 border-b ${AGENT_SHELL_DIVIDER} shrink-0`}>
-                        <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                            <div className={AGENT_LOGO_MARK_SM}>
-                                <Home className={`${AGENT_ICON_LOGO_SM} text-white`} />
-                            </div>
-                            <span className={AGENT_SHELL_BRAND_SM}>PropReady</span>
-                        </Link>
+                        <BrandLogo size="sm" onClick={() => setMobileOpen(false)} />
                         <button
                             type="button"
                             onClick={() => setMobileOpen(false)}

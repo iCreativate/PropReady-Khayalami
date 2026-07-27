@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
 import { getLocationFromBrowser } from '@/lib/geolocation';
@@ -1283,12 +1284,7 @@ export default function QuizPage() {
                         <span>Back to Home</span>
                     </Link>
 
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
-                    </div>
+                    <BrandLogo />
                 </nav>
             </header>
 

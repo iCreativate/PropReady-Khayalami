@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
 import Link from 'next/link';
+import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Calendar, TrendingUp, DollarSign, MapPin, Home as HomeIcon, Mail, Phone, User, Lock, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, AlertCircle, Building2, Calendar, TrendingUp, DollarSign, MapPin, Home as HomeIcon, Mail, Phone, User, Lock, Eye, EyeOff } from 'lucide-react';
 import { getLocationFromBrowser } from '@/lib/geolocation';
 import { formatCurrency, formatNumber, parseAmountForDisplay } from '@/lib/currency';
 
@@ -873,12 +874,7 @@ export default function SellersQuizPage() {
                         <span>Back to Sellers Hub</span>
                     </Link>
 
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
-                    </div>
+                    <BrandLogo />
                 </nav>
             </header>
 

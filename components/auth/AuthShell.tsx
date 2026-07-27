@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BrandLogo from '@/components/BrandLogo';
 
 interface AuthShellProps {
     children: React.ReactNode;
@@ -32,9 +33,7 @@ export default function AuthShell({
                     }}
                 />
                 <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-                    <Link href={homeHref} className="text-2xl font-bold text-white tracking-tight">
-                        Prop<span className="text-gold">Ready</span>
-                    </Link>
+                    <BrandLogo href={homeHref} tone="dark" size="lg" />
                     <div>
                         <p className="text-gold/90 text-sm font-semibold uppercase tracking-[0.2em] mb-4">
                             South Africa&apos;s property platform
@@ -56,9 +55,7 @@ export default function AuthShell({
             <div className="flex-1 flex items-start justify-center p-6 sm:p-10 bg-[#FAFAFA] min-h-screen overflow-y-auto">
                 <div className={`w-full ${wide ? 'max-w-[560px]' : 'max-w-[420px]'} py-4 sm:py-8`}>
                     <div className="lg:hidden mb-8 text-center">
-                        <Link href={homeHref} className="text-2xl font-bold text-charcoal">
-                            Prop<span className="text-gold">Ready</span>
-                        </Link>
+                        <BrandLogo href={homeHref} size="lg" />
                     </div>
                     <div className="auth-card">
                         <h2 className="text-2xl font-bold text-charcoal mb-1">{title}</h2>

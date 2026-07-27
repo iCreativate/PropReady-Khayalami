@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { BadgeCheck, Building2, Shield } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 
 type ProfessionalRole = 'agent' | 'originator';
 
@@ -71,9 +72,7 @@ export default function ProfessionalAuthShell({
                     }}
                 />
                 <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
-                    <Link href={copy.homeHref} className="text-2xl font-semibold text-white tracking-tight">
-                        Prop<span className="text-gold">Ready</span>
-                    </Link>
+                    <BrandLogo href={copy.homeHref} tone="dark" size="lg" />
                     <div>
                         <p className="inline-flex items-center gap-2 text-gold/90 text-xs font-semibold uppercase tracking-[0.18em] mb-5">
                             <Icon className="w-3.5 h-3.5" />
@@ -102,9 +101,7 @@ export default function ProfessionalAuthShell({
             <div className="flex-1 flex items-start justify-center p-6 sm:p-10 min-h-screen overflow-y-auto">
                 <div className={`w-full ${wide ? 'max-w-[560px]' : 'max-w-[440px]'} py-4 sm:py-10`}>
                     <div className="lg:hidden mb-8">
-                        <Link href={copy.homeHref} className="text-2xl font-semibold text-charcoal">
-                            Prop<span className="text-gold">Ready</span>
-                        </Link>
+                        <BrandLogo href={copy.homeHref} size="lg" />
                         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-charcoal/45 mt-2">
                             {copy.badge}
                         </p>

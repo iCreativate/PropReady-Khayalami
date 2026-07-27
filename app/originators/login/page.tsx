@@ -54,7 +54,8 @@ export default function OriginatorLoginPage() {
                 return;
             }
             syncLegacySession(data.user, 'originator');
-            router.push('/originators/dashboard');
+            window.location.assign('/auth/complete?type=originator');
+            return;
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {

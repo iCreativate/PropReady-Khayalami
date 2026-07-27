@@ -72,7 +72,9 @@ export default function AuthLoginClient() {
                 return;
             }
             syncLegacySession(data.user, 'user');
-            router.push('/dashboard');
+            // Full navigation so auth cookies are reliably applied (esp. Capacitor WebView)
+            window.location.assign('/auth/complete?type=user');
+            return;
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {

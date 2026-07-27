@@ -27,8 +27,8 @@ function GooglePlayBadge() {
             <img
                 src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
                 alt="Get it on Google Play"
-                width={155}
-                height={60}
+                width={135}
+                height={40}
                 className="footer-store-badge-img footer-store-badge-img--play"
                 loading="lazy"
             />
@@ -49,8 +49,8 @@ function AppStoreBadge() {
             <img
                 src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
                 alt="Download on the App Store"
-                width={148}
-                height={44}
+                width={135}
+                height={40}
                 className="footer-store-badge-img footer-store-badge-img--apple"
                 loading="lazy"
             />
@@ -64,7 +64,7 @@ function StoreDownloadButtons() {
             <h3 className="text-white font-semibold text-sm uppercase tracking-[0.12em] mb-4">
                 Get the App
             </h3>
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <div className="footer-store-badges">
                 <AppStoreBadge />
                 <GooglePlayBadge />
             </div>

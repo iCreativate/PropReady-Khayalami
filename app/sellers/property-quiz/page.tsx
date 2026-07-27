@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Home, MapPin, Square, FileText, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, MapPin, Square, FileText, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import SellerPortalShell from '@/components/SellerPortalShell';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 
@@ -229,12 +230,7 @@ export default function PropertyQuizPage() {
                     <span>Back to Sellers Hub</span>
                 </Link>
 
-                <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                        <Home className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-charcoal text-xl font-bold">PropReady</span>
-                </div>
+                <BrandLogo />
             </nav>
         </header>
     );

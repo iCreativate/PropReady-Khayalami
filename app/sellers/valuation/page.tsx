@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Search, Filter, Star, Building2, CheckCircle, TrendingUp, MapPin, Phone, Mail, MessageCircle, X, Users, ChevronRight } from 'lucide-react';
 import SellerPortalShell from '@/components/SellerPortalShell';
@@ -144,12 +145,7 @@ export default function ValuationBookingPage() {
                     <span>Back to Sellers Hub</span>
                 </Link>
 
-                <div className="flex items-center space-x-2">
-                    <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                        <Home className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-charcoal text-xl font-bold">PropReady</span>
-                </div>
+                <BrandLogo />
             </nav>
         </header>
     );

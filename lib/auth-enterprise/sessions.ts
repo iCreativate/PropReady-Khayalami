@@ -220,18 +220,8 @@ export async function ensureAuthAccountForProfile(
     const existing = await findAccountByEmail(email, accountType);
     if (existing) return existing;
 
-    const table = profileTableForAccountType(accountType);
-    const { data: profile } = await db()
-        .from(table)
-        .select('password')
-        .eq('id', profileId)
-        .maybeSingle();
-
     const account = await upsertAccountFromProfile(email, accountType, profileId);
-    if (profile?.password && !account.password_hash) {
-        await migrateLegacyPassword({ ...account, password_hash: null }, profile.password);
-    }
-    return findAccountById(account.id) as Promise<AuthAccount>;
+    return (await findAccountById(account.id)) as AuthAccount;
 }
 
 export async function createSession(

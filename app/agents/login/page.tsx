@@ -52,7 +52,8 @@ export default function AgentLoginPage() {
                 return;
             }
             syncLegacySession(data.user, 'agent');
-            router.push('/agents/dashboard');
+            window.location.assign('/auth/complete?type=agent');
+            return;
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {

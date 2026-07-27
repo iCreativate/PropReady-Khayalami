@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Home, LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 import UserProfileCompact from '@/components/UserProfileCompact';
 import {
     getUserPortalLabel,
@@ -13,10 +14,6 @@ import {
 import {
     PORTAL_PAGE_CONTAINER,
     PORTAL_PAGE_HEADER_BAND,
-    PORTAL_LOGO_MARK,
-    PORTAL_LOGO_MARK_SM,
-    PORTAL_ICON_LOGO,
-    PORTAL_ICON_LOGO_SM,
     PORTAL_SECONDARY_BTN,
     PORTAL_ICON_BTN,
     PORTAL_SHELL_SIDEBAR,
@@ -24,8 +21,6 @@ import {
     PORTAL_SHELL_CONTENT,
     PORTAL_SHELL_TOPBAR,
     PORTAL_SHELL_DIVIDER,
-    PORTAL_SHELL_BRAND,
-    PORTAL_SHELL_BRAND_SM,
     PORTAL_SHELL_SUBTITLE,
     PORTAL_SHELL_FOOTER_LINK,
     PORTAL_SHELL_ICON_BTN,
@@ -176,12 +171,7 @@ export default function UserPortalLayout({
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 ${PORTAL_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${PORTAL_SHELL_DIVIDER} shrink-0`}>
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className={PORTAL_LOGO_MARK}>
-                            <Home className={`${PORTAL_ICON_LOGO} text-white`} />
-                        </div>
-                        <span className={PORTAL_SHELL_BRAND}>PropReady</span>
-                    </Link>
+                    <BrandLogo />
                     <p className={PORTAL_SHELL_SUBTITLE}>{portalLabel}</p>
                 </div>
                 <div className={PORTAL_SHELL_NAV_SCROLL}>
@@ -220,12 +210,7 @@ export default function UserPortalLayout({
                     aria-label="Navigation menu"
                 >
                     <div className={`flex items-center justify-between px-5 py-4 border-b ${PORTAL_SHELL_DIVIDER} shrink-0`}>
-                        <Link href="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-                            <div className={PORTAL_LOGO_MARK_SM}>
-                                <Home className={`${PORTAL_ICON_LOGO_SM} text-white`} />
-                            </div>
-                            <span className={PORTAL_SHELL_BRAND_SM}>PropReady</span>
-                        </Link>
+                        <BrandLogo size="sm" onClick={() => setMobileOpen(false)} />
                         <button
                             type="button"
                             onClick={() => setMobileOpen(false)}

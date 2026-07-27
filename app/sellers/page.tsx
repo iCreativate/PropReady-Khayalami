@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import BrandLogo from '@/components/BrandLogo';
 import { createClient } from '@supabase/supabase-js';
 import { ArrowLeft, BookOpen, Home, FileText, TrendingUp, Users, DollarSign, CheckCircle, Target, BarChart3, Calendar, Building2, Scale, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
 
@@ -29,12 +30,7 @@ export default async function SellersHubPage() {
                         <span>Back to Home</span>
                     </Link>
 
-                    <div className="flex items-center space-x-2">
-                        <div className="w-10 h-10 bg-gold rounded-lg flex items-center justify-center">
-                            <Home className="w-6 h-6 text-white" />
-                        </div>
-                        <span className="text-charcoal text-xl font-bold">PropReady</span>
-                    </div>
+                    <BrandLogo />
                 </nav>
             </header>
 

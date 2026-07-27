@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Home, LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 import { bondOriginatorLabel } from '@/lib/bond-originators';
 import { ORIGINATOR_PORTAL_LINKS, type OriginatorPortalPage } from '@/lib/originator-portal-nav';
 import {
-    ORIGINATOR_ICON_LOGO,
-    ORIGINATOR_ICON_LOGO_SM,
-    ORIGINATOR_LOGO_MARK,
-    ORIGINATOR_LOGO_MARK_SM,
     ORIGINATOR_NAV_ICON,
     ORIGINATOR_NAV_ICON_ACTIVE,
     ORIGINATOR_NAV_LABEL,
@@ -19,8 +16,6 @@ import {
     ORIGINATOR_PAGE_CONTAINER,
     ORIGINATOR_PAGE_HEADER_BAND,
     ORIGINATOR_SECONDARY_BTN,
-    ORIGINATOR_SHELL_BRAND,
-    ORIGINATOR_SHELL_BRAND_SM,
     ORIGINATOR_SHELL_CONTENT,
     ORIGINATOR_SHELL_DIVIDER,
     ORIGINATOR_SHELL_ICON_BTN,
@@ -111,12 +106,7 @@ export default function OriginatorPortalLayout({
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 ${ORIGINATOR_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${ORIGINATOR_SHELL_DIVIDER} shrink-0`}>
-                    <Link href="/" className="flex items-center gap-2.5">
-                        <div className={ORIGINATOR_LOGO_MARK}>
-                            <Home className={`${ORIGINATOR_ICON_LOGO} text-white`} />
-                        </div>
-                        <span className={ORIGINATOR_SHELL_BRAND}>PropReady</span>
-                    </Link>
+                    <BrandLogo />
                     <p className={ORIGINATOR_SHELL_SUBTITLE}>Originator portal</p>
                 </div>
                 <div className={ORIGINATOR_SHELL_NAV_SCROLL}>
@@ -141,7 +131,7 @@ export default function OriginatorPortalLayout({
                     } transition-transform`}
                 >
                     <div className={`flex items-center justify-between px-5 py-4 border-b ${ORIGINATOR_SHELL_DIVIDER}`}>
-                        <span className={ORIGINATOR_SHELL_BRAND_SM}>PropReady</span>
+                        <BrandLogo size="sm" onClick={() => setMobileOpen(false)} />
                         <button
                             type="button"
                             onClick={() => setMobileOpen(false)}

@@ -1,13 +1,9 @@
 import Link from 'next/link';
-import { ArrowLeft, Home } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import BrandLogo from '@/components/BrandLogo';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
-import {
-    PORTAL_LOGO_MARK,
-    PORTAL_ICON_LOGO,
-    PORTAL_PRIMARY_BTN,
-    PORTAL_SECONDARY_BTN,
-} from '@/lib/portal-ui';
+import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
 export type PublicNavLink = {
     href: string;
@@ -65,14 +61,7 @@ export default function PublicSiteHeader({
                         </Link>
                     ) : null}
 
-                    {showLogo ? (
-                        <Link href="/" className="flex items-center gap-2 min-w-0">
-                            <div className={PORTAL_LOGO_MARK}>
-                                <Home className={`${PORTAL_ICON_LOGO} text-white`} />
-                            </div>
-                            <span className="text-charcoal text-xl font-bold truncate">PropReady</span>
-                        </Link>
-                    ) : null}
+                    {showLogo ? <BrandLogo /> : null}
                 </div>
 
                 {showDesktopNav ? (

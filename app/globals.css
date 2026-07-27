@@ -2226,9 +2226,20 @@ html.native-shell .auth-shell {
   @apply w-8 h-8 rounded-lg bg-charcoal/[0.05] flex items-center justify-center text-xs font-bold;
 }
 /* ── Footer official store download badges ── */
+.footer-store-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .footer-store-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 135px;
+  height: 40px;
+  overflow: hidden;
   line-height: 0;
   border-radius: 0.5rem;
   transition:
@@ -2253,19 +2264,23 @@ html.native-shell .auth-shell {
 
 .footer-store-badge-img {
   display: block;
-  width: auto;
-  height: 44px;
+  width: 135px;
+  height: 40px;
   object-fit: contain;
+  object-position: center;
 }
 
-/* Google's generic badge includes large transparent padding */
+/* Google's generic badge includes large transparent padding — scale to match Apple visually */
 .footer-store-badge-img--play {
-  height: 64px;
-  margin: -10px -8px -10px -14px;
+  width: 162px;
+  height: 62px;
+  max-width: none;
+  margin: -11px -13.5px;
 }
 
 .footer-store-badge-img--apple {
-  height: 44px;
+  width: 135px;
+  height: 40px;
 }
 
 .footer-play-badge {

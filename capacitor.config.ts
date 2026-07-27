@@ -25,6 +25,12 @@ const config: CapacitorConfig = {
             '*.propready.live',
             'prop-ready.co.za',
             '*.prop-ready.co.za',
+            // Keep Google / Apple OAuth inside the WebView (not an external browser)
+            'accounts.google.com',
+            '*.google.com',
+            '*.googleusercontent.com',
+            'appleid.apple.com',
+            'appleid.cdn-apple.com',
             'localhost',
             '127.0.0.1',
             '10.0.2.2',
