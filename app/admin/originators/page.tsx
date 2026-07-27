@@ -90,6 +90,16 @@ export default function AdminOriginatorsPage() {
                 setError(data.error || 'Action failed');
                 return;
             }
+            if (action === 'approve' && data.originator?.staffNumber) {
+                const mailNote = data.emailSent
+                    ? ` Staff number ${data.originator.staffNumber} emailed to ${data.originator.email}.`
+                    : data.emailWarning
+                      ? ` Staff number ${data.originator.staffNumber} assigned (email not sent: ${data.emailWarning}).`
+                      : ` Staff number ${data.originator.staffNumber} assigned.`;
+                setError(''); // clear errors
+                // brief success via selected refresh — surface in error slot as info is fine
+                alert(`Approved.${mailNote}`);
+            }
             setSelected(null);
             await loadApplications();
         } catch {
@@ -264,7 +274,10 @@ export default function AdminOriginatorsPage() {
                                     <div>
                                         <dt className="text-charcoal/45">Staff number</dt>
                                         <dd className="font-mono text-charcoal">
-                                            {selected.staffNumber || '—'}
+                                            {selected.staffNumber ||
+                                                (selected.status === 'pending'
+                                                    ? 'Assigned automatically on approval'
+                                                    : '—')}
                                         </dd>
                                     </div>
                                 </dl>

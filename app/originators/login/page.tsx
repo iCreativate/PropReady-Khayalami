@@ -5,19 +5,28 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Building2, Eye, EyeOff, Hash, Lock, Mail } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
+import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
+import { DEMO_ORIGINATOR_LOGIN_HINT } from '@/lib/demo-originator';
 
 export default function OriginatorLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
-    const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
+    const [organizationId, setOrganizationId] = useState<string>(
+        DEMO_ORIGINATOR_LOGIN_HINT.organizationId || BOND_ORIGINATORS[0]?.id || ''
+    );
     const [staffNumber, setStaffNumber] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [otpChallenge, setOtpChallenge] = useState<{
+        token: string;
+        email: string;
+        devOtp?: string;
+    } | null>(null);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -53,9 +62,15 @@ export default function OriginatorLoginPage() {
                 setError(data.error || 'Invalid credentials');
                 return;
             }
-            syncLegacySession(data.user, 'originator');
-            window.location.assign('/auth/complete?type=originator');
-            return;
+            if (data.needsOtp && data.challengeToken) {
+                setOtpChallenge({
+                    token: data.challengeToken,
+                    email: data.email || email.trim(),
+                    devOtp: data.devOtp,
+                });
+                return;
+            }
+            setError('Unexpected login response. Please try again.');
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {
@@ -63,11 +78,42 @@ export default function OriginatorLoginPage() {
         }
     }
 
+    if (otpChallenge) {
+        return (
+            <ProfessionalAuthShell
+                role="originator"
+                title="Enter login code"
+                subtitle="We emailed a one-time code to confirm it’s you"
+            >
+                <LoginOtpStep
+                    email={otpChallenge.email}
+                    challengeToken={otpChallenge.token}
+                    initialDevOtp={otpChallenge.devOtp}
+                    onChallengeTokenChange={(token) =>
+                        setOtpChallenge((prev) => (prev ? { ...prev, token } : prev))
+                    }
+                    onVerified={(data) => {
+                        syncLegacySession(
+                            data.user as Parameters<typeof syncLegacySession>[0],
+                            'originator'
+                        );
+                        window.location.assign('/auth/complete?type=originator');
+                    }}
+                    onBack={() => setOtpChallenge(null)}
+                    onExpired={() => {
+                        setOtpChallenge(null);
+                        setError('Your login code expired. Please sign in again.');
+                    }}
+                />
+            </ProfessionalAuthShell>
+        );
+    }
+
     return (
         <ProfessionalAuthShell
             role="originator"
             title="Bond originator sign-in"
-            subtitle="Staff login requires organisation, staff number, and PropReady admin approval."
+            subtitle="Organisation, staff number, and password — then a one-time email code to finish sign-in."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -77,8 +123,20 @@ export default function OriginatorLoginPage() {
             ) : null}
 
             <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
-                After you register and verify email, PropReady must approve your staff account before portal
-                access is enabled.
+                After you register and verify email, PropReady must approve your staff account. Your staff number
+                is emailed when you are approved. Every login also requires an email one-time code.
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-gold/30 bg-gold/[0.04] px-4 py-3 text-xs text-charcoal/70 mb-5 leading-relaxed">
+                <p className="font-semibold text-charcoal mb-1">Demo originator (testing)</p>
+                <p className="font-mono text-[11px] break-all">
+                    BetterBond · {DEMO_ORIGINATOR_LOGIN_HINT.staffNumber} · {DEMO_ORIGINATOR_LOGIN_HINT.email} ·{' '}
+                    {DEMO_ORIGINATOR_LOGIN_HINT.password}
+                </p>
+                <p className="mt-1.5 text-charcoal/45">
+                    Seed with <span className="font-mono">npm run seed:demo-originator</span> if the account is
+                    missing.
+                </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -173,14 +231,14 @@ export default function OriginatorLoginPage() {
                 </div>
 
                 <button type="submit" disabled={loading} className="auth-btn-primary w-full mt-2">
-                    {loading ? 'Signing in…' : 'Sign in to originator portal'}
+                    {loading ? 'Sending code…' : 'Continue'}
                 </button>
             </form>
 
             <p className="text-center text-sm text-charcoal/55 mt-8">
                 New staff member?{' '}
                 <Link href="/originators/register" className="text-gold font-medium hover:underline">
-                    Register with staff number
+                    Register as staff
                 </Link>
             </p>
         </ProfessionalAuthShell>

@@ -60,10 +60,26 @@ type Props = {
     displayName: string;
 };
 
+type EligibleContact = {
+    accountType: AccountType;
+    profileId: string;
+    displayName: string;
+    email: string;
+    reason: string;
+    detail?: string;
+};
+
 const ROLE_LABEL: Record<AccountType, string> = {
     user: 'Buyer / Seller',
     agent: 'Agent',
     originator: 'Bond originator',
+};
+
+const EMPTY_COPY: Record<MessagesPortalRole, string> = {
+    buyer: 'No contacts yet. Agents appear after they contact you (e.g. schedule a viewing). Bond originators appear after you start pre-qualification.',
+    seller: 'No contacts yet. Agents appear after they contact you (e.g. schedule a viewing).',
+    agent: 'No clients yet. Buyers and sellers appear here after you schedule a viewing with them.',
+    originator: 'No buyers yet. They appear after they submit a pre-qualification with your organisation.',
 };
 
 function formatTime(iso: string | null) {
@@ -84,6 +100,8 @@ function counterpartLabel(c: Conversation, myProfileId: string) {
 
 export default function MessagesWorkspace({ role, profileId, accountType, displayName }: Props) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
+    const [contacts, setContacts] = useState<EligibleContact[]>([]);
+    const [contactsHint, setContactsHint] = useState<string | null>(null);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loadingList, setLoadingList] = useState(true);
@@ -94,10 +112,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
     const [error, setError] = useState('');
     const [showNew, setShowNew] = useState(false);
     const [showAppt, setShowAppt] = useState(false);
-    const [newEmail, setNewEmail] = useState('');
-    const [newRole, setNewRole] = useState<AccountType>(
-        role === 'agent' || role === 'originator' ? 'user' : 'agent'
-    );
+    const [selectedContactKey, setSelectedContactKey] = useState('');
     const [newSubject, setNewSubject] = useState('');
     const [newMessage, setNewMessage] = useState('');
     const [apptStarts, setApptStarts] = useState('');
@@ -123,6 +138,19 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             );
         });
     }, [conversations, search, profileId]);
+
+    const loadContacts = useCallback(async () => {
+        try {
+            const res = await fetch('/api/messages/contacts', { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load contacts');
+            setContacts(data.contacts || []);
+            setContactsHint(data.emptyHint || null);
+        } catch {
+            setContacts([]);
+            setContactsHint(EMPTY_COPY[role]);
+        }
+    }, [role]);
 
     const loadConversations = useCallback(async () => {
         try {
@@ -162,7 +190,8 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
 
     useEffect(() => {
         void loadConversations();
-    }, [loadConversations]);
+        void loadContacts();
+    }, [loadConversations, loadContacts]);
 
     useEffect(() => {
         if (!activeId) {
@@ -282,6 +311,13 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
 
     async function createConversation(e: React.FormEvent) {
         e.preventDefault();
+        const contact = contacts.find(
+            (c) => `${c.accountType}:${c.profileId}` === selectedContactKey
+        );
+        if (!contact) {
+            setError('Choose a contact to message');
+            return;
+        }
         setSending(true);
         setError('');
         try {
@@ -292,13 +328,19 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 body: JSON.stringify({
                     subject: newSubject.trim() || null,
                     initialMessage: newMessage.trim() || undefined,
-                    participants: [{ accountType: newRole, email: newEmail.trim() }],
+                    participants: [
+                        {
+                            accountType: contact.accountType,
+                            profileId: contact.profileId,
+                            displayName: contact.displayName,
+                        },
+                    ],
                 }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Could not start conversation');
             setShowNew(false);
-            setNewEmail('');
+            setSelectedContactKey('');
             setNewSubject('');
             setNewMessage('');
             await loadConversations();
@@ -386,8 +428,18 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                         <h2 className="text-base font-semibold text-charcoal tracking-tight">Messages</h2>
                         <button
                             type="button"
-                            onClick={() => setShowNew(true)}
+                            onClick={() => {
+                                setError('');
+                                setShowNew(true);
+                                void loadContacts();
+                            }}
                             className={`${PORTAL_PRIMARY_BTN} !h-9 !px-3 !text-xs`}
+                            disabled={contacts.length === 0}
+                            title={
+                                contacts.length === 0
+                                    ? contactsHint || EMPTY_COPY[role]
+                                    : 'Start a conversation'
+                            }
                         >
                             <Plus className="w-4 h-4" />
                             New
@@ -412,7 +464,11 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                         <div className="px-6 py-12 text-center">
                             <MessageSquare className="w-8 h-8 text-charcoal/25 mx-auto mb-3" />
                             <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>
-                                No conversations yet. Start one with an agent, buyer, seller, or originator.
+                                {conversations.length === 0
+                                    ? contacts.length === 0
+                                        ? contactsHint || EMPTY_COPY[role]
+                                        : 'No conversations yet. Start one with a contact from New.'
+                                    : 'No matches for your search.'}
                             </p>
                         </div>
                     ) : (
@@ -678,7 +734,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 )}
             </section>
 
-            {/* New conversation modal */}
+            {/* New conversation modal — eligible contacts only */}
             {showNew ? (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[1px]">
                     <form
@@ -691,58 +747,72 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                 <X className="w-5 h-5 text-charcoal/45" />
                             </button>
                         </div>
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
-                                Participant role
-                            </label>
-                            <select
-                                value={newRole}
-                                onChange={(e) => setNewRole(e.target.value as AccountType)}
-                                className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
-                            >
-                                <option value="user">Buyer / Seller</option>
-                                <option value="agent">Agent</option>
-                                <option value="originator">Bond originator</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
-                                Their email
-                            </label>
-                            <input
-                                type="email"
-                                required
-                                value={newEmail}
-                                onChange={(e) => setNewEmail(e.target.value)}
-                                className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
-                                placeholder="name@example.com"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
-                                Subject (optional)
-                            </label>
-                            <input
-                                value={newSubject}
-                                onChange={(e) => setNewSubject(e.target.value)}
-                                className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
-                                First message (optional)
-                            </label>
-                            <textarea
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                rows={3}
-                                className="w-full rounded-xl border border-charcoal/[0.1] px-3 py-2 text-sm"
-                            />
-                        </div>
-                        {error ? <p className="text-xs text-red-600">{error}</p> : null}
-                        <button type="submit" disabled={sending} className={`${PORTAL_PRIMARY_BTN} w-full`}>
-                            {sending ? 'Starting…' : 'Start conversation'}
-                        </button>
+                        {contacts.length === 0 ? (
+                            <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>
+                                {contactsHint || EMPTY_COPY[role]}
+                            </p>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
+                                        Contact
+                                    </label>
+                                    <select
+                                        required
+                                        value={selectedContactKey}
+                                        onChange={(e) => setSelectedContactKey(e.target.value)}
+                                        className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
+                                    >
+                                        <option value="">Select…</option>
+                                        {contacts.map((c) => (
+                                            <option
+                                                key={`${c.accountType}:${c.profileId}`}
+                                                value={`${c.accountType}:${c.profileId}`}
+                                            >
+                                                {c.displayName} · {ROLE_LABEL[c.accountType]}
+                                                {c.detail ? ` · ${c.detail}` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1.5 text-[11px] text-charcoal/45 leading-relaxed">
+                                        {role === 'buyer' || role === 'seller'
+                                            ? 'You can only message agents who have contacted you, and bond originators after pre-qualification.'
+                                            : role === 'agent'
+                                              ? 'Only buyers and sellers you have contacted via a viewing.'
+                                              : 'Only buyers with a pre-qualification case at your organisation.'}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
+                                        Subject (optional)
+                                    </label>
+                                    <input
+                                        value={newSubject}
+                                        onChange={(e) => setNewSubject(e.target.value)}
+                                        className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
+                                        First message (optional)
+                                    </label>
+                                    <textarea
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        rows={3}
+                                        className="w-full rounded-xl border border-charcoal/[0.1] px-3 py-2 text-sm"
+                                    />
+                                </div>
+                                {error ? <p className="text-xs text-red-600">{error}</p> : null}
+                                <button
+                                    type="submit"
+                                    disabled={sending || !selectedContactKey}
+                                    className={`${PORTAL_PRIMARY_BTN} w-full`}
+                                >
+                                    {sending ? 'Starting…' : 'Start conversation'}
+                                </button>
+                            </>
+                        )}
                     </form>
                 </div>
             ) : null}

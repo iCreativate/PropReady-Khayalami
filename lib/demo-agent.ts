@@ -1,6 +1,9 @@
 /**
  * Demo agent account for local / staging testing.
  * Seed via: npm run seed:demo-agent  OR  POST /api/dev/seed-demo-agent
+ *
+ * Login: /agents/login
+ * Email + password + FFC number below.
  */
 export const DEMO_AGENT = {
     id: 'demo-agent-propready',
@@ -11,6 +14,7 @@ export const DEMO_AGENT = {
     company: 'PropReady Demo Realty',
     city: 'Johannesburg',
     ppraNumber: '1234567',
+    /** Valid 15-digit FFC (20 + 13 digits) for login testing */
     ffcNumber: '202512345678901',
     ffcDocumentUrl: 'demo/ffc-certificate.pdf',
     plan: 'growth',
@@ -23,4 +27,5 @@ export const DEMO_AGENT = {
 export const DEMO_AGENT_LOGIN_HINT = {
     email: DEMO_AGENT.email,
     password: DEMO_AGENT.password,
+    ffcNumber: DEMO_AGENT.ffcNumber,
 };

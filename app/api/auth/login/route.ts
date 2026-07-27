@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-    createSession,
     ensureAuthAccountForProfile,
-    markEmailVerified,
-    setAuthCookies,
     verifyAccountPassword,
     getRequestMeta,
 } from '@/lib/auth-enterprise';
@@ -16,6 +13,7 @@ import {
     isProfessionalAccountType,
     professionalApprovalError,
 } from '@/lib/professional-approval';
+import { issueLoginOtpChallenge } from '@/lib/auth-login-otp';
 
 type ProfileRow = {
     id: string;
@@ -25,39 +23,13 @@ type ProfileRow = {
     ffc_number?: string | null;
     organization_id?: string | null;
     staff_number?: string | null;
+    full_name?: string | null;
 };
 
-function toLegacyUser(user: Awaited<ReturnType<typeof createSession>>['user']) {
-    if (user.accountType === 'agent') {
-        return {
-            id: user.profileId,
-            fullName: user.fullName,
-            email: user.email,
-            company: user.company,
-            phone: user.phone,
-            plan: user.plan || 'free',
-            sellerPlan: user.sellerPlan || 'none',
-            ppraNumber: user.ppraNumber,
-            verificationStatus: user.verificationStatus,
-            status: user.status,
-            accountType: 'agent' as const,
-        };
-    }
-    if (user.accountType === 'originator') {
-        return {
-            id: user.profileId,
-            fullName: user.fullName,
-            email: user.email,
-            organizationId: user.organizationId,
-            company: user.company,
-            phone: user.phone,
-            status: user.status,
-            accountType: 'originator' as const,
-        };
-    }
-    return { id: user.profileId, fullName: user.fullName, email: user.email, accountType: 'user' as const };
-}
-
+/**
+ * Step 1 of login: validate credentials, then email a one-time code.
+ * Session cookies are only set after OTP verification.
+ */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -70,7 +42,7 @@ export async function POST(request: NextRequest) {
         const staffNumber = String(body.staffNumber || '')
             .trim()
             .toUpperCase();
-        const meta = getRequestMeta(request);
+        getRequestMeta(request); // touch for future audit hooks
 
         if (!email || !password) {
             return NextResponse.json({ success: false, error: 'Email and password required' }, { status: 400 });
@@ -189,22 +161,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (!account.email_verified_at) {
-            await markEmailVerified(account.id);
+        const otp = await issueLoginOtpChallenge({
+            account,
+            email,
+            accountType,
+            profileId: profile.id,
+            rememberDevice,
+            fullName: profile.full_name,
+        });
+
+        if (!otp.ok) {
+            return NextResponse.json({ success: false, error: otp.error }, { status: otp.status });
         }
 
-        const session = await createSession(
-            { ...account, email_verified_at: account.email_verified_at ?? new Date().toISOString() },
-            { ...meta, trustedDevice: rememberDevice }
-        );
-
-        const response = NextResponse.json({
+        return NextResponse.json({
             success: true,
-            user: toLegacyUser(session.user),
-            expiresIn: session.expiresIn,
+            needsOtp: true,
+            challengeToken: otp.challengeToken,
+            email: otp.email,
+            message: 'We sent a one-time code to your email. Enter it to finish signing in.',
+            ...(otp.devOtp ? { devOtp: otp.devOtp } : {}),
         });
-        setAuthCookies(response, session.accessToken, session.refreshToken, rememberDevice);
-        return response;
     } catch (err) {
         console.error('auth/login:', err);
         return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });

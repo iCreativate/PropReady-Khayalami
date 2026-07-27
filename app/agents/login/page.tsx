@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Eye, EyeOff, FileText, Lock, Mail } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
+import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
+import { DEMO_AGENT_LOGIN_HINT } from '@/lib/demo-agent';
 import { FFC_NUMBER_ERROR, normalizeFfcNumber, validateFfcNumber } from '@/lib/ppra';
 
 export default function AgentLoginPage() {
@@ -17,6 +19,11 @@ export default function AgentLoginPage() {
     const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [otpChallenge, setOtpChallenge] = useState<{
+        token: string;
+        email: string;
+        devOtp?: string;
+    } | null>(null);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -51,9 +58,15 @@ export default function AgentLoginPage() {
                 setError(data.error || 'Invalid credentials');
                 return;
             }
-            syncLegacySession(data.user, 'agent');
-            window.location.assign('/auth/complete?type=agent');
-            return;
+            if (data.needsOtp && data.challengeToken) {
+                setOtpChallenge({
+                    token: data.challengeToken,
+                    email: data.email || email.trim(),
+                    devOtp: data.devOtp,
+                });
+                return;
+            }
+            setError('Unexpected login response. Please try again.');
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {
@@ -61,11 +74,39 @@ export default function AgentLoginPage() {
         }
     }
 
+    if (otpChallenge) {
+        return (
+            <ProfessionalAuthShell
+                role="agent"
+                title="Enter login code"
+                subtitle="We emailed a one-time code to confirm it’s you"
+            >
+                <LoginOtpStep
+                    email={otpChallenge.email}
+                    challengeToken={otpChallenge.token}
+                    initialDevOtp={otpChallenge.devOtp}
+                    onChallengeTokenChange={(token) =>
+                        setOtpChallenge((prev) => (prev ? { ...prev, token } : prev))
+                    }
+                    onVerified={(data) => {
+                        syncLegacySession(data.user as Parameters<typeof syncLegacySession>[0], 'agent');
+                        window.location.assign('/auth/complete?type=agent');
+                    }}
+                    onBack={() => setOtpChallenge(null)}
+                    onExpired={() => {
+                        setOtpChallenge(null);
+                        setError('Your login code expired. Please sign in again.');
+                    }}
+                />
+            </ProfessionalAuthShell>
+        );
+    }
+
     return (
         <ProfessionalAuthShell
             role="agent"
             title="Agent sign-in"
-            subtitle="Enter your work email, Fidelity Fund Certificate number, and password. Access opens only after PropReady admin approval."
+            subtitle="Enter your work email, Fidelity Fund Certificate number, and password. A one-time email code confirms every sign-in."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -76,7 +117,18 @@ export default function AgentLoginPage() {
 
             <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
                 New registrations stay pending until a PropReady admin reviews your details and FFC and
-                approves your account.
+                approves your account. Every login also requires an email one-time code.
+            </div>
+
+            <div className="rounded-2xl border border-dashed border-gold/30 bg-gold/[0.04] px-4 py-3 text-xs text-charcoal/70 mb-5 leading-relaxed">
+                <p className="font-semibold text-charcoal mb-1">Demo agent (testing)</p>
+                <p className="font-mono text-[11px] break-all">
+                    {DEMO_AGENT_LOGIN_HINT.email} · FFC {DEMO_AGENT_LOGIN_HINT.ffcNumber} ·{' '}
+                    {DEMO_AGENT_LOGIN_HINT.password}
+                </p>
+                <p className="mt-1.5 text-charcoal/45">
+                    Seed with <span className="font-mono">npm run seed:demo-agent</span> if the account is missing.
+                </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,7 +206,7 @@ export default function AgentLoginPage() {
                 </div>
 
                 <button type="submit" disabled={loading} className="auth-btn-primary w-full mt-2">
-                    {loading ? 'Signing in…' : 'Sign in to agent portal'}
+                    {loading ? 'Sending code…' : 'Continue'}
                 </button>
             </form>
 

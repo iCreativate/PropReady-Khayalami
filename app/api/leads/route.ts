@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createServiceClient } from '@/lib/supabase-admin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+function leadsClient() {
+    // Prefer service role so agents always receive the full quiz lead pool (RLS-safe).
+    return createServiceClient() || (supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null);
+}
 
 function toLeadRow(lead: Record<string, unknown>) {
     const type = (lead.leadType ?? lead.lead_type ?? 'buyer') as string;
@@ -89,15 +95,12 @@ function fromLeadRow(row: Record<string, unknown>) {
 }
 
 export async function GET() {
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return NextResponse.json(
-            { leads: [] },
-            { status: 200 }
-        );
+    const supabase = leadsClient();
+    if (!supabase) {
+        return NextResponse.json({ leads: [] }, { status: 200 });
     }
 
     try {
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
         const { data, error } = await supabase
             .from('leads')
             .select('*')
@@ -108,6 +111,7 @@ export async function GET() {
             return NextResponse.json({ leads: [] }, { status: 200 });
         }
 
+        // Full PropReady quiz lead pool — agents see every buyer/seller who completed a quiz
         const leads = (data || []).map(fromLeadRow);
         return NextResponse.json(
             { leads },
@@ -125,7 +129,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    if (!supabaseUrl || !supabaseAnonKey) {
+    const supabase = leadsClient();
+    if (!supabase) {
         return NextResponse.json(
             { success: false, error: 'Database not configured' },
             { status: 503 }
@@ -142,8 +147,6 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
-
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
         const tryUpsert = (payload: Record<string, unknown>) =>
             supabase.from('leads').upsert([payload], { onConflict: 'id' }).select().single();
@@ -198,7 +201,8 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-    if (!supabaseUrl || !supabaseAnonKey) {
+    const supabase = leadsClient();
+    if (!supabase) {
         return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
     }
     try {
@@ -207,7 +211,6 @@ export async function PATCH(request: NextRequest) {
         if (!id) {
             return NextResponse.json({ success: false, error: 'id required' }, { status: 400 });
         }
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
         const dbUpdates: Record<string, unknown> = {};
         if (updates.status != null) dbUpdates.status = updates.status;
         if (updates.score != null) dbUpdates.score = updates.score;

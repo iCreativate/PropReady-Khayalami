@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Building2, Hash, Lock, Mail, User } from 'lucide-react';
+import { AlertCircle, Building2, Lock, Mail, User } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { getPasswordRequirementsText, validatePassword } from '@/lib/password';
@@ -13,19 +13,12 @@ export default function OriginatorRegisterPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
-    const [staffNumber, setStaffNumber] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError('');
-
-        const staff = staffNumber.trim().toUpperCase();
-        if (staff.length < 4) {
-            setError('Enter your bond originator staff number (at least 4 characters).');
-            return;
-        }
 
         const emailError = validateProfessionalWorkEmail(email);
         if (emailError) {
@@ -50,7 +43,6 @@ export default function OriginatorRegisterPage() {
                     password,
                     type: 'originator',
                     organizationId,
-                    staffNumber: staff,
                 }),
             });
             const data = await res.json();
@@ -70,7 +62,7 @@ export default function OriginatorRegisterPage() {
         <ProfessionalAuthShell
             role="originator"
             title="Register as originator staff"
-            subtitle="Create a staff account with your organisation and staff number. Access requires PropReady admin approval."
+            subtitle="Create a staff account with your organisation. PropReady assigns your staff number when your account is approved."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -78,6 +70,11 @@ export default function OriginatorRegisterPage() {
                     {error}
                 </div>
             ) : null}
+
+            <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
+                After email verification, a PropReady admin reviews your application. Your unique staff number is
+                emailed to you on approval — use it with your organisation to sign in.
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -109,21 +106,6 @@ export default function OriginatorRegisterPage() {
                                 </option>
                             ))}
                         </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="auth-label">Originator staff number</label>
-                    <div className="auth-input-wrap">
-                        <Hash className="auth-input-icon" />
-                        <input
-                            className="auth-input font-mono uppercase"
-                            required
-                            autoComplete="off"
-                            placeholder="Issued by your organisation"
-                            value={staffNumber}
-                            onChange={(e) => setStaffNumber(e.target.value.slice(0, 32))}
-                        />
                     </div>
                 </div>
 

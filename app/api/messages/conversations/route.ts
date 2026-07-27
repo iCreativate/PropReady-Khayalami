@@ -12,6 +12,7 @@ import {
     type MessageParticipantInput,
     type ParticipantRow,
 } from '@/lib/messages';
+import { assertCanStartConversation } from '@/lib/messages-eligibility';
 
 export async function GET(request: NextRequest) {
     const session = await resolveSessionFromRequest(request);
@@ -151,6 +152,28 @@ export async function POST(request: NextRequest) {
                 { error: 'Add at least one other participant' },
                 { status: 400 }
             );
+        }
+
+        // Enforce relationship rules for every counterpart (not the creator)
+        for (const p of resolved) {
+            if (
+                p.accountType === session.user.accountType &&
+                p.profileId === session.user.profileId
+            ) {
+                continue;
+            }
+            try {
+                await assertCanStartConversation(session.user, {
+                    accountType: p.accountType,
+                    profileId: p.profileId,
+                });
+            } catch (gateErr) {
+                const status = (gateErr as Error & { status?: number }).status || 403;
+                return NextResponse.json(
+                    { error: gateErr instanceof Error ? gateErr.message : 'Not allowed' },
+                    { status }
+                );
+            }
         }
 
         const now = new Date().toISOString();

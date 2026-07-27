@@ -699,11 +699,11 @@ export default function AgentsDashboardPage() {
                         <div className={AGENT_CARD_HEADER}>
                             <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 lg:gap-8">
                                 <div className="min-w-0">
-                                    <h2 className={AGENT_DASH_SECTION_TITLE}>Prequalified Leads</h2>
+                                    <h2 className={AGENT_DASH_SECTION_TITLE}>PropReady quiz leads</h2>
                                     <p className={AGENT_DASH_SECTION_SUB}>
                                         {activeTab === 'buyers'
-                                            ? `${filteredLeads.length} buyer${filteredLeads.length === 1 ? '' : 's'} · ${stats.newBuyers} new`
-                                            : `${filteredSellers.length} seller${filteredSellers.length === 1 ? '' : 's'} · ${stats.newSellers} new`}
+                                            ? `${filteredLeads.length} buyer${filteredLeads.length === 1 ? '' : 's'} who completed the quiz · ${stats.newBuyers} new`
+                                            : `${filteredSellers.length} seller${filteredSellers.length === 1 ? '' : 's'} who completed the quiz · ${stats.newSellers} new`}
                                     </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">

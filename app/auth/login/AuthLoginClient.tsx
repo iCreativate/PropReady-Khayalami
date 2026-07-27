@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
 import OAuthButtons from '@/components/auth/OAuthButtons';
+import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
 import { loginPathForAccountType, parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
@@ -34,6 +35,11 @@ export default function AuthLoginClient() {
     const [info, setInfo] = useState('');
     const [loading, setLoading] = useState(false);
     const [devMagicLink, setDevMagicLink] = useState('');
+    const [otpChallenge, setOtpChallenge] = useState<{
+        token: string;
+        email: string;
+        devOtp?: string;
+    } | null>(null);
 
     useEffect(() => {
         if (requestedType === 'agent' || requestedType === 'originator') {
@@ -71,10 +77,16 @@ export default function AuthLoginClient() {
                 setError(data.error || 'Invalid email or password');
                 return;
             }
-            syncLegacySession(data.user, 'user');
-            // Full navigation so auth cookies are reliably applied (esp. Capacitor WebView)
-            window.location.assign('/auth/complete?type=user');
-            return;
+            if (data.needsOtp && data.challengeToken) {
+                setOtpChallenge({
+                    token: data.challengeToken,
+                    email: data.email || email.trim(),
+                    devOtp: data.devOtp,
+                });
+                setInfo(data.message || 'Check your email for a login code.');
+                return;
+            }
+            setError('Unexpected login response. Please try again.');
         } catch {
             setError('Unable to sign in. Please try again.');
         } finally {
@@ -111,6 +123,38 @@ export default function AuthLoginClient() {
         } finally {
             setLoading(false);
         }
+    }
+
+    if (otpChallenge) {
+        return (
+            <AuthShell
+                title="Enter login code"
+                subtitle="We emailed a one-time code to confirm it’s you"
+                accountType="user"
+            >
+                <LoginOtpStep
+                    email={otpChallenge.email}
+                    challengeToken={otpChallenge.token}
+                    initialDevOtp={otpChallenge.devOtp}
+                    onChallengeTokenChange={(token) =>
+                        setOtpChallenge((prev) => (prev ? { ...prev, token } : prev))
+                    }
+                    onVerified={(data) => {
+                        syncLegacySession(data.user as Parameters<typeof syncLegacySession>[0], 'user');
+                        window.location.assign('/auth/complete?type=user');
+                    }}
+                    onBack={() => {
+                        setOtpChallenge(null);
+                        setInfo('');
+                        setError('');
+                    }}
+                    onExpired={() => {
+                        setOtpChallenge(null);
+                        setError('Your login code expired. Please sign in again.');
+                    }}
+                />
+            </AuthShell>
+        );
     }
 
     return (
@@ -197,9 +241,16 @@ export default function AuthLoginClient() {
                     </>
                 )}
                 <button type="submit" disabled={loading} className="auth-btn-primary w-full mb-6">
-                    {loading ? 'Please wait…' : mode === 'password' ? 'Sign in securely' : 'Email me a link'}
+                    {loading
+                        ? 'Please wait…'
+                        : mode === 'password'
+                          ? 'Continue'
+                          : 'Email me a link'}
                 </button>
             </form>
+            <p className="text-center text-xs text-charcoal/45 mb-6">
+                Password sign-in sends a one-time code to your email for security.
+            </p>
             <div className="auth-divider mb-6">
                 <span>or continue with</span>
             </div>

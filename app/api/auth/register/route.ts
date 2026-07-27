@@ -17,9 +17,11 @@ export async function POST(request: NextRequest) {
         const fullName = String(body.fullName || '').trim();
         const accountType = parseAccountType(body.type);
         const organizationId = String(body.organizationId || '').trim();
-        const staffNumber = String(body.staffNumber || '')
+        const staffNumberRaw = String(body.staffNumber || '')
             .trim()
             .toUpperCase();
+        // Staff numbers are PropReady-assigned on approval; optional only if provided explicitly
+        const staffNumber = staffNumberRaw.length >= 4 ? staffNumberRaw : '';
 
         if (!email || !password || !fullName) {
             return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
@@ -48,12 +50,6 @@ export async function POST(request: NextRequest) {
             if (!validOrg) {
                 return NextResponse.json(
                     { success: false, error: 'Select a valid bond originator organisation' },
-                    { status: 400 }
-                );
-            }
-            if (staffNumber.length < 4) {
-                return NextResponse.json(
-                    { success: false, error: 'Originator staff number is required' },
                     { status: 400 }
                 );
             }
@@ -86,7 +82,7 @@ export async function POST(request: NextRequest) {
                         email,
                         password: '',
                         organization_id: organizationId,
-                        staff_number: staffNumber,
+                        ...(staffNumber ? { staff_number: staffNumber } : {}),
                         status: 'pending',
                     }
                   : { id, full_name: fullName, email, password: '' };
@@ -119,9 +115,11 @@ export async function POST(request: NextRequest) {
             email,
             accountType,
             message:
-                accountType === 'agent' || accountType === 'originator'
-                    ? 'Verify your email, then wait for PropReady admin approval before signing in.'
-                    : 'Check your email to verify your account before signing in.',
+                    accountType === 'originator'
+                        ? 'Verify your email, then wait for PropReady admin approval. Your staff number will be emailed when you are approved.'
+                        : accountType === 'agent'
+                          ? 'Verify your email, then wait for PropReady admin approval before signing in.'
+                          : 'Check your email to verify your account before signing in.',
         });
     } catch (err) {
         console.error('auth/register:', err);
