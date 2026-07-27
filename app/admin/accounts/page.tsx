@@ -34,7 +34,7 @@ export default function AdminAccountsPage() {
         password: '',
         phone: '',
         company: '',
-        organizationId: BOND_ORIGINATORS[0]?.id || '',
+        organizationId: (BOND_ORIGINATORS[0]?.id || '') as string,
         approve: true,
     });
 
