@@ -40,7 +40,7 @@ interface Application {
 
 export default function AdminPpraPage() {
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('pending');
     const [applications, setApplications] = useState<Application[]>([]);
     const [selected, setSelected] = useState<Application | null>(null);
     const [loading, setLoading] = useState(false);
@@ -260,37 +260,33 @@ export default function AdminPpraPage() {
                                 rows={2}
                                 className={`${PORTAL_INPUT} mt-4 text-sm`}
                             />
-                            {selected.verificationStatus === 'pending' && (
-                                <>
-                                    <textarea
-                                        value={rejectionReason}
-                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                        placeholder="Rejection reason (required if rejecting)"
-                                        rows={2}
-                                        className={`${PORTAL_INPUT} mt-2 text-sm`}
-                                    />
-                                    <div className="flex gap-2 mt-4">
-                                        <button
-                                            type="button"
-                                            disabled={actionLoading}
-                                            onClick={() => review('approve')}
-                                            className={`${PORTAL_SUCCESS_BTN} flex-1`}
-                                        >
-                                            <CheckCircle className="w-4 h-4" />
-                                            Approve
-                                        </button>
-                                        <button
-                                            type="button"
-                                            disabled={actionLoading}
-                                            onClick={() => review('reject')}
-                                            className={`${PORTAL_DANGER_BTN} flex-1`}
-                                        >
-                                            <XCircle className="w-4 h-4" />
-                                            Reject
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                            <textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="Rejection reason (required if rejecting)"
+                                rows={2}
+                                className={`${PORTAL_INPUT} mt-2 text-sm`}
+                            />
+                            <div className="flex gap-2 mt-4">
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={() => review('approve')}
+                                    className={`${PORTAL_SUCCESS_BTN} flex-1`}
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {selected.verificationStatus === 'verified' ? 'Re-approve' : 'Approve'}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={() => review('reject')}
+                                    className={`${PORTAL_DANGER_BTN} flex-1`}
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    Reject
+                                </button>
+                            </div>
                         </>
                     ) : (
                         <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>

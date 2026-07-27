@@ -208,28 +208,26 @@ export default function AdminOriginatorsPage() {
                                     </dd>
                                 </div>
                             </dl>
-                            {selected.status === 'pending' ? (
-                                <div className="flex gap-2 mt-6">
-                                    <button
-                                        type="button"
-                                        disabled={actionLoading}
-                                        onClick={() => review('approve')}
-                                        className={`${PORTAL_SUCCESS_BTN} flex-1`}
-                                    >
-                                        <CheckCircle className="w-4 h-4" />
-                                        Approve
-                                    </button>
-                                    <button
-                                        type="button"
-                                        disabled={actionLoading}
-                                        onClick={() => review('reject')}
-                                        className={`${PORTAL_DANGER_BTN} flex-1`}
-                                    >
-                                        <XCircle className="w-4 h-4" />
-                                        Reject
-                                    </button>
-                                </div>
-                            ) : null}
+                            <div className="flex gap-2 mt-6">
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={() => review('approve')}
+                                    className={`${PORTAL_SUCCESS_BTN} flex-1`}
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    {selected.status === 'approved' ? 'Re-approve' : 'Approve'}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={() => review('reject')}
+                                    className={`${PORTAL_DANGER_BTN} flex-1`}
+                                >
+                                    <XCircle className="w-4 h-4" />
+                                    Reject
+                                </button>
+                            </div>
                         </>
                     ) : (
                         <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>

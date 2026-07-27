@@ -8,6 +8,7 @@ import {
     Building2,
     LayoutDashboard,
     LogOut,
+    MessageSquare,
     Shield,
     Users,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ const NAV: Array<{
 }> = [
     { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
     { href: '/admin/accounts', label: 'Accounts', icon: Users },
+    { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
     { href: '/admin/ppra', label: 'Agent approvals', icon: Shield },
     { href: '/admin/originators', label: 'Originator approvals', icon: Building2 },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },

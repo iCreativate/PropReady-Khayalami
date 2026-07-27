@@ -69,10 +69,11 @@ type EligibleContact = {
     detail?: string;
 };
 
-const ROLE_LABEL: Record<AccountType, string> = {
+const ROLE_LABEL: Record<string, string> = {
     user: 'Buyer / Seller',
     agent: 'Agent',
     originator: 'Bond originator',
+    admin: 'PropReady staff',
 };
 
 const EMPTY_COPY: Record<MessagesPortalRole, string> = {

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
             verificationNotes?: string;
         };
 
-        const auth = await assertAdminRequest(request, adminEmail);
+        const auth = await assertAdminRequest(request);
         if (!auth.ok) {
             return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
         }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         const now = new Date().toISOString();
         const updates: Record<string, unknown> = {
             updated_at: now,
-            verified_by: adminEmail,
+            verified_by: auth.email,
             verification_notes:
                 action === 'reject'
                     ? `${rejectionReason?.trim()}${verificationNotes ? ` — ${verificationNotes}` : ''}`
