@@ -3,10 +3,10 @@ import {
     AUTH_CONFIG,
     getAppUrl,
     handleOAuthCallback,
-    hashOAuthState,
     loginPathForAccountType,
     parseAccountType,
     setAuthCookies,
+    verifyOAuthState,
     type OAuthProvider,
 } from '@/lib/auth-enterprise';
 import { getRequestMeta } from '@/lib/auth-enterprise/request-meta';
@@ -19,24 +19,29 @@ export async function GET(
     const provider = raw as OAuthProvider;
     const code = request.nextUrl.searchParams.get('code');
     const state = request.nextUrl.searchParams.get('state');
-    const storedState = request.cookies.get(AUTH_CONFIG.cookieNames.oauthState)?.value;
-    const accountType = parseAccountType(request.cookies.get('pr_oauth_type')?.value || 'user');
+    const cookieState = request.cookies.get(AUTH_CONFIG.cookieNames.oauthState)?.value;
+    const appUrl = getAppUrl(request.nextUrl.origin);
+
+    const verified = state ? verifyOAuthState(state) : null;
+    const accountType =
+        verified?.accountType ||
+        parseAccountType(request.cookies.get('pr_oauth_type')?.value || 'user');
 
     const loginPath = loginPathForAccountType(accountType);
     const loginError = (err: string) =>
-        `${getAppUrl()}${loginPath}${loginPath.includes('?') ? '&' : '?'}error=${err}`;
+        `${appUrl}${loginPath}${loginPath.includes('?') ? '&' : '?'}error=${err}`;
 
-    if (!code || !state || !storedState) {
+    if (!code || !state || !verified) {
         return NextResponse.redirect(loginError('oauth_state'));
     }
 
-    const rawState = state.includes(':') ? state.split(':')[0] : state;
-    if (hashOAuthState(rawState) !== storedState) {
+    // If a cookie is present, it must match (blocks state fixation when cookies work).
+    if (cookieState && cookieState !== state) {
         return NextResponse.redirect(loginError('oauth_state'));
     }
 
     const meta = getRequestMeta(request);
-    const session = await handleOAuthCallback(provider, code, accountType, meta);
+    const session = await handleOAuthCallback(provider, code, accountType, meta, appUrl);
 
     if (!session) {
         return NextResponse.redirect(loginError('oauth_failed'));
@@ -49,7 +54,7 @@ export async function GET(
               ? '?type=originator'
               : '';
     const redirectTo = `/auth/complete${typeQ}`;
-    const response = NextResponse.redirect(`${getAppUrl()}${redirectTo}`);
+    const response = NextResponse.redirect(`${appUrl}${redirectTo}`);
     setAuthCookies(response, session.accessToken, session.refreshToken, true);
     response.cookies.delete(AUTH_CONFIG.cookieNames.oauthState);
     response.cookies.delete('pr_oauth_type');

@@ -24,6 +24,9 @@ export const AUTH_CONFIG = {
 export type AccountType = 'user' | 'agent' | 'originator';
 export type OAuthProvider = 'google' | 'apple';
 
+/** Production canonical URL — never fall back to localhost in deployed builds. */
+export const PRODUCTION_APP_URL = 'https://propready.live';
+
 export function getAuthSecret(): string {
     const secret = process.env.AUTH_JWT_SECRET || process.env.NEXTAUTH_SECRET;
     if (!secret || secret.length < 32) {
@@ -32,14 +35,39 @@ export function getAuthSecret(): string {
     return secret;
 }
 
-export function getAppUrl(): string {
-    // Local dev must never send OAuth/magic-link callbacks to production.
+function isLocalhostUrl(url: string): boolean {
+    try {
+        const host = new URL(url).hostname;
+        return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    } catch {
+        return /localhost|127\.0\.0\.1/i.test(url);
+    }
+}
+
+/**
+ * Public site origin for OAuth redirects, magic links, etc.
+ * In production, ignores localhost env misconfigs (common when .env.example is copied to Netlify).
+ */
+export function getAppUrl(requestOrigin?: string | null): string {
     if (process.env.NODE_ENV === 'development') {
         return (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/$/, '');
     }
-    return (
+
+    // Prefer the live request host when it's a real public origin (OAuth callbacks).
+    if (requestOrigin) {
+        const origin = requestOrigin.replace(/\/$/, '');
+        if (!isLocalhostUrl(origin)) return origin;
+    }
+
+    const fromEnv = (
         process.env.NEXT_PUBLIC_APP_URL ||
         process.env.NEXTAUTH_URL ||
-        'http://localhost:3000'
+        ''
     ).replace(/\/$/, '');
+
+    if (fromEnv && !isLocalhostUrl(fromEnv)) {
+        return fromEnv;
+    }
+
+    return PRODUCTION_APP_URL;
 }

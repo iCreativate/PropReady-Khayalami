@@ -1,10 +1,10 @@
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createServiceClient } from '@/lib/supabase-admin';
-import { AUTH_CONFIG, getAppUrl, type OAuthProvider } from './config';
-import { profileTableForAccountType } from './account-profile';
+import { AUTH_CONFIG, getAppUrl, getAuthSecret, type OAuthProvider } from './config';
+import { parseAccountType, profileTableForAccountType } from './account-profile';
 import { generateSecureToken, hashToken } from './password';
 import {
     createSession,
-    ensureAuthAccountForProfile,
     findAccountByEmail,
     markEmailVerified,
     upsertAccountFromProfile,
@@ -26,13 +26,14 @@ function db() {
 export function getOAuthAuthorizationUrl(
     provider: OAuthProvider,
     accountType: AccountType,
-    state: string
+    state: string,
+    appUrl?: string
 ): string | null {
-    const redirectUri = `${getAppUrl()}/api/auth/oauth/${provider}/callback`;
+    const redirectUri = `${(appUrl || getAppUrl()).replace(/\/$/, '')}/api/auth/oauth/${provider}/callback`;
     const params = new URLSearchParams({
         response_type: 'code',
         redirect_uri: redirectUri,
-        state: `${state}:${accountType}`,
+        state,
         scope: providerScopes(provider),
     });
 
@@ -41,7 +42,7 @@ export function getOAuthAuthorizationUrl(
         if (!clientId) return null;
         params.set('client_id', clientId);
         params.set('access_type', 'offline');
-        params.set('prompt', 'consent');
+        params.set('prompt', 'select_account');
         return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     }
 
@@ -65,10 +66,11 @@ export async function handleOAuthCallback(
     provider: OAuthProvider,
     code: string,
     accountType: AccountType,
-    meta: { userAgent?: string; ip?: string; trustedDevice?: boolean }
+    meta: { userAgent?: string; ip?: string; trustedDevice?: boolean },
+    appUrl?: string
 ): Promise<LoginResult | null> {
     try {
-        const profile = await exchangeCodeForProfile(provider, code);
+        const profile = await exchangeCodeForProfile(provider, code, appUrl);
         if (!profile?.email) {
             console.error('oauth: token exchange failed or missing email', { provider });
             return null;
@@ -185,8 +187,8 @@ async function createProfileForOAuth(
     return data.id as string;
 }
 
-async function exchangeCodeForProfile(provider: OAuthProvider, code: string) {
-    const redirectUri = `${getAppUrl()}/api/auth/oauth/${provider}/callback`;
+async function exchangeCodeForProfile(provider: OAuthProvider, code: string, appUrl?: string) {
+    const redirectUri = `${(appUrl || getAppUrl()).replace(/\/$/, '')}/api/auth/oauth/${provider}/callback`;
 
     if (provider === 'google') {
         const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -228,10 +230,52 @@ async function exchangeCodeForProfile(provider: OAuthProvider, code: string) {
     return null;
 }
 
-export function createOAuthState(): string {
-    return generateSecureToken(24);
+/**
+ * Signed OAuth state (no cookie required). Survives Android WebView / external
+ * browser hops where Set-Cookie on the authorize redirect is often dropped.
+ * Format: base64url(json).base64url(hmac)
+ */
+export function createOAuthState(accountType: AccountType = 'user'): string {
+    const payload = Buffer.from(
+        JSON.stringify({
+            n: generateSecureToken(16),
+            t: accountType,
+            exp: Date.now() + AUTH_CONFIG.oauthStateTtlSeconds * 1000,
+        }),
+        'utf8'
+    ).toString('base64url');
+    const sig = createHmac('sha256', getAuthSecret()).update(payload).digest('base64url');
+    return `${payload}.${sig}`;
 }
 
+export function verifyOAuthState(
+    state: string
+): { accountType: AccountType; nonce: string } | null {
+    const dot = state.lastIndexOf('.');
+    if (dot <= 0) return null;
+    const payload = state.slice(0, dot);
+    const sig = state.slice(dot + 1);
+    if (!payload || !sig) return null;
+
+    const expected = createHmac('sha256', getAuthSecret()).update(payload).digest('base64url');
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+
+    try {
+        const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
+            n?: string;
+            t?: string;
+            exp?: number;
+        };
+        if (!data.n || !data.exp || Date.now() > data.exp) return null;
+        return { accountType: parseAccountType(data.t), nonce: data.n };
+    } catch {
+        return null;
+    }
+}
+
+/** @deprecated Prefer verifyOAuthState — kept for any leftover cookie checks */
 export function hashOAuthState(state: string): string {
     return hashToken(state);
 }

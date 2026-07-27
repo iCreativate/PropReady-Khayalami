@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
     AUTH_CONFIG,
     createOAuthState,
+    getAppUrl,
     getOAuthAuthorizationUrl,
-    hashOAuthState,
     parseAccountType,
     type OAuthProvider,
     type AccountType,
@@ -24,8 +24,9 @@ export async function GET(
     const accountType: AccountType = parseAccountType(
         request.nextUrl.searchParams.get('type')
     );
-    const state = createOAuthState();
-    const url = getOAuthAuthorizationUrl(provider, accountType, state);
+    const state = createOAuthState(accountType);
+    const appUrl = getAppUrl(request.nextUrl.origin);
+    const url = getOAuthAuthorizationUrl(provider, accountType, state, appUrl);
 
     if (!url) {
         return NextResponse.json(
@@ -35,7 +36,8 @@ export async function GET(
     }
 
     const response = NextResponse.redirect(url);
-    response.cookies.set(AUTH_CONFIG.cookieNames.oauthState, hashOAuthState(state), {
+    // Optional defense-in-depth cookie (signed state is authoritative).
+    response.cookies.set(AUTH_CONFIG.cookieNames.oauthState, state, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
