@@ -105,6 +105,9 @@ export async function verifyCode(
 }
 
 export async function markEmailVerified(email: string, accountType: AccountType): Promise<void> {
+    // Staff OTPs are not tied to a profile row
+    if (accountType === 'admin') return;
+
     const normalizedEmail = email.toLowerCase().trim();
     const supabase = createServiceClient();
     if (!supabase) return;
@@ -120,6 +123,8 @@ export async function isEmailVerified(
     email: string,
     accountType: AccountType
 ): Promise<boolean | null> {
+    if (accountType === 'admin') return null;
+
     const normalizedEmail = email.toLowerCase().trim();
     const supabase = createServiceClient();
     if (!supabase) return null;
