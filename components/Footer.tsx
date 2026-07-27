@@ -14,7 +14,29 @@ const APP_STORE_URL =
     process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() ||
     'https://apps.apple.com/app';
 
-/** Official Google Play badge artwork (Google Play branding guidelines). */
+/** Matched-size store badges (official PNGs have unequal padding). */
+function AppleMark() {
+    return (
+        <svg viewBox="0 0 17 20" className="footer-store-mark" aria-hidden="true">
+            <path
+                fill="currentColor"
+                d="M14.12 10.55c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.71-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.75-.78-2.88-.76-1.48.02-2.85.86-3.61 2.19-1.55 2.68-.4 6.65 1.11 8.83.74 1.07 1.61 2.26 2.76 2.22 1.11-.04 1.53-.71 2.87-.71 1.33 0 1.72.71 2.89.69 1.2-.02 1.95-1.08 2.68-2.15.84-1.23 1.19-2.42 1.21-2.48-.03-.01-2.31-.89-2.4-3.59ZM11.4 3.76c.61-.74 1.02-1.77.91-2.8-.88.04-1.95.59-2.58 1.33-.56.65-1.06 1.7-.93 2.7 1 .08 2-.51 2.6-1.23Z"
+            />
+        </svg>
+    );
+}
+
+function GooglePlayMark() {
+    return (
+        <svg viewBox="0 0 20 22" className="footer-store-mark" aria-hidden="true">
+            <path fill="#EA4335" d="M1.1 1.2 11.4 11 1.1 20.8c-.4-.3-.7-.8-.7-1.4V2.6c0-.6.3-1.1.7-1.4Z" />
+            <path fill="#FBBC04" d="m11.4 11 2.7-2.7 4.4 2.5c.7.4.7 1.4 0 1.8l-4.4 2.5L11.4 11Z" />
+            <path fill="#4285F4" d="M11.4 11 1.1 1.2C1.5.9 2 .8 2.5 1.1L14.1 8.3 11.4 11Z" />
+            <path fill="#34A853" d="M11.4 11 14.1 13.7 2.5 20.9c-.5.3-1 .2-1.4-.1L11.4 11Z" />
+        </svg>
+    );
+}
+
 function GooglePlayBadge() {
     return (
         <a
@@ -24,19 +46,15 @@ function GooglePlayBadge() {
             className="footer-store-badge"
             aria-label="Get it on Google Play"
         >
-            <img
-                src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-                alt="Get it on Google Play"
-                width={135}
-                height={40}
-                className="footer-store-badge-img footer-store-badge-img--play"
-                loading="lazy"
-            />
+            <GooglePlayMark />
+            <span className="footer-store-copy">
+                <span className="footer-store-kicker">Get it on</span>
+                <span className="footer-store-name">Google Play</span>
+            </span>
         </a>
     );
 }
 
-/** Official App Store badge artwork (Apple Marketing Tools). */
 function AppStoreBadge() {
     return (
         <a
@@ -46,14 +64,11 @@ function AppStoreBadge() {
             className="footer-store-badge"
             aria-label="Download on the App Store"
         >
-            <img
-                src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83"
-                alt="Download on the App Store"
-                width={135}
-                height={40}
-                className="footer-store-badge-img footer-store-badge-img--apple"
-                loading="lazy"
-            />
+            <AppleMark />
+            <span className="footer-store-copy">
+                <span className="footer-store-kicker">Download on the</span>
+                <span className="footer-store-name">App Store</span>
+            </span>
         </a>
     );
 }

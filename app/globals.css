@@ -2225,32 +2225,38 @@ html.native-shell .auth-shell {
 .auth-oauth-icon {
   @apply w-8 h-8 rounded-lg bg-charcoal/[0.05] flex items-center justify-center text-xs font-bold;
 }
-/* ── Footer official store download badges ── */
+/* ── Footer store download badges (identical dimensions) ── */
 .footer-store-badges {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 0.5rem;
 }
 
 .footer-store-badge {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 135px;
-  height: 40px;
-  overflow: hidden;
-  line-height: 0;
-  border-radius: 0.5rem;
+  gap: 0.55rem;
+  width: 168px;
+  height: 48px;
+  padding: 0 0.85rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.88);
+  border-radius: 0.55rem;
+  background: #000;
+  color: #fff;
+  text-decoration: none;
+  line-height: 1;
   transition:
     transform var(--duration-base) var(--ease-out),
-    opacity var(--duration-base) var(--ease-out),
-    filter var(--duration-base) var(--ease-out);
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
 }
 
 .footer-store-badge:hover {
   transform: translate3d(0, var(--lift-soft), 0);
-  filter: brightness(var(--brightness-hover));
+  border-color: #fff;
+  background: #0a0a0a;
 }
 
 .footer-store-badge:active {
@@ -2262,25 +2268,35 @@ html.native-shell .auth-shell {
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.35);
 }
 
-.footer-store-badge-img {
-  display: block;
-  width: 135px;
-  height: 40px;
-  object-fit: contain;
-  object-position: center;
+.footer-store-mark {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex-shrink: 0;
 }
 
-/* Google's generic badge includes large transparent padding — scale to match Apple visually */
-.footer-store-badge-img--play {
-  width: 162px;
-  height: 62px;
-  max-width: none;
-  margin: -11px -13.5px;
+.footer-store-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
-.footer-store-badge-img--apple {
-  width: 135px;
-  height: 40px;
+.footer-store-kicker {
+  font-size: 0.5625rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+
+.footer-store-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  white-space: nowrap;
 }
 
 .footer-play-badge {
