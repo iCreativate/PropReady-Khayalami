@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { resolveBuyerQuizResultSync } from '@/lib/quiz-result';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 type LeadGateState = {
     loading: boolean;
@@ -13,8 +13,14 @@ type LeadGateState = {
 
 function hasLocalBuyerQuiz(): boolean {
     if (typeof window === 'undefined') return false;
-    const result = resolveBuyerQuizResultSync();
-    return Boolean(result?.preQualAmount || result?.score);
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.quizResult);
+        if (!raw) return false;
+        const parsed = JSON.parse(raw) as { preQualAmount?: number; score?: number };
+        return parsed?.preQualAmount != null || parsed?.score != null;
+    } catch {
+        return false;
+    }
 }
 
 function hasLocalSellerInfo(): boolean {
