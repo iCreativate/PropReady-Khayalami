@@ -161,10 +161,10 @@ export default function AgentPortalLayout({
     }, [mobileOpen]);
 
     return (
-        <div className={`min-h-screen ${AGENT_SHELL_CONTENT}`}>
+        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${AGENT_SHELL_CONTENT}`}>
             {/* Desktop sidebar */}
             <aside
-                className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 ${AGENT_SHELL_SIDEBAR}`}
+                className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${AGENT_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${AGENT_SHELL_DIVIDER} shrink-0`}>
                     <BrandLogo />
@@ -257,7 +257,7 @@ export default function AgentPortalLayout({
                 </div>
             </header>
 
-            <main className={`lg:pl-64 pt-[4.25rem] min-h-screen ${AGENT_SHELL_CONTENT}`}>
+            <main className={`lg:pl-64 pt-[4.25rem] min-h-dvh lg:h-dvh lg:overflow-y-auto lg:overscroll-contain ${AGENT_SHELL_CONTENT}`}>
                 {pageHeader && (
                     <div
                         className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 lg:py-11`}

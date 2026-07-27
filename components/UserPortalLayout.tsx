@@ -166,9 +166,9 @@ export default function UserPortalLayout({
     };
 
     return (
-        <div className={`min-h-screen ${PORTAL_SHELL_CONTENT}`}>
+        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${PORTAL_SHELL_CONTENT}`}>
             <aside
-                className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 ${PORTAL_SHELL_SIDEBAR}`}
+                className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${PORTAL_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${PORTAL_SHELL_DIVIDER} shrink-0`}>
                     <BrandLogo />
@@ -280,7 +280,7 @@ export default function UserPortalLayout({
                 </div>
             </header>
 
-            <main className={`lg:pl-64 pt-[4.25rem] min-h-screen ${PORTAL_SHELL_CONTENT}`}>
+            <main className={`lg:pl-64 pt-[4.25rem] min-h-dvh lg:h-dvh lg:overflow-y-auto lg:overscroll-contain ${PORTAL_SHELL_CONTENT}`}>
                 {pageHeader && (
                     <div
                         className={`${PORTAL_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 lg:py-11`}
