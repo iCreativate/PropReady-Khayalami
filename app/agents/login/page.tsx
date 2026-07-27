@@ -7,7 +7,6 @@ import { AlertCircle, Eye, EyeOff, FileText, Lock, Mail } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
-import { DEMO_AGENT_LOGIN_HINT } from '@/lib/demo-agent';
 import { FFC_NUMBER_ERROR, normalizeFfcNumber, validateFfcNumber } from '@/lib/ppra';
 
 export default function AgentLoginPage() {
@@ -118,17 +117,6 @@ export default function AgentLoginPage() {
             <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
                 New registrations stay pending until a PropReady admin reviews your details and FFC and
                 approves your account. Every login also requires an email one-time code.
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-gold/30 bg-gold/[0.04] px-4 py-3 text-xs text-charcoal/70 mb-5 leading-relaxed">
-                <p className="font-semibold text-charcoal mb-1">Demo agent (testing)</p>
-                <p className="font-mono text-[11px] break-all">
-                    {DEMO_AGENT_LOGIN_HINT.email} · FFC {DEMO_AGENT_LOGIN_HINT.ffcNumber} ·{' '}
-                    {DEMO_AGENT_LOGIN_HINT.password}
-                </p>
-                <p className="mt-1.5 text-charcoal/45">
-                    Seed with <span className="font-mono">npm run seed:demo-agent</span> if the account is missing.
-                </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

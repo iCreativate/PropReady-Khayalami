@@ -24,7 +24,8 @@ export const DEMO_AGENT = {
     verificationStatus: 'verified',
 } as const;
 
-export const DEMO_AGENT_LOGIN_HINT = {
+/** Seed-only credentials — never display these in the public app UI. */
+export const DEMO_AGENT_SEED_CREDENTIALS = {
     email: DEMO_AGENT.email,
     password: DEMO_AGENT.password,
     ffcNumber: DEMO_AGENT.ffcNumber,

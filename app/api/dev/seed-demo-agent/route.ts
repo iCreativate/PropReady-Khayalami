@@ -19,6 +19,7 @@ function getDemoCredentials() {
         password: DEMO_AGENT.password,
         ffcNumber: DEMO_AGENT.ffcNumber,
         loginUrl: '/agents/login',
+        note: 'Credentials returned only from this seed endpoint — not shown in the app UI.',
     };
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-admin';
-import { assertAdmin } from '@/lib/admin-auth';
+import { assertAdminRequest } from '@/lib/admin-auth';
 
 const BUCKET = 'ppra-documents';
 
@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const storagePath = searchParams.get('path');
     const agentEmail = searchParams.get('agentEmail');
-    const adminEmail = searchParams.get('adminEmail');
 
     if (!storagePath) {
         return NextResponse.json({ success: false, error: 'path required' }, { status: 400 });
@@ -19,12 +18,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Storage not configured' }, { status: 503 });
     }
 
-    if (adminEmail) {
-        const auth = assertAdmin(adminEmail);
-        if (!auth.ok) {
-            return NextResponse.json({ success: false, error: auth.error }, { status: 403 });
-        }
-    } else if (agentEmail) {
+    if (agentEmail) {
         const { data: agent } = await supabase
             .from('agents')
             .select('email, ffc_document_url')
@@ -35,10 +29,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
         }
     } else {
-        return NextResponse.json(
-            { success: false, error: 'agentEmail or adminEmail required' },
-            { status: 400 }
-        );
+        const auth = await assertAdminRequest(request);
+        if (!auth.ok) {
+            return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
+        }
     }
 
     const { data, error } = await supabase.storage

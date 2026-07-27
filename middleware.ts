@@ -7,6 +7,7 @@ import {
     edgeProfileCompletePath,
     getEdgeAuthFromRequest,
 } from '@/lib/auth-enterprise/edge-session';
+import { verifyAdminSessionToken } from '@/lib/admin-auth';
 
 const PROTECTED_PREFIXES = [
     '/dashboard',
@@ -43,6 +44,19 @@ const AUTH_PAGES = [
 export async function middleware(request: NextRequest) {
     const supabaseResponse = await updateSession(request);
     const { pathname } = request.nextUrl;
+
+    // Staff console uses pr_admin — keep separate from user/agent sessions
+    if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
+        return supabaseResponse;
+    }
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+        const token = request.cookies.get('pr_admin')?.value;
+        const session = token ? await verifyAdminSessionToken(token) : null;
+        if (!session) {
+            return NextResponse.redirect(new URL('/admin/login', request.url));
+        }
+        return supabaseResponse;
+    }
 
     const isProtected = PROTECTED_PREFIXES.some(
         (p) => pathname === p || pathname.startsWith(`${p}/`)

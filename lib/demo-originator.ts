@@ -18,7 +18,8 @@ export const DEMO_ORIGINATOR = {
     emailVerified: true,
 } as const;
 
-export const DEMO_ORIGINATOR_LOGIN_HINT = {
+/** Seed-only credentials — never display these in the public app UI. */
+export const DEMO_ORIGINATOR_SEED_CREDENTIALS = {
     email: DEMO_ORIGINATOR.email,
     password: DEMO_ORIGINATOR.password,
     organizationId: DEMO_ORIGINATOR.organizationId,

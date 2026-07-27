@@ -15,6 +15,7 @@ function getDemoCredentials() {
         organizationId: DEMO_ORIGINATOR.organizationId,
         staffNumber: DEMO_ORIGINATOR.staffNumber,
         loginUrl: '/originators/login',
+        note: 'Credentials returned only from this seed endpoint — not shown in the app UI.',
     };
 }
 

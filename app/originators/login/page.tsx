@@ -8,14 +8,11 @@ import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
-import { DEMO_ORIGINATOR_LOGIN_HINT } from '@/lib/demo-originator';
 
 export default function OriginatorLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
-    const [organizationId, setOrganizationId] = useState<string>(
-        DEMO_ORIGINATOR_LOGIN_HINT.organizationId || BOND_ORIGINATORS[0]?.id || ''
-    );
+    const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
     const [staffNumber, setStaffNumber] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -125,18 +122,6 @@ export default function OriginatorLoginPage() {
             <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
                 After you register and verify email, PropReady must approve your staff account. Your staff number
                 is emailed when you are approved. Every login also requires an email one-time code.
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-gold/30 bg-gold/[0.04] px-4 py-3 text-xs text-charcoal/70 mb-5 leading-relaxed">
-                <p className="font-semibold text-charcoal mb-1">Demo originator (testing)</p>
-                <p className="font-mono text-[11px] break-all">
-                    BetterBond · {DEMO_ORIGINATOR_LOGIN_HINT.staffNumber} · {DEMO_ORIGINATOR_LOGIN_HINT.email} ·{' '}
-                    {DEMO_ORIGINATOR_LOGIN_HINT.password}
-                </p>
-                <p className="mt-1.5 text-charcoal/45">
-                    Seed with <span className="font-mono">npm run seed:demo-originator</span> if the account is
-                    missing.
-                </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

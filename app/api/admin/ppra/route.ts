@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertAdmin } from '@/lib/admin-auth';
+import { assertAdminRequest } from '@/lib/admin-auth';
 import { createServiceClient } from '@/lib/supabase-admin';
 
 interface PpraApplication {
@@ -41,10 +41,9 @@ function mapAgent(row: Record<string, unknown>): PpraApplication {
 }
 
 export async function GET(request: NextRequest) {
-    const adminEmail = request.headers.get('x-admin-email') || new URL(request.url).searchParams.get('adminEmail');
-    const auth = assertAdmin(adminEmail);
+    const auth = await assertAdminRequest(request);
     if (!auth.ok) {
-        return NextResponse.json({ success: false, error: auth.error }, { status: 403 });
+        return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
     }
 
     const supabase = createServiceClient();

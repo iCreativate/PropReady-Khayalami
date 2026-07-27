@@ -8,8 +8,10 @@ type LoginOtpStepProps = {
     challengeToken: string;
     /** Shown in development when Resend is unavailable */
     initialDevOtp?: string;
+    verifyUrl?: string;
+    resendUrl?: string;
     onChallengeTokenChange: (token: string) => void;
-    onVerified: (data: { user: unknown }) => void;
+    onVerified: (data: { user?: unknown; email?: string }) => void;
     onBack: () => void;
     onExpired: () => void;
 };
@@ -18,6 +20,8 @@ export default function LoginOtpStep({
     email,
     challengeToken,
     initialDevOtp,
+    verifyUrl = '/api/auth/login/verify-otp',
+    resendUrl = '/api/auth/login/resend-otp',
     onChallengeTokenChange,
     onVerified,
     onBack,
@@ -36,7 +40,7 @@ export default function LoginOtpStep({
         setError('');
         setLoading(true);
         try {
-            const res = await fetch('/api/auth/login/verify-otp', {
+            const res = await fetch(verifyUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
@@ -64,7 +68,7 @@ export default function LoginOtpStep({
         setInfo('');
         setResending(true);
         try {
-            const res = await fetch('/api/auth/login/resend-otp', {
+            const res = await fetch(resendUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ challengeToken }),

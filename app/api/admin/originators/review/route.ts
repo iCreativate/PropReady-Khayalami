@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { assertAdmin } from '@/lib/admin-auth';
+import { assertAdminRequest } from '@/lib/admin-auth';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { generateUniqueOriginatorStaffNumber } from '@/lib/originator-staff-number';
@@ -14,9 +14,9 @@ export async function POST(request: NextRequest) {
             action?: 'approve' | 'reject';
         };
 
-        const auth = assertAdmin(adminEmail);
+        const auth = await assertAdminRequest(request, adminEmail);
         if (!auth.ok) {
-            return NextResponse.json({ success: false, error: auth.error }, { status: 403 });
+            return NextResponse.json({ success: false, error: auth.error }, { status: auth.status });
         }
 
         if (!originatorId || !action) {
