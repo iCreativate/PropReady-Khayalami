@@ -44,32 +44,23 @@ html.native-shell .auth-shell {
   padding-top: var(--pr-safe-top);
 }
 
-/* Soft page enter on route changes.
-   Opacity-only — transform on this wrapper breaks position:fixed sidebars. */
-@keyframes app-page-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* Keep canvas color consistent so route swaps never flash pure white */
+html,
+body {
+  background-color: #fafafa;
 }
 
 @keyframes app-fade-in {
   from {
-    opacity: 0;
+    opacity: 0.92;
   }
   to {
     opacity: 1;
   }
 }
 
-.app-page-shell {
-  animation: app-page-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 .portal-loading-shell {
-  animation: app-fade-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: app-fade-in 180ms ease-out both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -78,7 +69,6 @@ html.native-shell .auth-shell {
     transition: none;
   }
 
-  .app-page-shell,
   .portal-loading-shell {
     animation: none;
   }

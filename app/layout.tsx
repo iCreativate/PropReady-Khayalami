@@ -4,7 +4,6 @@ import './globals.css';
 import SiteFooter from '@/components/SiteFooter';
 import AppProviders from '@/components/providers/AppProviders';
 import NativeShellInit from '@/components/NativeShellInit';
-import AppPageTransition from '@/components/AppPageTransition';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,12 +27,10 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body className={`${inter.className} flex flex-col min-h-screen`}>
+            <body className={`${inter.className} flex flex-col min-h-screen bg-[#fafafa]`}>
                 <AppProviders>
                     <NativeShellInit />
-                    <div className="flex-1">
-                        <AppPageTransition>{children}</AppPageTransition>
-                    </div>
+                    <div className="flex-1">{children}</div>
                     <SiteFooter />
                 </AppProviders>
             </body>
