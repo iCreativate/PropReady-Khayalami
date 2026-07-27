@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { LogOut, Menu, X } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import UserProfileCompact from '@/components/UserProfileCompact';
 import {
     getUserPortalLabel,
@@ -266,6 +267,7 @@ export default function UserPortalLayout({
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <PortalAppBarAlerts role={portal === 'seller' ? 'seller' : 'buyer'} />
                         {user && <UserProfileCompact user={user} portal={portal} />}
                         <button
                             type="button"

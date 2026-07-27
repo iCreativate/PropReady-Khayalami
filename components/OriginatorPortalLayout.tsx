@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LogOut, Menu, X } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import { bondOriginatorLabel } from '@/lib/bond-originators';
 import { ORIGINATOR_PORTAL_LINKS, type OriginatorPortalPage } from '@/lib/originator-portal-nav';
 import {

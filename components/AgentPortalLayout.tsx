@@ -15,6 +15,7 @@ import {
     Settings,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
 import {
     AGENT_PAGE_CONTAINER,
@@ -241,6 +242,7 @@ export default function AgentPortalLayout({
                     </div>
 
                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                        <PortalAppBarAlerts role="agent" />
                         {agent && <AgentProfileCompact agent={agent} />}
                         <button
                             type="button"
