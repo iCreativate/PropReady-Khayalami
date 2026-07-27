@@ -36,6 +36,12 @@ export function getAuthSecret(): string {
     return secret;
 }
 
+/** Non-throwing check for routes that should return 503 instead of crashing. */
+export function hasAuthSecret(): boolean {
+    const secret = process.env.AUTH_JWT_SECRET || process.env.NEXTAUTH_SECRET;
+    return Boolean(secret && secret.length >= 32);
+}
+
 function isLocalhostUrl(url: string): boolean {
     try {
         const host = new URL(url).hostname;
