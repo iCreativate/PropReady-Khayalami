@@ -20,7 +20,7 @@ export default function PortalLoading({
     if (variant === 'dashboard') {
         return (
             <div
-                className={`min-h-screen bg-[#fafafa] px-4 sm:px-6 lg:px-8 py-10 sm:py-12 ${className}`}
+                className={`portal-loading-shell min-h-screen bg-[#fafafa] px-4 sm:px-6 lg:px-8 py-10 sm:py-12 ${className}`}
                 role="status"
                 aria-live="polite"
                 aria-busy="true"
@@ -36,12 +36,16 @@ export default function PortalLoading({
                             <div
                                 key={i}
                                 className="h-28 rounded-3xl bg-white border border-charcoal/[0.08] shadow-card animate-pulse"
+                                style={{ animationDelay: `${i * 60}ms` }}
                             />
                         ))}
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                         <div className="lg:col-span-2 h-64 rounded-3xl bg-white border border-charcoal/[0.08] shadow-card animate-pulse" />
-                        <div className="h-64 rounded-3xl bg-white border border-charcoal/[0.08] shadow-card animate-pulse" />
+                        <div
+                            className="h-64 rounded-3xl bg-white border border-charcoal/[0.08] shadow-card animate-pulse"
+                            style={{ animationDelay: '80ms' }}
+                        />
                     </div>
                     <span className="sr-only">{message}</span>
                 </div>
@@ -57,7 +61,11 @@ export default function PortalLoading({
               : 'flex items-center justify-center py-16 px-4';
 
     return (
-        <div className={`${shell} ${className}`} role="status" aria-live="polite">
+        <div
+            className={`portal-loading-shell ${shell} ${className}`}
+            role="status"
+            aria-live="polite"
+        >
             <div className="text-center">
                 <div className="w-12 h-12 rounded-2xl bg-white border border-charcoal/[0.08] shadow-card flex items-center justify-center mx-auto mb-4">
                     <Loader2 className="w-6 h-6 text-gold animate-spin" aria-hidden />

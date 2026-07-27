@@ -9,6 +9,14 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { App as CapApp } from '@capacitor/app';
 
+function waitForNextPaint(): Promise<void> {
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+        });
+    });
+}
+
 export async function initNativeShell() {
     if (!Capacitor.isNativePlatform()) return;
 
@@ -26,9 +34,13 @@ export async function initNativeShell() {
     }
 
     try {
-        await SplashScreen.hide();
+        // Let first layout paint, then fade web content in under the splash.
+        await waitForNextPaint();
+        document.documentElement.classList.add('app-ready');
+        await waitForNextPaint();
+        await SplashScreen.hide({ fadeOutDuration: 420 });
     } catch {
-        /* ignore */
+        document.documentElement.classList.add('app-ready');
     }
 
     CapApp.addListener('backButton', ({ canGoBack }) => {

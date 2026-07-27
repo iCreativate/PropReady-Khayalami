@@ -32,10 +32,58 @@
 
 html.native-shell body {
   padding-bottom: var(--pr-safe-bottom);
+  opacity: 0;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.native-shell.app-ready body {
+  opacity: 1;
 }
 
 html.native-shell .auth-shell {
   padding-top: var(--pr-safe-top);
+}
+
+/* Soft page enter on route changes */
+@keyframes app-page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes app-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.app-page-shell {
+  animation: app-page-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+.portal-loading-shell {
+  animation: app-fade-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.native-shell body {
+    opacity: 1;
+    transition: none;
+  }
+
+  .app-page-shell,
+  .portal-loading-shell {
+    animation: none;
+  }
 }
 
 @layer base {

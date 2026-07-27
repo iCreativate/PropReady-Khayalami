@@ -10,7 +10,8 @@ export default function NativeShellInit() {
                 const { initNativeShell } = await import('@/mobile/native-shell');
                 await initNativeShell();
             } catch {
-                /* web-only or Capacitor not present */
+                /* web-only or Capacitor not present — still mark ready for CSS */
+                document.documentElement.classList.add('app-ready');
             }
         })();
     }, []);
