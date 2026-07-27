@@ -25,6 +25,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'All fields are required' }, { status: 400 });
         }
 
+        const supabase = createServiceClient();
+        if (!supabase) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error:
+                        'Database not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on Netlify, then redeploy.',
+                },
+                { status: 503 }
+            );
+        }
+
         if (accountType === 'agent' || accountType === 'originator') {
             const emailError = validateProfessionalWorkEmail(email);
             if (emailError) {
@@ -55,11 +67,6 @@ export async function POST(request: NextRequest) {
         const existing = await findAccountByEmail(email, accountType);
         if (existing) {
             return NextResponse.json({ success: false, error: 'An account with this email already exists' }, { status: 409 });
-        }
-
-        const supabase = createServiceClient();
-        if (!supabase) {
-            return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
         }
 
         const table = profileTableForAccountType(accountType);
@@ -118,6 +125,26 @@ export async function POST(request: NextRequest) {
         });
     } catch (err) {
         console.error('auth/register:', err);
-        return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
+        const message = err instanceof Error ? err.message : 'Server error';
+        const status =
+            /Enterprise auth tables are missing|Database not configured/i.test(message)
+                ? 503
+                : 500;
+        return NextResponse.json(
+            {
+                success: false,
+                error:
+                    status === 503
+                        ? message
+                        : /argon2|memory|hash/i.test(message)
+                          ? 'Could not secure your password. Please try again in a moment.'
+                          : message.startsWith('Enterprise') ||
+                              message.includes('already') ||
+                              message.length < 160
+                            ? message
+                            : 'Server error',
+            },
+            { status }
+        );
     }
 }

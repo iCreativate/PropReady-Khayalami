@@ -15,9 +15,10 @@ export const AUTH_CONFIG = {
     },
     argon2: {
         type: 2 as const, // argon2id
-        memoryCost: 65536,
-        timeCost: 3,
-        parallelism: 4,
+        // Keep under Netlify/serverless memory limits (64MiB default often OOMs)
+        memoryCost: 19456,
+        timeCost: 2,
+        parallelism: 1,
     },
 } as const;
 
