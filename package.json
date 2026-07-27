@@ -20,6 +20,7 @@
         "mobile:ios": "npx cap open ios",
         "mobile:add": "npx cap add android && npx cap add ios",
         "mobile:build:android": "npx cap sync && cd android && ./gradlew assembleDebug",
+        "mobile:build:android:release": "npx cap sync && cd android && ./gradlew assembleRelease bundleRelease",
         "mobile:build:ios": "npx cap sync && xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build"
     },
     "dependencies": {

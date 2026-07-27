@@ -61,7 +61,7 @@ export default function ProfessionalAuthShell({
     const Icon = copy.Icon;
 
     return (
-        <div className="min-h-screen flex bg-[#f3f1ef]">
+        <div className="auth-shell min-h-screen flex bg-[#f3f1ef]">
             <div className="hidden lg:flex lg:w-[46%] relative overflow-hidden bg-charcoal">
                 <div
                     className="absolute inset-0 opacity-40"

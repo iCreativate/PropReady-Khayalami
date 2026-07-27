@@ -40,6 +40,12 @@ const config: CapacitorConfig = {
         StatusBar: {
             style: 'DARK',
             backgroundColor: '#2C2C2C',
+            overlaysWebView: true,
+        },
+        // Capacitor 8: inject --safe-area-inset-* CSS vars for edge-to-edge Android
+        SystemBars: {
+            insetsHandling: 'css',
+            style: 'DARK',
         },
     },
     android: {

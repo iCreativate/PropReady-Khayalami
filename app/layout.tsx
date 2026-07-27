@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import SiteFooter from '@/components/SiteFooter';
@@ -11,6 +11,13 @@ export const metadata: Metadata = {
     title: 'PropReady-iKhayalami | Your Home. Ready.',
     description: '100% Free for buyers and Sellers - Get pre-qualified for a home loan in minutes.',
     keywords: 'home loans, property, South Africa, pre-qualification, FLISP, bond',
+};
+
+/** Required for Capacitor SystemBars safe-area CSS vars on Android edge-to-edge. */
+export const viewport: Viewport = {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
 };
 
 export default function RootLayout({

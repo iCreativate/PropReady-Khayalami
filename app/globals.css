@@ -2,6 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Capacitor / notch: prefer injected --safe-area-inset-* then env() */
+:root {
+  --pr-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --pr-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --pr-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --pr-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+}
+
+/* Fixed app bars sit under the status bar on Android edge-to-edge WebViews */
+.fixed.top-0 {
+  padding-top: var(--pr-safe-top);
+  padding-left: var(--pr-safe-left);
+  padding-right: var(--pr-safe-right);
+}
+
+/* Portal topbars use a fixed height — grow so content isn't crushed */
+.fixed.top-0.h-\[4\.25rem\] {
+  height: calc(4.25rem + var(--pr-safe-top));
+  box-sizing: border-box;
+}
+
+/* Clear taller fixed headers when safe-area padding is applied */
+@layer utilities {
+  .pt-24 {
+    padding-top: calc(6rem + var(--pr-safe-top));
+  }
+}
+
+html.native-shell body {
+  padding-bottom: var(--pr-safe-bottom);
+}
+
+html.native-shell .auth-shell {
+  padding-top: var(--pr-safe-top);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

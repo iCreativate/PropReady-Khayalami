@@ -39,6 +39,11 @@ export JAVA_HOME="$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home"
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 npm run mobile:build:android
 
+# Android release APK + Play Store AAB (needs android/keystore.properties + .jks — gitignored)
+npm run mobile:build:android:release
+# → android/app/build/outputs/apk/release/app-release.apk
+# → android/app/build/outputs/bundle/release/app-release.aab
+
 # iOS (requires Xcode.app installed)
 npm run mobile:build:ios
 ```
@@ -82,3 +87,4 @@ App ID (Android package / reverse-DNS): `za.co.propready.app`
 - Server cookies / auth work in the WebView when the app loads your HTTPS site.
 - OAuth providers may need the app’s custom URL scheme / associated domains for return redirects.
 - Rebuild native projects after changing `capacitor.config.ts`: `npx cap sync`.
+- **Safe-area / status bar:** the live website must include `viewport-fit=cover` and safe-area CSS (already in `app/layout.tsx` + `globals.css`). Deploy the Next.js site for the installed app to pick up header spacing fixes — no APK reinstall needed for CSS-only changes.
