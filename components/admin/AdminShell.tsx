@@ -13,13 +13,18 @@ import {
 } from 'lucide-react';
 import PortalLoading from '@/components/PortalLoading';
 
-const NAV = [
+const NAV: Array<{
+    href: string;
+    label: string;
+    icon: typeof LayoutDashboard;
+    exact?: boolean;
+}> = [
     { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
     { href: '/admin/accounts', label: 'Accounts', icon: Users },
     { href: '/admin/ppra', label: 'Agent approvals', icon: Shield },
     { href: '/admin/originators', label: 'Originator approvals', icon: Building2 },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-] as const;
+];
 
 export default function AdminShell({
     children,
