@@ -1,28 +1,33 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import {
-    Search,
-    CheckCircle,
-    XCircle,
-    Eye,
-    RefreshCw,
+    useCallback,
+    useEffect,
+    useId,
+    useMemo,
+    useRef,
+    useState,
+    type ReactNode,
+} from 'react';
+import {
     AlertCircle,
+    Building2,
+    CheckCircle2,
+    Clock3,
+    Download,
+    Eye,
+    FileText,
+    Filter,
+    RefreshCw,
+    Search,
+    ShieldCheck,
+    Timer,
+    UserCheck,
+    X,
+    XCircle,
 } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
-import PpraVerificationBadge from '@/components/PpraVerificationBadge';
-import PortalLoading from '@/components/PortalLoading';
-import {
-    PORTAL_CARD,
-    PORTAL_SECONDARY_BTN,
-    PORTAL_DANGER_BTN,
-    PORTAL_SUCCESS_BTN,
-    PORTAL_INPUT,
-    PORTAL_SEARCH_INPUT,
-    PORTAL_REFRESH_BTN,
-    PORTAL_SELECT,
-    PORTAL_TEXT_SECONDARY,
-} from '@/lib/portal-ui';
+import { isAgentPpraVerified } from '@/lib/ppra';
 
 interface Application {
     id: string;
@@ -30,61 +35,484 @@ interface Application {
     email: string;
     phone: string;
     company: string;
+    city: string | null;
     ppraNumber: string;
-    ffcNumber?: string;
-    ffcDocumentUrl?: string;
+    ffcNumber: string | null;
+    ffcDocumentUrl: string | null;
     verificationStatus: string;
-    verificationNotes?: string;
+    verificationDate: string | null;
+    verifiedBy: string | null;
+    verificationNotes: string | null;
     createdAt: string;
+    status: string;
+}
+
+type SortKey = 'newest' | 'oldest' | 'name';
+type StatusFilter = 'all' | 'pending' | 'verified' | 'rejected';
+type ConfirmAction = 'approve' | 'reject' | null;
+
+const NOTES_DRAFT_PREFIX = 'ppra-notes-draft:';
+const CHECKLIST_ITEMS = [
+    { key: 'identity', label: 'Identity', test: (a: Application) => !!a.fullName?.trim() },
+    { key: 'agency', label: 'Agency', test: (a: Application) => !!a.company?.trim() },
+    { key: 'registration', label: 'Registration', test: (a: Application) => !!a.ppraNumber?.trim() },
+    { key: 'phone', label: 'Phone', test: (a: Application) => !!a.phone?.trim() },
+    { key: 'email', label: 'Email', test: (a: Application) => !!a.email?.trim() },
+    { key: 'documents', label: 'Documents', test: (a: Application) => !!a.ffcDocumentUrl },
+] as const;
+
+function initials(name: string, email: string) {
+    const source = (name || email || '?').trim();
+    const parts = source.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return source.slice(0, 2).toUpperCase();
+}
+
+function formatDate(value: string | null | undefined) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-ZA', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+}
+
+function formatDateTime(value: string | null | undefined) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-ZA', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+function isToday(value: string | null | undefined) {
+    if (!value) return false;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return false;
+    const now = new Date();
+    return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
+    );
+}
+
+function normalizedVerificationStatus(app: Application) {
+    const s = (app.verificationStatus || '').toLowerCase();
+    if (s === 'verified' || isAgentPpraVerified(app)) return 'verified';
+    if (s === 'rejected') return 'rejected';
+    return 'pending';
+}
+
+function displayStatusLabel(app: Application) {
+    const vs = normalizedVerificationStatus(app);
+    if (vs === 'verified') return 'Approved';
+    if (vs === 'rejected') return 'Rejected';
+    if (!app.ffcDocumentUrl) return 'Requires Documents';
+    if (vs === 'pending' && app.verificationNotes?.trim()) return 'Under Review';
+    return 'Pending';
+}
+
+function statusTone(label: string) {
+    const s = label.toLowerCase();
+    if (s === 'approved') return 'bg-emerald-50 text-[#16A34A] border-emerald-200';
+    if (s === 'rejected') return 'bg-red-50 text-[#DC2626] border-red-200';
+    if (s === 'under review') return 'bg-blue-50 text-[#2563EB] border-blue-200';
+    if (s.includes('requires')) return 'bg-orange-50 text-[#EA580C] border-orange-200';
+    return 'bg-amber-50 text-[#F59E0B] border-amber-200';
+}
+
+function StatusPill({ label }: { label: string }) {
+    return (
+        <span
+            className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusTone(label)}`}
+        >
+            {label}
+        </span>
+    );
+}
+
+function checklistProgress(app: Application) {
+    const completed = CHECKLIST_ITEMS.filter((item) => item.test(app)).length;
+    return { completed, total: CHECKLIST_ITEMS.length };
+}
+
+function reviewHours(app: Application) {
+    if (!app.createdAt || !app.verificationDate) return null;
+    const start = new Date(app.createdAt).getTime();
+    const end = new Date(app.verificationDate).getTime();
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return null;
+    return (end - start) / (1000 * 60 * 60);
+}
+
+function KpiCard({
+    label,
+    value,
+    description,
+    icon: Icon,
+}: {
+    label: string;
+    value: string | number;
+    description: string;
+    icon: typeof ShieldCheck;
+}) {
+    return (
+        <div className="group rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(17,24,39,0.08)]">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
+                        {label}
+                    </p>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-[#111827] tabular-nums">
+                        {value}
+                    </p>
+                    <p className="mt-1 text-sm text-[#6B7280]">{description}</p>
+                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#E52323]/[0.08] text-[#E52323] transition group-hover:bg-[#E52323] group-hover:text-white">
+                    <Icon className="h-5 w-5" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SkeletonCard() {
+    return (
+        <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 animate-pulse">
+            <div className="flex gap-4">
+                <div className="h-12 w-12 rounded-full bg-slate-100" />
+                <div className="flex-1 space-y-3">
+                    <div className="h-4 w-1/3 rounded bg-slate-100" />
+                    <div className="h-3 w-1/2 rounded bg-slate-100" />
+                    <div className="h-3 w-2/5 rounded bg-slate-100" />
+                    <div className="h-2 w-full rounded bg-slate-100" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function DetailSkeleton() {
+    return (
+        <div className="space-y-4 animate-pulse">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-2xl border border-[#E5E7EB] bg-white p-5">
+                    <div className="h-4 w-1/3 rounded bg-slate-100 mb-4" />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="h-10 rounded bg-slate-100" />
+                        <div className="h-10 rounded bg-slate-100" />
+                        <div className="h-10 rounded bg-slate-100" />
+                        <div className="h-10 rounded bg-slate-100" />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+function SectionCard({ title, children }: { title: string; children: ReactNode }) {
+    return (
+        <section className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+            <h3 className="text-sm font-semibold text-[#111827]">{title}</h3>
+            <div className="mt-4">{children}</div>
+        </section>
+    );
+}
+
+function InfoGrid({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
+    return (
+        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {items.map(({ label, value }) => (
+                <div
+                    key={label}
+                    className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3"
+                >
+                    <dt className="text-xs uppercase tracking-wide text-[#6B7280]">{label}</dt>
+                    <dd className="mt-1 font-medium text-[#111827] break-words">{value}</dd>
+                </div>
+            ))}
+        </dl>
+    );
+}
+
+function MenuItem({
+    children,
+    onClick,
+    danger = false,
+    disabled = false,
+}: {
+    children: ReactNode;
+    onClick: () => void;
+    danger?: boolean;
+    disabled?: boolean;
+}) {
+    return (
+        <button
+            type="button"
+            role="menuitem"
+            disabled={disabled}
+            onClick={onClick}
+            className={`flex w-full px-3 py-2.5 text-left text-sm transition hover:bg-[#F8FAFC] disabled:opacity-40 disabled:cursor-not-allowed ${
+                danger ? 'text-[#DC2626]' : 'text-[#111827]'
+            }`}
+        >
+            {children}
+        </button>
+    );
 }
 
 export default function AdminPpraPage() {
+    const [allApplications, setAllApplications] = useState<Application[]>([]);
+    const [searchDraft, setSearchDraft] = useState('');
     const [search, setSearch] = useState('');
-    const [statusFilter, setStatusFilter] = useState('pending');
-    const [applications, setApplications] = useState<Application[]>([]);
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+    const [agencyFilter, setAgencyFilter] = useState('');
+    const [sort, setSort] = useState<SortKey>('newest');
     const [selected, setSelected] = useState<Application | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [notes, setNotes] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewLoading, setPreviewLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+    const [filtersOpen, setFiltersOpen] = useState(false);
+    const bulkMenuRef = useRef<HTMLDetailsElement>(null);
+    const notesDraftSaveRef = useRef<number | null>(null);
+    const confirmTitleId = useId();
+
+    useEffect(() => {
+        const t = window.setTimeout(() => setSearch(searchDraft.trim()), 300);
+        return () => window.clearTimeout(t);
+    }, [searchDraft]);
 
     const loadApplications = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const params = new URLSearchParams({ status: statusFilter });
-            if (search) params.set('q', search);
-            const res = await fetch(`/api/admin/ppra?${params}`, {
-                credentials: 'include',
-            });
+            const params = new URLSearchParams({ status: 'all' });
+            const res = await fetch(`/api/admin/ppra?${params}`, { credentials: 'include' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load');
-            setApplications(data.applications || []);
+            const apps: Application[] = data.applications || [];
+            setAllApplications(apps);
+            setSelectedIds(new Set());
+            setSelected((prev) => {
+                if (!prev) return null;
+                return apps.find((a) => a.id === prev.id) || null;
+            });
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Load failed');
         } finally {
             setLoading(false);
         }
-    }, [statusFilter, search]);
+    }, []);
 
     useEffect(() => {
         void loadApplications();
     }, [loadApplications]);
 
+    useEffect(() => {
+        if (!selected) {
+            setNotes('');
+            setPreviewUrl(null);
+            return;
+        }
+        try {
+            const draft = localStorage.getItem(`${NOTES_DRAFT_PREFIX}${selected.id}`);
+            setNotes(draft ?? selected.verificationNotes ?? '');
+        } catch {
+            setNotes(selected.verificationNotes || '');
+        }
+        setPreviewUrl(null);
+        setRejectionReason('');
+    }, [selected?.id]);
+
+    useEffect(() => {
+        if (!selected?.id) return;
+        if (notesDraftSaveRef.current) window.clearTimeout(notesDraftSaveRef.current);
+        notesDraftSaveRef.current = window.setTimeout(() => {
+            try {
+                localStorage.setItem(`${NOTES_DRAFT_PREFIX}${selected.id}`, notes);
+            } catch {
+                /* ignore quota errors */
+            }
+        }, 400);
+        return () => {
+            if (notesDraftSaveRef.current) window.clearTimeout(notesDraftSaveRef.current);
+        };
+    }, [notes, selected?.id]);
+
+    const kpis = useMemo(() => {
+        const pending = allApplications.filter(
+            (a) => normalizedVerificationStatus(a) === 'pending'
+        ).length;
+        const approvedToday = allApplications.filter(
+            (a) =>
+                normalizedVerificationStatus(a) === 'verified' && isToday(a.verificationDate)
+        ).length;
+        const rejected = allApplications.filter(
+            (a) => normalizedVerificationStatus(a) === 'rejected'
+        ).length;
+        const verified = allApplications.filter(
+            (a) => normalizedVerificationStatus(a) === 'verified'
+        ).length;
+        const hours = allApplications
+            .map(reviewHours)
+            .filter((h): h is number => h != null);
+        const avgReviewTime =
+            hours.length > 0
+                ? `${(hours.reduce((a, b) => a + b, 0) / hours.length).toFixed(1)} hrs`
+                : '—';
+        return { pending, approvedToday, rejected, verified, avgReviewTime };
+    }, [allApplications]);
+
+    const filtered = useMemo(() => {
+        let list = [...allApplications];
+        const q = search.toLowerCase();
+
+        if (q) {
+            list = list.filter(
+                (a) =>
+                    a.fullName?.toLowerCase().includes(q) ||
+                    a.company?.toLowerCase().includes(q) ||
+                    String(a.ppraNumber || '').includes(q) ||
+                    a.email?.toLowerCase().includes(q) ||
+                    (a.ffcNumber || '').toLowerCase().includes(q)
+            );
+        }
+
+        if (statusFilter !== 'all') {
+            list = list.filter((a) => normalizedVerificationStatus(a) === statusFilter);
+        }
+
+        const agency = agencyFilter.trim().toLowerCase();
+        if (agency) {
+            list = list.filter((a) => a.company?.toLowerCase().includes(agency));
+        }
+
+        list.sort((a, b) => {
+            if (sort === 'newest') {
+                return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+            }
+            if (sort === 'oldest') {
+                return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+            }
+            return (a.fullName || a.email).localeCompare(b.fullName || b.email);
+        });
+
+        return list;
+    }, [allApplications, search, statusFilter, agencyFilter, sort]);
+
+    function resetFilters() {
+        setSearchDraft('');
+        setSearch('');
+        setStatusFilter('all');
+        setAgencyFilter('');
+        setSort('newest');
+    }
+
+    function exportCsv() {
+        const rows = [
+            [
+                'Full Name',
+                'Email',
+                'Phone',
+                'Company',
+                'City',
+                'PPRA',
+                'FFC',
+                'Verification Status',
+                'Account Status',
+                'Verification Date',
+                'Verified By',
+                'Created',
+                'Notes',
+            ],
+            ...filtered.map((a) => [
+                a.fullName,
+                a.email,
+                a.phone,
+                a.company,
+                a.city || '',
+                a.ppraNumber,
+                a.ffcNumber || '',
+                a.verificationStatus,
+                a.status,
+                a.verificationDate || '',
+                a.verifiedBy || '',
+                a.createdAt,
+                a.verificationNotes || '',
+            ]),
+        ];
+        const csv = rows
+            .map((row) =>
+                row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+            )
+            .join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `propready-agent-approvals-${new Date().toISOString().slice(0, 10)}.csv`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+    }
+
     const openPreview = async (app: Application) => {
         if (!app.ffcDocumentUrl) return;
-        const res = await fetch(
-            `/api/agents/ppra/document?path=${encodeURIComponent(app.ffcDocumentUrl)}`,
-            { credentials: 'include' }
-        );
-        const data = await res.json();
-        if (data.signedUrl) setPreviewUrl(data.signedUrl);
-        else setError(data.error || 'Could not load document');
+        setPreviewLoading(true);
+        setError('');
+        try {
+            const res = await fetch(
+                `/api/agents/ppra/document?path=${encodeURIComponent(app.ffcDocumentUrl)}`,
+                { credentials: 'include' }
+            );
+            const data = await res.json();
+            if (data.signedUrl) setPreviewUrl(data.signedUrl);
+            else setError(data.error || 'Could not load document');
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Could not load document');
+        } finally {
+            setPreviewLoading(false);
+        }
     };
 
-    const review = async (action: 'approve' | 'reject') => {
+    async function reviewOne(
+        app: Application,
+        action: 'approve' | 'reject',
+        opts?: { rejectionReason?: string; verificationNotes?: string }
+    ) {
+        const reason = opts?.rejectionReason ?? rejectionReason;
+        const verificationNotes = opts?.verificationNotes ?? notes;
+        if (action === 'reject' && !reason.trim()) {
+            throw new Error('Enter a rejection reason');
+        }
+        const res = await fetch('/api/admin/ppra/review', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                agentId: app.id,
+                action,
+                rejectionReason: reason,
+                verificationNotes,
+            }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Action failed (${res.status})`);
+    }
+
+    async function executeReview(action: 'approve' | 'reject') {
         if (!selected) return;
         if (action === 'reject' && !rejectionReason.trim()) {
             setError('Enter a rejection reason');
@@ -93,227 +521,781 @@ export default function AdminPpraPage() {
         setActionLoading(true);
         setError('');
         try {
-            const res = await fetch('/api/admin/ppra/review', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    agentId: selected.id,
-                    action,
-                    rejectionReason,
-                    verificationNotes: notes,
-                }),
-            });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || `Action failed (${res.status})`);
+            await reviewOne(selected, action);
+            try {
+                localStorage.removeItem(`${NOTES_DRAFT_PREFIX}${selected.id}`);
+            } catch {
+                /* ignore */
+            }
             setSelected(null);
             setNotes('');
             setRejectionReason('');
             setPreviewUrl(null);
+            setConfirmAction(null);
             await loadApplications();
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Action failed');
         } finally {
             setActionLoading(false);
         }
-    };
+    }
+
+    async function runBulk(action: 'approve' | 'reject') {
+        const targets = filtered.filter((a) => selectedIds.has(a.id));
+        if (targets.length === 0) return;
+
+        let bulkRejectionReason = '';
+        if (action === 'reject') {
+            bulkRejectionReason =
+                window.prompt(
+                    `Enter a rejection reason for ${targets.length} selected application(s):`
+                )?.trim() || '';
+            if (!bulkRejectionReason) {
+                setError('Rejection reason is required for bulk reject');
+                return;
+            }
+        }
+
+        if (bulkMenuRef.current) bulkMenuRef.current.open = false;
+        setActionLoading(true);
+        setError('');
+        try {
+            for (const app of targets) {
+                await reviewOne(app, action, {
+                    rejectionReason: bulkRejectionReason,
+                    verificationNotes: notes,
+                });
+                try {
+                    localStorage.removeItem(`${NOTES_DRAFT_PREFIX}${app.id}`);
+                } catch {
+                    /* ignore */
+                }
+            }
+            setSelected(null);
+            setNotes('');
+            setRejectionReason('');
+            setPreviewUrl(null);
+            await loadApplications();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Bulk action failed');
+        } finally {
+            setActionLoading(false);
+        }
+    }
+
+    function appendNotesTemplate(template: string) {
+        setNotes((prev) => (prev.trim() ? `${prev.trim()}\n\n${template}` : template));
+    }
+
+    const allFilteredSelected =
+        filtered.length > 0 && filtered.every((a) => selectedIds.has(a.id));
 
     return (
-        <AdminShell title="Agent approvals">
-            <div className={`${PORTAL_CARD} mb-6 px-6 py-6 sm:px-7`}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40 mb-2">
-                            Compliance review
-                        </p>
-                        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-charcoal">
-                            Agent registration approvals
+        <AdminShell title="Agent Approvals">
+            <div className="mx-auto max-w-7xl space-y-6">
+                {/* Header */}
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="min-w-0">
+                        <h2 className="text-3xl font-semibold tracking-tight text-[#111827]">
+                            Agent Approvals
                         </h2>
-                        <p className="text-sm text-charcoal/55 mt-2 max-w-2xl">
-                            Review PPRA details, FFC support documents, and internal notes before
-                            approving agent access.
+                        <p className="mt-2 max-w-2xl text-sm sm:text-base text-[#6B7280]">
+                            Review and verify new agent registrations.
                         </p>
                     </div>
-                    <button type="button" onClick={loadApplications} className={PORTAL_REFRESH_BTN}>
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => void loadApplications()}
+                            disabled={loading}
+                            className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E52323]/40 disabled:opacity-50"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </button>
+                        <button
+                            type="button"
+                            onClick={exportCsv}
+                            className="inline-flex h-11 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E52323]/40"
+                        >
+                            <Download className="h-4 w-4" />
+                            Export
+                        </button>
+                        <details ref={bulkMenuRef} className="group relative">
+                            <summary className="list-none inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E52323]/40 [&::-webkit-details-marker]:hidden">
+                                Bulk Actions
+                                <span className="rounded-full bg-[#F8FAFC] px-2 py-0.5 text-xs text-[#6B7280]">
+                                    {selectedIds.size}
+                                </span>
+                            </summary>
+                            <div className="absolute right-0 z-20 mt-2 w-52 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white py-1 shadow-[0_16px_40px_rgba(17,24,39,0.12)]">
+                                <MenuItem
+                                    disabled={actionLoading || selectedIds.size === 0}
+                                    onClick={() => void runBulk('approve')}
+                                >
+                                    Approve selected
+                                </MenuItem>
+                                <MenuItem
+                                    danger
+                                    disabled={actionLoading || selectedIds.size === 0}
+                                    onClick={() => void runBulk('reject')}
+                                >
+                                    Reject selected
+                                </MenuItem>
+                            </div>
+                        </details>
+                    </div>
                 </div>
-            </div>
 
-            {error && (
-                <p className="mb-4 text-red-700 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex items-center gap-2 text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
-                </p>
-            )}
+                {/* KPIs */}
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <KpiCard
+                        label="Pending Reviews"
+                        value={kpis.pending}
+                        description="Awaiting verification decision"
+                        icon={Clock3}
+                    />
+                    <KpiCard
+                        label="Approved Today"
+                        value={kpis.approvedToday}
+                        description="Verified since midnight"
+                        icon={CheckCircle2}
+                    />
+                    <KpiCard
+                        label="Rejected"
+                        value={kpis.rejected}
+                        description="Applications declined"
+                        icon={XCircle}
+                    />
+                    <KpiCard
+                        label="Avg Review Time"
+                        value={kpis.avgReviewTime}
+                        description="From submission to decision"
+                        icon={Timer}
+                    />
+                    <KpiCard
+                        label="Verified Agents"
+                        value={kpis.verified}
+                        description="Total approved registrations"
+                        icon={UserCheck}
+                    />
+                </div>
 
-            <div className="flex flex-col lg:flex-row gap-6">
-                <div className="flex-1">
-                    <div className={`${PORTAL_CARD} p-4 sm:p-5 mb-4`}>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                {error ? (
+                    <div
+                        role="alert"
+                        className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-[#DC2626]"
+                    >
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        {error}
+                    </div>
+                ) : null}
+
+                {/* Toolbar */}
+                <div className="rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                         <div className="relative flex-1">
-                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7280]" />
                             <input
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && loadApplications()}
+                                value={searchDraft}
+                                onChange={(e) => setSearchDraft(e.target.value)}
                                 placeholder="Search name, agency, PPRA number…"
-                                className={PORTAL_SEARCH_INPUT}
+                                aria-label="Search applications"
+                                className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] pl-10 pr-3 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
                             />
                         </div>
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className={PORTAL_SELECT}
+                        <button
+                            type="button"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] lg:hidden"
+                            onClick={() => setFiltersOpen((v) => !v)}
+                            aria-expanded={filtersOpen}
                         >
-                            <option value="all">All</option>
-                            <option value="pending">Pending</option>
-                            <option value="verified">Verified</option>
-                            <option value="rejected">Rejected</option>
-                        </select>
+                            <Filter className="h-4 w-4" />
+                            Filters
+                        </button>
+                        <div
+                            className={`${
+                                filtersOpen ? 'grid' : 'hidden'
+                            } grid-cols-1 gap-2 sm:grid-cols-2 lg:!flex lg:items-center lg:gap-2`}
+                        >
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                                aria-label="Verification status"
+                                className="h-11 rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm"
+                            >
+                                <option value="all">All statuses</option>
+                                <option value="pending">Pending</option>
+                                <option value="verified">Verified</option>
+                                <option value="rejected">Rejected</option>
+                            </select>
+                            <input
+                                value={agencyFilter}
+                                onChange={(e) => setAgencyFilter(e.target.value)}
+                                placeholder="Filter by agency…"
+                                aria-label="Agency filter"
+                                className="h-11 rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm"
+                            />
+                            <select
+                                value={sort}
+                                onChange={(e) => setSort(e.target.value as SortKey)}
+                                aria-label="Sort applications"
+                                className="h-11 rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm"
+                            >
+                                <option value="newest">Newest first</option>
+                                <option value="oldest">Oldest first</option>
+                                <option value="name">Name A–Z</option>
+                            </select>
+                            <button
+                                type="button"
+                                onClick={resetFilters}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#6B7280] transition hover:text-[#111827]"
+                            >
+                                <RefreshCw className="h-4 w-4" />
+                                Reset Filters
+                            </button>
+                        </div>
                     </div>
+                </div>
+
+                {/* Main split layout */}
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+                    {/* Left — application list */}
+                    <div className="min-w-0 flex-1 space-y-3">
+                        <div className="flex items-center justify-between gap-3 px-1">
+                            <label className="inline-flex items-center gap-2 text-sm text-[#6B7280]">
+                                <input
+                                    type="checkbox"
+                                    checked={allFilteredSelected}
+                                    onChange={(e) => {
+                                        const next = new Set(selectedIds);
+                                        if (e.target.checked) {
+                                            filtered.forEach((a) => next.add(a.id));
+                                        } else {
+                                            filtered.forEach((a) => next.delete(a.id));
+                                        }
+                                        setSelectedIds(next);
+                                    }}
+                                    className="rounded border-[#E5E7EB]"
+                                />
+                                Select all
+                            </label>
+                            <p className="text-sm text-[#6B7280]">
+                                {filtered.length} result{filtered.length === 1 ? '' : 's'}
+                            </p>
+                        </div>
+
+                        {loading ? (
+                            <div className="space-y-3">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <SkeletonCard key={i} />
+                                ))}
+                            </div>
+                        ) : filtered.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-[#E5E7EB] bg-white px-6 py-16 text-center">
+                                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#E52323]/[0.08] text-[#E52323]">
+                                    <ShieldCheck className="h-8 w-8" />
+                                </div>
+                                <h3 className="text-xl font-semibold text-[#111827]">
+                                    No applications found
+                                </h3>
+                                <p className="mx-auto mt-2 max-w-md text-sm text-[#6B7280]">
+                                    Try adjusting your filters or refresh to load the latest
+                                    registrations.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={resetFilters}
+                                    className="mt-6 inline-flex h-11 items-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] hover:bg-[#F8FAFC]"
+                                >
+                                    Reset Filters
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="max-h-[calc(100vh-22rem)] space-y-3 overflow-y-auto pr-1">
+                                {filtered.map((app) => {
+                                    const progress = checklistProgress(app);
+                                    const isSelected = selected?.id === app.id;
+                                    const isChecked = selectedIds.has(app.id);
+                                    const statusLabel = displayStatusLabel(app);
+                                    return (
+                                        <article
+                                            key={app.id}
+                                            className={`rounded-2xl border bg-white p-4 shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(17,24,39,0.08)] ${
+                                                isSelected
+                                                    ? 'border-[#E52323]/40 ring-2 ring-[#E52323]/15'
+                                                    : 'border-[#E5E7EB]'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        const next = new Set(selectedIds);
+                                                        if (e.target.checked) next.add(app.id);
+                                                        else next.delete(app.id);
+                                                        setSelectedIds(next);
+                                                    }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="mt-3 rounded border-[#E5E7EB]"
+                                                    aria-label={`Select ${app.fullName}`}
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelected(app)}
+                                                    className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                                                >
+                                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#111827] text-sm font-semibold text-white">
+                                                        {initials(app.fullName, app.email)}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h3 className="truncate text-base font-semibold text-[#111827]">
+                                                                {app.fullName || 'Unnamed agent'}
+                                                            </h3>
+                                                            <StatusPill label={statusLabel} />
+                                                        </div>
+                                                        <p className="mt-1 truncate text-sm text-[#6B7280]">
+                                                            {app.company || 'No agency listed'}
+                                                        </p>
+                                                        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#6B7280]">
+                                                            <span className="font-mono text-[#111827]">
+                                                                PPRA {app.ppraNumber || '—'}
+                                                            </span>
+                                                            <span>
+                                                                Submitted {formatDate(app.createdAt)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mt-3">
+                                                            <div className="flex items-center justify-between text-[11px] text-[#6B7280]">
+                                                                <span>Checklist</span>
+                                                                <span>
+                                                                    {progress.completed}/
+                                                                    {progress.total}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#E5E7EB]">
+                                                                <div
+                                                                    className="h-full rounded-full bg-[#E52323] transition-all"
+                                                                    style={{
+                                                                        width: `${(progress.completed / progress.total) * 100}%`,
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
-                    <div className={`${PORTAL_CARD} p-3 sm:p-4 relative space-y-3 max-h-[70vh] overflow-y-auto min-h-[120px]`}>
-                        {loading && applications.length === 0 ? (
-                            <PortalLoading variant="inline" message="Loading applications…" />
-                        ) : null}
-                        {applications.map((app) => (
-                            <button
-                                key={app.id}
-                                type="button"
-                                onClick={() => {
-                                    setSelected(app);
-                                    setPreviewUrl(null);
-                                    setNotes(app.verificationNotes || '');
-                                }}
-                                className={`w-full text-left p-4 rounded-2xl border transition ${
-                                    selected?.id === app.id
-                                        ? 'border-gold/35 bg-gold/[0.06] shadow-sm'
-                                        : 'border-charcoal/[0.08] bg-white hover:border-charcoal/15 hover:shadow-sm'
-                                }`}
-                            >
-                                <div className="flex justify-between gap-3">
-                                    <div>
-                                        <p className="font-semibold text-charcoal">{app.fullName}</p>
-                                        <p className={`text-sm ${PORTAL_TEXT_SECONDARY} mt-0.5`}>{app.company}</p>
-                                        <p className="text-xs text-charcoal/45 font-mono mt-2">
-                                            PPRA {app.ppraNumber}{app.ffcNumber ? ` · FFC ${app.ffcNumber}` : ''}
-                                        </p>
+                    {/* Right — detail panel */}
+                    <div className="w-full lg:sticky lg:top-24 lg:w-[28rem] xl:w-[32rem] shrink-0">
+                        {loading && !selected ? (
+                            <DetailSkeleton />
+                        ) : selected ? (
+                            <div className="space-y-4">
+                                <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#111827] text-base font-semibold text-white">
+                                                {initials(selected.fullName, selected.email)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
+                                                    Reviewing application
+                                                </p>
+                                                <h2 className="truncate text-xl font-semibold text-[#111827]">
+                                                    {selected.fullName}
+                                                </h2>
+                                            </div>
+                                        </div>
+                                        <StatusPill label={displayStatusLabel(selected)} />
                                     </div>
-                                    <PpraVerificationBadge
-                                        agent={{ verificationStatus: app.verificationStatus }}
-                                    />
                                 </div>
-                            </button>
-                        ))}
-                        {!loading && applications.length === 0 && (
-                            <p className={`text-center py-8 ${PORTAL_TEXT_SECONDARY}`}>
-                                No applications found
-                            </p>
+
+                                <SectionCard title="Applicant Information">
+                                    <InfoGrid
+                                        items={[
+                                            { label: 'Full name', value: selected.fullName || '—' },
+                                            { label: 'Email', value: selected.email || '—' },
+                                            { label: 'Phone', value: selected.phone || '—' },
+                                            { label: 'City', value: selected.city || '—' },
+                                            { label: 'Company', value: selected.company || '—' },
+                                            {
+                                                label: 'Account status',
+                                                value: (
+                                                    <span className="capitalize">
+                                                        {selected.status || '—'}
+                                                    </span>
+                                                ),
+                                            },
+                                        ]}
+                                    />
+                                </SectionCard>
+
+                                <SectionCard title="Verification Details">
+                                    <InfoGrid
+                                        items={[
+                                            {
+                                                label: 'PPRA number',
+                                                value: (
+                                                    <span className="font-mono">
+                                                        {selected.ppraNumber || '—'}
+                                                    </span>
+                                                ),
+                                            },
+                                            {
+                                                label: 'FFC number',
+                                                value: (
+                                                    <span className="font-mono">
+                                                        {selected.ffcNumber || '—'}
+                                                    </span>
+                                                ),
+                                            },
+                                            {
+                                                label: 'Verification status',
+                                                value: (
+                                                    <span className="capitalize">
+                                                        {selected.verificationStatus || 'pending'}
+                                                    </span>
+                                                ),
+                                            },
+                                            {
+                                                label: 'Verification date',
+                                                value: formatDateTime(selected.verificationDate),
+                                            },
+                                            {
+                                                label: 'Verified by',
+                                                value: selected.verifiedBy || '—',
+                                            },
+                                        ]}
+                                    />
+                                </SectionCard>
+
+                                <SectionCard title="Agency Information">
+                                    <InfoGrid
+                                        items={[
+                                            { label: 'Agency name', value: selected.company || '—' },
+                                            { label: 'City', value: selected.city || '—' },
+                                        ]}
+                                    />
+                                </SectionCard>
+
+                                <SectionCard title="Supporting Documents">
+                                    {selected.ffcDocumentUrl ? (
+                                        <div className="flex flex-col gap-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-[#E5E7EB] text-[#E52323]">
+                                                    <FileText className="h-5 w-5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium text-[#111827]">
+                                                        FFC Document
+                                                    </p>
+                                                    <p className="truncate text-xs text-[#6B7280]">
+                                                        {selected.ffcDocumentUrl.split('/').pop()}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={previewLoading}
+                                                    onClick={() => void openPreview(selected)}
+                                                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                                                >
+                                                    <Eye className="h-4 w-4" />
+                                                    {previewLoading ? 'Loading…' : 'Preview'}
+                                                </button>
+                                                {previewUrl ? (
+                                                    <a
+                                                        href={previewUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#E52323] px-4 text-sm font-semibold text-white transition hover:bg-[#c91d1d]"
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                        Open / Download
+                                                    </a>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-[#6B7280]">
+                                            No FFC document uploaded yet.
+                                        </p>
+                                    )}
+                                </SectionCard>
+
+                                <SectionCard title="Internal Notes">
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Internal verification notes (optional)"
+                                        rows={4}
+                                        maxLength={2000}
+                                        className="w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
+                                    />
+                                    <div className="mt-2 flex items-center justify-between text-xs text-[#6B7280]">
+                                        <span>Draft saved locally for this application</span>
+                                        <span>{notes.length}/2000</span>
+                                    </div>
+                                </SectionCard>
+
+                                <SectionCard title="Verification Checklist">
+                                    <ul className="space-y-2">
+                                        {CHECKLIST_ITEMS.map((item) => {
+                                            const done = item.test(selected);
+                                            return (
+                                                <li
+                                                    key={item.key}
+                                                    className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm"
+                                                >
+                                                    <span
+                                                        className={`flex h-6 w-6 items-center justify-center rounded-full ${
+                                                            done
+                                                                ? 'bg-emerald-100 text-[#16A34A]'
+                                                                : 'bg-slate-100 text-[#6B7280]'
+                                                        }`}
+                                                    >
+                                                        {done ? (
+                                                            <CheckCircle2 className="h-3.5 w-3.5" />
+                                                        ) : (
+                                                            <Clock3 className="h-3.5 w-3.5" />
+                                                        )}
+                                                    </span>
+                                                    <span
+                                                        className={
+                                                            done
+                                                                ? 'font-medium text-[#111827]'
+                                                                : 'text-[#6B7280]'
+                                                        }
+                                                    >
+                                                        {item.label}
+                                                    </span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </SectionCard>
+
+                                <SectionCard title="Application Timeline">
+                                    <ol className="relative space-y-4 border-l border-[#E5E7EB] pl-5 ml-2">
+                                        <li className="relative">
+                                            <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#E52323]" />
+                                            <p className="text-sm font-medium text-[#111827]">
+                                                Application Submitted
+                                            </p>
+                                            <p className="text-xs text-[#6B7280]">
+                                                {formatDateTime(selected.createdAt)}
+                                            </p>
+                                        </li>
+                                        {selected.ffcDocumentUrl ? (
+                                            <li className="relative">
+                                                <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#2563EB]" />
+                                                <p className="text-sm font-medium text-[#111827]">
+                                                    Documents Uploaded
+                                                </p>
+                                                <p className="text-xs text-[#6B7280]">
+                                                    FFC document on file
+                                                </p>
+                                            </li>
+                                        ) : null}
+                                        {(selected.verificationNotes ||
+                                            normalizedVerificationStatus(selected) ===
+                                                'pending') && (
+                                            <li className="relative">
+                                                <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
+                                                <p className="text-sm font-medium text-[#111827]">
+                                                    Verification Started
+                                                </p>
+                                                <p className="text-xs text-[#6B7280]">
+                                                    {selected.verificationNotes
+                                                        ? 'Notes added by reviewer'
+                                                        : 'Pending staff review'}
+                                                </p>
+                                            </li>
+                                        )}
+                                        {selected.verificationDate ? (
+                                            <li className="relative">
+                                                <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+                                                <p className="text-sm font-medium text-[#111827]">
+                                                    Decision Made
+                                                </p>
+                                                <p className="text-xs text-[#6B7280]">
+                                                    {formatDateTime(selected.verificationDate)}
+                                                    {selected.verifiedBy
+                                                        ? ` · ${selected.verifiedBy}`
+                                                        : ''}
+                                                </p>
+                                            </li>
+                                        ) : null}
+                                    </ol>
+                                </SectionCard>
+
+                                <SectionCard title="Decision">
+                                    <p className="text-xs text-[#6B7280] mb-3">
+                                        Rejection reason (required if rejecting)
+                                    </p>
+                                    <textarea
+                                        value={rejectionReason}
+                                        onChange={(e) => setRejectionReason(e.target.value)}
+                                        placeholder="Rejection reason (required if rejecting)"
+                                        rows={2}
+                                        className="mb-4 w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
+                                    />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading}
+                                            onClick={() => setConfirmAction('approve')}
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-4 text-sm font-semibold text-white transition hover:bg-[#15803d] disabled:opacity-50"
+                                        >
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            {normalizedVerificationStatus(selected) === 'verified'
+                                                ? 'Re-approve'
+                                                : 'Approve'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading}
+                                            onClick={() => setConfirmAction('reject')}
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#DC2626] px-4 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:opacity-50"
+                                        >
+                                            <XCircle className="h-4 w-4" />
+                                            Reject
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                appendNotesTemplate(
+                                                    'Please provide additional documentation: '
+                                                )
+                                            }
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC]"
+                                        >
+                                            Request More Information
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                appendNotesTemplate(
+                                                    'Application returned for corrections: '
+                                                )
+                                            }
+                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC]"
+                                        >
+                                            Return Application
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                appendNotesTemplate(
+                                                    'Review suspended pending: '
+                                                )
+                                            }
+                                            className="sm:col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC]"
+                                        >
+                                            Suspend Review
+                                        </button>
+                                    </div>
+                                </SectionCard>
+                            </div>
+                        ) : (
+                            <div className="rounded-2xl border border-dashed border-[#E5E7EB] bg-white px-6 py-16 text-center">
+                                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E52323]/[0.08] text-[#E52323]">
+                                    <Building2 className="h-7 w-7" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-[#111827]">
+                                    Select an application
+                                </h3>
+                                <p className="mt-2 text-sm text-[#6B7280]">
+                                    Choose a registration from the list to review details, documents,
+                                    and make a decision.
+                                </p>
+                            </div>
                         )}
                     </div>
                 </div>
-
-                <div className={`${PORTAL_CARD} lg:w-[28rem] p-6 h-fit sticky top-24`}>
-                    {selected ? (
-                        <>
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40">
-                                        Reviewing application
-                                    </p>
-                                    <h2 className="text-xl font-semibold text-charcoal mt-1">
-                                        {selected.fullName}
-                                    </h2>
-                                </div>
-                                <PpraVerificationBadge
-                                    agent={{ verificationStatus: selected.verificationStatus }}
-                                />
-                            </div>
-                            <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3">
-                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">Email</dt>
-                                    <dd className="text-charcoal mt-1 break-all">{selected.email}</dd>
-                                </div>
-                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3">
-                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">Phone</dt>
-                                    <dd className="text-charcoal mt-1">{selected.phone}</dd>
-                                </div>
-                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3">
-                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">PPRA</dt>
-                                    <dd className="font-mono text-charcoal mt-1">{selected.ppraNumber}</dd>
-                                </div>
-                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3">
-                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">FFC</dt>
-                                    <dd className="font-mono text-charcoal mt-1">{selected.ffcNumber || '—'}</dd>
-                                </div>
-                            </dl>
-                            {selected.ffcDocumentUrl && (
-                                <button
-                                    type="button"
-                                    onClick={() => openPreview(selected)}
-                                    className={`${PORTAL_SECONDARY_BTN} mt-4 w-full`}
-                                >
-                                    <Eye className="w-4 h-4" />
-                                    Preview FFC document
-                                </button>
-                            )}
-                            {previewUrl && (
-                                <a
-                                    href={previewUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block mt-2 text-gold text-sm hover:underline"
-                                >
-                                    Open document in new tab
-                                </a>
-                            )}
-                            <p className="text-xs text-charcoal/45 mt-5 mb-2">Internal notes</p>
-                            <textarea
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Internal verification notes (optional)"
-                                rows={2}
-                                className={`${PORTAL_INPUT} mt-4 text-sm`}
-                            />
-                            <p className="text-xs text-charcoal/45 mt-3 mb-2">Rejection reason</p>
-                            <textarea
-                                value={rejectionReason}
-                                onChange={(e) => setRejectionReason(e.target.value)}
-                                placeholder="Rejection reason (required if rejecting)"
-                                rows={2}
-                                className={`${PORTAL_INPUT} mt-0 text-sm`}
-                            />
-                            <div className="flex gap-2 mt-4">
-                                <button
-                                    type="button"
-                                    disabled={actionLoading}
-                                    onClick={() => review('approve')}
-                                    className={`${PORTAL_SUCCESS_BTN} flex-1`}
-                                >
-                                    <CheckCircle className="w-4 h-4" />
-                                    {selected.verificationStatus === 'verified' ? 'Re-approve' : 'Approve'}
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={actionLoading}
-                                    onClick={() => review('reject')}
-                                    className={`${PORTAL_DANGER_BTN} flex-1`}
-                                >
-                                    <XCircle className="w-4 h-4" />
-                                    Reject
-                                </button>
-                            </div>
-                        </>
-                    ) : (
-                        <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>
-                            Select an application to review
-                        </p>
-                    )}
-                </div>
             </div>
+
+            {/* Confirmation modal */}
+            {confirmAction ? (
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-[1px]">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={confirmTitleId}
+                        className="w-full max-w-md rounded-t-3xl sm:rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-2xl"
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <h3
+                                    id={confirmTitleId}
+                                    className="text-lg font-semibold text-[#111827]"
+                                >
+                                    {confirmAction === 'approve'
+                                        ? 'Confirm approval'
+                                        : 'Confirm rejection'}
+                                </h3>
+                                <p className="mt-1 text-sm text-[#6B7280]">
+                                    {confirmAction === 'approve'
+                                        ? `Approve ${selected?.fullName}'s registration? They will gain verified agent access.`
+                                        : `Reject ${selected?.fullName}'s registration? This requires a rejection reason.`}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setConfirmAction(null)}
+                                className="rounded-xl p-2 text-[#6B7280] hover:bg-[#F8FAFC]"
+                                aria-label="Close"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        {confirmAction === 'reject' && !rejectionReason.trim() ? (
+                            <p className="mt-4 text-sm text-[#DC2626]">
+                                Add a rejection reason in the Decision section before confirming.
+                            </p>
+                        ) : null}
+                        <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setConfirmAction(null)}
+                                className="h-11 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={
+                                    actionLoading ||
+                                    (confirmAction === 'reject' && !rejectionReason.trim())
+                                }
+                                onClick={() => void executeReview(confirmAction)}
+                                className={`h-11 rounded-xl px-5 text-sm font-semibold text-white disabled:opacity-50 ${
+                                    confirmAction === 'approve'
+                                        ? 'bg-[#16A34A] hover:bg-[#15803d]'
+                                        : 'bg-[#DC2626] hover:bg-[#b91c1c]'
+                                }`}
+                            >
+                                {actionLoading
+                                    ? 'Processing…'
+                                    : confirmAction === 'approve'
+                                      ? 'Approve application'
+                                      : 'Reject application'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </AdminShell>
     );
 }
