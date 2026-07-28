@@ -3,6 +3,8 @@ import type { NextRequest, NextResponse } from 'next/server';
 import { getAuthSecret } from '@/lib/auth-enterprise/config';
 
 const ADMIN_COOKIE = 'pr_admin';
+/** Marks that the current portal session was opened by PropReady staff */
+export const IMPERSONATOR_COOKIE = 'pr_impersonator';
 const ADMIN_TTL = '12h';
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -84,6 +86,32 @@ export function clearAdminSessionCookie(response: NextResponse) {
         path: '/',
         maxAge: 0,
     });
+}
+
+export function setImpersonatorCookie(response: NextResponse, adminEmail: string) {
+    response.cookies.set(IMPERSONATOR_COOKIE, adminEmail.toLowerCase().trim(), {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 4 * 60 * 60,
+    });
+}
+
+export function clearImpersonatorCookie(response: NextResponse) {
+    response.cookies.set(IMPERSONATOR_COOKIE, '', {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+    });
+}
+
+export function getImpersonatorFromRequest(request: NextRequest): string | null {
+    const value = request.cookies.get(IMPERSONATOR_COOKIE)?.value?.trim().toLowerCase();
+    if (!value || !isAdminEmail(value)) return null;
+    return value;
 }
 
 export async function getAdminEmailFromRequest(request: NextRequest): Promise<string | null> {

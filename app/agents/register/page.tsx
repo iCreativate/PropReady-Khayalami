@@ -17,6 +17,7 @@ import {
     MapPin,
 } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
+import ExistingAccountNotice from '@/components/auth/ExistingAccountNotice';
 import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
 import {
     validatePpraNumber,
@@ -56,6 +57,11 @@ export default function AgentRegisterPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [ffcFile, setFfcFile] = useState<File | null>(null);
     const [registerStep, setRegisterStep] = useState(1);
+    const [existingAccount, setExistingAccount] = useState<{
+        message: string;
+        loginPath: string;
+        resetPasswordPath: string;
+    } | null>(null);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
@@ -64,6 +70,7 @@ export default function AgentRegisterPage() {
         ffcNumber: '',
         company: '',
         city: '',
+        registrationRole: '' as '' | 'agent' | 'principal',
         password: '',
         confirmPassword: '',
         agreeToTerms: false,
@@ -71,6 +78,10 @@ export default function AgentRegisterPage() {
 
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
+
+        if (!formData.registrationRole) {
+            newErrors.registrationRole = 'Select whether you are registering as an agent or a principal';
+        }
 
         if (!formData.fullName.trim()) {
             newErrors.fullName = 'Full name is required';
@@ -136,19 +147,9 @@ export default function AgentRegisterPage() {
         }
 
         setIsSubmitting(true);
+        setExistingAccount(null);
 
         if (typeof window !== 'undefined') {
-            const existingAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const emailExists = existingAgents.some(
-                (agent: AgentRegistration) => agent.email === formData.email
-            );
-
-            if (emailExists) {
-                setErrors({ email: 'An account with this email already exists' });
-                setIsSubmitting(false);
-                return;
-            }
-
             const agentId = `agent-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const ppra = normalizePpraNumber(formData.ppraNumber);
 
@@ -167,10 +168,10 @@ export default function AgentRegisterPage() {
                 ffcDocumentUrl = upJson.storagePath;
             }
 
-            const agent: AgentRegistration = {
+            const agent: AgentRegistration & { registrationRole: string } = {
                 id: agentId,
                 fullName: formData.fullName,
-                email: formData.email,
+                email: formData.email.trim().toLowerCase(),
                 phone: formData.phone,
                 eaabNumber: ppra,
                 ppraNumber: ppra,
@@ -185,6 +186,7 @@ export default function AgentRegisterPage() {
                 emailVerified: false,
                 timestamp: new Date().toISOString(),
                 status: 'pending',
+                registrationRole: formData.registrationRole || 'agent',
             };
 
             const registerRes = await fetch('/api/agents/register', {
@@ -194,19 +196,33 @@ export default function AgentRegisterPage() {
             });
             const registerJson = await registerRes.json().catch(() => ({}));
 
-            if (registerRes.ok && registerJson.success) {
-                existingAgents.push(agent);
-                localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
-            } else {
+            if (!registerRes.ok || !registerJson.success) {
                 const apiError = registerJson.error || registerRes.statusText;
-                if (registerRes.status === 409) {
+                if (registerRes.status === 409 || registerJson.code === 'EMAIL_EXISTS') {
+                    setExistingAccount({
+                        message:
+                            registerJson.message ||
+                            apiError ||
+                            'An account with this email already exists. Please log in or reset your password.',
+                        loginPath: registerJson.loginPath || '/agents/login',
+                        resetPasswordPath:
+                            registerJson.resetPasswordPath || '/auth/forgot-password?type=agent',
+                    });
                     setErrors({ email: apiError });
                     setIsSubmitting(false);
                     return;
                 }
-                console.warn('Database save failed:', apiError);
+                setErrors({ submit: apiError || 'Registration failed. Please try again.' });
+                setIsSubmitting(false);
+                return;
+            }
+
+            try {
+                const existingAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
                 existingAgents.push(agent);
                 localStorage.setItem('propReady_agents', JSON.stringify(existingAgents));
+            } catch {
+                /* ignore */
             }
 
             try {
@@ -267,10 +283,73 @@ export default function AgentRegisterPage() {
         <ProfessionalAuthShell
             role="agent"
             title="Join our network"
-            subtitle={`Register as a verified PropReady agent — 100% free. ${PRICING_SUMMARY}`}
+            subtitle={`Register as a verified PropReady agent or principal — 100% free. ${PRICING_SUMMARY}`}
             wide
         >
             <form onSubmit={handleSubmit} className="space-y-5">
+                {existingAccount ? (
+                    <ExistingAccountNotice
+                        message={existingAccount.message}
+                        loginPath={existingAccount.loginPath}
+                        resetPasswordPath={existingAccount.resetPasswordPath}
+                    />
+                ) : null}
+                {errors.submit ? (
+                    <p className="form-error">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        {errors.submit}
+                    </p>
+                ) : null}
+
+                <fieldset>
+                    <legend className="auth-label mb-2">
+                        Are you registering as… <span className="text-red-600">*</span>
+                    </legend>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                        <label
+                            className={`rounded-2xl border px-4 py-3 cursor-pointer transition ${
+                                formData.registrationRole === 'agent'
+                                    ? 'border-gold bg-gold/[0.06]'
+                                    : 'border-charcoal/[0.1] hover:border-charcoal/20'
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="registrationRole"
+                                value="agent"
+                                checked={formData.registrationRole === 'agent'}
+                                onChange={handleInputChange}
+                                className="sr-only"
+                            />
+                            <span className="block text-sm font-semibold text-charcoal">Agent</span>
+                            <span className="block text-xs text-charcoal/55 mt-1">
+                                Estate agent representing buyers/sellers under an agency
+                            </span>
+                        </label>
+                        <label
+                            className={`rounded-2xl border px-4 py-3 cursor-pointer transition ${
+                                formData.registrationRole === 'principal'
+                                    ? 'border-gold bg-gold/[0.06]'
+                                    : 'border-charcoal/[0.1] hover:border-charcoal/20'
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="registrationRole"
+                                value="principal"
+                                checked={formData.registrationRole === 'principal'}
+                                onChange={handleInputChange}
+                                className="sr-only"
+                            />
+                            <span className="block text-sm font-semibold text-charcoal">Principal</span>
+                            <span className="block text-xs text-charcoal/55 mt-1">
+                                Agency principal / responsible person for the firm
+                            </span>
+                        </label>
+                    </div>
+                    {fieldError('registrationRole')}
+                </fieldset>
+
                 <div>
                     <label className="auth-label">
                         Full name <span className="text-red-600">*</span>

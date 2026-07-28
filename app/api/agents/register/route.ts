@@ -12,6 +12,10 @@ import { createServiceClient } from '@/lib/supabase-admin';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
 import { validateProfessionalWorkEmail } from '@/lib/professional-email';
+import {
+    duplicateEmailConflictResponse,
+    findExistingAccountsByEmail,
+} from '@/lib/email-availability';
 
 export async function POST(request: NextRequest) {
     const supabaseUrl = getSupabaseUrl();
@@ -64,7 +68,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const registrationRole =
+            String(agentData.registrationRole || agentData.role || 'agent').toLowerCase() ===
+            'principal'
+                ? 'principal'
+                : 'agent';
+
         const supabase = createServiceClient() || createClient(supabaseUrl, supabaseAnonKey);
+
+        const existingEmail = await findExistingAccountsByEmail(String(agentData.email));
+        if (existingEmail.length > 0) {
+            return NextResponse.json(duplicateEmailConflictResponse(existingEmail), { status: 409 });
+        }
 
         const { data: duplicatePpra } = await supabase
             .from('agents')
@@ -82,7 +97,7 @@ export async function POST(request: NextRequest) {
         const dbAgent: Record<string, unknown> = {
             id: agentData.id,
             full_name: agentData.fullName,
-            email: agentData.email,
+            email: String(agentData.email).toLowerCase().trim(),
             phone: agentData.phone,
             eaab_number: ppra,
             ppra_number: ppra,
@@ -90,6 +105,7 @@ export async function POST(request: NextRequest) {
             ffc_document_url: agentData.ffcDocumentUrl,
             company: agentData.company,
             city: agentData.city || null,
+            registration_role: registrationRole,
             password: agentData.password,
             status: agentData.status || 'pending',
             plan: 'free',
@@ -121,8 +137,27 @@ export async function POST(request: NextRequest) {
                 delete fallback.verification_date;
                 delete fallback.verified_by;
                 delete fallback.verification_notes;
+                delete fallback.registration_role;
                 const retry = await supabase.from('agents').insert([fallback]).select().single();
                 if (retry.error) {
+                    const retryDup =
+                        retry.error.code === '23505' ||
+                        /unique|duplicate/i.test(retry.error.message || '');
+                    if (retryDup) {
+                        const hits = await findExistingAccountsByEmail(String(agentData.email));
+                        return NextResponse.json(
+                            hits.length
+                                ? duplicateEmailConflictResponse(hits)
+                                : {
+                                      success: false,
+                                      error: 'An account with this email already exists. Please log in or reset your password.',
+                                      code: 'EMAIL_EXISTS',
+                                      loginPath: '/agents/login',
+                                      resetPasswordPath: '/auth/forgot-password?type=agent',
+                                  },
+                            { status: 409 }
+                        );
+                    }
                     return NextResponse.json(
                         {
                             success: false,
@@ -135,15 +170,22 @@ export async function POST(request: NextRequest) {
                 }
                 return NextResponse.json({ success: true, warning: 'PPRA columns missing; run migration' });
             }
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: isDuplicate
-                        ? 'An account with this email or PPRA number already exists'
-                        : error.message,
-                },
-                { status: isDuplicate ? 409 : 500 }
-            );
+            if (isDuplicate) {
+                const hits = await findExistingAccountsByEmail(String(agentData.email));
+                return NextResponse.json(
+                    hits.length
+                        ? duplicateEmailConflictResponse(hits)
+                        : {
+                              success: false,
+                              error: 'An account with this email or PPRA number already exists. Please log in or reset your password.',
+                              code: 'EMAIL_EXISTS',
+                              loginPath: '/agents/login',
+                              resetPasswordPath: '/auth/forgot-password?type=agent',
+                          },
+                    { status: 409 }
+                );
+            }
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
 
         return NextResponse.json({ success: true });

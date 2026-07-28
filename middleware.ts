@@ -7,7 +7,7 @@ import {
     edgeProfileCompletePath,
     getEdgeAuthFromRequest,
 } from '@/lib/auth-enterprise/edge-session';
-import { verifyAdminSessionToken } from '@/lib/admin-auth';
+import { verifyAdminSessionToken, IMPERSONATOR_COOKIE, isAdminEmail } from '@/lib/admin-auth';
 
 const PROTECTED_PREFIXES = [
     '/dashboard',
@@ -73,10 +73,17 @@ export async function middleware(request: NextRequest) {
     try {
         const auth = await getEdgeAuthFromRequest(request);
         const hasSession = Boolean(auth?.payload.sub || auth?.hasRefresh);
+        const impersonatorCookie = request.cookies.get(IMPERSONATOR_COOKIE)?.value?.trim().toLowerCase();
+        const isStaffAccess =
+            Boolean(auth?.payload.impersonatedBy) ||
+            (Boolean(impersonatorCookie) && isAdminEmail(impersonatorCookie));
         // Explicit false only (older JWTs without the claim stay unlocked)
         const needsPasswordStep =
-            Boolean(auth?.payload.sub) && auth?.payload.passwordOk === false;
+            !isStaffAccess &&
+            Boolean(auth?.payload.sub) &&
+            auth?.payload.passwordOk === false;
         const mustCompleteProfile =
+            !isStaffAccess &&
             Boolean(auth?.payload.sub) &&
             auth?.payload.passwordOk !== false &&
             auth?.payload.profileComplete === false;

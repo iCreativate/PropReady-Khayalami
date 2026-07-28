@@ -15,6 +15,10 @@ import {
 import { profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { generateUniqueOriginatorStaffNumber } from '@/lib/originator-staff-number';
 import { sendOriginatorApprovalEmail } from '@/lib/send-originator-approval-email';
+import {
+    duplicateEmailConflictResponse,
+    findExistingAccountsByEmail,
+} from '@/lib/email-availability';
 
 export async function GET(request: NextRequest) {
     const auth = await assertAdminRequest(request);
@@ -214,6 +218,12 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+        }
+
+        const existingHits = await findExistingAccountsByEmail(email);
+        if (existingHits.length > 0) {
+            const conflict = duplicateEmailConflictResponse(existingHits);
+            return NextResponse.json(conflict, { status: 409 });
         }
 
         const existing = await findAccountByEmail(email, accountType);

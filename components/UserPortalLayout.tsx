@@ -8,6 +8,8 @@ import BrandLogo from '@/components/BrandLogo';
 import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import UserProfileCompact from '@/components/UserProfileCompact';
 import LeadRequiredGate from '@/components/onboarding/LeadRequiredGate';
+import ImpersonationBanner from '@/components/ImpersonationBanner';
+import PortalAnnouncementBanner from '@/components/PortalAnnouncementBanner';
 import { useLeadGate } from '@/hooks/useLeadGate';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import {
@@ -161,17 +163,40 @@ export default function UserPortalLayout({
 }: UserPortalLayoutProps) {
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [staffAccess, setStaffAccess] = useState(false);
     const links = getUserPortalLinks(portal);
     const activeLabel = links.find((l) => l.page === activePage)?.label ?? 'Dashboard';
     const portalLabel = getUserPortalLabel(portal);
     const { loading: onboardingLoading, required: onboardingRequired } = useOnboardingGate();
     const quizEscape = isQuizEscapePath(pathname);
     const { loading: leadGateLoading, needsQuiz } = useLeadGate({
-        skip: onboardingLoading || onboardingRequired || quizEscape || !user,
+        skip: onboardingLoading || onboardingRequired || quizEscape || !user || staffAccess,
     });
     const showQuizGate = Boolean(
-        user && !quizEscape && !onboardingLoading && !onboardingRequired && !leadGateLoading && needsQuiz
+        user &&
+            !staffAccess &&
+            !quizEscape &&
+            !onboardingLoading &&
+            !onboardingRequired &&
+            !leadGateLoading &&
+            needsQuiz
     );
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await fetch('/api/auth/session', { credentials: 'include' });
+                const data = await res.json().catch(() => ({}));
+                if (!cancelled) setStaffAccess(Boolean(data?.user?.impersonatedBy));
+            } catch {
+                /* ignore */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     useEffect(() => {
         if (!mobileOpen) return;
@@ -192,6 +217,7 @@ export default function UserPortalLayout({
 
     return (
         <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${PORTAL_SHELL_CONTENT}`}>
+            <ImpersonationBanner />
             <aside
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${PORTAL_SHELL_SIDEBAR}`}
             >
@@ -314,7 +340,10 @@ export default function UserPortalLayout({
                         <div className={PORTAL_PAGE_CONTAINER}>{pageHeader}</div>
                     </div>
                 )}
-                <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">{children}</div>
+                <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
+                    <PortalAnnouncementBanner />
+                    {children}
+                </div>
             </main>
 
             <LeadRequiredGate open={showQuizGate} />

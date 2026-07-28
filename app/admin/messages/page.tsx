@@ -52,6 +52,11 @@ export default function AdminMessagesPage() {
     const [contactQ, setContactQ] = useState('');
     const [newBody, setNewBody] = useState('');
     const [newSubject, setNewSubject] = useState('PropReady support');
+    const [showBroadcast, setShowBroadcast] = useState(false);
+    const [broadcastAudience, setBroadcastAudience] = useState('all');
+    const [broadcastSubject, setBroadcastSubject] = useState('PropReady update');
+    const [broadcastBody, setBroadcastBody] = useState('');
+    const [broadcasting, setBroadcasting] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     const loadList = useCallback(async () => {
@@ -170,6 +175,39 @@ export default function AdminMessagesPage() {
         }
     }
 
+    async function sendBroadcast(e: React.FormEvent) {
+        e.preventDefault();
+        if (!broadcastBody.trim()) return;
+        const ok = window.confirm(
+            `Send this message to every ${broadcastAudience === 'all' ? 'account' : broadcastAudience} on the platform?`
+        );
+        if (!ok) return;
+        setBroadcasting(true);
+        setError('');
+        try {
+            const res = await fetch('/api/admin/messages/broadcast', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audience: broadcastAudience,
+                    subject: broadcastSubject,
+                    body: broadcastBody.trim(),
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'Broadcast failed');
+            alert(`Sent to ${data.sent}/${data.recipientCount} accounts.`);
+            setShowBroadcast(false);
+            setBroadcastBody('');
+            await loadList();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Broadcast failed');
+        } finally {
+            setBroadcasting(false);
+        }
+    }
+
     function threadTitle(c: Conversation) {
         const names = c.participants
             .filter((p) => p.accountType !== 'admin')
@@ -180,21 +218,86 @@ export default function AdminMessagesPage() {
 
     return (
         <AdminShell title="Messages">
-            <div className="flex items-center justify-between gap-3 mb-5">
+            <div className="flex items-center justify-between gap-3 mb-5 flex-wrap">
                 <p className="text-sm text-charcoal/55">
-                    View all portal conversations and message users as PropReady staff.
+                    Message anyone on the platform, broadcast updates, and reply in any thread.
                 </p>
-                <button
-                    type="button"
-                    onClick={() => setShowNew(true)}
-                    className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold inline-flex items-center gap-2 shrink-0"
-                >
-                    <Plus className="w-4 h-4" />
-                    New message
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setShowBroadcast(true)}
+                        className="h-10 px-4 rounded-xl border border-charcoal/[0.12] text-sm font-medium"
+                    >
+                        Broadcast
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setShowNew(true)}
+                        className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold inline-flex items-center gap-2 shrink-0"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New message
+                    </button>
+                </div>
             </div>
 
             {error ? <p className="text-sm text-red-600 mb-4">{error}</p> : null}
+
+            {showBroadcast ? (
+                <form
+                    onSubmit={sendBroadcast}
+                    className="mb-5 rounded-2xl border border-charcoal/[0.08] bg-white p-5 space-y-3"
+                >
+                    <h2 className="font-semibold text-charcoal">Broadcast to everyone</h2>
+                    <p className="text-xs text-charcoal/50">
+                        Creates an inbox conversation for each matching account. For banners, use{' '}
+                        <a href="/admin/announcements" className="text-gold underline">
+                            Announcements
+                        </a>
+                        .
+                    </p>
+                    <select
+                        value={broadcastAudience}
+                        onChange={(e) => setBroadcastAudience(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
+                    >
+                        <option value="all">Everyone</option>
+                        <option value="user">Buyers / sellers</option>
+                        <option value="agent">Agents</option>
+                        <option value="originator">Originators</option>
+                    </select>
+                    <input
+                        value={broadcastSubject}
+                        onChange={(e) => setBroadcastSubject(e.target.value)}
+                        placeholder="Subject"
+                        className="w-full h-10 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
+                    />
+                    <textarea
+                        required
+                        value={broadcastBody}
+                        onChange={(e) => setBroadcastBody(e.target.value)}
+                        placeholder="Message to send to every selected account…"
+                        rows={4}
+                        className="w-full rounded-xl border border-charcoal/[0.1] px-3 py-2 text-sm"
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            type="submit"
+                            disabled={broadcasting}
+                            className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold disabled:opacity-60"
+                        >
+                            {broadcasting ? 'Sending…' : 'Send broadcast'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowBroadcast(false)}
+                            className="h-10 px-4 rounded-xl border border-charcoal/[0.12] text-sm"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            ) : null}
 
             {showNew ? (
                 <div className="mb-5 rounded-2xl border border-charcoal/[0.08] bg-white p-5 space-y-3">

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Building2, Lock, Mail, User } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
+import ExistingAccountNotice from '@/components/auth/ExistingAccountNotice';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { getPasswordRequirementsText, validatePassword } from '@/lib/password';
 import { validateProfessionalWorkEmail } from '@/lib/professional-email';
@@ -14,11 +15,17 @@ export default function OriginatorRegisterPage() {
     const [password, setPassword] = useState('');
     const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
     const [error, setError] = useState('');
+    const [existingAccount, setExistingAccount] = useState<{
+        message: string;
+        loginPath: string;
+        resetPasswordPath: string;
+    } | null>(null);
     const [loading, setLoading] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError('');
+        setExistingAccount(null);
 
         const emailError = validateProfessionalWorkEmail(email);
         if (emailError) {
@@ -47,6 +54,18 @@ export default function OriginatorRegisterPage() {
             });
             const data = await res.json();
             if (!res.ok) {
+                if (res.status === 409 || data.code === 'EMAIL_EXISTS') {
+                    setExistingAccount({
+                        message:
+                            data.message ||
+                            data.error ||
+                            'An account with this email already exists. Please log in or reset your password.',
+                        loginPath: data.loginPath || '/originators/login',
+                        resetPasswordPath:
+                            data.resetPasswordPath || '/auth/forgot-password?type=originator',
+                    });
+                    return;
+                }
                 setError(data.error || 'Registration failed');
                 return;
             }
@@ -64,6 +83,15 @@ export default function OriginatorRegisterPage() {
             title="Register as originator staff"
             subtitle="Create a staff account with your organisation. PropReady assigns your staff number when your account is approved."
         >
+            {existingAccount ? (
+                <div className="mb-4">
+                    <ExistingAccountNotice
+                        message={existingAccount.message}
+                        loginPath={existingAccount.loginPath}
+                        resetPasswordPath={existingAccount.resetPasswordPath}
+                    />
+                </div>
+            ) : null}
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
                     <AlertCircle className="w-4 h-4 shrink-0" />

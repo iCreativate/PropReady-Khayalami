@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { validatePassword, formatPasswordErrors } from '@/lib/password';
+import {
+    duplicateEmailConflictResponse,
+    findExistingAccountsByEmail,
+} from '@/lib/email-availability';
+import { createServiceClient } from '@/lib/supabase-admin';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -32,12 +37,18 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        const email = String(userData.email).toLowerCase().trim();
+        const existingEmail = await findExistingAccountsByEmail(email);
+        if (existingEmail.length > 0) {
+            return NextResponse.json(duplicateEmailConflictResponse(existingEmail), { status: 409 });
+        }
+
+        const supabase = createServiceClient() || createClient(supabaseUrl, supabaseAnonKey);
 
         const dbUser = {
             id: userData.id,
             full_name: userData.fullName,
-            email: userData.email,
+            email,
             phone: userData.phone || null,
             password: userData.password,
             email_verified: false,
@@ -54,9 +65,24 @@ export async function POST(request: NextRequest) {
         if (userError) {
             console.error('Supabase createUser error:', userError);
             const isDuplicate = userError.code === '23505' || /unique|duplicate/i.test(userError.message);
+            if (isDuplicate) {
+                const hits = await findExistingAccountsByEmail(email);
+                return NextResponse.json(
+                    hits.length
+                        ? duplicateEmailConflictResponse(hits)
+                        : {
+                              success: false,
+                              code: 'EMAIL_EXISTS',
+                              error: 'An account with this email already exists. Please log in or reset your password.',
+                              loginPath: '/auth/login',
+                              resetPasswordPath: '/auth/forgot-password?type=user',
+                          },
+                    { status: 409 }
+                );
+            }
             return NextResponse.json(
-                { success: false, error: isDuplicate ? 'An account with this email already exists' : userError.message },
-                { status: isDuplicate ? 409 : 500 }
+                { success: false, error: userError.message },
+                { status: 500 }
             );
         }
 

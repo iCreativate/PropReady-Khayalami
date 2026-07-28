@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, LogIn } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
 import PortalLoading from '@/components/PortalLoading';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { getPasswordRequirementsText } from '@/lib/password';
+import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 
 type Account = {
     id: string;
@@ -108,6 +109,33 @@ export default function AdminAccountsPage() {
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Delete failed');
         } finally {
+            setActionLoading(null);
+        }
+    }
+
+    async function accessAccount(account: Account) {
+        const ok = window.confirm(
+            `Open ${account.fullName || account.email}'s portal as PropReady staff?\n\nYou will see their real account. Use “Exit to admin” when done.`
+        );
+        if (!ok) return;
+        setActionLoading(account.id);
+        setError('');
+        try {
+            const res = await fetch('/api/admin/accounts/impersonate', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: account.id,
+                    accountType: account.accountType,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Access failed (${res.status})`);
+            window.location.href =
+                data.redirectTo || dashboardPathForAccountType(account.accountType);
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Access failed');
             setActionLoading(null);
         }
     }
@@ -349,6 +377,16 @@ export default function AdminAccountsPage() {
                                         </button>
                                     </>
                                 ) : null}
+                                <button
+                                    type="button"
+                                    disabled={actionLoading === account.id}
+                                    onClick={() => void accessAccount(account)}
+                                    className="inline-flex items-center gap-1 text-xs font-medium text-gold hover:underline disabled:opacity-50"
+                                    title="Open this account as staff"
+                                >
+                                    <LogIn className="w-3.5 h-3.5" />
+                                    Access
+                                </button>
                                 <button
                                     type="button"
                                     disabled={actionLoading === account.id}

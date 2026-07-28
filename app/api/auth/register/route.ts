@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validatePassword } from '@/lib/password';
-import {
-    findAccountByEmail,
-    upsertAccountFromProfile,
-} from '@/lib/auth-enterprise';
+import { upsertAccountFromProfile } from '@/lib/auth-enterprise';
 import { parseAccountType, profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { validateProfessionalWorkEmail } from '@/lib/professional-email';
+import {
+    duplicateEmailConflictResponse,
+    findExistingAccountsByEmail,
+} from '@/lib/email-availability';
 
 export async function POST(request: NextRequest) {
     try {
@@ -60,17 +61,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: pw.errors.join(', ') }, { status: 400 });
         }
 
-        const existing = await findAccountByEmail(email, accountType);
-        if (existing) {
-            return NextResponse.json({ success: false, error: 'An account with this email already exists' }, { status: 409 });
+        const existingHits = await findExistingAccountsByEmail(email);
+        if (existingHits.length > 0) {
+            return NextResponse.json(duplicateEmailConflictResponse(existingHits), { status: 409 });
         }
 
         const table = profileTableForAccountType(accountType);
-        const { data: dup } = await supabase.from(table).select('id').eq('email', email).maybeSingle();
-        if (dup) {
-            return NextResponse.json({ success: false, error: 'An account with this email already exists' }, { status: 409 });
-        }
-
         const id = crypto.randomUUID();
         const row =
             accountType === 'agent'
@@ -94,11 +90,21 @@ export async function POST(request: NextRequest) {
             .single();
         if (error || !profile) {
             console.error('auth/register profile insert:', error);
-            if (error?.code === '23505' && accountType === 'originator') {
+            if (error?.code === '23505') {
+                const hits = await findExistingAccountsByEmail(email);
+                if (hits.length) {
+                    return NextResponse.json(duplicateEmailConflictResponse(hits), { status: 409 });
+                }
                 return NextResponse.json(
                     {
                         success: false,
-                        error: 'That staff number is already registered for this organisation, or the email is taken',
+                        error:
+                            accountType === 'originator'
+                                ? 'That staff number is already registered for this organisation, or the email is taken'
+                                : 'An account with this email already exists. Please log in or reset your password.',
+                        code: 'EMAIL_EXISTS',
+                        loginPath: accountType === 'originator' ? '/originators/login' : '/auth/login',
+                        resetPasswordPath: `/auth/forgot-password?type=${accountType}`,
                     },
                     { status: 409 }
                 );

@@ -37,6 +37,8 @@ export interface AccessTokenPayload {
     /** False after magic-link until password is set/confirmed this session */
     passwordOk: boolean;
     hasPassword: boolean;
+    /** Staff email when this session was opened via admin "Access account" */
+    impersonatedBy?: string;
     typ: 'access';
 }
 
@@ -62,6 +64,8 @@ export interface SessionUser {
     status?: string;
     /** Bond originator brand id for staff accounts */
     organizationId?: string;
+    /** Present when a PropReady admin is viewing this account */
+    impersonatedBy?: string;
 }
 
 export type OnboardingIntent = 'buyer' | 'seller';

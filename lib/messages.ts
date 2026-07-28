@@ -13,7 +13,14 @@ export const MESSAGE_ATTACHMENT_MIME_TYPES = [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ] as const;
 
-export type MessageContextType = 'general' | 'lead' | 'listing' | 'viewing' | 'prequal';
+export type MessageContextType =
+    | 'general'
+    | 'lead'
+    | 'listing'
+    | 'viewing'
+    | 'prequal'
+    | 'announcement'
+    | 'support';
 export type MessageItemKind = 'text' | 'document' | 'appointment' | 'system';
 export type AppointmentStatus = 'proposed' | 'accepted' | 'declined' | 'cancelled';
 

@@ -16,6 +16,8 @@ import {
     MessageSquare,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
+import ImpersonationBanner from '@/components/ImpersonationBanner';
+import PortalAnnouncementBanner from '@/components/PortalAnnouncementBanner';
 import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
 import {
@@ -166,6 +168,7 @@ export default function AgentPortalLayout({
 
     return (
         <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${AGENT_SHELL_CONTENT}`}>
+            <ImpersonationBanner />
             {/* Desktop sidebar */}
             <aside
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${AGENT_SHELL_SIDEBAR}`}
@@ -270,7 +273,10 @@ export default function AgentPortalLayout({
                         <div className={AGENT_PAGE_CONTAINER}>{pageHeader}</div>
                     </div>
                 )}
-                <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">{children}</div>
+                <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
+                    <PortalAnnouncementBanner />
+                    {children}
+                </div>
             </main>
         </div>
     );

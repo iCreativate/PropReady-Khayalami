@@ -233,6 +233,10 @@ export async function createSession(
         trustedDevice?: boolean;
         /** Default true (password/OAuth). Magic link passes false until password confirmed. */
         passwordOk?: boolean;
+        /** Force profileComplete in JWT (staff access) */
+        forceProfileComplete?: boolean;
+        /** Staff email when opening account for support */
+        impersonatedBy?: string;
     }
 ): Promise<LoginResult> {
     await enforceSessionLimit(account.id);
@@ -265,6 +269,12 @@ export async function createSession(
     const user = await loadSessionUser(account);
     user.sessionId = session.id;
     user.passwordOk = passwordOk;
+    if (meta.forceProfileComplete) {
+        user.profileComplete = true;
+    }
+    if (meta.impersonatedBy) {
+        user.impersonatedBy = meta.impersonatedBy;
+    }
 
     const accessToken = await signAccessToken({
         sub: account.id,
@@ -272,9 +282,10 @@ export async function createSession(
         accountType: account.account_type,
         profileId: account.profile_id,
         sessionId: session.id,
-        profileComplete: Boolean(user.profileComplete),
+        profileComplete: meta.forceProfileComplete ? true : Boolean(user.profileComplete),
         passwordOk,
         hasPassword: Boolean(user.hasPassword),
+        ...(meta.impersonatedBy ? { impersonatedBy: meta.impersonatedBy } : {}),
     });
 
     return {

@@ -22,6 +22,9 @@ export async function resolveSessionFromRequest(
                 const user = await loadSessionUser(account);
                 user.sessionId = payload.sessionId;
                 user.passwordOk = payload.passwordOk !== false;
+                if (payload.impersonatedBy) {
+                    user.impersonatedBy = payload.impersonatedBy;
+                }
                 return { user, accessToken: access };
             }
         }

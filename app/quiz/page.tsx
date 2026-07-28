@@ -455,6 +455,17 @@ export default function QuizPage() {
                 existingUsers.push(userAccount);
                 localStorage.setItem('propReady_users', JSON.stringify(existingUsers));
                 localStorage.setItem('propReady_quizResult', JSON.stringify(quizResult));
+            } else if (registerRes.status === 409 || registerJson.code === 'EMAIL_EXISTS') {
+                const loginPath = registerJson.loginPath || '/auth/login';
+                const resetPath =
+                    registerJson.resetPasswordPath || '/auth/forgot-password?type=user';
+                const msg =
+                    registerJson.message ||
+                    registerJson.error ||
+                    'An account with this email already exists. Please log in or reset your password.';
+                setErrors((prev) => ({ ...prev, email: msg }));
+                alert(`${msg}\n\nLog in: ${loginPath}\nReset password: ${resetPath}`);
+                return;
             } else {
                 // Database not configured or failed; fallback to localStorage only
                 console.warn('Database save failed:', registerJson.error || registerRes.statusText);

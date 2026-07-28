@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
+import { getImpersonatorFromRequest } from '@/lib/admin-auth';
 
 export async function GET(request: NextRequest) {
     const session = await resolveSessionFromRequest(request);
@@ -8,6 +9,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { user } = session;
+    const impersonatedBy = user.impersonatedBy || getImpersonatorFromRequest(request) || null;
     return jsonWithSession(
         {
             authenticated: true,
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
                 passwordOk: user.passwordOk !== false,
                 onboardingIntent: user.onboardingIntent ?? null,
                 onboardingRequired: Boolean(user.onboardingRequired),
+                impersonatedBy,
             },
         },
         session
