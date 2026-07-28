@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FileText } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 
 function isImageMime(mime: string) {
     return mime.startsWith('image/');
@@ -12,15 +12,15 @@ export default function AttachmentMessage({
     meta,
     body,
     mine,
-    onOpen,
     urlBase = '/api/messages/conversations',
 }: {
     conversationId: string;
     meta: Record<string, unknown>;
     body: string | null;
     mine: boolean;
-    onOpen: (docId: string) => void;
-    /** Base path before `/{conversationId}/documents/{docId}/url` */
+    /** Called when download fails; optional so callers can show errors */
+    onError?: (message: string) => void;
+    /** Base path before `/{conversationId}/documents/{docId}/...` */
     urlBase?: string;
 }) {
     const docId = String(meta.documentId || '');
@@ -29,6 +29,10 @@ export default function AttachmentMessage({
     const showImage = isImageMime(mime) && Boolean(docId);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [previewFailed, setPreviewFailed] = useState(false);
+
+    const downloadHref = docId
+        ? `${urlBase}/${conversationId}/documents/${docId}/download`
+        : undefined;
 
     useEffect(() => {
         if (!showImage) return;
@@ -55,12 +59,10 @@ export default function AttachmentMessage({
     return (
         <div className="space-y-2">
             {showImage && previewUrl ? (
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (docId) onOpen(docId);
-                    }}
+                <a
+                    href={downloadHref}
                     className="block overflow-hidden rounded-xl max-w-full"
+                    title={`Download ${fileName}`}
                 >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -68,23 +70,36 @@ export default function AttachmentMessage({
                         alt={fileName}
                         className="max-w-full max-h-64 object-contain bg-black/5"
                     />
-                </button>
+                </a>
             ) : null}
-            <button
-                type="button"
-                onClick={() => {
-                    if (docId) onOpen(docId);
-                }}
-                className={`inline-flex items-center gap-2 text-sm font-medium ${
-                    mine ? 'text-white underline' : 'text-gold'
-                }`}
-            >
-                <FileText className="w-4 h-4 shrink-0" />
-                <span className="truncate max-w-[14rem]">
+            {downloadHref ? (
+                <a
+                    href={downloadHref}
+                    className={`inline-flex items-center gap-2 text-sm font-medium ${
+                        mine ? 'text-white underline' : 'text-gold'
+                    }`}
+                    title={`Download ${fileName}`}
+                >
+                    {showImage ? (
+                        <Download className="w-4 h-4 shrink-0" />
+                    ) : (
+                        <FileText className="w-4 h-4 shrink-0" />
+                    )}
+                    <span className="truncate max-w-[14rem]">
+                        {fileName}
+                        {showImage && !previewUrl && !previewFailed ? ' · loading…' : ' · Download'}
+                    </span>
+                </a>
+            ) : (
+                <span
+                    className={`inline-flex items-center gap-2 text-sm font-medium ${
+                        mine ? 'text-white/80' : 'text-charcoal/55'
+                    }`}
+                >
+                    <FileText className="w-4 h-4 shrink-0" />
                     {fileName}
-                    {showImage && !previewUrl && !previewFailed ? ' · loading…' : ''}
                 </span>
-            </button>
+            )}
         </div>
     );
 }

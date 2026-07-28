@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
+import { createViewingFromMessageAppointment } from '@/lib/message-appointment-viewing';
 import {
     displayNameForUser,
     messagesDb,
@@ -12,62 +13,6 @@ import {
     type MessageItemRow,
     type ParticipantRow,
 } from '@/lib/messages';
-
-async function maybeCreateViewing(
-    appointment: AppointmentRow,
-    conversation: ConversationRow,
-    participants: ParticipantRow[]
-): Promise<string | null> {
-    const agent = participants.find((p) => p.account_type === 'agent');
-    const buyer = participants.find((p) => p.account_type === 'user');
-    if (!agent || !buyer) return null;
-
-    const starts = new Date(appointment.starts_at);
-    const viewingDate = starts.toISOString().slice(0, 10);
-    const viewingTime = starts.toTimeString().slice(0, 5);
-    const viewingId = `viewing-msg-${appointment.id.slice(0, 8)}-${Date.now()}`;
-
-    const propertyTitle =
-        conversation.context_type === 'listing' || conversation.context_type === 'viewing'
-            ? conversation.subject || 'Property viewing'
-            : conversation.subject || 'Appointment';
-
-    const { data: buyerProfile } = await messagesDb()
-        .from('users')
-        .select('full_name, email, phone')
-        .eq('id', buyer.profile_id)
-        .maybeSingle();
-
-    const row = {
-        id: viewingId,
-        property_id: conversation.context_id || null,
-        property_title: propertyTitle,
-        property_address: appointment.location || null,
-        property_price: null,
-        agent_id: agent.profile_id,
-        contact_name: buyer.display_name || buyerProfile?.full_name || 'Buyer',
-        contact_email: buyerProfile?.email || '',
-        contact_phone: buyerProfile?.phone || null,
-        contact_type: 'buyer',
-        buyer_name: buyer.display_name || buyerProfile?.full_name || null,
-        buyer_email: buyerProfile?.email || null,
-        buyer_phone: buyerProfile?.phone || null,
-        viewing_date: viewingDate,
-        viewing_time: viewingTime,
-        status: 'scheduled',
-        notes: appointment.notes || 'Created from Messages hub',
-        chat_messages: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-    };
-
-    const { error } = await messagesDb().from('viewing_appointments').upsert(row, { onConflict: 'id' });
-    if (error) {
-        console.error('message appointment → viewing bridge:', error);
-        return null;
-    }
-    return viewingId;
-}
 
 async function createCounterProposal(opts: {
     conversationId: string;
@@ -218,7 +163,7 @@ export async function PATCH(
         let viewingId: string | null = appointment.viewing_id;
         const objectedWithSuggestion = status === 'declined' && Boolean(suggestedStartsAt);
 
-        if (status === 'accepted' && !viewingId) {
+        if (status === 'accepted') {
             const [{ data: conversation }, { data: participants }] = await Promise.all([
                 messagesDb()
                     .from('message_conversations')
@@ -232,11 +177,12 @@ export async function PATCH(
             ]);
 
             if (conversation) {
-                viewingId = await maybeCreateViewing(
-                    appointment as AppointmentRow,
-                    conversation as ConversationRow,
-                    (participants || []) as ParticipantRow[]
-                );
+                viewingId =
+                    (await createViewingFromMessageAppointment(
+                        appointment as AppointmentRow,
+                        conversation as ConversationRow,
+                        (participants || []) as ParticipantRow[]
+                    )) || viewingId;
             }
         }
 

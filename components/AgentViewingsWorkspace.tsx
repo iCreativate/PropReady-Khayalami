@@ -37,6 +37,7 @@ import type { ListedProperty } from '@/lib/listed-property';
 import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
 import { mergeDemoLeadsIntoStorage } from '@/lib/demo-leads';
 import { DEMO_AGENT } from '@/lib/demo-agent';
+import { parseLocalYmd } from '@/lib/local-date';
 import {
     type ViewingAppointment,
     EMPTY_VIEWING_FORM,
@@ -201,12 +202,15 @@ export default function AgentViewingsWorkspace({
                         : [])) as ChatMessage[];
                 return { ...v, propertyPrice: price ?? v.propertyPrice ?? 0, chatMessages: chat };
             });
-            const agentViewings =
-                listedProperties.length > 0
-                    ? merged.filter((v: ViewingAppointment) =>
-                          listedProperties.some((p) => p.id === v.propertyId)
-                      )
-                    : merged;
+            // Keep all API viewings for this agent (incl. message appointments with no listing).
+            // Local-only rows still require a matching listed property when listings exist.
+            const agentViewings = merged.filter((v: ViewingAppointment) => {
+                if (apiViewings.some((a) => a.id === v.id)) return true;
+                if (String(v.id || '').startsWith('viewing-msg-')) return true;
+                if (!v.propertyId) return true;
+                if (listedProperties.length === 0) return true;
+                return listedProperties.some((p) => p.id === v.propertyId);
+            });
             setViewingAppointments(
                 agentViewings.sort(
                     (a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime()
@@ -676,12 +680,15 @@ export default function AgentViewingsWorkspace({
                                         day !== null
                                             ? filteredViewings.filter((v) => {
                                                   if (!v.date) return false;
-                                                  const viewingDate = new Date(v.date);
+                                                  const ymd = String(v.date).slice(0, 10);
+                                                  const viewingDate = parseLocalYmd(ymd);
                                                   if (isNaN(viewingDate.getTime())) return false;
                                                   return (
                                                       viewingDate.getDate() === day &&
-                                                      viewingDate.getMonth() === currentCalendarDate.getMonth() &&
-                                                      viewingDate.getFullYear() === currentCalendarDate.getFullYear()
+                                                      viewingDate.getMonth() ===
+                                                          currentCalendarDate.getMonth() &&
+                                                      viewingDate.getFullYear() ===
+                                                          currentCalendarDate.getFullYear()
                                                   );
                                               })
                                             : [];

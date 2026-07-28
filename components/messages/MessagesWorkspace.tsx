@@ -523,28 +523,6 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         }
     }
 
-    async function openDocument(docId: string) {
-        if (!activeId || !docId) return;
-        try {
-            const res = await fetch(
-                `/api/messages/conversations/${activeId}/documents/${docId}/url`,
-                { credentials: 'include' }
-            );
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok || !data.url) {
-                setError(data.error || 'Could not open file');
-                return;
-            }
-            const opened = window.open(String(data.url), '_blank', 'noopener,noreferrer');
-            if (!opened) {
-                // Popup blocked — navigate current tab as fallback
-                window.location.assign(String(data.url));
-            }
-        } catch {
-            setError('Could not open file');
-        }
-    }
-
     return (
         <div className="rounded-3xl border border-charcoal/[0.08] bg-white shadow-[0_2px_16px_rgba(44,44,44,0.04)] overflow-hidden h-[min(70vh,720px)] flex">
             {/* Conversation list */}
@@ -796,7 +774,6 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                                         meta={m.meta}
                                                         body={m.body}
                                                         mine={mine}
-                                                        onOpen={openDocument}
                                                     />
                                                 ) : (
                                                     <p className="text-sm whitespace-pre-wrap break-words">

@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertAdminRequest } from '@/lib/admin-auth';
 import { adminDisplayName, adminProfileId, ensureAdminParticipant } from '@/lib/admin-messages';
+import { createViewingFromMessageAppointment } from '@/lib/message-appointment-viewing';
 import {
     messagesDb,
     serializeAppointment,
     serializeMessage,
     touchConversationPreview,
     type AppointmentRow,
+    type ConversationRow,
     type MessageItemRow,
+    type ParticipantRow,
 } from '@/lib/messages';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -158,12 +161,37 @@ export async function PATCH(request: NextRequest, context: Ctx) {
         }
 
         const now = new Date().toISOString();
+        let viewingId: string | null = appointment.viewing_id;
         const objectedWithSuggestion = status === 'declined' && Boolean(suggestedStartsAt);
+
+        if (status === 'accepted') {
+            const [{ data: conversation }, { data: participants }] = await Promise.all([
+                db
+                    .from('message_conversations')
+                    .select('*')
+                    .eq('id', appointment.conversation_id)
+                    .maybeSingle(),
+                db
+                    .from('message_participants')
+                    .select('*')
+                    .eq('conversation_id', appointment.conversation_id),
+            ]);
+
+            if (conversation) {
+                viewingId =
+                    (await createViewingFromMessageAppointment(
+                        appointment as AppointmentRow,
+                        conversation as ConversationRow,
+                        (participants || []) as ParticipantRow[]
+                    )) || viewingId;
+            }
+        }
 
         const { data: updated, error: updErr } = await db
             .from('message_appointments')
             .update({
                 status,
+                viewing_id: viewingId,
                 responded_by_account_type: 'admin',
                 responded_by_profile_id: adminId,
                 responded_at: now,
@@ -201,6 +229,7 @@ export async function PATCH(request: NextRequest, context: Ctx) {
                         ...meta,
                         appointmentId,
                         status,
+                        viewingId,
                         suggestedStartsAt: suggestedStartsAt || null,
                     },
                     body: messageBody,
@@ -224,6 +253,7 @@ export async function PATCH(request: NextRequest, context: Ctx) {
             meta: {
                 appointmentId,
                 status,
+                viewingId,
                 suggestedStartsAt: suggestedStartsAt || null,
             },
             sender_account_type: null,
@@ -262,6 +292,7 @@ export async function PATCH(request: NextRequest, context: Ctx) {
             appointment: serializeAppointment(updated as AppointmentRow),
             counterMessage: counter?.message || null,
             counterAppointment: counter?.appointment || null,
+            viewingId,
         });
     } catch (err) {
         console.error('admin PATCH appointment:', err);

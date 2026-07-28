@@ -272,25 +272,6 @@ export default function AdminMessagesPage() {
         }
     }
 
-    async function openDocument(docId: string) {
-        if (!selectedId || !docId) return;
-        try {
-            const res = await fetch(
-                `/api/admin/messages/conversations/${selectedId}/documents/${docId}/url`,
-                { credentials: 'include' }
-            );
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok || !data.url) {
-                setError(data.error || 'Could not open file');
-                return;
-            }
-            const opened = window.open(String(data.url), '_blank', 'noopener,noreferrer');
-            if (!opened) window.location.assign(String(data.url));
-        } catch {
-            setError('Could not open file');
-        }
-    }
-
     const loadContacts = useCallback(async () => {
         const res = await fetch('/api/admin/accounts?type=all', {
             credentials: 'include',
@@ -737,7 +718,6 @@ export default function AdminMessagesPage() {
                                                           meta={meta}
                                                           body={m.body}
                                                           mine={isAdmin}
-                                                          onOpen={openDocument}
                                                           urlBase="/api/admin/messages/conversations"
                                                       />
                                                   ) : (
