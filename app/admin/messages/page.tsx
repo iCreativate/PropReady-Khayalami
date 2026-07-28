@@ -1,9 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageSquare, Plus, Send } from 'lucide-react';
+import {
+    CalendarPlus,
+    MessageSquare,
+    Plus,
+    RefreshCw,
+    Send,
+    X,
+} from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
 import PortalLoading from '@/components/PortalLoading';
+import AppointmentCalendarCard, {
+    toDatetimeLocalValue,
+} from '@/components/messages/AppointmentCalendarCard';
+import AttachmentMessage from '@/components/messages/AttachmentMessage';
 import {
     PORTAL_CARD,
     PORTAL_CARD_HEADER,
@@ -29,7 +40,9 @@ type Message = {
     id: string;
     kind: string;
     body: string | null;
+    meta?: Record<string, unknown> | null;
     senderAccountType: string | null;
+    senderProfileId?: string | null;
     senderName: string | null;
     createdAt: string;
 };
@@ -51,6 +64,12 @@ function contactLabel(contact: Contact) {
     return `${contact.fullName || contact.email} · ${title}`;
 }
 
+function conversationFingerprint(list: Conversation[]) {
+    return list
+        .map((c) => `${c.id}:${c.lastMessageAt || ''}:${c.lastMessagePreview || ''}`)
+        .join('|');
+}
+
 export default function AdminMessagesPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -61,6 +80,7 @@ export default function AdminMessagesPage() {
     const [loading, setLoading] = useState(true);
     const [threadLoading, setThreadLoading] = useState(false);
     const [sending, setSending] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState('');
     const [q, setQ] = useState('');
     const [showNew, setShowNew] = useState(false);
@@ -73,11 +93,18 @@ export default function AdminMessagesPage() {
     const [broadcastSubject, setBroadcastSubject] = useState('PropReady update');
     const [broadcastBody, setBroadcastBody] = useState('');
     const [broadcasting, setBroadcasting] = useState(false);
+    const [showAppt, setShowAppt] = useState(false);
+    const [apptStarts, setApptStarts] = useState('');
+    const [apptLocation, setApptLocation] = useState('');
+    const [apptNotes, setApptNotes] = useState('');
+    const [objectingId, setObjectingId] = useState<string | null>(null);
+    const [suggestStarts, setSuggestStarts] = useState('');
+    const [suggestNotes, setSuggestNotes] = useState('');
     const bottomRef = useRef<HTMLDivElement>(null);
 
-    const loadList = useCallback(async () => {
-        setLoading(true);
-        setError('');
+    const loadList = useCallback(async (opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoading(true);
+        if (!opts?.silent) setError('');
         try {
             const params = new URLSearchParams();
             if (q.trim()) params.set('q', q.trim());
@@ -86,9 +113,14 @@ export default function AdminMessagesPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load');
-            setConversations(data.conversations || []);
+            const next = (data.conversations || []) as Conversation[];
+            setConversations((prev) =>
+                conversationFingerprint(prev) === conversationFingerprint(next) ? prev : next
+            );
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load');
+            if (!opts?.silent) {
+                setError(e instanceof Error ? e.message : 'Failed to load');
+            }
         } finally {
             setLoading(false);
         }
@@ -98,9 +130,9 @@ export default function AdminMessagesPage() {
         void loadList();
     }, [loadList]);
 
-    const loadThread = useCallback(async (id: string) => {
-        setThreadLoading(true);
-        setError('');
+    const loadThread = useCallback(async (id: string, opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setThreadLoading(true);
+        if (!opts?.silent) setError('');
         try {
             const res = await fetch(`/api/admin/messages/conversations/${id}`, {
                 credentials: 'include',
@@ -112,15 +144,35 @@ export default function AdminMessagesPage() {
             setSubject(data.conversation?.subject || null);
             setSelectedId(id);
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to open thread');
+            if (!opts?.silent) {
+                setError(e instanceof Error ? e.message : 'Failed to open thread');
+            }
         } finally {
-            setThreadLoading(false);
+            if (!opts?.silent) setThreadLoading(false);
         }
     }, []);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    useEffect(() => {
+        setObjectingId(null);
+        setSuggestStarts('');
+        setSuggestNotes('');
+    }, [selectedId]);
+
+    async function refreshInbox() {
+        if (refreshing) return;
+        setRefreshing(true);
+        setError('');
+        try {
+            await loadList({ silent: true });
+            if (selectedId) await loadThread(selectedId, { silent: true });
+        } finally {
+            setRefreshing(false);
+        }
+    }
 
     async function sendMessage(e: React.FormEvent) {
         e.preventDefault();
@@ -137,12 +189,105 @@ export default function AdminMessagesPage() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Send failed');
             setDraft('');
-            if (data.message) setMessages((prev) => [...prev, data.message]);
-            await loadList();
+            if (data.message) {
+                setMessages((prev) =>
+                    prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
+                );
+            }
+            await loadList({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Send failed');
         } finally {
             setSending(false);
+        }
+    }
+
+    async function proposeAppointment(e: React.FormEvent) {
+        e.preventDefault();
+        if (!selectedId || !apptStarts) return;
+        setSending(true);
+        setError('');
+        try {
+            const res = await fetch(
+                `/api/admin/messages/conversations/${selectedId}/appointments`,
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startsAt: new Date(apptStarts).toISOString(),
+                        location: apptLocation.trim() || null,
+                        notes: apptNotes.trim() || null,
+                    }),
+                }
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Could not propose appointment');
+            setShowAppt(false);
+            setApptStarts('');
+            setApptLocation('');
+            setApptNotes('');
+            if (data.message) {
+                setMessages((prev) =>
+                    prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
+                );
+            }
+            await loadList({ silent: true });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not propose appointment');
+        } finally {
+            setSending(false);
+        }
+    }
+
+    async function respondAppointment(
+        appointmentId: string,
+        status: 'accepted' | 'declined',
+        opts?: { suggestedStartsAt?: string; suggestedNotes?: string }
+    ) {
+        setSending(true);
+        setError('');
+        try {
+            const res = await fetch(`/api/admin/messages/appointments/${appointmentId}`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status,
+                    suggestedStartsAt: opts?.suggestedStartsAt || undefined,
+                    suggestedNotes: opts?.suggestedNotes || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Could not update appointment');
+            setObjectingId(null);
+            setSuggestStarts('');
+            setSuggestNotes('');
+            if (selectedId) await loadThread(selectedId, { silent: true });
+            await loadList({ silent: true });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Update failed');
+        } finally {
+            setSending(false);
+        }
+    }
+
+    async function openDocument(docId: string) {
+        if (!selectedId || !docId) return;
+        try {
+            const res = await fetch(
+                `/api/admin/messages/conversations/${selectedId}/documents/${docId}/url`,
+                { credentials: 'include' }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.url) {
+                setError(data.error || 'Could not open file');
+                return;
+            }
+            const opened = window.open(String(data.url), '_blank', 'noopener,noreferrer');
+            if (!opened) window.location.assign(String(data.url));
+        } catch {
+            setError('Could not open file');
         }
     }
 
@@ -190,7 +335,7 @@ export default function AdminMessagesPage() {
             setNewBody('');
             setContacts([]);
             setSelectedContactKey('');
-            await loadList();
+            await loadList({ silent: true });
             if (data.conversationId) await loadThread(data.conversationId);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not start conversation');
@@ -200,7 +345,8 @@ export default function AdminMessagesPage() {
     }
 
     const selectedContact =
-        contacts.find((contact) => `${contact.accountType}:${contact.id}` === selectedContactKey) || null;
+        contacts.find((contact) => `${contact.accountType}:${contact.id}` === selectedContactKey) ||
+        null;
 
     async function sendBroadcast(e: React.FormEvent) {
         e.preventDefault();
@@ -227,7 +373,7 @@ export default function AdminMessagesPage() {
             alert(`Sent to ${data.sent}/${data.recipientCount} accounts.`);
             setShowBroadcast(false);
             setBroadcastBody('');
-            await loadList();
+            await loadList({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Broadcast failed');
         } finally {
@@ -250,6 +396,17 @@ export default function AdminMessagesPage() {
                     Message anyone on the platform, broadcast updates, and reply in any thread.
                 </p>
                 <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => void refreshInbox()}
+                        className={`${PORTAL_SECONDARY_BTN} !h-10 !px-3`}
+                        title="Refresh messages"
+                        aria-label="Refresh messages"
+                        disabled={refreshing}
+                    >
+                        <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Refresh</span>
+                    </button>
                     <button
                         type="button"
                         onClick={() => setShowBroadcast(true)}
@@ -352,7 +509,11 @@ export default function AdminMessagesPage() {
                     </select>
                     {selectedContact ? (
                         <p className="text-xs text-charcoal/45">
-                            Messaging <span className="font-medium text-charcoal">{selectedContact.fullName || selectedContact.email}</span> at {selectedContact.email}
+                            Messaging{' '}
+                            <span className="font-medium text-charcoal">
+                                {selectedContact.fullName || selectedContact.email}
+                            </span>{' '}
+                            at {selectedContact.email}
                         </p>
                     ) : null}
                     <textarea
@@ -396,7 +557,9 @@ export default function AdminMessagesPage() {
                         {loading ? (
                             <PortalLoading variant="inline" message="Loading…" />
                         ) : conversations.length === 0 ? (
-                            <p className="p-6 text-sm text-charcoal/45 text-center">No conversations yet</p>
+                            <p className="p-6 text-sm text-charcoal/45 text-center">
+                                No conversations yet
+                            </p>
                         ) : (
                             conversations.map((c) => (
                                 <button
@@ -427,36 +590,165 @@ export default function AdminMessagesPage() {
                         </div>
                     ) : (
                         <>
-                            <div className={`${PORTAL_CARD_HEADER} !px-4 !py-4`}>
-                                <p className="font-semibold text-charcoal">{subject || 'Conversation'}</p>
-                                <p className="text-xs text-charcoal/45 truncate">
-                                    {participants
-                                        .map((p) => `${p.displayName || p.accountType} (${p.accountType})`)
-                                        .join(' · ')}
-                                </p>
+                            <div
+                                className={`${PORTAL_CARD_HEADER} !px-4 !py-4 flex items-start justify-between gap-3`}
+                            >
+                                <div className="min-w-0">
+                                    <p className="font-semibold text-charcoal">
+                                        {subject || 'Conversation'}
+                                    </p>
+                                    <p className="text-xs text-charcoal/45 truncate">
+                                        {participants
+                                            .map(
+                                                (p) =>
+                                                    `${p.displayName || p.accountType} (${p.accountType})`
+                                            )
+                                            .join(' · ')}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => void refreshInbox()}
+                                        className={`${PORTAL_SECONDARY_BTN} !h-9 !w-9 !px-0`}
+                                        title="Refresh conversation"
+                                        aria-label="Refresh conversation"
+                                        disabled={refreshing}
+                                    >
+                                        <RefreshCw
+                                            className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                                        />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAppt(true)}
+                                        className={`${PORTAL_SECONDARY_BTN} !h-9 !px-3 !text-xs`}
+                                    >
+                                        <CalendarPlus className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Propose</span>
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-[55vh]">
                                 {threadLoading ? (
                                     <PortalLoading variant="inline" message="Loading thread…" />
                                 ) : null}
-                                {messages.map((m) => {
-                                    const isAdmin = m.senderAccountType === 'admin';
-                                    return (
-                                        <div
-                                            key={m.id}
-                                            className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm ${
-                                                isAdmin
-                                                    ? 'ml-auto bg-gold text-white'
-                                                    : 'bg-charcoal/[0.05] text-charcoal'
-                                            }`}
-                                        >
-                                            <p className={`text-[10px] mb-1 ${isAdmin ? 'text-white/70' : 'text-charcoal/40'}`}>
-                                                {m.senderName || m.senderAccountType || 'System'}
-                                            </p>
-                                            <p className="whitespace-pre-wrap">{m.body}</p>
-                                        </div>
-                                    );
-                                })}
+                                {!threadLoading
+                                    ? messages.map((m) => {
+                                          const isAdmin = m.senderAccountType === 'admin';
+                                          const meta =
+                                              m.meta && typeof m.meta === 'object' ? m.meta : {};
+
+                                          if (m.kind === 'system') {
+                                              return (
+                                                  <p
+                                                      key={m.id}
+                                                      className="text-center text-xs text-charcoal/45 py-1"
+                                                  >
+                                                      {m.body}
+                                                  </p>
+                                              );
+                                          }
+
+                                          if (m.kind === 'appointment') {
+                                              const appointmentId = String(
+                                                  meta.appointmentId || ''
+                                              );
+                                              return (
+                                                  <div
+                                                      key={m.id}
+                                                      className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}
+                                                  >
+                                                      <AppointmentCalendarCard
+                                                          meta={meta}
+                                                          body={m.body}
+                                                          mine={isAdmin}
+                                                          sending={sending}
+                                                          objecting={objectingId === appointmentId}
+                                                          suggestStarts={suggestStarts}
+                                                          suggestNotes={suggestNotes}
+                                                          onApprove={() =>
+                                                              void respondAppointment(
+                                                                  appointmentId,
+                                                                  'accepted'
+                                                              )
+                                                          }
+                                                          onStartObject={() => {
+                                                              setObjectingId(appointmentId);
+                                                              setSuggestStarts(
+                                                                  meta.startsAt
+                                                                      ? toDatetimeLocalValue(
+                                                                            String(meta.startsAt)
+                                                                        )
+                                                                      : ''
+                                                              );
+                                                              setSuggestNotes('');
+                                                          }}
+                                                          onCancelObject={() => {
+                                                              setObjectingId(null);
+                                                              setSuggestStarts('');
+                                                              setSuggestNotes('');
+                                                          }}
+                                                          onSuggestStartsChange={setSuggestStarts}
+                                                          onSuggestNotesChange={setSuggestNotes}
+                                                          onSubmitObject={() => {
+                                                              if (!suggestStarts) return;
+                                                              void respondAppointment(
+                                                                  appointmentId,
+                                                                  'declined',
+                                                                  {
+                                                                      suggestedStartsAt: new Date(
+                                                                          suggestStarts
+                                                                      ).toISOString(),
+                                                                      suggestedNotes:
+                                                                          suggestNotes.trim() ||
+                                                                          undefined,
+                                                                  }
+                                                              );
+                                                          }}
+                                                      />
+                                                  </div>
+                                              );
+                                          }
+
+                                          return (
+                                              <div
+                                                  key={m.id}
+                                                  className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm ${
+                                                      isAdmin
+                                                          ? 'ml-auto bg-gold text-white'
+                                                          : 'bg-charcoal/[0.05] text-charcoal'
+                                                  }`}
+                                              >
+                                                  <p
+                                                      className={`text-[10px] mb-1 ${
+                                                          isAdmin
+                                                              ? 'text-white/70'
+                                                              : 'text-charcoal/40'
+                                                      }`}
+                                                  >
+                                                      {m.senderName ||
+                                                          m.senderAccountType ||
+                                                          'System'}
+                                                  </p>
+                                                  {m.kind === 'document' ? (
+                                                      <AttachmentMessage
+                                                          conversationId={selectedId}
+                                                          meta={meta}
+                                                          body={m.body}
+                                                          mine={isAdmin}
+                                                          onOpen={openDocument}
+                                                          urlBase="/api/admin/messages/conversations"
+                                                      />
+                                                  ) : (
+                                                      <p className="whitespace-pre-wrap">
+                                                          {m.body}
+                                                      </p>
+                                                  )}
+                                              </div>
+                                          );
+                                      })
+                                    : null}
                                 <div ref={bottomRef} />
                             </div>
                             <form
@@ -481,6 +773,68 @@ export default function AdminMessagesPage() {
                     )}
                 </div>
             </div>
+
+            {showAppt && selectedId ? (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[1px]">
+                    <form
+                        onSubmit={proposeAppointment}
+                        className="w-full max-w-md rounded-3xl bg-white border border-charcoal/[0.08] shadow-xl p-6 space-y-4"
+                    >
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-charcoal">
+                                Propose appointment
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setShowAppt(false)}
+                                aria-label="Close"
+                            >
+                                <X className="w-5 h-5 text-charcoal/45" />
+                            </button>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
+                                Date & time
+                            </label>
+                            <input
+                                type="datetime-local"
+                                required
+                                value={apptStarts}
+                                onChange={(e) => setApptStarts(e.target.value)}
+                                className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
+                                Location (optional)
+                            </label>
+                            <input
+                                value={apptLocation}
+                                onChange={(e) => setApptLocation(e.target.value)}
+                                className="w-full h-11 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-1.5">
+                                Notes (optional)
+                            </label>
+                            <textarea
+                                value={apptNotes}
+                                onChange={(e) => setApptNotes(e.target.value)}
+                                rows={3}
+                                className="w-full rounded-xl border border-charcoal/[0.1] px-3 py-2 text-sm"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={sending || !apptStarts}
+                            className={`${PORTAL_PRIMARY_BTN} w-full disabled:opacity-60`}
+                        >
+                            {sending ? 'Sending…' : 'Send proposal'}
+                        </button>
+                    </form>
+                </div>
+            ) : null}
         </AdminShell>
     );
 }

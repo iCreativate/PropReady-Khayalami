@@ -75,6 +75,7 @@ export async function POST(request: NextRequest, context: Ctx) {
                 id: message.id,
                 kind: message.kind,
                 body: message.body,
+                meta: message.meta || {},
                 senderAccountType: message.sender_account_type,
                 senderProfileId: message.sender_profile_id,
                 senderName: message.sender_name,
