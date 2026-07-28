@@ -195,6 +195,16 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
     }, [loadConversations, loadContacts]);
 
     useEffect(() => {
+        const poll = window.setInterval(() => {
+            void loadConversations();
+        }, 5000);
+
+        return () => {
+            window.clearInterval(poll);
+        };
+    }, [loadConversations]);
+
+    useEffect(() => {
         if (!activeId) {
             setMessages([]);
             return;
@@ -246,7 +256,6 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
 
         const poll = window.setInterval(() => {
             void loadMessages(activeId);
-            void loadConversations();
         }, 15000);
 
         return () => {
