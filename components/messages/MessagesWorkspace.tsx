@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+    Calendar,
     CalendarPlus,
+    Check,
     FileText,
     Loader2,
     MessageSquare,
     Paperclip,
     Plus,
+    RefreshCw,
     Search,
     Send,
     X,
@@ -100,6 +103,294 @@ function counterpartLabel(c: Conversation, myProfileId: string) {
     return others.map((p) => p.displayName || ROLE_LABEL[p.accountType]).join(', ');
 }
 
+function conversationFingerprint(list: Conversation[]) {
+    return list
+        .map(
+            (c) =>
+                `${c.id}:${c.lastMessageAt || ''}:${c.lastMessagePreview || ''}:${c.unreadCount}`
+        )
+        .join('|');
+}
+
+function messageFingerprint(list: Message[]) {
+    return list
+        .map(
+            (m) =>
+                `${m.id}:${m.kind}:${m.body || ''}:${m.meta?.status || ''}:${m.meta?.suggestedStartsAt || ''}`
+        )
+        .join('|');
+}
+
+function isImageMime(mime: string) {
+    return mime.startsWith('image/');
+}
+
+function toDatetimeLocalValue(iso: string) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function AppointmentCalendarCard({
+    meta,
+    body,
+    mine,
+    sending,
+    objecting,
+    suggestStarts,
+    suggestNotes,
+    onApprove,
+    onStartObject,
+    onCancelObject,
+    onSuggestStartsChange,
+    onSuggestNotesChange,
+    onSubmitObject,
+}: {
+    meta: Record<string, unknown>;
+    body: string | null;
+    mine: boolean;
+    sending: boolean;
+    objecting: boolean;
+    suggestStarts: string;
+    suggestNotes: string;
+    onApprove: () => void;
+    onStartObject: () => void;
+    onCancelObject: () => void;
+    onSuggestStartsChange: (value: string) => void;
+    onSuggestNotesChange: (value: string) => void;
+    onSubmitObject: () => void;
+}) {
+    const startsAt = meta.startsAt ? String(meta.startsAt) : '';
+    const starts = startsAt ? new Date(startsAt) : null;
+    const validStarts = starts && !Number.isNaN(starts.getTime()) ? starts : null;
+    const status = String(meta.status || 'proposed');
+    const location = meta.location ? String(meta.location) : '';
+    const notes = meta.notes ? String(meta.notes) : '';
+    const month = validStarts
+        ? validStarts.toLocaleString('en-ZA', { month: 'short' }).toUpperCase()
+        : '—';
+    const day = validStarts ? String(validStarts.getDate()) : '–';
+    const weekday = validStarts
+        ? validStarts.toLocaleString('en-ZA', { weekday: 'long' })
+        : 'Appointment';
+    const timeLabel = validStarts
+        ? validStarts.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
+        : '';
+    const dateLabel = validStarts
+        ? validStarts.toLocaleDateString('en-ZA', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+          })
+        : body || 'Proposed appointment';
+
+    const statusLabel =
+        status === 'accepted'
+            ? 'Approved'
+            : status === 'declined'
+              ? meta.suggestedStartsAt
+                  ? 'Objected · new time suggested'
+                  : 'Objected'
+              : status === 'cancelled'
+                ? 'Cancelled'
+                : 'Awaiting response';
+
+    const statusTone =
+        status === 'accepted'
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : status === 'declined'
+              ? 'bg-red-50 text-red-700 border-red-200'
+              : status === 'cancelled'
+                ? 'bg-charcoal/5 text-charcoal/55 border-charcoal/10'
+                : 'bg-amber-50 text-amber-800 border-amber-200';
+
+    const canRespond = status === 'proposed' && !mine;
+
+    return (
+        <div className="w-full max-w-sm rounded-2xl border border-charcoal/[0.1] bg-white shadow-[0_2px_14px_rgba(44,44,44,0.06)] overflow-hidden">
+            <div className="flex">
+                <div className="w-[4.5rem] shrink-0 bg-gold text-white flex flex-col items-center justify-center py-4 px-2">
+                    <Calendar className="w-4 h-4 mb-1 opacity-90" />
+                    <p className="text-[10px] font-semibold tracking-[0.14em]">{month}</p>
+                    <p className="text-2xl font-bold leading-none mt-0.5">{day}</p>
+                </div>
+                <div className="flex-1 min-w-0 p-3.5 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-charcoal truncate">{weekday}</p>
+                            <p className="text-xs text-charcoal/55 mt-0.5">{dateLabel}</p>
+                            {timeLabel ? (
+                                <p className="text-sm font-medium text-charcoal mt-1">{timeLabel}</p>
+                            ) : null}
+                        </div>
+                        <span
+                            className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${statusTone}`}
+                        >
+                            {statusLabel}
+                        </span>
+                    </div>
+                    {location ? (
+                        <p className="text-xs text-charcoal/55 truncate">Location: {location}</p>
+                    ) : null}
+                    {notes ? (
+                        <p className="text-xs text-charcoal/50 line-clamp-2">{notes}</p>
+                    ) : null}
+
+                    {canRespond && !objecting ? (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                                type="button"
+                                disabled={sending}
+                                onClick={onApprove}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                                <Check className="w-3.5 h-3.5" />
+                                Approve
+                            </button>
+                            <button
+                                type="button"
+                                disabled={sending}
+                                onClick={onStartObject}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-charcoal/15 text-charcoal hover:bg-charcoal/[0.04] disabled:opacity-60"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                                Object
+                            </button>
+                        </div>
+                    ) : null}
+
+                    {canRespond && objecting ? (
+                        <div className="pt-2 space-y-2 border-t border-charcoal/[0.08]">
+                            <p className="text-xs font-medium text-charcoal">
+                                Suggest a new date & time
+                            </p>
+                            <input
+                                type="datetime-local"
+                                required
+                                value={suggestStarts}
+                                onChange={(e) => onSuggestStartsChange(e.target.value)}
+                                className="w-full h-10 rounded-xl border border-charcoal/[0.12] px-3 text-sm text-charcoal"
+                            />
+                            <textarea
+                                value={suggestNotes}
+                                onChange={(e) => onSuggestNotesChange(e.target.value)}
+                                rows={2}
+                                placeholder="Optional note for your suggestion"
+                                className="w-full rounded-xl border border-charcoal/[0.12] px-3 py-2 text-sm text-charcoal"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    disabled={sending || !suggestStarts}
+                                    onClick={onSubmitObject}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gold text-white disabled:opacity-60"
+                                >
+                                    Send suggestion
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={sending}
+                                    onClick={onCancelObject}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-charcoal/60 hover:bg-charcoal/[0.04]"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {mine && status === 'proposed' ? (
+                        <p className="text-[11px] text-charcoal/45 pt-0.5">
+                            Waiting for the other party to approve or object
+                        </p>
+                    ) : null}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AttachmentMessage({
+    conversationId,
+    meta,
+    body,
+    mine,
+    onOpen,
+}: {
+    conversationId: string;
+    meta: Record<string, unknown>;
+    body: string | null;
+    mine: boolean;
+    onOpen: (docId: string) => void;
+}) {
+    const docId = String(meta.documentId || '');
+    const fileName = String(meta.fileName || body || 'Attachment');
+    const mime = String(meta.mimeType || '');
+    const showImage = isImageMime(mime) && Boolean(docId);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewFailed, setPreviewFailed] = useState(false);
+
+    useEffect(() => {
+        if (!showImage) return;
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await fetch(
+                    `/api/messages/conversations/${conversationId}/documents/${docId}/url`,
+                    { credentials: 'include' }
+                );
+                const data = await res.json().catch(() => ({}));
+                if (cancelled) return;
+                if (res.ok && data.url) setPreviewUrl(String(data.url));
+                else setPreviewFailed(true);
+            } catch {
+                if (!cancelled) setPreviewFailed(true);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [showImage, conversationId, docId]);
+
+    return (
+        <div className="space-y-2">
+            {showImage && previewUrl ? (
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (docId) onOpen(docId);
+                    }}
+                    className="block overflow-hidden rounded-xl max-w-full"
+                >
+                    {/* Signed storage URL — opened in-thread as a preview */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src={previewUrl}
+                        alt={fileName}
+                        className="max-w-full max-h-64 object-contain bg-black/5"
+                    />
+                </button>
+            ) : null}
+            <button
+                type="button"
+                onClick={() => {
+                    if (docId) onOpen(docId);
+                }}
+                className={`inline-flex items-center gap-2 text-sm font-medium ${
+                    mine ? 'text-white underline' : 'text-gold'
+                }`}
+            >
+                <FileText className="w-4 h-4 shrink-0" />
+                <span className="truncate max-w-[14rem]">
+                    {fileName}
+                    {showImage && !previewUrl && !previewFailed ? ' · loading…' : ''}
+                </span>
+            </button>
+        </div>
+    );
+}
+
 export default function MessagesWorkspace({ role, profileId, accountType, displayName }: Props) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [contacts, setContacts] = useState<EligibleContact[]>([]);
@@ -120,8 +411,14 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
     const [apptStarts, setApptStarts] = useState('');
     const [apptLocation, setApptLocation] = useState('');
     const [apptNotes, setApptNotes] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
+    const [objectingId, setObjectingId] = useState<string | null>(null);
+    const [suggestStarts, setSuggestStarts] = useState('');
+    const [suggestNotes, setSuggestNotes] = useState('');
     const bottomRef = useRef<HTMLDivElement>(null);
     const fileRef = useRef<HTMLInputElement>(null);
+    const messageCountRef = useRef(0);
+    const shouldStickToBottomRef = useRef(true);
 
     const active = useMemo(
         () => conversations.find((c) => c.id === activeId) || null,
@@ -166,7 +463,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         }
     }, [role, accountType]);
 
-    const loadConversations = useCallback(async () => {
+    const loadConversations = useCallback(async (opts?: { silent?: boolean }) => {
         try {
             const res = await fetch('/api/messages/conversations', { credentials: 'include' });
             if (res.status === 401) {
@@ -175,17 +472,22 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load conversations');
-            setConversations(data.conversations || []);
+            const next = (data.conversations || []) as Conversation[];
+            setConversations((prev) =>
+                conversationFingerprint(prev) === conversationFingerprint(next) ? prev : next
+            );
             setError('');
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load');
+            if (!opts?.silent) {
+                setError(e instanceof Error ? e.message : 'Failed to load');
+            }
         } finally {
             setLoadingList(false);
         }
     }, [accountType]);
 
-    const loadMessages = useCallback(async (conversationId: string) => {
-        setLoadingThread(true);
+    const loadMessages = useCallback(async (conversationId: string, opts?: { silent?: boolean }) => {
+        if (!opts?.silent) setLoadingThread(true);
         try {
             const res = await fetch(`/api/messages/conversations/${conversationId}/messages`, {
                 credentials: 'include',
@@ -196,18 +498,27 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load messages');
-            setMessages(data.messages || []);
+            const next = (data.messages || []) as Message[];
+            setMessages((prev) =>
+                messageFingerprint(prev) === messageFingerprint(next) ? prev : next
+            );
             await fetch(`/api/messages/conversations/${conversationId}/read`, {
                 method: 'POST',
                 credentials: 'include',
             });
-            setConversations((prev) =>
-                prev.map((c) => (c.id === conversationId ? { ...c, unreadCount: 0 } : c))
-            );
+            setConversations((prev) => {
+                const target = prev.find((c) => c.id === conversationId);
+                if (!target || target.unreadCount === 0) return prev;
+                return prev.map((c) =>
+                    c.id === conversationId ? { ...c, unreadCount: 0 } : c
+                );
+            });
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Failed to load thread');
+            if (!opts?.silent) {
+                setError(e instanceof Error ? e.message : 'Failed to load thread');
+            }
         } finally {
-            setLoadingThread(false);
+            if (!opts?.silent) setLoadingThread(false);
         }
     }, [accountType]);
 
@@ -218,8 +529,8 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
 
     useEffect(() => {
         const poll = window.setInterval(() => {
-            void loadConversations();
-        }, 5000);
+            void loadConversations({ silent: true });
+        }, 10000);
 
         return () => {
             window.clearInterval(poll);
@@ -227,18 +538,27 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
     }, [loadConversations]);
 
     useEffect(() => {
+        messageCountRef.current = 0;
+        shouldStickToBottomRef.current = true;
+        setObjectingId(null);
+        setSuggestStarts('');
+        setSuggestNotes('');
         if (!activeId) {
             setMessages([]);
+            setLoadingThread(false);
             return;
         }
         void loadMessages(activeId);
     }, [activeId, loadMessages]);
 
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (messages.length > messageCountRef.current && shouldStickToBottomRef.current) {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+        messageCountRef.current = messages.length;
     }, [messages]);
 
-    // Live updates via Realtime + polling fallback
+    // Live updates via Realtime + quiet polling fallback (no loading flicker)
     useEffect(() => {
         if (!activeId) return;
 
@@ -265,6 +585,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                         senderName: (row.sender_name as string) || null,
                         createdAt: String(row.created_at),
                     };
+                    shouldStickToBottomRef.current = true;
                     setMessages((prev) =>
                         prev.some((m) => m.id === next.id) ? prev : [...prev, next]
                     );
@@ -277,14 +598,14 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             .subscribe();
 
         const poll = window.setInterval(() => {
-            void loadMessages(activeId);
-        }, 15000);
+            void loadMessages(activeId, { silent: true });
+        }, 20000);
 
         return () => {
             void supabase.removeChannel(channel);
             window.clearInterval(poll);
         };
-    }, [activeId, loadMessages, loadConversations]);
+    }, [activeId, loadMessages]);
 
     async function sendText(e?: React.FormEvent) {
         e?.preventDefault();
@@ -301,12 +622,13 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Send failed');
             setDraft('');
+            shouldStickToBottomRef.current = true;
             if (data.message) {
                 setMessages((prev) =>
                     prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
                 );
             }
-            void loadConversations();
+            void loadConversations({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Send failed');
         } finally {
@@ -329,11 +651,12 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Upload failed');
             if (data.message) {
+                shouldStickToBottomRef.current = true;
                 setMessages((prev) =>
                     prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
                 );
             }
-            void loadConversations();
+            void loadConversations({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
@@ -375,7 +698,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             setSelectedContactKey('');
             setNewSubject('');
             setNewMessage('');
-            await loadConversations();
+            await loadConversations({ silent: true });
             if (data.conversation?.id) setActiveId(data.conversation.id);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not start conversation');
@@ -407,11 +730,12 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             setApptLocation('');
             setApptNotes('');
             if (data.message) {
+                shouldStickToBottomRef.current = true;
                 setMessages((prev) =>
                     prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
                 );
             }
-            void loadConversations();
+            void loadConversations({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not propose appointment');
         } finally {
@@ -419,7 +743,27 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         }
     }
 
-    async function respondAppointment(appointmentId: string, status: 'accepted' | 'declined') {
+    async function refreshInbox() {
+        if (refreshing) return;
+        setRefreshing(true);
+        setError('');
+        try {
+            await loadConversations({ silent: true });
+            if (activeId) {
+                shouldStickToBottomRef.current = false;
+                await loadMessages(activeId, { silent: true });
+            }
+            await loadContacts();
+        } finally {
+            setRefreshing(false);
+        }
+    }
+
+    async function respondAppointment(
+        appointmentId: string,
+        status: 'accepted' | 'declined',
+        opts?: { suggestedStartsAt?: string; suggestedNotes?: string }
+    ) {
         setSending(true);
         setError('');
         try {
@@ -427,12 +771,20 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 method: 'PATCH',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status }),
+                body: JSON.stringify({
+                    status,
+                    suggestedStartsAt: opts?.suggestedStartsAt || undefined,
+                    suggestedNotes: opts?.suggestedNotes || undefined,
+                }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Could not update appointment');
-            if (activeId) await loadMessages(activeId);
-            void loadConversations();
+            setObjectingId(null);
+            setSuggestStarts('');
+            setSuggestNotes('');
+            shouldStickToBottomRef.current = true;
+            if (activeId) await loadMessages(activeId, { silent: true });
+            void loadConversations({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Update failed');
         } finally {
@@ -441,14 +793,25 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
     }
 
     async function openDocument(docId: string) {
-        if (!activeId) return;
-        const res = await fetch(
-            `/api/messages/conversations/${activeId}/documents/${docId}/url`,
-            { credentials: 'include' }
-        );
-        const data = await res.json();
-        if (res.ok && data.url) window.open(data.url, '_blank', 'noopener,noreferrer');
-        else setError(data.error || 'Could not open file');
+        if (!activeId || !docId) return;
+        try {
+            const res = await fetch(
+                `/api/messages/conversations/${activeId}/documents/${docId}/url`,
+                { credentials: 'include' }
+            );
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.url) {
+                setError(data.error || 'Could not open file');
+                return;
+            }
+            const opened = window.open(String(data.url), '_blank', 'noopener,noreferrer');
+            if (!opened) {
+                // Popup blocked — navigate current tab as fallback
+                window.location.assign(String(data.url));
+            }
+        } catch {
+            setError('Could not open file');
+        }
     }
 
     return (
@@ -458,24 +821,38 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 <div className="p-4 border-b border-charcoal/[0.07] space-y-3">
                     <div className="flex items-center justify-between gap-2">
                         <h2 className="text-base font-semibold text-charcoal tracking-tight">Messages</h2>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setError('');
-                                setShowNew(true);
-                                void loadContacts();
-                            }}
-                            className={`${PORTAL_PRIMARY_BTN} !h-9 !px-3 !text-xs`}
-                            disabled={contacts.length === 0}
-                            title={
-                                contacts.length === 0
-                                    ? contactsHint || EMPTY_COPY[role]
-                                    : 'Start a conversation'
-                            }
-                        >
-                            <Plus className="w-4 h-4" />
-                            New
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                type="button"
+                                onClick={() => void refreshInbox()}
+                                className={`${PORTAL_SECONDARY_BTN} !h-9 !w-9 !px-0`}
+                                title="Refresh messages"
+                                aria-label="Refresh messages"
+                                disabled={refreshing}
+                            >
+                                <RefreshCw
+                                    className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                                />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setError('');
+                                    setShowNew(true);
+                                    void loadContacts();
+                                }}
+                                className={`${PORTAL_PRIMARY_BTN} !h-9 !px-3 !text-xs`}
+                                disabled={contacts.length === 0}
+                                title={
+                                    contacts.length === 0
+                                        ? contactsHint || EMPTY_COPY[role]
+                                        : 'Start a conversation'
+                                }
+                            >
+                                <Plus className="w-4 h-4" />
+                                New
+                            </button>
+                        </div>
                     </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/35" />
@@ -563,14 +940,28 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                             .join(' · ')}
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowAppt(true)}
-                                className={`${PORTAL_SECONDARY_BTN} !h-9 !px-3 !text-xs`}
-                            >
-                                <CalendarPlus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Propose appointment</span>
-                            </button>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => void refreshInbox()}
+                                    className={`${PORTAL_SECONDARY_BTN} !h-9 !w-9 !px-0`}
+                                    title="Refresh conversation"
+                                    aria-label="Refresh conversation"
+                                    disabled={refreshing}
+                                >
+                                    <RefreshCw
+                                        className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                                    />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAppt(true)}
+                                    className={`${PORTAL_SECONDARY_BTN} !h-9 !px-3 !text-xs`}
+                                >
+                                    <CalendarPlus className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Propose appointment</span>
+                                </button>
+                            </div>
                         </header>
 
                         <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3 bg-[#fafafa]/40">
@@ -591,6 +982,60 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                             >
                                                 {m.body}
                                             </p>
+                                        );
+                                    }
+                                    if (m.kind === 'appointment') {
+                                        const appointmentId = String(m.meta.appointmentId || '');
+                                        return (
+                                            <div
+                                                key={m.id}
+                                                className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
+                                            >
+                                                <AppointmentCalendarCard
+                                                    meta={m.meta}
+                                                    body={m.body}
+                                                    mine={mine}
+                                                    sending={sending}
+                                                    objecting={objectingId === appointmentId}
+                                                    suggestStarts={suggestStarts}
+                                                    suggestNotes={suggestNotes}
+                                                    onApprove={() =>
+                                                        void respondAppointment(appointmentId, 'accepted')
+                                                    }
+                                                    onStartObject={() => {
+                                                        setObjectingId(appointmentId);
+                                                        setSuggestStarts(
+                                                            m.meta.startsAt
+                                                                ? toDatetimeLocalValue(
+                                                                      String(m.meta.startsAt)
+                                                                  )
+                                                                : ''
+                                                        );
+                                                        setSuggestNotes('');
+                                                    }}
+                                                    onCancelObject={() => {
+                                                        setObjectingId(null);
+                                                        setSuggestStarts('');
+                                                        setSuggestNotes('');
+                                                    }}
+                                                    onSuggestStartsChange={setSuggestStarts}
+                                                    onSuggestNotesChange={setSuggestNotes}
+                                                    onSubmitObject={() => {
+                                                        if (!suggestStarts) return;
+                                                        void respondAppointment(
+                                                            appointmentId,
+                                                            'declined',
+                                                            {
+                                                                suggestedStartsAt: new Date(
+                                                                    suggestStarts
+                                                                ).toISOString(),
+                                                                suggestedNotes:
+                                                                    suggestNotes.trim() || undefined,
+                                                            }
+                                                        );
+                                                    }}
+                                                />
+                                            </div>
                                         );
                                     }
                                     return (
@@ -615,77 +1060,13 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                                     </p>
                                                 ) : null}
                                                 {m.kind === 'document' ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const docId = String(m.meta.documentId || '');
-                                                            if (docId) void openDocument(docId);
-                                                        }}
-                                                        className={`inline-flex items-center gap-2 text-sm font-medium ${
-                                                            mine ? 'text-white underline' : 'text-gold'
-                                                        }`}
-                                                    >
-                                                        <FileText className="w-4 h-4" />
-                                                        {String(m.meta.fileName || m.body || 'Attachment')}
-                                                    </button>
-                                                ) : m.kind === 'appointment' ? (
-                                                    <div className="space-y-2">
-                                                        <p className="text-sm font-medium">{m.body}</p>
-                                                        {m.meta.startsAt ? (
-                                                            <p
-                                                                className={`text-xs ${
-                                                                    mine ? 'text-white/80' : 'text-charcoal/55'
-                                                                }`}
-                                                            >
-                                                                {new Date(
-                                                                    String(m.meta.startsAt)
-                                                                ).toLocaleString('en-ZA')}
-                                                                {m.meta.location
-                                                                    ? ` · ${String(m.meta.location)}`
-                                                                    : ''}
-                                                            </p>
-                                                        ) : null}
-                                                        {m.meta.status === 'proposed' &&
-                                                        m.meta.appointmentId &&
-                                                        !mine ? (
-                                                            <div className="flex gap-2 pt-1">
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={sending}
-                                                                    onClick={() =>
-                                                                        void respondAppointment(
-                                                                            String(m.meta.appointmentId),
-                                                                            'accepted'
-                                                                        )
-                                                                    }
-                                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white"
-                                                                >
-                                                                    Accept
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    disabled={sending}
-                                                                    onClick={() =>
-                                                                        void respondAppointment(
-                                                                            String(m.meta.appointmentId),
-                                                                            'declined'
-                                                                        )
-                                                                    }
-                                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-charcoal/10 text-charcoal"
-                                                                >
-                                                                    Decline
-                                                                </button>
-                                                            </div>
-                                                        ) : m.meta.status && m.meta.status !== 'proposed' ? (
-                                                            <p
-                                                                className={`text-xs capitalize ${
-                                                                    mine ? 'text-white/75' : 'text-charcoal/50'
-                                                                }`}
-                                                            >
-                                                                {String(m.meta.status)}
-                                                            </p>
-                                                        ) : null}
-                                                    </div>
+                                                    <AttachmentMessage
+                                                        conversationId={activeId || m.conversationId}
+                                                        meta={m.meta}
+                                                        body={m.body}
+                                                        mine={mine}
+                                                        onOpen={openDocument}
+                                                    />
                                                 ) : (
                                                     <p className="text-sm whitespace-pre-wrap break-words">
                                                         {m.body}
