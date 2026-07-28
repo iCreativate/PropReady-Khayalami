@@ -91,7 +91,12 @@ export async function GET(request: NextRequest) {
             query = query.eq('agent_id', agentId);
         }
         if (contactEmail) {
-            query = query.eq('contact_email', contactEmail);
+            // Message-bridged rows set contact_email and buyer_email; match either.
+            // Quote values so `@` is valid in PostgREST `or` filters.
+            const email = contactEmail.replace(/["\\]/g, '');
+            query = query.or(
+                `contact_email.eq."${email}",buyer_email.eq."${email}",seller_email.eq."${email}"`
+            );
         }
 
         const { data, error } = await query;

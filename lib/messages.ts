@@ -44,10 +44,13 @@ export type ConversationRow = {
     updated_at: string;
 };
 
+/** Message hub participants include portal roles plus PropReady admin. */
+export type MessageAccountType = AccountType | 'admin';
+
 export type ParticipantRow = {
     id: string;
     conversation_id: string;
-    account_type: AccountType;
+    account_type: MessageAccountType;
     profile_id: string;
     display_name: string | null;
     last_read_at: string | null;
@@ -60,7 +63,7 @@ export type MessageItemRow = {
     kind: MessageItemKind;
     body: string | null;
     meta: Record<string, unknown>;
-    sender_account_type: AccountType | null;
+    sender_account_type: MessageAccountType | null;
     sender_profile_id: string | null;
     sender_name: string | null;
     created_at: string;
@@ -70,7 +73,7 @@ export type AppointmentRow = {
     id: string;
     conversation_id: string;
     message_id: string | null;
-    proposed_by_account_type: AccountType;
+    proposed_by_account_type: MessageAccountType;
     proposed_by_profile_id: string;
     starts_at: string;
     ends_at: string | null;
@@ -78,7 +81,7 @@ export type AppointmentRow = {
     notes: string | null;
     status: AppointmentStatus;
     viewing_id: string | null;
-    responded_by_account_type: AccountType | null;
+    responded_by_account_type: MessageAccountType | null;
     responded_by_profile_id: string | null;
     responded_at: string | null;
     created_at: string;
