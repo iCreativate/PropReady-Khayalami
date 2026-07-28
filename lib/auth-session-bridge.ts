@@ -16,6 +16,13 @@ export type BridgedSessionUser = {
     accountType?: 'user' | 'agent' | 'originator';
 };
 
+export function clearLegacyAuthStorage() {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(STORAGE_KEYS.currentUser);
+    localStorage.removeItem(STORAGE_KEYS.currentAgent);
+    localStorage.removeItem('propReady_currentOriginator');
+}
+
 export function syncLegacySession(
     user: BridgedSessionUser,
     accountType: 'user' | 'agent' | 'originator' = user.accountType || 'user'
@@ -64,6 +71,11 @@ export function syncLegacySession(
 export async function hydrateSessionFromCookies(): Promise<BridgedSessionUser | null> {
     try {
         const res = await fetch('/api/auth/session', { credentials: 'include' });
+        if (res.status === 401) {
+            // Cookie session is gone — drop stale localStorage so portals don't look "logged in"
+            clearLegacyAuthStorage();
+            return null;
+        }
         if (!res.ok) return null;
         const data = await res.json();
         if (!data?.authenticated || !data.user) return null;

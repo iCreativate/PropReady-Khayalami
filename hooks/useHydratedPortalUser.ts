@@ -3,16 +3,14 @@
 import { useEffect, useState } from 'react';
 import type { UserPortalUser } from '@/components/UserPortalLayout';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
-import { readBuyerPortalUser } from '@/lib/buyer-portal-session';
-import { readSellerPortalUser } from '@/lib/seller-portal-session';
 
+/**
+ * Resolve portal user from the live cookie session only.
+ * Stale localStorage alone must not keep the portal open while APIs 401.
+ */
 async function resolvePortalUser(
-    readLocal: () => UserPortalUser | null,
     accountType: 'user' | 'agent'
 ): Promise<UserPortalUser | null> {
-    const local = readLocal();
-    if (local) return local;
-
     const bridged = await hydrateSessionFromCookies();
     if (!bridged) return null;
 
@@ -33,7 +31,7 @@ export function useHydratedBuyerPortalUser() {
     useEffect(() => {
         let cancelled = false;
 
-        void resolvePortalUser(readBuyerPortalUser, 'user').then((next) => {
+        void resolvePortalUser('user').then((next) => {
             if (cancelled) return;
             setUser(next);
             setIsHydrated(true);
@@ -54,7 +52,7 @@ export function useHydratedSellerPortalUser() {
     useEffect(() => {
         let cancelled = false;
 
-        void resolvePortalUser(readSellerPortalUser, 'user').then((next) => {
+        void resolvePortalUser('user').then((next) => {
             if (cancelled) return;
             setUser(next);
             setIsHydrated(true);

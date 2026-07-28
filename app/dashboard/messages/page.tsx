@@ -15,7 +15,7 @@ export default function BuyerMessagesPage() {
 
     useEffect(() => {
         if (!isHydrated) return;
-        if (!user) router.push('/login');
+        if (!user) router.push('/auth/login');
     }, [isHydrated, user, router]);
 
     if (!isHydrated || !user) {

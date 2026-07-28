@@ -13,6 +13,7 @@ import {
     X,
 } from 'lucide-react';
 import type { AccountType } from '@/lib/auth-enterprise/config';
+import { signOutClient } from '@/lib/auth-signout';
 import { supabase } from '@/lib/supabase';
 import {
     PORTAL_PRIMARY_BTN,
@@ -140,9 +141,21 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         });
     }, [conversations, search, profileId]);
 
+    const authRedirecting = useRef(false);
+
+    async function handleUnauthorized() {
+        if (authRedirecting.current) return;
+        authRedirecting.current = true;
+        await signOutClient({ accountType });
+    }
+
     const loadContacts = useCallback(async () => {
         try {
             const res = await fetch('/api/messages/contacts', { credentials: 'include' });
+            if (res.status === 401) {
+                await handleUnauthorized();
+                return;
+            }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load contacts');
             setContacts(data.contacts || []);
@@ -151,20 +164,25 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             setContacts([]);
             setContactsHint(EMPTY_COPY[role]);
         }
-    }, [role]);
+    }, [role, accountType]);
 
     const loadConversations = useCallback(async () => {
         try {
             const res = await fetch('/api/messages/conversations', { credentials: 'include' });
+            if (res.status === 401) {
+                await handleUnauthorized();
+                return;
+            }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load conversations');
             setConversations(data.conversations || []);
+            setError('');
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to load');
         } finally {
             setLoadingList(false);
         }
-    }, []);
+    }, [accountType]);
 
     const loadMessages = useCallback(async (conversationId: string) => {
         setLoadingThread(true);
@@ -172,6 +190,10 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             const res = await fetch(`/api/messages/conversations/${conversationId}/messages`, {
                 credentials: 'include',
             });
+            if (res.status === 401) {
+                await handleUnauthorized();
+                return;
+            }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to load messages');
             setMessages(data.messages || []);
@@ -187,7 +209,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         } finally {
             setLoadingThread(false);
         }
-    }, []);
+    }, [accountType]);
 
     useEffect(() => {
         void loadConversations();
