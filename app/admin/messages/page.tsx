@@ -35,6 +35,16 @@ type Contact = {
     email: string;
 };
 
+function contactLabel(contact: Contact) {
+    const title =
+        contact.accountType === 'agent'
+            ? 'Agent'
+            : contact.accountType === 'originator'
+              ? 'Originator'
+              : 'Buyer / Seller';
+    return `${contact.fullName || contact.email} · ${title}`;
+}
+
 export default function AdminMessagesPage() {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -49,7 +59,7 @@ export default function AdminMessagesPage() {
     const [q, setQ] = useState('');
     const [showNew, setShowNew] = useState(false);
     const [contacts, setContacts] = useState<Contact[]>([]);
-    const [contactQ, setContactQ] = useState('');
+    const [selectedContactKey, setSelectedContactKey] = useState('');
     const [newBody, setNewBody] = useState('');
     const [newSubject, setNewSubject] = useState('PropReady support');
     const [showBroadcast, setShowBroadcast] = useState(false);
@@ -130,19 +140,27 @@ export default function AdminMessagesPage() {
         }
     }
 
-    async function searchContacts(term: string) {
-        setContactQ(term);
-        if (term.trim().length < 2) {
-            setContacts([]);
-            return;
+    const loadContacts = useCallback(async () => {
+        const res = await fetch('/api/admin/accounts?type=all', {
+            credentials: 'include',
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            setContacts(
+                (data.accounts || []).map((account: Contact) => ({
+                    id: account.id,
+                    accountType: account.accountType,
+                    fullName: account.fullName,
+                    email: account.email,
+                }))
+            );
         }
-        const res = await fetch(
-            `/api/admin/accounts?type=all&q=${encodeURIComponent(term.trim())}`,
-            { credentials: 'include' }
-        );
-        const data = await res.json();
-        if (res.ok) setContacts(data.accounts || []);
-    }
+    }, []);
+
+    useEffect(() => {
+        if (!showNew) return;
+        void loadContacts();
+    }, [showNew, loadContacts]);
 
     async function startConversation(contact: Contact) {
         setSending(true);
@@ -165,7 +183,7 @@ export default function AdminMessagesPage() {
             setShowNew(false);
             setNewBody('');
             setContacts([]);
-            setContactQ('');
+            setSelectedContactKey('');
             await loadList();
             if (data.conversationId) await loadThread(data.conversationId);
         } catch (err) {
@@ -174,6 +192,9 @@ export default function AdminMessagesPage() {
             setSending(false);
         }
     }
+
+    const selectedContact =
+        contacts.find((contact) => `${contact.accountType}:${contact.id}` === selectedContactKey) || null;
 
     async function sendBroadcast(e: React.FormEvent) {
         e.preventDefault();
@@ -308,28 +329,25 @@ export default function AdminMessagesPage() {
                         placeholder="Subject"
                         className="w-full h-10 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
                     />
-                    <input
-                        value={contactQ}
-                        onChange={(e) => void searchContacts(e.target.value)}
-                        placeholder="Search account by name or email…"
-                        className="w-full h-10 rounded-xl border border-charcoal/[0.1] px-3 text-sm"
-                    />
-                    {contacts.length > 0 ? (
-                        <div className="max-h-40 overflow-y-auto rounded-xl border border-charcoal/[0.08] divide-y">
-                            {contacts.slice(0, 8).map((c) => (
-                                <button
-                                    key={`${c.accountType}:${c.id}`}
-                                    type="button"
-                                    disabled={sending}
-                                    onClick={() => void startConversation(c)}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-charcoal/[0.03]"
-                                >
-                                    <span className="font-medium">{c.fullName || '—'}</span>
-                                    <span className="text-charcoal/45"> · {c.email}</span>
-                                    <span className="text-charcoal/35"> · {c.accountType}</span>
-                                </button>
-                            ))}
-                        </div>
+                    <select
+                        value={selectedContactKey}
+                        onChange={(e) => setSelectedContactKey(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-charcoal/[0.1] px-3 text-sm bg-white"
+                    >
+                        <option value="">Select account to message…</option>
+                        {contacts.map((contact) => (
+                            <option
+                                key={`${contact.accountType}:${contact.id}`}
+                                value={`${contact.accountType}:${contact.id}`}
+                            >
+                                {contactLabel(contact)}
+                            </option>
+                        ))}
+                    </select>
+                    {selectedContact ? (
+                        <p className="text-xs text-charcoal/45">
+                            Messaging <span className="font-medium text-charcoal">{selectedContact.fullName || selectedContact.email}</span> at {selectedContact.email}
+                        </p>
                     ) : null}
                     <textarea
                         value={newBody}
@@ -338,13 +356,23 @@ export default function AdminMessagesPage() {
                         rows={3}
                         className="w-full rounded-xl border border-charcoal/[0.1] px-3 py-2 text-sm"
                     />
-                    <button
-                        type="button"
-                        onClick={() => setShowNew(false)}
-                        className="text-sm text-charcoal/50 hover:text-charcoal"
-                    >
-                        Cancel
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            disabled={sending || !selectedContact}
+                            onClick={() => selectedContact && void startConversation(selectedContact)}
+                            className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold disabled:opacity-60"
+                        >
+                            {sending ? 'Starting…' : 'Start conversation'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowNew(false)}
+                            className="text-sm text-charcoal/50 hover:text-charcoal"
+                        >
+                            Cancel
+                        </button>
+                    </div>
                 </div>
             ) : null}
 

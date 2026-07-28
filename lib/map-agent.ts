@@ -22,6 +22,10 @@ export function mapAgentRecord(a: Record<string, unknown>) {
         status: (a.status as string) ?? 'pending',
         plan: (a.plan as string) ?? 'free',
         sellerPlan: (a.seller_plan ?? a.sellerPlan) as string | undefined,
+        planStatus: (a.plan_status ?? a.planStatus ?? 'trialing') as string,
+        trialStartedAt: (a.trial_started_at ?? a.trialStartedAt) as string | null | undefined,
+        trialEndsAt: (a.trial_ends_at ?? a.trialEndsAt) as string | null | undefined,
+        planActivatedAt: (a.plan_activated_at ?? a.planActivatedAt) as string | null | undefined,
         emailVerified: a.email_verified ?? a.emailVerified,
     };
     return {

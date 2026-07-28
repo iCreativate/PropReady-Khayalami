@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Building2, Eye, EyeOff, Hash, Lock, Mail } from 'lucide-react';
+import { AlertCircle, Building2, Hash, Mail } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
@@ -14,8 +14,6 @@ export default function OriginatorLoginPage() {
     const [email, setEmail] = useState('');
     const [organizationId, setOrganizationId] = useState<string>(BOND_ORIGINATORS[0]?.id || '');
     const [staffNumber, setStaffNumber] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -43,7 +41,6 @@ export default function OriginatorLoginPage() {
                 credentials: 'include',
                 body: JSON.stringify({
                     email: email.trim(),
-                    password,
                     type: 'originator',
                     organizationId,
                     staffNumber: staff,
@@ -94,7 +91,9 @@ export default function OriginatorLoginPage() {
                             data.user as Parameters<typeof syncLegacySession>[0],
                             'originator'
                         );
-                        window.location.assign('/auth/complete?type=originator');
+                        window.location.assign(
+                            data.redirectTo || '/auth/confirm-password?type=originator'
+                        );
                     }}
                     onBack={() => setOtpChallenge(null)}
                     onExpired={() => {
@@ -110,7 +109,7 @@ export default function OriginatorLoginPage() {
         <ProfessionalAuthShell
             role="originator"
             title="Bond originator sign-in"
-            subtitle="Organisation, staff number, and password — then a one-time email code to finish sign-in."
+            subtitle="Organisation, staff number, and work email first. We email a code, then ask for your password."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -121,7 +120,7 @@ export default function OriginatorLoginPage() {
 
             <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
                 After you register and verify email, PropReady must approve your staff account. Your staff number
-                is emailed when you are approved. Every login also requires an email one-time code.
+                is emailed when you are approved. Each sign-in is email code first, then password.
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -176,30 +175,6 @@ export default function OriginatorLoginPage() {
                     </div>
                 </div>
 
-                <div>
-                    <label className="auth-label">Password</label>
-                    <div className="auth-input-wrap">
-                        <Lock className="auth-input-icon" />
-                        <input
-                            type={showPassword ? 'text' : 'password'}
-                            required
-                            autoComplete="current-password"
-                            className="auth-input pr-10"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <button
-                            type="button"
-                            className="auth-input-toggle"
-                            onClick={() => setShowPassword((v) => !v)}
-                            aria-label="Toggle password"
-                        >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                    </div>
-                </div>
-
                 <div className="flex items-center justify-between text-sm pt-1">
                     <label className="flex items-center gap-2 text-charcoal/70 cursor-pointer">
                         <input
@@ -210,9 +185,7 @@ export default function OriginatorLoginPage() {
                         />
                         Trust this device
                     </label>
-                    <Link href="/auth/forgot-password?type=originator" className="text-gold hover:underline">
-                        Forgot password?
-                    </Link>
+                    <span className="text-charcoal/45">Password is entered after the code.</span>
                 </div>
 
                 <button type="submit" disabled={loading} className="auth-btn-primary w-full mt-2">

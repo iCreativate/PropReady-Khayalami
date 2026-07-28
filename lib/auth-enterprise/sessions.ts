@@ -149,7 +149,7 @@ export async function loadSessionUser(account: AuthAccount): Promise<SessionUser
         const { data } = await db()
             .from('agents')
             .select(
-                'full_name, email, company, phone, plan, seller_plan, ppra_number, eaab_number, verification_status, status'
+                'full_name, email, company, phone, plan, seller_plan, plan_status, trial_started_at, trial_ends_at, plan_activated_at, ppra_number, eaab_number, verification_status, status'
             )
             .eq('id', account.profile_id)
             .maybeSingle();
@@ -159,6 +159,10 @@ export async function loadSessionUser(account: AuthAccount): Promise<SessionUser
             base.phone = data.phone;
             base.plan = data.plan || 'free';
             base.sellerPlan = data.seller_plan || 'none';
+            base.planStatus = data.plan_status || 'trialing';
+            base.trialStartedAt = data.trial_started_at || null;
+            base.trialEndsAt = data.trial_ends_at || null;
+            base.planActivatedAt = data.plan_activated_at || null;
             base.ppraNumber = data.ppra_number || data.eaab_number;
             base.verificationStatus =
                 data.verification_status || (data.status === 'approved' ? 'verified' : 'pending');

@@ -24,6 +24,9 @@ export async function GET(request: NextRequest) {
             conversations,
             prequalCases,
             viewings,
+            activePlans,
+            trialingAgents,
+            paymentPendingAgents,
         ] = await Promise.all([
             supabase.from('users').select('id', { count: 'exact', head: true }),
             supabase.from('agents').select('id', { count: 'exact', head: true }),
@@ -40,6 +43,12 @@ export async function GET(request: NextRequest) {
             supabase.from('message_conversations').select('id', { count: 'exact', head: true }),
             supabase.from('prequal_cases').select('id', { count: 'exact', head: true }),
             supabase.from('viewing_appointments').select('id', { count: 'exact', head: true }),
+            supabase.from('agents').select('id', { count: 'exact', head: true }).eq('plan_status', 'active'),
+            supabase.from('agents').select('id', { count: 'exact', head: true }).eq('plan_status', 'trialing'),
+            supabase
+                .from('agents')
+                .select('id', { count: 'exact', head: true })
+                .eq('plan_status', 'payment_pending'),
         ]);
 
         const { data: recentLeads } = await supabase
@@ -66,6 +75,9 @@ export async function GET(request: NextRequest) {
                 conversations: conversations.count ?? 0,
                 prequalCases: prequalCases.count ?? 0,
                 viewings: viewings.count ?? 0,
+                activePlans: activePlans.count ?? 0,
+                trialingAgents: trialingAgents.count ?? 0,
+                paymentPendingAgents: paymentPendingAgents.count ?? 0,
             },
             recentLeads: recentLeads || [],
             recentAgents: recentAgents || [],

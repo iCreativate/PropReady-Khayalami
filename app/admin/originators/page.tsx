@@ -101,19 +101,25 @@ export default function AdminOriginatorsPage() {
 
     return (
         <AdminShell title="Originator approvals">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h2 className="text-2xl sm:text-3xl font-semibold text-charcoal tracking-tight">
-                        Originator staff approvals
-                    </h2>
-                    <p className={PORTAL_TEXT_SECONDARY}>
-                        PropReady must approve staff before they can access the originator portal
-                    </p>
-                </div>
-                <button type="button" onClick={loadApplications} className={PORTAL_REFRESH_BTN}>
+            <div className="mb-6 rounded-3xl border border-charcoal/[0.08] bg-gradient-to-br from-[#12212b] to-[#1f3644] text-white px-6 py-6 sm:px-7">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45 mb-2">
+                            Staff onboarding
+                        </p>
+                        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                            Originator staff approvals
+                        </h2>
+                        <p className="text-sm text-white/65 mt-2 max-w-2xl">
+                            Review staff registrations, assign access, and keep organisation teams
+                            clean before they enter the originator portal.
+                        </p>
+                    </div>
+                    <button type="button" onClick={loadApplications} className={`${PORTAL_REFRESH_BTN} bg-white text-charcoal border-white hover:bg-white/90`}>
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
-                </button>
+                    </button>
+                </div>
             </div>
 
             {error ? (
@@ -125,7 +131,8 @@ export default function AdminOriginatorsPage() {
 
             <div className="flex flex-col lg:flex-row gap-6">
                 <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                    <div className={`${PORTAL_CARD} p-4 sm:p-5 mb-4`}>
+                    <div className="flex flex-col sm:flex-row gap-2">
                         <div className="relative flex-1">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal/40" />
                             <input
@@ -147,8 +154,9 @@ export default function AdminOriginatorsPage() {
                             <option value="all">All</option>
                         </select>
                     </div>
+                    </div>
 
-                    <div className="relative space-y-2 max-h-[70vh] overflow-y-auto min-h-[120px]">
+                    <div className={`${PORTAL_CARD} p-3 sm:p-4 relative space-y-3 max-h-[70vh] overflow-y-auto min-h-[120px]`}>
                         {loading && applications.length === 0 ? (
                             <PortalLoading variant="inline" message="Loading applications…" />
                         ) : null}
@@ -159,15 +167,15 @@ export default function AdminOriginatorsPage() {
                                 onClick={() => setSelected(app)}
                                 className={`w-full text-left p-4 rounded-2xl border transition ${
                                     selected?.id === app.id
-                                        ? 'border-gold/30 bg-gold/[0.04]'
-                                        : 'border-charcoal/[0.08] bg-white hover:border-charcoal/15'
+                                        ? 'border-gold/35 bg-gold/[0.06] shadow-sm'
+                                        : 'border-charcoal/[0.08] bg-white hover:border-charcoal/15 hover:shadow-sm'
                                 }`}
                             >
                                 <p className="font-semibold text-charcoal">{app.fullName}</p>
                                 <p className={`text-sm ${PORTAL_TEXT_SECONDARY}`}>
                                     {app.organizationName}
                                 </p>
-                                <p className="text-xs text-charcoal/45 font-mono mt-1">
+                                <p className="text-xs text-charcoal/45 font-mono mt-2">
                                     {app.staffNumber || 'No staff number'} · {app.status}
                                 </p>
                             </button>
@@ -180,27 +188,38 @@ export default function AdminOriginatorsPage() {
                     </div>
                 </div>
 
-                <div className={`${PORTAL_CARD} lg:w-96 p-6 h-fit sticky top-24`}>
+                <div className={`${PORTAL_CARD} lg:w-[28rem] p-6 h-fit sticky top-24`}>
                     {selected ? (
                         <>
-                            <h2 className="text-xl font-semibold text-charcoal mb-2">
-                                {selected.fullName}
-                            </h2>
-                            <p className={`text-sm mb-4 ${PORTAL_TEXT_SECONDARY}`}>
-                                Status: <span className="text-charcoal font-medium">{selected.status}</span>
-                            </p>
-                            <dl className={`space-y-2 text-sm ${PORTAL_TEXT_SECONDARY}`}>
+                            <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <dt className="text-charcoal/45">Email</dt>
-                                    <dd className="text-charcoal">{selected.email}</dd>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40">
+                                        Reviewing staff account
+                                    </p>
+                                    <h2 className="text-xl font-semibold text-charcoal mt-1">
+                                        {selected.fullName}
+                                    </h2>
                                 </div>
-                                <div>
-                                    <dt className="text-charcoal/45">Organisation</dt>
-                                    <dd className="text-charcoal">{selected.organizationName}</dd>
+                                <span className="inline-flex items-center rounded-full bg-charcoal/[0.05] border border-charcoal/[0.08] px-3 py-1 text-xs font-semibold capitalize text-charcoal/70">
+                                    {selected.status}
+                                </span>
+                            </div>
+                            <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3">
+                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">Email</dt>
+                                    <dd className="text-charcoal mt-1 break-all">{selected.email}</dd>
                                 </div>
-                                <div>
-                                    <dt className="text-charcoal/45">Staff number</dt>
-                                    <dd className="font-mono text-charcoal">
+                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3">
+                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">Phone</dt>
+                                    <dd className="text-charcoal mt-1">{selected.phone || '—'}</dd>
+                                </div>
+                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3 sm:col-span-2">
+                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">Organisation</dt>
+                                    <dd className="text-charcoal mt-1">{selected.organizationName}</dd>
+                                </div>
+                                <div className="rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.06] px-4 py-3 sm:col-span-2">
+                                    <dt className="text-charcoal/45 text-xs uppercase tracking-wide">Staff number</dt>
+                                    <dd className="font-mono text-charcoal mt-1">
                                         {selected.staffNumber ||
                                             (selected.status === 'pending'
                                                 ? 'Assigned automatically on approval'

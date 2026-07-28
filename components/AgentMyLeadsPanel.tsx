@@ -51,9 +51,23 @@ async function loadAllLeads(): Promise<{
     buyers: AgentLeadRecord[];
     sellers: AgentLeadRecord[];
     viewings: ScheduledViewing[];
+    leadAccess: {
+        status: string;
+        locked: boolean;
+        message: string;
+        badge: string;
+        trialEndsAt: string | null;
+    } | null;
 }> {
     let apiLeads: AgentLeadRecord[] = [];
     let apiViewings: ScheduledViewing[] = [];
+    let leadAccess: {
+        status: string;
+        locked: boolean;
+        message: string;
+        badge: string;
+        trialEndsAt: string | null;
+    } | null = null;
 
     try {
         const [leadsRes, viewingsRes] = await Promise.all([
@@ -63,6 +77,7 @@ async function loadAllLeads(): Promise<{
         const leadsData = await leadsRes.json().catch(() => ({}));
         const viewingsData = await viewingsRes.json().catch(() => ({}));
         if (Array.isArray(leadsData.leads)) apiLeads = leadsData.leads;
+        leadAccess = leadsData.leadAccess || null;
         if (Array.isArray(viewingsData.viewings)) apiViewings = viewingsData.viewings;
     } catch {
         /* use local only */
@@ -91,7 +106,7 @@ async function loadAllLeads(): Promise<{
     ];
     const viewings = [...apiViewings, ...storedViewings.filter((v) => !viewingIds.has(v.id))];
 
-    return { buyers, sellers, viewings };
+    return { buyers, sellers, viewings, leadAccess };
 }
 
 export default function AgentMyLeadsPanel({
@@ -102,6 +117,13 @@ export default function AgentMyLeadsPanel({
     const [buyers, setBuyers] = useState<AgentLeadRecord[]>([]);
     const [sellers, setSellers] = useState<AgentLeadRecord[]>([]);
     const [viewings, setViewings] = useState<ScheduledViewing[]>([]);
+    const [leadAccess, setLeadAccess] = useState<{
+        status: string;
+        locked: boolean;
+        message: string;
+        badge: string;
+        trialEndsAt: string | null;
+    } | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -113,6 +135,7 @@ export default function AgentMyLeadsPanel({
             setBuyers(data.buyers);
             setSellers(data.sellers);
             setViewings(data.viewings);
+            setLeadAccess(data.leadAccess);
             setLoading(false);
         });
     }, [agentId]);
@@ -147,6 +170,19 @@ export default function AgentMyLeadsPanel({
                     </p>
                 </AgentPageHeader>
             )}
+
+            {leadAccess ? (
+                <div
+                    className={`mb-5 rounded-2xl border px-4 py-3 text-sm ${
+                        leadAccess.locked
+                            ? 'border-amber-200 bg-amber-50 text-amber-900'
+                            : 'border-gold/15 bg-gold/[0.05] text-charcoal/75'
+                    }`}
+                >
+                    <p className="font-semibold">{leadAccess.badge}</p>
+                    <p className="mt-1">{leadAccess.message}</p>
+                </div>
+            ) : null}
 
             {loading ? (
                 <PortalLoading variant="inline" message="Loading leads…" />
@@ -184,7 +220,9 @@ export default function AgentMyLeadsPanel({
                         return (
                             <div
                                 key={lead.id}
-                                className={AGENT_INNER_CARD}
+                                className={`${AGENT_INNER_CARD} ${
+                                    leadAccess?.locked ? 'opacity-70 saturate-0' : ''
+                                }`}
                             >
                                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                                     <div className="flex gap-4 min-w-0">

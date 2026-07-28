@@ -29,7 +29,7 @@ import {
     FFC_DOCUMENT_MAX_BYTES,
 } from '@/lib/ppra';
 import { validateProfessionalWorkEmail } from '@/lib/professional-email';
-import { PRICING_SUMMARY } from '@/lib/agent-plans';
+import { BUYER_PLANS, PRICING_SUMMARY, type BuyerPlan } from '@/lib/agent-plans';
 
 interface AgentRegistration {
     id: string;
@@ -43,6 +43,7 @@ interface AgentRegistration {
     verificationStatus?: string;
     company: string;
     city?: string;
+    plan?: string;
     password: string;
     emailVerified?: boolean;
     timestamp: string;
@@ -71,6 +72,7 @@ export default function AgentRegisterPage() {
         company: '',
         city: '',
         registrationRole: '' as '' | 'agent' | 'principal',
+        plan: '' as '' | BuyerPlan,
         password: '',
         confirmPassword: '',
         agreeToTerms: false,
@@ -81,6 +83,10 @@ export default function AgentRegisterPage() {
 
         if (!formData.registrationRole) {
             newErrors.registrationRole = 'Select whether you are registering as an agent or a principal';
+        }
+
+        if (!formData.plan) {
+            newErrors.plan = 'Choose your buyer lead plan';
         }
 
         if (!formData.fullName.trim()) {
@@ -187,6 +193,7 @@ export default function AgentRegisterPage() {
                 timestamp: new Date().toISOString(),
                 status: 'pending',
                 registrationRole: formData.registrationRole || 'agent',
+                plan: formData.plan,
             };
 
             const registerRes = await fetch('/api/agents/register', {
@@ -283,7 +290,7 @@ export default function AgentRegisterPage() {
         <ProfessionalAuthShell
             role="agent"
             title="Join our network"
-            subtitle={`Register as a verified PropReady agent or principal — 100% free. ${PRICING_SUMMARY}`}
+            subtitle={`Choose your plan, start with a 7-day trial, and unlock full access after PropReady activates payment. ${PRICING_SUMMARY}`}
             wide
         >
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -348,6 +355,46 @@ export default function AgentRegisterPage() {
                         </label>
                     </div>
                     {fieldError('registrationRole')}
+                </fieldset>
+
+                <fieldset>
+                    <legend className="auth-label mb-2">
+                        Choose your buyer lead plan <span className="text-red-600">*</span>
+                    </legend>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                        {(Object.keys(BUYER_PLANS) as BuyerPlan[]).map((planId) => {
+                            const plan = BUYER_PLANS[planId];
+                            return (
+                                <label
+                                    key={planId}
+                                    className={`rounded-2xl border px-4 py-3 cursor-pointer transition ${
+                                        formData.plan === planId
+                                            ? 'border-gold bg-gold/[0.06]'
+                                            : 'border-charcoal/[0.1] hover:border-charcoal/20'
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="plan"
+                                        value={planId}
+                                        checked={formData.plan === planId}
+                                        onChange={handleInputChange}
+                                        className="sr-only"
+                                    />
+                                    <span className="block text-sm font-semibold text-charcoal">
+                                        {plan.name}
+                                    </span>
+                                    <span className="block text-xs text-charcoal/55 mt-1">
+                                        {plan.leadLimit} buyer leads · {plan.priceLabel}
+                                    </span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                    <p className="text-xs text-charcoal/45 mt-2">
+                        Every agent starts on a 7-day trial. After that, leads stay visible but contact details stay locked until PropReady activates the selected plan.
+                    </p>
+                    {fieldError('plan')}
                 </fieldset>
 
                 <div>

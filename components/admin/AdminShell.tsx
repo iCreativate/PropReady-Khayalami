@@ -13,7 +13,6 @@ import {
     Shield,
     Users,
 } from 'lucide-react';
-import PortalLoading from '@/components/PortalLoading';
 
 const NAV: Array<{
     href: string;
@@ -71,7 +70,7 @@ export default function AdminShell({
     }
 
     if (loading) {
-        return <PortalLoading variant="dashboard" message="Loading staff console…" />;
+        return null;
     }
 
     if (!email) return null;

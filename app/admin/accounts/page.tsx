@@ -16,6 +16,10 @@ type Account = {
     status: string;
     createdAt: string | null;
     meta?: string;
+    plan?: string;
+    planStatus?: string;
+    trialEndsAt?: string | null;
+    planActivatedAt?: string | null;
 };
 
 export default function AdminAccountsPage() {
@@ -136,6 +140,31 @@ export default function AdminAccountsPage() {
                 data.redirectTo || dashboardPathForAccountType(account.accountType);
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Access failed');
+            setActionLoading(null);
+        }
+    }
+
+    async function setPlanActivation(account: Account, active: boolean) {
+        if (account.accountType !== 'agent') return;
+        setActionLoading(account.id);
+        setError('');
+        try {
+            const res = await fetch('/api/admin/accounts', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: active ? 'activate-plan' : 'deactivate-plan',
+                    id: account.id,
+                    accountType: 'agent',
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Plan update failed (${res.status})`);
+            await load();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'Plan update failed');
+        } finally {
             setActionLoading(null);
         }
     }
@@ -351,6 +380,16 @@ export default function AdminAccountsPage() {
                                 {account.meta ? (
                                     <p className="text-xs text-charcoal/40 mt-0.5">{account.meta}</p>
                                 ) : null}
+                                {account.accountType === 'agent' ? (
+                                    <p className="text-xs text-charcoal/45 mt-1">
+                                        Plan: <span className="font-medium text-charcoal">{account.plan || 'free'}</span>
+                                        {' · '}
+                                        <span className="capitalize">{account.planStatus || 'trialing'}</span>
+                                        {account.trialEndsAt
+                                            ? ` · Trial ends ${new Date(account.trialEndsAt).toLocaleDateString()}`
+                                            : ''}
+                                    </p>
+                                ) : null}
                             </div>
                             <div className="flex items-center gap-2 shrink-0 flex-wrap">
                                 <span className="text-[11px] font-semibold uppercase tracking-wide text-charcoal/45 px-2 py-1 rounded-lg bg-charcoal/[0.04]">
@@ -374,6 +413,26 @@ export default function AdminAccountsPage() {
                                             className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
                                         >
                                             Reject
+                                        </button>
+                                    </>
+                                ) : null}
+                                {account.accountType === 'agent' ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading === account.id}
+                                            onClick={() => void setPlanActivation(account, true)}
+                                            className="text-xs font-medium text-emerald-700 hover:underline disabled:opacity-50"
+                                        >
+                                            Activate plan
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={actionLoading === account.id}
+                                            onClick={() => void setPlanActivation(account, false)}
+                                            className="text-xs font-medium text-amber-700 hover:underline disabled:opacity-50"
+                                        >
+                                            Mark unpaid
                                         </button>
                                     </>
                                 ) : null}

@@ -44,6 +44,10 @@ export async function GET(request: NextRequest) {
             status: string;
             createdAt: string | null;
             meta?: string;
+            plan?: string;
+            planStatus?: string;
+            trialEndsAt?: string | null;
+            planActivatedAt?: string | null;
         }> = [];
 
         if (type === 'all' || type === 'user') {
@@ -69,7 +73,7 @@ export async function GET(request: NextRequest) {
         if (type === 'all' || type === 'agent') {
             let query = supabase
                 .from('agents')
-                .select('id, full_name, email, status, verification_status, company, created_at')
+                .select('id, full_name, email, status, verification_status, company, created_at, plan, plan_status, trial_ends_at, plan_activated_at')
                 .order('created_at', { ascending: false })
                 .limit(150);
             if (status !== 'all') query = query.eq('status', status);
@@ -84,6 +88,10 @@ export async function GET(request: NextRequest) {
                     status: String(row.status || row.verification_status || 'unknown'),
                     createdAt: row.created_at ? String(row.created_at) : null,
                     meta: row.company ? String(row.company) : undefined,
+                    plan: row.plan ? String(row.plan) : 'free',
+                    planStatus: row.plan_status ? String(row.plan_status) : 'trialing',
+                    trialEndsAt: row.trial_ends_at ? String(row.trial_ends_at) : null,
+                    planActivatedAt: row.plan_activated_at ? String(row.plan_activated_at) : null,
                 });
             }
         }
@@ -170,6 +178,36 @@ export async function POST(request: NextRequest) {
             });
         }
 
+        if (action === 'activate-plan' || action === 'deactivate-plan') {
+            const accountType = parsePortalAccountType(body.accountType);
+            const id = String(body.id || '').trim();
+            if (!id || accountType !== 'agent') {
+                return NextResponse.json(
+                    { error: 'id and accountType=agent required' },
+                    { status: 400 }
+                );
+            }
+
+            const updates =
+                action === 'activate-plan'
+                    ? {
+                          plan_status: 'active',
+                          plan_activated_at: new Date().toISOString(),
+                          plan_activated_by: auth.email,
+                          updated_at: new Date().toISOString(),
+                      }
+                    : {
+                          plan_status: 'payment_pending',
+                          updated_at: new Date().toISOString(),
+                      };
+
+            const { error } = await supabase.from('agents').update(updates).eq('id', id);
+            if (error) {
+                return NextResponse.json({ error: error.message }, { status: 500 });
+            }
+            return NextResponse.json({ success: true });
+        }
+
         if (action === 'delete') {
             const accountType = parsePortalAccountType(body.accountType);
             const id = String(body.id || '').trim();
@@ -239,6 +277,7 @@ export async function POST(request: NextRequest) {
 
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
+        const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
         let staffNumber: string | null = null;
 
         const row: Record<string, unknown> =
@@ -255,6 +294,13 @@ export async function POST(request: NextRequest) {
                       verification_status: approve ? 'verified' : 'pending',
                       verification_date: approve ? now : null,
                       verified_by: approve ? auth.email : null,
+                      plan: 'free',
+                      seller_plan: 'none',
+                      plan_status: approve ? 'active' : 'trialing',
+                      trial_started_at: now,
+                      trial_ends_at: trialEndsAt,
+                      plan_activated_at: approve ? now : null,
+                      plan_activated_by: approve ? auth.email : null,
                       email_verified: true,
                   }
                 : accountType === 'originator'

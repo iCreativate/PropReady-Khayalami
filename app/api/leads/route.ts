@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServiceClient } from '@/lib/supabase-admin';
+import { resolveSessionFromRequest } from '@/lib/auth-enterprise/server-session';
+import { getAgentLeadAccessState } from '@/lib/agent-plans';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -94,13 +96,35 @@ function fromLeadRow(row: Record<string, unknown>) {
     return base;
 }
 
-export async function GET() {
+function maskLockedLead(lead: Record<string, unknown>) {
+    return {
+        ...lead,
+        email: 'Locked until plan activation',
+        phone: 'Locked until plan activation',
+        monthlyIncome: null,
+        depositSaved: null,
+        employmentStatus: null,
+        creditScore: null,
+        score: null,
+        preQualAmount: null,
+        propertyAddress: null,
+        currentValue: null,
+        reasonForSelling: null,
+        bondBalance: null,
+        locked: true,
+    };
+}
+
+export async function GET(request: NextRequest) {
     const supabase = leadsClient();
     if (!supabase) {
         return NextResponse.json({ leads: [] }, { status: 200 });
     }
 
     try {
+        const session = await resolveSessionFromRequest(request);
+        const agentLeadAccess =
+            session?.user.accountType === 'agent' ? getAgentLeadAccessState(session.user) : null;
         const { data, error } = await supabase
             .from('leads')
             .select('*')
@@ -112,9 +136,24 @@ export async function GET() {
         }
 
         // Full PropReady quiz lead pool — agents see every buyer/seller who completed a quiz
-        const leads = (data || []).map(fromLeadRow);
+        const rawLeads = (data || []).map(fromLeadRow);
+        const leads =
+            agentLeadAccess?.locked
+                ? rawLeads.map((lead) => maskLockedLead(lead))
+                : rawLeads;
         return NextResponse.json(
-            { leads },
+            {
+                leads,
+                leadAccess: agentLeadAccess
+                    ? {
+                          status: agentLeadAccess.status,
+                          locked: agentLeadAccess.locked,
+                          message: agentLeadAccess.message,
+                          badge: agentLeadAccess.badge,
+                          trialEndsAt: agentLeadAccess.trialEndsAt,
+                      }
+                    : null,
+            },
             {
                 headers: {
                     'Cache-Control': 'no-store, no-cache, must-revalidate',

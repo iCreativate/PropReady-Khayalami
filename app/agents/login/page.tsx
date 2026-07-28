@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Eye, EyeOff, FileText, Lock, Mail } from 'lucide-react';
+import { AlertCircle, FileText, Mail } from 'lucide-react';
 import ProfessionalAuthShell from '@/components/auth/ProfessionalAuthShell';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
@@ -13,8 +13,6 @@ export default function AgentLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [ffcNumber, setFfcNumber] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -42,7 +40,6 @@ export default function AgentLoginPage() {
                 credentials: 'include',
                 body: JSON.stringify({
                     email: email.trim(),
-                    password,
                     type: 'agent',
                     ffcNumber: ffc,
                     rememberDevice,
@@ -89,7 +86,7 @@ export default function AgentLoginPage() {
                     }
                     onVerified={(data) => {
                         syncLegacySession(data.user as Parameters<typeof syncLegacySession>[0], 'agent');
-                        window.location.assign('/auth/complete?type=agent');
+                        window.location.assign(data.redirectTo || '/auth/confirm-password?type=agent');
                     }}
                     onBack={() => setOtpChallenge(null)}
                     onExpired={() => {
@@ -105,7 +102,7 @@ export default function AgentLoginPage() {
         <ProfessionalAuthShell
             role="agent"
             title="Agent sign-in"
-            subtitle="Enter your work email, Fidelity Fund Certificate number, and password. A one-time email code confirms every sign-in."
+            subtitle="Enter your work email and Fidelity Fund Certificate number. We email a code first, then ask for your password."
         >
             {error ? (
                 <div className="auth-alert auth-alert-error mb-4">
@@ -116,7 +113,7 @@ export default function AgentLoginPage() {
 
             <div className="rounded-2xl border border-charcoal/[0.08] bg-charcoal/[0.02] px-4 py-3 text-xs text-charcoal/55 mb-5 leading-relaxed">
                 New registrations stay pending until a PropReady admin reviews your details and FFC and
-                approves your account. Every login also requires an email one-time code.
+                approves your account. Each sign-in is email code first, then password.
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,30 +151,6 @@ export default function AgentLoginPage() {
                     <p className="text-xs text-charcoal/45 mt-1.5">Must match the FFC on your PropReady agent profile.</p>
                 </div>
 
-                <div>
-                    <label className="auth-label">Password</label>
-                    <div className="auth-input-wrap">
-                        <Lock className="auth-input-icon" />
-                        <input
-                            type={showPassword ? 'text' : 'password'}
-                            required
-                            autoComplete="current-password"
-                            className="auth-input pr-10"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <button
-                            type="button"
-                            className="auth-input-toggle"
-                            onClick={() => setShowPassword((v) => !v)}
-                            aria-label="Toggle password"
-                        >
-                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                    </div>
-                </div>
-
                 <div className="flex items-center justify-between text-sm pt-1">
                     <label className="flex items-center gap-2 text-charcoal/70 cursor-pointer">
                         <input
@@ -188,9 +161,7 @@ export default function AgentLoginPage() {
                         />
                         Trust this device
                     </label>
-                    <Link href="/auth/forgot-password?type=agent" className="text-gold hover:underline">
-                        Forgot password?
-                    </Link>
+                    <span className="text-charcoal/45">Password is entered after the code.</span>
                 </div>
 
                 <button type="submit" disabled={loading} className="auth-btn-primary w-full mt-2">

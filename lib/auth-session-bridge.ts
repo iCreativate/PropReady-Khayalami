@@ -7,6 +7,12 @@ export type BridgedSessionUser = {
     email: string;
     company?: string;
     organizationId?: string;
+    plan?: string;
+    sellerPlan?: string;
+    planStatus?: string;
+    trialStartedAt?: string | null;
+    trialEndsAt?: string | null;
+    planActivatedAt?: string | null;
     accountType?: 'user' | 'agent' | 'originator';
 };
 
@@ -23,6 +29,12 @@ export function syncLegacySession(
                 fullName: user.fullName,
                 email: user.email,
                 company: user.company,
+                plan: user.plan,
+                sellerPlan: user.sellerPlan,
+                planStatus: user.planStatus,
+                trialStartedAt: user.trialStartedAt ?? null,
+                trialEndsAt: user.trialEndsAt ?? null,
+                planActivatedAt: user.planActivatedAt ?? null,
             })
         );
     } else if (accountType === 'originator') {
@@ -68,6 +80,12 @@ export async function hydrateSessionFromCookies(): Promise<BridgedSessionUser | 
             email: data.user.email,
             company: data.user.company,
             organizationId: data.user.organizationId,
+            plan: data.user.plan,
+            sellerPlan: data.user.sellerPlan,
+            planStatus: data.user.planStatus,
+            trialStartedAt: data.user.trialStartedAt ?? null,
+            trialEndsAt: data.user.trialEndsAt ?? null,
+            planActivatedAt: data.user.planActivatedAt ?? null,
             accountType,
         };
         syncLegacySession(bridged, accountType);

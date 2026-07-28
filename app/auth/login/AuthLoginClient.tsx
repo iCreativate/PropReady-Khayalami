@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react';
+import { Mail, AlertCircle, Sparkles } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
@@ -20,8 +20,6 @@ export default function AuthLoginClient() {
 
     const [mode, setMode] = useState<AuthMode>('password');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [rememberDevice, setRememberDevice] = useState(false);
     const [error, setError] = useState(
         errorParam === 'oauth_failed'
@@ -66,7 +64,7 @@ export default function AuthLoginClient() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ email: email.trim(), password, type: 'user', rememberDevice }),
+                body: JSON.stringify({ email: email.trim(), type: 'user', rememberDevice }),
             });
             const data = await res.json();
             if (res.status === 403 && data.needsVerification) {
@@ -141,7 +139,7 @@ export default function AuthLoginClient() {
                     }
                     onVerified={(data) => {
                         syncLegacySession(data.user as Parameters<typeof syncLegacySession>[0], 'user');
-                        window.location.assign('/auth/complete?type=user');
+                        window.location.assign(data.redirectTo || '/auth/confirm-password?type=user');
                     }}
                     onBack={() => {
                         setOtpChallenge(null);
@@ -203,27 +201,6 @@ export default function AuthLoginClient() {
                 </div>
                 {mode === 'password' && (
                     <>
-                        <label className="auth-label">Password</label>
-                        <div className="auth-input-wrap mb-4">
-                            <Lock className="auth-input-icon" />
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                required
-                                autoComplete="current-password"
-                                className="auth-input pr-10"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                className="auth-input-toggle"
-                                onClick={() => setShowPassword((v) => !v)}
-                                aria-label="Toggle password"
-                            >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                        </div>
                         <div className="flex items-center justify-between mb-6 text-sm">
                             <label className="flex items-center gap-2 text-charcoal/70 cursor-pointer">
                                 <input
@@ -234,9 +211,7 @@ export default function AuthLoginClient() {
                                 />
                                 Trust this device
                             </label>
-                            <Link href="/auth/forgot-password" className="text-gold hover:underline">
-                                Forgot password?
-                            </Link>
+                            <span className="text-charcoal/45">Password is entered after the code.</span>
                         </div>
                     </>
                 )}
@@ -249,7 +224,7 @@ export default function AuthLoginClient() {
                 </button>
             </form>
             <p className="text-center text-xs text-charcoal/45 mb-6">
-                Password sign-in sends a one-time code to your email for security.
+                Password sign-in sends a one-time code first, then asks for your password.
             </p>
             <div className="auth-divider mb-6">
                 <span>or continue with</span>

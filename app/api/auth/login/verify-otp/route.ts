@@ -7,9 +7,11 @@ import {
     setAuthCookies,
     toLegacyUser,
 } from '@/lib/auth-login-otp';
+import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 
 /**
- * Step 2 of login: verify email OTP + challenge token, then create session.
+ * Step 2 of login: verify email OTP + challenge token, then create a gated session.
+ * The password gate runs next before dashboard access.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -69,6 +71,10 @@ export async function POST(request: NextRequest) {
             success: true,
             user: toLegacyUser(session.user),
             expiresIn: session.expiresIn,
+            profileComplete: Boolean(session.user.profileComplete),
+            passwordOk: false,
+            redirectTo: `/auth/confirm-password?type=${challenge.accountType}`,
+            dashboardPath: dashboardPathForAccountType(challenge.accountType),
         });
         setAuthCookies(response, session.accessToken, session.refreshToken, challenge.rememberDevice);
         return response;

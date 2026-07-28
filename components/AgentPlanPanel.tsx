@@ -15,6 +15,8 @@ import {
     formatLeadLimit,
     isUnlimitedBuyerPlan,
     PRICING_SUMMARY,
+    getAgentLeadAccessState,
+    getAgentPlanStatusLabel,
 } from '@/lib/agent-plans';
 import {
     AGENT_CARD,
@@ -32,6 +34,10 @@ interface AgentPlanPanelProps {
         email: string;
         plan?: string;
         sellerPlan?: string;
+        planStatus?: string;
+        trialStartedAt?: string | null;
+        trialEndsAt?: string | null;
+        planActivatedAt?: string | null;
     };
     verifiedBuyerCount?: number;
     verifiedSellerCount?: number;
@@ -70,6 +76,7 @@ export default function AgentPlanPanel({
     const buyerPlanLimitLabel = formatLeadLimit(buyerPlanKey);
     const buyerPlanUnlimited = isUnlimitedBuyerPlan(buyerPlanKey);
     const sellerPlanLimit = getSellerLeadLimit(normalizeSellerPlan(agent.sellerPlan));
+    const leadAccess = getAgentLeadAccessState(agent);
 
     return (
         <div className="space-y-6 sm:space-y-8">
@@ -77,6 +84,12 @@ export default function AgentPlanPanel({
                 <div className="px-6 sm:px-8 py-6 sm:py-7 border-b border-charcoal/[0.06] bg-gradient-to-r from-gold/[0.04] via-white to-white">
                     <h3 className="text-lg font-semibold text-charcoal tracking-tight mb-2">Your buyer plan</h3>
                     <p className="text-charcoal/45 text-sm mb-4 leading-relaxed">{PRICING_SUMMARY}</p>
+                    <p className="text-charcoal/65 text-sm mb-2 leading-relaxed">
+                        Status:{' '}
+                        <span className="font-semibold text-charcoal">
+                            {getAgentPlanStatusLabel(agent.planStatus)}
+                        </span>
+                    </p>
                     <p className="text-charcoal/65 text-sm mb-2 leading-relaxed">
                         Current: <span className="font-semibold text-charcoal">{getPlanDisplay(agent.plan)}</span> —{' '}
                         {buyerPlanUnlimited
@@ -98,6 +111,16 @@ export default function AgentPlanPanel({
                         . Leads verify only after a viewing is booked and{' '}
                         <strong className="text-charcoal">both buyer and seller confirm</strong> the appointment.
                     </p>
+                    <div
+                        className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+                            leadAccess.locked
+                                ? 'border-amber-200 bg-amber-50 text-amber-900'
+                                : 'border-gold/15 bg-gold/[0.05] text-charcoal/75'
+                        }`}
+                    >
+                        <p className="font-semibold">{leadAccess.badge}</p>
+                        <p className="mt-1">{leadAccess.message}</p>
+                    </div>
                 </div>
             </section>
 

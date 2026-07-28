@@ -23,6 +23,7 @@ import {
     type LeadVerificationStatus,
 } from '@/lib/lead-verification';
 import AgentLeadDetailModal from '@/components/AgentLeadDetailModal';
+import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 import {
     AGENT_PAGE_CONTAINER,
     AGENT_STAT_CARD,
@@ -127,16 +128,37 @@ export default function AgentsDashboardPage() {
 
     useEffect(() => {
         // Load current agent info
-        if (typeof window !== 'undefined') {
+        void (async () => {
+            if (typeof window === 'undefined') return;
+            let agent: Record<string, unknown> | null = null;
             const agentData = localStorage.getItem('propReady_currentAgent');
             if (agentData) {
-                const agent = JSON.parse(agentData);
-                setCurrentAgent(agent);
-                if (agent.id === DEMO_AGENT.id) {
-                    mergeDemoLeadsIntoStorage(agent.id);
+                agent = JSON.parse(agentData);
+            } else {
+                const bridged = await hydrateSessionFromCookies();
+                if (bridged?.accountType === 'agent') {
+                    agent = {
+                        id: bridged.id,
+                        fullName: bridged.fullName,
+                        email: bridged.email,
+                        company: bridged.company,
+                        plan: bridged.plan,
+                        sellerPlan: bridged.sellerPlan,
+                        planStatus: bridged.planStatus,
+                        trialStartedAt: bridged.trialStartedAt,
+                        trialEndsAt: bridged.trialEndsAt,
+                        planActivatedAt: bridged.planActivatedAt,
+                    };
                 }
             }
-        }
+
+            if (agent) {
+                setCurrentAgent(agent as typeof currentAgent);
+                if (agent.id === DEMO_AGENT.id) {
+                    mergeDemoLeadsIntoStorage(String(agent.id));
+                }
+            }
+        })();
     }, []);
 
     useEffect(() => {

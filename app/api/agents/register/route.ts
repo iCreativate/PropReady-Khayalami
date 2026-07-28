@@ -16,6 +16,7 @@ import {
     duplicateEmailConflictResponse,
     findExistingAccountsByEmail,
 } from '@/lib/email-availability';
+import { normalizeBuyerPlan } from '@/lib/agent-plans';
 
 export async function POST(request: NextRequest) {
     const supabaseUrl = getSupabaseUrl();
@@ -73,6 +74,9 @@ export async function POST(request: NextRequest) {
             'principal'
                 ? 'principal'
                 : 'agent';
+        const selectedPlan = normalizeBuyerPlan(String(agentData.plan || 'free'));
+        const trialStartedAt = new Date();
+        const trialEndsAt = new Date(trialStartedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
 
         const supabase = createServiceClient() || createClient(supabaseUrl, supabaseAnonKey);
 
@@ -108,8 +112,13 @@ export async function POST(request: NextRequest) {
             registration_role: registrationRole,
             password: agentData.password,
             status: agentData.status || 'pending',
-            plan: 'free',
+            plan: selectedPlan,
             seller_plan: 'none',
+            plan_status: 'trialing',
+            trial_started_at: trialStartedAt.toISOString(),
+            trial_ends_at: trialEndsAt.toISOString(),
+            plan_activated_at: null,
+            plan_activated_by: null,
             email_verified: false,
             verification_status: 'pending',
             verification_date: null,
@@ -138,6 +147,11 @@ export async function POST(request: NextRequest) {
                 delete fallback.verified_by;
                 delete fallback.verification_notes;
                 delete fallback.registration_role;
+                delete fallback.plan_status;
+                delete fallback.trial_started_at;
+                delete fallback.trial_ends_at;
+                delete fallback.plan_activated_at;
+                delete fallback.plan_activated_by;
                 const retry = await supabase.from('agents').insert([fallback]).select().single();
                 if (retry.error) {
                     const retryDup =

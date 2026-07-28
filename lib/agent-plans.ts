@@ -4,6 +4,7 @@
 
 export type BuyerPlan = 'free' | 'starter' | 'growth' | 'professional';
 export type SellerPlan = 'none' | 'seller_starter' | 'seller_growth' | 'seller_professional';
+export type AgentPlanStatus = 'trialing' | 'active' | 'payment_pending';
 
 /** Values at or above this count are treated as unlimited for display and limits */
 export const UNLIMITED_LEAD_CAP = 999999;
@@ -208,6 +209,70 @@ export function normalizeSellerPlan(plan: string | undefined | null): SellerPlan
         return plan;
     }
     return 'none';
+}
+
+export type AgentPlanLifecycle = {
+    plan?: string | null;
+    sellerPlan?: string | null;
+    planStatus?: string | null;
+    trialStartedAt?: string | null;
+    trialEndsAt?: string | null;
+    planActivatedAt?: string | null;
+};
+
+export type AgentLeadAccessState = {
+    status: AgentPlanStatus;
+    locked: boolean;
+    message: string;
+    badge: string;
+    trialEndsAt: string | null;
+};
+
+export function normalizeAgentPlanStatus(status: string | null | undefined): AgentPlanStatus {
+    return status === 'active' || status === 'payment_pending' ? status : 'trialing';
+}
+
+export function getAgentLeadAccessState(agent: AgentPlanLifecycle): AgentLeadAccessState {
+    const status = normalizeAgentPlanStatus(agent.planStatus);
+    const trialEndsAt = agent.trialEndsAt || null;
+    const trialExpired = trialEndsAt ? new Date(trialEndsAt).getTime() < Date.now() : false;
+
+    if (status === 'active') {
+        return {
+            status,
+            locked: false,
+            badge: 'Plan active',
+            trialEndsAt,
+            message: 'Your selected plan is active and your leads are fully unlocked.',
+        };
+    }
+
+    if (status === 'trialing' && !trialExpired) {
+        return {
+            status,
+            locked: false,
+            badge: '7-day trial',
+            trialEndsAt,
+            message: trialEndsAt
+                ? `Your trial is active until ${new Date(trialEndsAt).toLocaleDateString()}.`
+                : 'Your 7-day trial is active.',
+        };
+    }
+
+    return {
+        status: 'payment_pending',
+        locked: true,
+        badge: 'Activation needed',
+        trialEndsAt,
+        message: 'Your trial has ended. Leads stay visible, but contact details remain locked until PropReady activates your plan.',
+    };
+}
+
+export function getAgentPlanStatusLabel(status: string | null | undefined): string {
+    const normalized = normalizeAgentPlanStatus(status);
+    if (normalized === 'active') return 'Active';
+    if (normalized === 'payment_pending') return 'Payment pending';
+    return 'Trialing';
 }
 
 export function getPlanDisplay(plan: BuyerPlan | string | undefined): string {

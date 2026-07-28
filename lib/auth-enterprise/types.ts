@@ -59,6 +59,10 @@ export interface SessionUser {
     phone?: string;
     plan?: string;
     sellerPlan?: string;
+    planStatus?: string;
+    trialStartedAt?: string | null;
+    trialEndsAt?: string | null;
+    planActivatedAt?: string | null;
     ppraNumber?: string;
     verificationStatus?: string;
     status?: string;

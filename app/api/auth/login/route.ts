@@ -14,6 +14,7 @@ import {
     professionalApprovalError,
 } from '@/lib/professional-approval';
 import { issueLoginOtpChallenge } from '@/lib/auth-login-otp';
+import { isEmailVerified } from '@/lib/verification-store';
 
 type ProfileRow = {
     id: string;
@@ -27,14 +28,13 @@ type ProfileRow = {
 };
 
 /**
- * Step 1 of login: validate credentials, then email a one-time code.
- * Session cookies are only set after OTP verification.
+ * Step 1 of login: validate identity details, then email a one-time code.
+ * Password is confirmed after OTP using the existing password gate.
  */
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const email = String(body.email || '').trim().toLowerCase();
-        const password = String(body.password || '');
         const accountType = parseAccountType(body.type);
         const rememberDevice = Boolean(body.rememberDevice ?? body.rememberMe);
         const ffcNumber = normalizeFfcNumber(String(body.ffcNumber || ''));
@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
             .toUpperCase();
         getRequestMeta(request); // touch for future audit hooks
 
-        if (!email || !password) {
-            return NextResponse.json({ success: false, error: 'Email and password required' }, { status: 400 });
+        if (!email) {
+            return NextResponse.json({ success: false, error: 'Email is required' }, { status: 400 });
         }
 
         if (accountType === 'agent') {
@@ -86,6 +86,19 @@ export async function POST(request: NextRequest) {
         }
 
         const profile = data as ProfileRow;
+
+        const profileVerified = await isEmailVerified(email, accountType);
+        const account = await ensureAuthAccountForProfile(email, accountType, profile.id);
+        if (profileVerified !== true || !account.email_verified_at) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Please verify your email before signing in.',
+                    needsVerification: true,
+                },
+                { status: 403 }
+            );
+        }
 
         if (accountType === 'agent') {
             const storedFfc = normalizeFfcNumber(String(profile.ffc_number || ''));
@@ -142,13 +155,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        const account = await ensureAuthAccountForProfile(email, accountType, profile.id);
-
-        const valid = await verifyAccountPassword(account, password);
-        if (!valid) {
-            return NextResponse.json({ success: false, error: 'Invalid email or password' }, { status: 401 });
-        }
-
         if (isProfessionalAccountType(accountType) && !isProfessionalAccountApproved(profile.status)) {
             return NextResponse.json(
                 {
@@ -162,10 +168,10 @@ export async function POST(request: NextRequest) {
         }
 
         const otp = await issueLoginOtpChallenge({
-            account,
             email,
             accountType,
             profileId: profile.id,
+            accountId: account.id,
             rememberDevice,
             fullName: profile.full_name,
         });
@@ -179,7 +185,7 @@ export async function POST(request: NextRequest) {
             needsOtp: true,
             challengeToken: otp.challengeToken,
             email: otp.email,
-            message: 'We sent a one-time code to your email. Enter it to finish signing in.',
+            message: 'We sent a one-time code to your email. Enter it, then confirm your password.',
             ...(otp.devOtp ? { devOtp: otp.devOtp } : {}),
         });
     } catch (err) {

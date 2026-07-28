@@ -61,6 +61,10 @@ export interface AgentPortalAgent {
     company?: string;
     plan?: string;
     sellerPlan?: string;
+    planStatus?: string;
+    trialStartedAt?: string | null;
+    trialEndsAt?: string | null;
+    planActivatedAt?: string | null;
     phone?: string;
     city?: string;
     verificationStatus?: string;

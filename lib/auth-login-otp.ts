@@ -1,6 +1,5 @@
 import {
     createSession,
-    markEmailVerified,
     setAuthCookies,
     getRequestMeta,
 } from '@/lib/auth-enterprise';
@@ -57,10 +56,10 @@ function allowDevOtpFallback(): boolean {
  * Does not create a session yet.
  */
 export async function issueLoginOtpChallenge(params: {
-    account: AuthAccount;
     email: string;
     accountType: AccountType;
     profileId: string;
+    accountId: string;
     rememberDevice: boolean;
     fullName?: string | null;
 }): Promise<
@@ -95,7 +94,7 @@ export async function issueLoginOtpChallenge(params: {
         email: params.email,
         accountType: params.accountType,
         profileId: params.profileId,
-        accountId: params.account.id,
+        accountId: params.accountId,
         rememberDevice: params.rememberDevice,
     });
 
@@ -114,14 +113,10 @@ export async function finalizeLoginFromChallenge(
     rememberDevice: boolean,
     request: Request
 ) {
-    if (!account.email_verified_at) {
-        await markEmailVerified(account.id);
-    }
-
     const meta = getRequestMeta(request as import('next/server').NextRequest);
     const session = await createSession(
-        { ...account, email_verified_at: account.email_verified_at ?? new Date().toISOString() },
-        { ...meta, trustedDevice: rememberDevice }
+        account,
+        { ...meta, trustedDevice: rememberDevice, passwordOk: false }
     );
 
     return session;

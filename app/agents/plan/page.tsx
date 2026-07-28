@@ -10,6 +10,7 @@ import { isAgentPpraVerified } from '@/lib/ppra';
 import { countVerifiedLeads } from '@/lib/lead-verification';
 import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
 import PortalLoading from '@/components/PortalLoading';
+import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 
 export default function AgentPlanPage() {
     const router = useRouter();
@@ -18,13 +19,21 @@ export default function AgentPlanPage() {
     const [verifiedSellerCount, setVerifiedSellerCount] = useState(0);
 
     useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const agentData = localStorage.getItem('propReady_currentAgent');
-        if (!agentData) {
-            router.replace('/agents/login');
-            return;
-        }
-        setCurrentAgent(JSON.parse(agentData));
+        void (async () => {
+            if (typeof window === 'undefined') return;
+            let agentData = localStorage.getItem('propReady_currentAgent');
+            if (!agentData) {
+                const bridged = await hydrateSessionFromCookies();
+                if (bridged?.accountType === 'agent') {
+                    agentData = localStorage.getItem('propReady_currentAgent');
+                }
+            }
+            if (!agentData) {
+                router.replace('/agents/login');
+                return;
+            }
+            setCurrentAgent(JSON.parse(agentData));
+        })();
     }, [router]);
 
     useEffect(() => {
@@ -103,6 +112,10 @@ export default function AgentPlanPage() {
                             email: currentAgent.email || '',
                             plan: currentAgent.plan,
                             sellerPlan: currentAgent.sellerPlan,
+                            planStatus: (currentAgent as AgentPortalAgent & { planStatus?: string }).planStatus,
+                            trialStartedAt: (currentAgent as AgentPortalAgent & { trialStartedAt?: string | null }).trialStartedAt,
+                            trialEndsAt: (currentAgent as AgentPortalAgent & { trialEndsAt?: string | null }).trialEndsAt,
+                            planActivatedAt: (currentAgent as AgentPortalAgent & { planActivatedAt?: string | null }).planActivatedAt,
                         }}
                         verifiedBuyerCount={verifiedBuyerCount}
                         verifiedSellerCount={verifiedSellerCount}

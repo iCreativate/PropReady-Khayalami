@@ -11,7 +11,7 @@ type LoginOtpStepProps = {
     verifyUrl?: string;
     resendUrl?: string;
     onChallengeTokenChange: (token: string) => void;
-    onVerified: (data: { user?: unknown; email?: string }) => void;
+    onVerified: (data: { user?: unknown; email?: string; redirectTo?: string }) => void;
     onBack: () => void;
     onExpired: () => void;
 };
@@ -137,7 +137,7 @@ export default function LoginOtpStep({
                             <Loader2 className="w-4 h-4 animate-spin" /> Verifying…
                         </span>
                     ) : (
-                        'Verify & sign in'
+                        'Verify & continue'
                     )}
                 </button>
             </form>
