@@ -1110,7 +1110,7 @@ export default function AdminAccountsPage() {
                                                             {account.email}
                                                         </p>
                                                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#6B7280]">
-                                                            <span className="font-medium text-[#111827]/
+                                                            <span className="font-medium text-[#111827]">
                                                                 {TYPE_LABEL[account.accountType]}
                                                             </span>
                                                             {account.meta ? (
