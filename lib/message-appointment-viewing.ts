@@ -46,7 +46,6 @@ function pickClient(participants: ParticipantRow[]) {
     return (
         participants.find((p) => p.account_type === 'user') ||
         participants.find((p) => p.account_type === 'originator') ||
-        participants.find((p) => p.account_type !== 'agent' && p.account_type !== 'admin') ||
         null
     );
 }
