@@ -4,6 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Megaphone } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
 import PortalLoading from '@/components/PortalLoading';
+import {
+    PORTAL_CARD,
+    PORTAL_CARD_HEADER,
+    PORTAL_PRIMARY_BTN,
+    PORTAL_SECONDARY_BTN,
+} from '@/lib/portal-ui';
 
 type Announcement = {
     id: string;
@@ -99,7 +105,7 @@ export default function AdminAnnouncementsPage() {
 
             <form
                 onSubmit={publish}
-                className="mb-8 rounded-2xl border border-charcoal/[0.08] bg-white p-5 space-y-3"
+                className={`${PORTAL_CARD} mb-8 p-6 sm:p-7 space-y-4`}
             >
                 <div className="flex items-center gap-2 text-charcoal font-semibold">
                     <Megaphone className="w-4 h-4 text-gold" />
@@ -142,7 +148,7 @@ export default function AdminAnnouncementsPage() {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="h-11 px-4 rounded-xl bg-gold text-white text-sm font-semibold disabled:opacity-60 sm:ml-auto"
+                        className={`${PORTAL_PRIMARY_BTN} disabled:opacity-60 sm:ml-auto`}
                     >
                         {saving ? 'Publishing…' : 'Publish'}
                     </button>
@@ -151,7 +157,7 @@ export default function AdminAnnouncementsPage() {
 
             {loading ? <PortalLoading variant="inline" message="Loading…" /> : null}
 
-            <div className="rounded-2xl border border-charcoal/[0.08] bg-white divide-y divide-charcoal/[0.05]">
+            <div className={`${PORTAL_CARD} divide-y divide-charcoal/[0.05]`}>
                 {!loading && items.length === 0 ? (
                     <p className="p-8 text-center text-sm text-charcoal/45">No announcements yet</p>
                 ) : null}

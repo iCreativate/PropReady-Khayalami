@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
         const db = messagesDb();
         const adminId = adminProfileId(auth.email);
         const adminName = adminDisplayName(auth.email);
+        const now = new Date().toISOString();
 
         const { data: conversation, error } = await db
             .from('message_conversations')
@@ -111,8 +112,10 @@ export async function POST(request: NextRequest) {
                 context_type: 'general',
                 created_by_account_type: 'admin',
                 created_by_profile_id: adminId,
-                last_message_at: bodyText ? new Date().toISOString() : null,
+                last_message_at: bodyText ? now : null,
                 last_message_preview: bodyText ? bodyText.slice(0, 140) : null,
+                created_at: now,
+                updated_at: now,
             })
             .select('id')
             .single();
@@ -124,12 +127,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        await db.from('message_participants').insert([
+        const { error: participantsError } = await db.from('message_participants').insert([
             {
                 conversation_id: conversation.id,
                 account_type: 'admin',
                 profile_id: adminId,
                 display_name: adminName,
+                last_read_at: now,
             },
             {
                 conversation_id: conversation.id,
@@ -138,16 +142,24 @@ export async function POST(request: NextRequest) {
                 display_name: displayName,
             },
         ]);
+        if (participantsError) {
+            return NextResponse.json({ error: participantsError.message }, { status: 500 });
+        }
 
         if (bodyText) {
-            await db.from('message_items').insert({
+            const { error: messageError } = await db.from('message_items').insert({
                 conversation_id: conversation.id,
                 kind: 'text',
                 body: bodyText,
+                meta: {},
                 sender_account_type: 'admin',
                 sender_profile_id: adminId,
                 sender_name: adminName,
+                created_at: now,
             });
+            if (messageError) {
+                return NextResponse.json({ error: messageError.message }, { status: 500 });
+            }
         }
 
         return NextResponse.json({ success: true, conversationId: conversation.id });

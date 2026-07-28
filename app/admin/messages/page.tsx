@@ -4,6 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessageSquare, Plus, Send } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
 import PortalLoading from '@/components/PortalLoading';
+import {
+    PORTAL_CARD,
+    PORTAL_CARD_HEADER,
+    PORTAL_PRIMARY_BTN,
+    PORTAL_SECONDARY_BTN,
+} from '@/lib/portal-ui';
 
 type Participant = {
     accountType: string;
@@ -267,7 +273,7 @@ export default function AdminMessagesPage() {
             {showBroadcast ? (
                 <form
                     onSubmit={sendBroadcast}
-                    className="mb-5 rounded-2xl border border-charcoal/[0.08] bg-white p-5 space-y-3"
+                    className={`${PORTAL_CARD} mb-5 p-6 sm:p-7 space-y-4`}
                 >
                     <h2 className="font-semibold text-charcoal">Broadcast to everyone</h2>
                     <p className="text-xs text-charcoal/50">
@@ -305,14 +311,14 @@ export default function AdminMessagesPage() {
                         <button
                             type="submit"
                             disabled={broadcasting}
-                            className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold disabled:opacity-60"
+                            className={`${PORTAL_PRIMARY_BTN} disabled:opacity-60`}
                         >
                             {broadcasting ? 'Sending…' : 'Send broadcast'}
                         </button>
                         <button
                             type="button"
                             onClick={() => setShowBroadcast(false)}
-                            className="h-10 px-4 rounded-xl border border-charcoal/[0.12] text-sm"
+                            className={PORTAL_SECONDARY_BTN}
                         >
                             Cancel
                         </button>
@@ -321,7 +327,7 @@ export default function AdminMessagesPage() {
             ) : null}
 
             {showNew ? (
-                <div className="mb-5 rounded-2xl border border-charcoal/[0.08] bg-white p-5 space-y-3">
+                <div className={`${PORTAL_CARD} mb-5 p-6 sm:p-7 space-y-4`}>
                     <h2 className="font-semibold text-charcoal">Start conversation</h2>
                     <input
                         value={newSubject}
@@ -361,7 +367,7 @@ export default function AdminMessagesPage() {
                             type="button"
                             disabled={sending || !selectedContact}
                             onClick={() => selectedContact && void startConversation(selectedContact)}
-                            className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold disabled:opacity-60"
+                            className={`${PORTAL_PRIMARY_BTN} disabled:opacity-60`}
                         >
                             {sending ? 'Starting…' : 'Start conversation'}
                         </button>
@@ -377,8 +383,8 @@ export default function AdminMessagesPage() {
             ) : null}
 
             <div className="grid lg:grid-cols-[320px_1fr] gap-4 min-h-[60vh]">
-                <div className="rounded-2xl border border-charcoal/[0.08] bg-white overflow-hidden flex flex-col">
-                    <div className="p-3 border-b border-charcoal/[0.06]">
+                <div className={`${PORTAL_CARD} flex flex-col`}>
+                    <div className={`${PORTAL_CARD_HEADER} !px-4 !py-4`}>
                         <input
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
@@ -413,7 +419,7 @@ export default function AdminMessagesPage() {
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-charcoal/[0.08] bg-white flex flex-col min-h-[60vh]">
+                <div className={`${PORTAL_CARD} flex flex-col min-h-[60vh]`}>
                     {!selectedId ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-charcoal/40 gap-2 p-8">
                             <MessageSquare className="w-8 h-8" />
@@ -421,7 +427,7 @@ export default function AdminMessagesPage() {
                         </div>
                     ) : (
                         <>
-                            <div className="px-4 py-3 border-b border-charcoal/[0.06]">
+                            <div className={`${PORTAL_CARD_HEADER} !px-4 !py-4`}>
                                 <p className="font-semibold text-charcoal">{subject || 'Conversation'}</p>
                                 <p className="text-xs text-charcoal/45 truncate">
                                     {participants

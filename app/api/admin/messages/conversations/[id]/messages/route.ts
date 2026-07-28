@@ -33,9 +33,11 @@ export async function POST(request: NextRequest, context: Ctx) {
                 conversation_id: id,
                 kind: 'text',
                 body: text,
+                meta: {},
                 sender_account_type: 'admin',
                 sender_profile_id: adminId,
                 sender_name: adminName,
+                created_at: now,
             })
             .select('*')
             .single();

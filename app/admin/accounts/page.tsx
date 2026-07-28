@@ -7,6 +7,7 @@ import PortalLoading from '@/components/PortalLoading';
 import { BOND_ORIGINATORS } from '@/lib/bond-originators';
 import { getPasswordRequirementsText } from '@/lib/password';
 import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
+import { PORTAL_CARD, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
 type Account = {
     id: string;
@@ -244,7 +245,7 @@ export default function AdminAccountsPage() {
             {loading ? <PortalLoading variant="inline" message="Loading accounts…" /> : null}
 
             {showCreate ? (
-                <div className="mb-6 rounded-2xl border border-charcoal/[0.08] bg-white p-5">
+                <div className={`${PORTAL_CARD} mb-6 p-6 sm:p-7`}>
                     <h2 className="text-lg font-semibold text-charcoal mb-4">Add account</h2>
                     <form onSubmit={createAccount} className="grid sm:grid-cols-2 gap-3">
                         <label className="text-sm space-y-1">
@@ -346,14 +347,14 @@ export default function AdminAccountsPage() {
                             <button
                                 type="submit"
                                 disabled={creating}
-                                className="h-10 px-4 rounded-xl bg-gold text-white text-sm font-semibold disabled:opacity-60"
+                                className={`${PORTAL_PRIMARY_BTN} disabled:opacity-60`}
                             >
                                 {creating ? 'Creating…' : 'Create account'}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowCreate(false)}
-                                className="h-10 px-4 rounded-xl border border-charcoal/[0.12] text-sm"
+                                className={PORTAL_SECONDARY_BTN}
                             >
                                 Cancel
                             </button>
@@ -362,7 +363,7 @@ export default function AdminAccountsPage() {
                 </div>
             ) : null}
 
-            <div className="rounded-2xl border border-charcoal/[0.08] bg-white overflow-hidden">
+            <div className={`${PORTAL_CARD} overflow-hidden`}>
                 <div className="divide-y divide-charcoal/[0.05]">
                     {!loading && accounts.length === 0 ? (
                         <p className="px-5 py-10 text-center text-sm text-charcoal/50">No accounts found</p>

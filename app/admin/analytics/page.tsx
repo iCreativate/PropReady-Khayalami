@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import PortalLoading from '@/components/PortalLoading';
+import { PORTAL_CARD } from '@/lib/portal-ui';
 
 type Analytics = {
     users: number;
@@ -55,10 +56,7 @@ export default function AdminAnalyticsPage() {
                             ['Viewing appointments', analytics.viewings],
                         ] as const
                     ).map(([label, value]) => (
-                        <div
-                            key={label}
-                            className="rounded-2xl border border-charcoal/[0.08] bg-white p-5"
-                        >
+                        <div key={label} className={`${PORTAL_CARD} p-5 sm:p-6`}>
                             <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/45 mb-2">
                                 {label}
                             </p>

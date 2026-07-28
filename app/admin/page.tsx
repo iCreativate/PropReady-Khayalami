@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
 import PortalLoading from '@/components/PortalLoading';
+import { PORTAL_CARD, PORTAL_CARD_HEADER } from '@/lib/portal-ui';
 
 type Analytics = {
     users: number;
@@ -79,7 +80,7 @@ export default function AdminOverviewPage() {
                         ].map((card) => {
                             const Icon = card.icon;
                             const inner = (
-                                <div className="rounded-2xl border border-charcoal/[0.08] bg-white p-4 sm:p-5 h-full">
+                                <div className={`${PORTAL_CARD} p-5 sm:p-6 h-full`}>
                                     <div className="flex items-start justify-between gap-2 mb-3">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-charcoal/45">
                                             {card.label}
@@ -101,8 +102,8 @@ export default function AdminOverviewPage() {
                         })}
                     </div>
 
-                    <div className="rounded-2xl border border-charcoal/[0.08] bg-white overflow-hidden">
-                        <div className="px-5 py-4 border-b border-charcoal/[0.06] flex items-center justify-between">
+                    <div className={PORTAL_CARD}>
+                        <div className={`${PORTAL_CARD_HEADER} flex items-center justify-between`}>
                             <h2 className="font-semibold">Recent quiz leads</h2>
                             <Link href="/admin/analytics" className="text-sm text-gold hover:underline">
                                 Full analytics

@@ -120,21 +120,21 @@ export default function AdminPpraPage() {
 
     return (
         <AdminShell title="Agent approvals">
-            <div className="mb-6 rounded-3xl border border-charcoal/[0.08] bg-gradient-to-br from-charcoal to-charcoal/90 text-white px-6 py-6 sm:px-7">
+            <div className={`${PORTAL_CARD} mb-6 px-6 py-6 sm:px-7`}>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45 mb-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40 mb-2">
                             Compliance review
                         </p>
-                        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+                        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-charcoal">
                             Agent registration approvals
                         </h2>
-                        <p className="text-sm text-white/65 mt-2 max-w-2xl">
+                        <p className="text-sm text-charcoal/55 mt-2 max-w-2xl">
                             Review PPRA details, FFC support documents, and internal notes before
                             approving agent access.
                         </p>
                     </div>
-                    <button type="button" onClick={loadApplications} className={`${PORTAL_REFRESH_BTN} bg-white text-charcoal border-white hover:bg-white/90`}>
+                    <button type="button" onClick={loadApplications} className={PORTAL_REFRESH_BTN}>
                         <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                         Refresh
                     </button>
