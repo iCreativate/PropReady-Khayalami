@@ -76,9 +76,9 @@ export default function AdminOriginatorsPage() {
                     action,
                 }),
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                setError(data.error || 'Action failed');
+                setError(data.error || `Action failed (${res.status})`);
                 return;
             }
             if (action === 'approve' && data.originator?.staffNumber) {

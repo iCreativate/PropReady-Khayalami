@@ -59,23 +59,23 @@ export default function AdminAccountsPage() {
         void load();
     }, [load]);
 
-    async function setAccountStatus(account: Account, nextStatus: string) {
+    async function setAccountStatus(account: Account, nextStatus: 'approved' | 'rejected') {
         if (account.accountType === 'user') return;
         setActionLoading(account.id);
         setError('');
         try {
             const res = await fetch('/api/admin/accounts', {
-                method: 'PATCH',
+                method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    action: nextStatus === 'approved' ? 'approve' : 'reject',
                     id: account.id,
                     accountType: account.accountType,
-                    status: nextStatus,
                 }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Update failed');
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Update failed (${res.status})`);
             await load();
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Update failed');
@@ -93,13 +93,17 @@ export default function AdminAccountsPage() {
         setError('');
         try {
             const res = await fetch('/api/admin/accounts', {
-                method: 'DELETE',
+                method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: account.id, accountType: account.accountType }),
+                body: JSON.stringify({
+                    action: 'delete',
+                    id: account.id,
+                    accountType: account.accountType,
+                }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Delete failed');
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Delete failed (${res.status})`);
             await load();
         } catch (e) {
             setError(e instanceof Error ? e.message : 'Delete failed');

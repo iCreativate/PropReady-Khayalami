@@ -5,8 +5,7 @@ import { createServiceClient } from '@/lib/supabase-admin';
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { adminEmail, agentId, action, rejectionReason, verificationNotes } = body as {
-            adminEmail?: string;
+        const { agentId, action, rejectionReason, verificationNotes } = body as {
             agentId?: string;
             action?: 'approve' | 'reject';
             rejectionReason?: string;
@@ -38,41 +37,52 @@ export async function POST(request: NextRequest) {
         }
 
         const now = new Date().toISOString();
-        const updates: Record<string, unknown> = {
+        const fullUpdates: Record<string, unknown> = {
             updated_at: now,
             verified_by: auth.email,
             verification_notes:
                 action === 'reject'
                     ? `${rejectionReason?.trim()}${verificationNotes ? ` — ${verificationNotes}` : ''}`
                     : verificationNotes?.trim() || null,
+            status: action === 'approve' ? 'approved' : 'rejected',
+            verification_status: action === 'approve' ? 'verified' : 'rejected',
+            verification_date: now,
         };
 
-        if (action === 'approve') {
-            updates.verification_status = 'verified';
-            updates.verification_date = now;
-            updates.status = 'approved';
-        } else {
-            updates.verification_status = 'rejected';
-            updates.verification_date = now;
-            updates.status = 'rejected';
-        }
-
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('agents')
-            .update(updates)
+            .update(fullUpdates)
             .eq('id', agentId)
-            .select('id, verification_status, full_name, email')
-            .single();
+            .select('id, verification_status, status, full_name, email')
+            .maybeSingle();
+
+        // Fallback if optional verification columns are missing on older DBs
+        if (error && /verified_by|verification_/i.test(error.message)) {
+            const retry = await supabase
+                .from('agents')
+                .update({
+                    status: action === 'approve' ? 'approved' : 'rejected',
+                    updated_at: now,
+                })
+                .eq('id', agentId)
+                .select('id, status, full_name, email')
+                .maybeSingle();
+            data = retry.data as typeof data;
+            error = retry.error;
+        }
 
         if (error) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+        if (!data) {
+            return NextResponse.json({ success: false, error: 'Agent not found' }, { status: 404 });
         }
 
         return NextResponse.json({
             success: true,
             agent: {
                 id: data.id,
-                verificationStatus: data.verification_status,
+                verificationStatus: data.verification_status || data.status,
                 fullName: data.full_name,
                 email: data.email,
             },

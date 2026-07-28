@@ -68,13 +68,13 @@ export async function POST(request: NextRequest) {
             .update(updates)
             .eq('id', originatorId)
             .select('id, full_name, email, organization_id, staff_number, status')
-            .single();
+            .maybeSingle();
 
-        if (error || !data) {
-            return NextResponse.json(
-                { success: false, error: error?.message || 'Update failed' },
-                { status: 500 }
-            );
+        if (error) {
+            return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        }
+        if (!data) {
+            return NextResponse.json({ success: false, error: 'Originator not found' }, { status: 404 });
         }
 
         if (action === 'approve' && staffNumber && data.email) {

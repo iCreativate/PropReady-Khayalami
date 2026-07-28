@@ -104,8 +104,8 @@ export default function AdminPpraPage() {
                     verificationNotes: notes,
                 }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Action failed');
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || `Action failed (${res.status})`);
             setSelected(null);
             setNotes('');
             setRejectionReason('');
