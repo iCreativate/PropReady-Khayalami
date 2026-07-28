@@ -52,6 +52,7 @@ type Conversation = {
     subject: string | null;
     lastMessageAt: string | null;
     lastMessagePreview: string | null;
+    unreadCount?: number;
     participants: Participant[];
 };
 
@@ -154,7 +155,10 @@ function isToday(iso: string | null) {
 
 function conversationFingerprint(list: Conversation[]) {
     return list
-        .map((c) => `${c.id}:${c.lastMessageAt || ''}:${c.lastMessagePreview || ''}`)
+        .map(
+            (c) =>
+                `${c.id}:${c.lastMessageAt || ''}:${c.lastMessagePreview || ''}:${c.unreadCount || 0}`
+        )
         .join('|');
 }
 
@@ -294,6 +298,7 @@ export default function AdminMessagesPage() {
     const [pinnedIds, setPinnedIds] = useState<string[]>([]);
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
     const [broadcastCount, setBroadcastCount] = useState(0);
+    const [unreadTotal, setUnreadTotal] = useState(0);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showContactPanel, setShowContactPanel] = useState(true);
     const [mobileShowChat, setMobileShowChat] = useState(false);
@@ -304,6 +309,9 @@ export default function AdminMessagesPage() {
     const searchRef = useRef<HTMLDivElement>(null);
     const emojiRef = useRef<HTMLDivElement>(null);
     const moreMenuRef = useRef<HTMLDivElement>(null);
+    const anyFileRef = useRef<HTMLInputElement>(null);
+    const imageFileRef = useRef<HTMLInputElement>(null);
+    const docFileRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setPinnedIds(readJson<string[]>(LS_PINNED, []));
@@ -342,6 +350,11 @@ export default function AdminMessagesPage() {
             setConversations((prev) =>
                 conversationFingerprint(prev) === conversationFingerprint(next) ? prev : next
             );
+            setUnreadTotal(
+                typeof data.unreadTotal === 'number'
+                    ? data.unreadTotal
+                    : next.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+            );
         } catch (e) {
             if (!opts?.silent) {
                 setError(e instanceof Error ? e.message : 'Failed to load');
@@ -355,7 +368,7 @@ export default function AdminMessagesPage() {
         void loadList();
     }, [loadList]);
 
-    const loadThread = useCallback(async (id: string, opts?: { silent?: boolean }) => {
+    const loadThread = useCallback(async (id: string, opts?: { silent?: boolean; skipListRefresh?: boolean }) => {
         if (!opts?.silent) setThreadLoading(true);
         if (!opts?.silent) setError('');
         try {
@@ -369,6 +382,13 @@ export default function AdminMessagesPage() {
             setSubject(data.conversation?.subject || null);
             setSelectedId(id);
             setMobileShowChat(true);
+            setConversations((prev) =>
+                prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c))
+            );
+            // Opening a thread marks it read server-side; refresh list unread badges.
+            if (!opts?.skipListRefresh) {
+                await loadList({ silent: true });
+            }
         } catch (e) {
             if (!opts?.silent) {
                 setError(e instanceof Error ? e.message : 'Failed to open thread');
@@ -376,7 +396,7 @@ export default function AdminMessagesPage() {
         } finally {
             if (!opts?.silent) setThreadLoading(false);
         }
-    }, []);
+    }, [loadList]);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -406,6 +426,9 @@ export default function AdminMessagesPage() {
             const aPinned = pinnedIds.includes(a.id);
             const bPinned = pinnedIds.includes(b.id);
             if (aPinned !== bPinned) return aPinned ? -1 : 1;
+            const aUnread = (a.unreadCount || 0) > 0;
+            const bUnread = (b.unreadCount || 0) > 0;
+            if (aUnread !== bUnread) return aUnread ? -1 : 1;
             const aTime = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
             const bTime = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
             return bTime - aTime;
@@ -463,7 +486,7 @@ export default function AdminMessagesPage() {
         setError('');
         try {
             await loadList({ silent: true });
-            if (selectedId) await loadThread(selectedId, { silent: true });
+            if (selectedId) await loadThread(selectedId, { silent: true, skipListRefresh: true });
         } finally {
             setRefreshing(false);
         }
@@ -492,6 +515,36 @@ export default function AdminMessagesPage() {
             await loadList({ silent: true });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Send failed');
+        } finally {
+            setSending(false);
+        }
+    }
+
+    async function uploadFile(file: File) {
+        if (!selectedId || !file) return;
+        setSending(true);
+        setError('');
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch(
+                `/api/admin/messages/conversations/${selectedId}/documents`,
+                {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: fd,
+                }
+            );
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Upload failed');
+            if (data.message) {
+                setMessages((prev) =>
+                    prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
+                );
+            }
+            await loadList({ silent: true });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
             setSending(false);
         }
@@ -754,8 +807,14 @@ export default function AdminMessagesPage() {
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <KpiCard
                         label="Unread Conversations"
-                        value={0}
-                        description="Unread tracking not available yet"
+                        value={unreadTotal}
+                        description={
+                            unreadTotal === 1
+                                ? '1 thread needs a reply'
+                                : unreadTotal > 0
+                                  ? `${unreadTotal} threads need attention`
+                                  : 'Inbox is caught up'
+                        }
                         icon={MessageSquare}
                     />
                     <KpiCard
@@ -1041,7 +1100,8 @@ export default function AdminMessagesPage() {
                                     const title = threadTitle(c);
                                     const isSelected = selectedId === c.id;
                                     const isPinned = pinnedIds.includes(c.id);
-                                    const isRecent = isToday(c.lastMessageAt);
+                                    const unread = c.unreadCount || 0;
+                                    const isUnread = unread > 0;
                                     return (
                                         <button
                                             key={c.id}
@@ -1051,30 +1111,48 @@ export default function AdminMessagesPage() {
                                                 isSelected
                                                     ? 'bg-[#E52323]/[0.06] ring-1 ring-inset ring-[#E52323]/20'
                                                     : ''
-                                            } ${isRecent && !isSelected ? 'border-l-2 border-l-[#E52323]/40' : ''}`}
+                                            } ${isUnread && !isSelected ? 'border-l-2 border-l-[#E52323] bg-[#E52323]/[0.03]' : ''}`}
                                         >
-                                            <div
-                                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                                                style={{ backgroundColor: PRIMARY }}
-                                            >
-                                                {initials(title)}
+                                            <div className="relative shrink-0">
+                                                <div
+                                                    className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold text-white"
+                                                    style={{ backgroundColor: PRIMARY }}
+                                                >
+                                                    {initials(title)}
+                                                </div>
+                                                {isUnread ? (
+                                                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#E52323]" />
+                                                ) : null}
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <p
-                                                        className={`truncate text-sm font-medium ${
-                                                            isRecent
-                                                                ? 'text-[#111827]'
-                                                                : 'text-[#374151]'
+                                                        className={`truncate text-sm ${
+                                                            isUnread
+                                                                ? 'font-semibold text-[#111827]'
+                                                                : 'font-medium text-[#374151]'
                                                         }`}
                                                     >
                                                         {title}
                                                     </p>
-                                                    <span className="shrink-0 text-[11px] text-[#9CA3AF]">
-                                                        {formatRelativeTime(c.lastMessageAt)}
-                                                    </span>
+                                                    <div className="flex shrink-0 items-center gap-1.5">
+                                                        {isUnread ? (
+                                                            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-[#E52323] px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                                {unread > 99 ? '99+' : unread}
+                                                            </span>
+                                                        ) : null}
+                                                        <span className="text-[11px] text-[#9CA3AF]">
+                                                            {formatRelativeTime(c.lastMessageAt)}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <p className="mt-0.5 truncate text-xs text-[#6B7280]">
+                                                <p
+                                                    className={`mt-0.5 truncate text-xs ${
+                                                        isUnread
+                                                            ? 'font-medium text-[#374151]'
+                                                            : 'text-[#6B7280]'
+                                                    }`}
+                                                >
                                                     {c.lastMessagePreview || 'No messages'}
                                                 </p>
                                             </div>
@@ -1444,25 +1522,70 @@ export default function AdminMessagesPage() {
                                                 </div>
                                             ) : null}
                                         </div>
-                                        <DisabledAction
-                                            title="Admin upload isn't available"
-                                            className="h-10 w-10 shrink-0"
+                                        <input
+                                            ref={anyFileRef}
+                                            type="file"
+                                            className="hidden"
+                                            accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                            onChange={(e) => {
+                                                const f = e.target.files?.[0];
+                                                e.target.value = '';
+                                                if (f) void uploadFile(f);
+                                            }}
+                                        />
+                                        <input
+                                            ref={imageFileRef}
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/jpeg,image/png,image/webp"
+                                            onChange={(e) => {
+                                                const f = e.target.files?.[0];
+                                                e.target.value = '';
+                                                if (f) void uploadFile(f);
+                                            }}
+                                        />
+                                        <input
+                                            ref={docFileRef}
+                                            type="file"
+                                            className="hidden"
+                                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                            onChange={(e) => {
+                                                const f = e.target.files?.[0];
+                                                e.target.value = '';
+                                                if (f) void uploadFile(f);
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={sending || !selectedId}
+                                            onClick={() => anyFileRef.current?.click()}
+                                            title="Attach file"
+                                            aria-label="Attach file"
+                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                                         >
                                             <Paperclip className="h-4 w-4" />
-                                        </DisabledAction>
-                                        <DisabledAction
-                                            title="Admin upload isn't available"
-                                            className="h-10 w-10 shrink-0"
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={sending || !selectedId}
+                                            onClick={() => imageFileRef.current?.click()}
+                                            title="Upload image"
+                                            aria-label="Upload image"
+                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                                         >
                                             <ImageIcon className="h-4 w-4" />
-                                        </DisabledAction>
-                                        <DisabledAction
-                                            title="Admin upload isn't available"
-                                            className="h-10 w-10 shrink-0"
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={sending || !selectedId}
+                                            onClick={() => docFileRef.current?.click()}
+                                            title="Upload document"
+                                            aria-label="Upload document"
+                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                                         >
                                             <FileText className="h-4 w-4" />
-                                        </DisabledAction>
-                                        <DisabledAction title="Coming soon" className="h-10 w-10 shrink-0">
+                                        </button>
+                                        <DisabledAction title="Voice notes coming soon" className="h-10 w-10 shrink-0">
                                             <Mic className="h-4 w-4" />
                                         </DisabledAction>
                                         <textarea

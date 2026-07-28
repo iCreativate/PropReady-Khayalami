@@ -27,51 +27,104 @@ export async function GET(request: NextRequest) {
         }
 
         const ids = (conversations || []).map((c) => c.id);
+        const adminId = adminProfileId(auth.email);
+
         const { data: participants } = ids.length
             ? await db
                   .from('message_participants')
-                  .select('conversation_id, account_type, profile_id, display_name')
+                  .select('conversation_id, account_type, profile_id, display_name, last_read_at')
                   .in('conversation_id', ids)
             : { data: [] };
 
-        const byConv = new Map<string, typeof participants>();
-        for (const p of participants || []) {
+        type Part = {
+            conversation_id: string;
+            account_type: string;
+            profile_id: string;
+            display_name: string | null;
+            last_read_at: string | null;
+        };
+
+        const byConv = new Map<string, Part[]>();
+        for (const p of (participants || []) as Part[]) {
             const list = byConv.get(p.conversation_id) || [];
             list.push(p);
             byConv.set(p.conversation_id, list);
         }
 
-        let list = (conversations || []).map((c) => ({
-            id: c.id,
-            subject: c.subject,
-            contextType: c.context_type,
-            contextId: c.context_id,
-            lastMessageAt: c.last_message_at,
-            lastMessagePreview: c.last_message_preview,
-            createdAt: c.created_at,
-            createdByAccountType: c.created_by_account_type,
-            participants: (byConv.get(c.id) || []).map((p) => ({
-                accountType: p.account_type,
-                profileId: p.profile_id,
-                displayName: p.display_name,
-            })),
-        }));
+        let unreadTotal = 0;
+        const list: Array<{
+            id: string;
+            subject: string | null;
+            contextType: string;
+            contextId: string | null;
+            lastMessageAt: string | null;
+            lastMessagePreview: string | null;
+            createdAt: string;
+            createdByAccountType: string;
+            unreadCount: number;
+            myLastReadAt: string | null;
+            participants: Array<{
+                accountType: string;
+                profileId: string;
+                displayName: string | null;
+            }>;
+        }> = [];
 
-        if (q) {
-            list = list.filter((c) => {
+        for (const c of conversations || []) {
+            const parts = byConv.get(c.id) || [];
+            const me = parts.find(
+                (p) => p.account_type === 'admin' && p.profile_id === adminId
+            );
+            let unreadCount = 0;
+            if (c.last_message_at) {
+                const lastRead = me?.last_read_at ? new Date(me.last_read_at).getTime() : 0;
+                const lastMsg = new Date(c.last_message_at).getTime();
+                if (lastMsg > lastRead) {
+                    const { count } = await db
+                        .from('message_items')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('conversation_id', c.id)
+                        .gt('created_at', me?.last_read_at || '1970-01-01')
+                        .neq('sender_profile_id', adminId);
+                    unreadCount = count || 1;
+                }
+            }
+            unreadTotal += unreadCount;
+
+            const mapped = {
+                id: c.id,
+                subject: c.subject,
+                contextType: c.context_type,
+                contextId: c.context_id,
+                lastMessageAt: c.last_message_at,
+                lastMessagePreview: c.last_message_preview,
+                createdAt: c.created_at,
+                createdByAccountType: c.created_by_account_type,
+                unreadCount,
+                myLastReadAt: me?.last_read_at ?? null,
+                participants: parts.map((p) => ({
+                    accountType: p.account_type,
+                    profileId: p.profile_id,
+                    displayName: p.display_name,
+                })),
+            };
+
+            if (q) {
                 const hay = [
-                    c.subject,
-                    c.lastMessagePreview,
-                    ...c.participants.map((p) => p.displayName),
+                    mapped.subject,
+                    mapped.lastMessagePreview,
+                    ...mapped.participants.map((p) => p.displayName),
                 ]
                     .filter(Boolean)
                     .join(' ')
                     .toLowerCase();
-                return hay.includes(q);
-            });
+                if (!hay.includes(q)) continue;
+            }
+
+            list.push(mapped);
         }
 
-        return NextResponse.json({ success: true, conversations: list });
+        return NextResponse.json({ success: true, conversations: list, unreadTotal });
     } catch (err) {
         console.error('admin messages list:', err);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

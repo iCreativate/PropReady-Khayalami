@@ -217,31 +217,6 @@ function DetailSkeleton() {
     );
 }
 
-function SectionCard({ title, children }: { title: string; children: ReactNode }) {
-    return (
-        <section className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
-            <h3 className="text-sm font-semibold text-[#111827]">{title}</h3>
-            <div className="mt-4">{children}</div>
-        </section>
-    );
-}
-
-function InfoGrid({ items }: { items: Array<{ label: string; value: ReactNode }> }) {
-    return (
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            {items.map(({ label, value }) => (
-                <div
-                    key={label}
-                    className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-3"
-                >
-                    <dt className="text-xs uppercase tracking-wide text-[#6B7280]">{label}</dt>
-                    <dd className="mt-1 font-medium text-[#111827] break-words">{value}</dd>
-                </div>
-            ))}
-        </dl>
-    );
-}
-
 function MenuItem({
     children,
     onClick,
@@ -286,6 +261,9 @@ export default function AdminPpraPage() {
     const [actionLoading, setActionLoading] = useState(false);
     const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
     const [filtersOpen, setFiltersOpen] = useState(false);
+    const [detailTab, setDetailTab] = useState<
+        'overview' | 'verification' | 'documents' | 'notes' | 'activity'
+    >('overview');
     const bulkMenuRef = useRef<HTMLDetailsElement>(null);
     const notesDraftSaveRef = useRef<number | null>(null);
     const confirmTitleId = useId();
@@ -335,6 +313,7 @@ export default function AdminPpraPage() {
         }
         setPreviewUrl(null);
         setRejectionReason('');
+        setDetailTab('overview');
     }, [selected?.id]);
 
     useEffect(() => {
@@ -895,318 +874,419 @@ export default function AdminPpraPage() {
                         )}
                     </div>
 
-                    {/* Right — detail panel */}
+                    {/* Right — compact detail panel */}
                     <div className="w-full lg:sticky lg:top-24 lg:w-[28rem] xl:w-[32rem] shrink-0">
                         {loading && !selected ? (
                             <DetailSkeleton />
                         ) : selected ? (
-                            <div className="space-y-4">
-                                <div className="rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#111827] text-base font-semibold text-white">
-                                                {initials(selected.fullName, selected.email)}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
-                                                    Reviewing application
-                                                </p>
-                                                <h2 className="truncate text-xl font-semibold text-[#111827]">
+                            <div className="flex max-h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]">
+                                {/* Applicant summary */}
+                                <div className="shrink-0 border-b border-[#E5E7EB] px-4 py-3.5">
+                                    <div className="flex items-start gap-3">
+                                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#111827] text-sm font-semibold text-white">
+                                            {initials(selected.fullName, selected.email)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h2 className="truncate text-lg font-semibold text-[#111827]">
                                                     {selected.fullName}
                                                 </h2>
+                                                <StatusPill label={displayStatusLabel(selected)} />
+                                            </div>
+                                            <p className="mt-0.5 truncate text-sm text-[#6B7280]">
+                                                {selected.company || 'No agency listed'}
+                                            </p>
+                                            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[#6B7280]">
+                                                <span className="font-mono text-[#111827]">
+                                                    PPRA {selected.ppraNumber || '—'}
+                                                </span>
+                                                <span>Submitted {formatDate(selected.createdAt)}</span>
                                             </div>
                                         </div>
-                                        <StatusPill label={displayStatusLabel(selected)} />
+                                    </div>
+
+                                    {/* Tabs */}
+                                    <div
+                                        role="tablist"
+                                        aria-label="Application review sections"
+                                        className="mt-3 flex gap-1 overflow-x-auto rounded-xl bg-[#F8FAFC] p-1"
+                                    >
+                                        {(
+                                            [
+                                                ['overview', 'Overview'],
+                                                ['verification', 'Verification'],
+                                                ['documents', 'Documents'],
+                                                ['notes', 'Notes'],
+                                                ['activity', 'Activity'],
+                                            ] as const
+                                        ).map(([id, label]) => {
+                                            const active = detailTab === id;
+                                            return (
+                                                <button
+                                                    key={id}
+                                                    type="button"
+                                                    role="tab"
+                                                    aria-selected={active}
+                                                    onClick={() => setDetailTab(id)}
+                                                    className={`shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                                                        active
+                                                            ? 'bg-white text-[#111827] shadow-sm'
+                                                            : 'text-[#6B7280] hover:text-[#111827]'
+                                                    }`}
+                                                >
+                                                    {label}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
-                                <SectionCard title="Applicant Information">
-                                    <InfoGrid
-                                        items={[
-                                            { label: 'Full name', value: selected.fullName || '—' },
-                                            { label: 'Email', value: selected.email || '—' },
-                                            { label: 'Phone', value: selected.phone || '—' },
-                                            { label: 'City', value: selected.city || '—' },
-                                            { label: 'Company', value: selected.company || '—' },
-                                            {
-                                                label: 'Account status',
-                                                value: (
-                                                    <span className="capitalize">
-                                                        {selected.status || '—'}
-                                                    </span>
-                                                ),
-                                            },
-                                        ]}
-                                    />
-                                </SectionCard>
-
-                                <SectionCard title="Verification Details">
-                                    <InfoGrid
-                                        items={[
-                                            {
-                                                label: 'PPRA number',
-                                                value: (
-                                                    <span className="font-mono">
-                                                        {selected.ppraNumber || '—'}
-                                                    </span>
-                                                ),
-                                            },
-                                            {
-                                                label: 'FFC number',
-                                                value: (
-                                                    <span className="font-mono">
-                                                        {selected.ffcNumber || '—'}
-                                                    </span>
-                                                ),
-                                            },
-                                            {
-                                                label: 'Verification status',
-                                                value: (
-                                                    <span className="capitalize">
-                                                        {selected.verificationStatus || 'pending'}
-                                                    </span>
-                                                ),
-                                            },
-                                            {
-                                                label: 'Verification date',
-                                                value: formatDateTime(selected.verificationDate),
-                                            },
-                                            {
-                                                label: 'Verified by',
-                                                value: selected.verifiedBy || '—',
-                                            },
-                                        ]}
-                                    />
-                                </SectionCard>
-
-                                <SectionCard title="Agency Information">
-                                    <InfoGrid
-                                        items={[
-                                            { label: 'Agency name', value: selected.company || '—' },
-                                            { label: 'City', value: selected.city || '—' },
-                                        ]}
-                                    />
-                                </SectionCard>
-
-                                <SectionCard title="Supporting Documents">
-                                    {selected.ffcDocumentUrl ? (
-                                        <div className="flex flex-col gap-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-[#E5E7EB] text-[#E52323]">
-                                                    <FileText className="h-5 w-5" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-medium text-[#111827]">
-                                                        FFC Document
+                                {/* Tab content */}
+                                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                                    {detailTab === 'overview' ? (
+                                        <div className="space-y-3">
+                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                        Email
                                                     </p>
-                                                    <p className="truncate text-xs text-[#6B7280]">
-                                                        {selected.ffcDocumentUrl.split('/').pop()}
+                                                    <p className="mt-1 break-all text-[#111827]">
+                                                        {selected.email || '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                        Phone
+                                                    </p>
+                                                    <p className="mt-1 text-[#111827]">
+                                                        {selected.phone || '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                        City
+                                                    </p>
+                                                    <p className="mt-1 text-[#111827]">
+                                                        {selected.city || '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                        Account
+                                                    </p>
+                                                    <p className="mt-1 capitalize text-[#111827]">
+                                                        {selected.status || '—'}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                <button
-                                                    type="button"
-                                                    disabled={previewLoading}
-                                                    onClick={() => void openPreview(selected)}
-                                                    className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC] disabled:opacity-50"
-                                                >
-                                                    <Eye className="h-4 w-4" />
-                                                    {previewLoading ? 'Loading…' : 'Preview'}
-                                                </button>
-                                                {previewUrl ? (
-                                                    <a
-                                                        href={previewUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#E52323] px-4 text-sm font-semibold text-white transition hover:bg-[#c91d1d]"
-                                                    >
-                                                        <Download className="h-4 w-4" />
-                                                        Open / Download
-                                                    </a>
-                                                ) : null}
+                                            <div>
+                                                <div className="mb-2 flex items-center justify-between text-[11px] text-[#6B7280]">
+                                                    <span className="font-semibold uppercase tracking-wide">
+                                                        Checklist
+                                                    </span>
+                                                    <span>
+                                                        {checklistProgress(selected).completed}/
+                                                        {checklistProgress(selected).total}
+                                                    </span>
+                                                </div>
+                                                <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-[#E5E7EB]">
+                                                    <div
+                                                        className="h-full rounded-full bg-[#E52323]"
+                                                        style={{
+                                                            width: `${(checklistProgress(selected).completed / checklistProgress(selected).total) * 100}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                                <ul className="grid grid-cols-2 gap-1.5">
+                                                    {CHECKLIST_ITEMS.map((item) => {
+                                                        const done = item.test(selected);
+                                                        return (
+                                                            <li
+                                                                key={item.key}
+                                                                className="flex items-center gap-2 rounded-lg border border-[#E5E7EB] px-2 py-1.5 text-xs"
+                                                            >
+                                                                <span
+                                                                    className={`h-1.5 w-1.5 rounded-full ${
+                                                                        done
+                                                                            ? 'bg-[#16A34A]'
+                                                                            : 'bg-[#D1D5DB]'
+                                                                    }`}
+                                                                />
+                                                                <span
+                                                                    className={
+                                                                        done
+                                                                            ? 'font-medium text-[#111827]'
+                                                                            : 'text-[#6B7280]'
+                                                                    }
+                                                                >
+                                                                    {item.label}
+                                                                </span>
+                                                            </li>
+                                                        );
+                                                    })}
+                                                </ul>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <p className="text-sm text-[#6B7280]">
-                                            No FFC document uploaded yet.
-                                        </p>
-                                    )}
-                                </SectionCard>
+                                    ) : null}
 
-                                <SectionCard title="Internal Notes">
-                                    <textarea
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Internal verification notes (optional)"
-                                        rows={4}
-                                        maxLength={2000}
-                                        className="w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
-                                    />
-                                    <div className="mt-2 flex items-center justify-between text-xs text-[#6B7280]">
-                                        <span>Draft saved locally for this application</span>
-                                        <span>{notes.length}/2000</span>
-                                    </div>
-                                </SectionCard>
-
-                                <SectionCard title="Verification Checklist">
-                                    <ul className="space-y-2">
-                                        {CHECKLIST_ITEMS.map((item) => {
-                                            const done = item.test(selected);
-                                            return (
-                                                <li
-                                                    key={item.key}
-                                                    className="flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm"
-                                                >
-                                                    <span
-                                                        className={`flex h-6 w-6 items-center justify-center rounded-full ${
-                                                            done
-                                                                ? 'bg-emerald-100 text-[#16A34A]'
-                                                                : 'bg-slate-100 text-[#6B7280]'
-                                                        }`}
-                                                    >
-                                                        {done ? (
-                                                            <CheckCircle2 className="h-3.5 w-3.5" />
-                                                        ) : (
-                                                            <Clock3 className="h-3.5 w-3.5" />
-                                                        )}
-                                                    </span>
-                                                    <span
-                                                        className={
-                                                            done
-                                                                ? 'font-medium text-[#111827]'
-                                                                : 'text-[#6B7280]'
-                                                        }
-                                                    >
-                                                        {item.label}
-                                                    </span>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                </SectionCard>
-
-                                <SectionCard title="Application Timeline">
-                                    <ol className="relative space-y-4 border-l border-[#E5E7EB] pl-5 ml-2">
-                                        <li className="relative">
-                                            <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#E52323]" />
-                                            <p className="text-sm font-medium text-[#111827]">
-                                                Application Submitted
-                                            </p>
-                                            <p className="text-xs text-[#6B7280]">
-                                                {formatDateTime(selected.createdAt)}
-                                            </p>
-                                        </li>
-                                        {selected.ffcDocumentUrl ? (
-                                            <li className="relative">
-                                                <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#2563EB]" />
-                                                <p className="text-sm font-medium text-[#111827]">
-                                                    Documents Uploaded
+                                    {detailTab === 'verification' ? (
+                                        <div className="grid grid-cols-2 gap-2 text-sm">
+                                            <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                    PPRA
                                                 </p>
-                                                <p className="text-xs text-[#6B7280]">
-                                                    FFC document on file
+                                                <p className="mt-1 font-mono text-[#111827]">
+                                                    {selected.ppraNumber || '—'}
                                                 </p>
-                                            </li>
-                                        ) : null}
-                                        {(selected.verificationNotes ||
-                                            normalizedVerificationStatus(selected) ===
-                                                'pending') && (
-                                            <li className="relative">
-                                                <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
-                                                <p className="text-sm font-medium text-[#111827]">
-                                                    Verification Started
+                                            </div>
+                                            <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                    FFC
                                                 </p>
-                                                <p className="text-xs text-[#6B7280]">
-                                                    {selected.verificationNotes
-                                                        ? 'Notes added by reviewer'
-                                                        : 'Pending staff review'}
+                                                <p className="mt-1 font-mono text-[#111827]">
+                                                    {selected.ffcNumber || '—'}
                                                 </p>
-                                            </li>
-                                        )}
-                                        {selected.verificationDate ? (
-                                            <li className="relative">
-                                                <span className="absolute -left-[1.34rem] top-1 h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
-                                                <p className="text-sm font-medium text-[#111827]">
-                                                    Decision Made
+                                            </div>
+                                            <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                    Status
                                                 </p>
-                                                <p className="text-xs text-[#6B7280]">
+                                                <p className="mt-1 capitalize text-[#111827]">
+                                                    {selected.verificationStatus || 'pending'}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                    Verified by
+                                                </p>
+                                                <p className="mt-1 text-[#111827]">
+                                                    {selected.verifiedBy || '—'}
+                                                </p>
+                                            </div>
+                                            <div className="col-span-2 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                    Verification date
+                                                </p>
+                                                <p className="mt-1 text-[#111827]">
                                                     {formatDateTime(selected.verificationDate)}
-                                                    {selected.verifiedBy
-                                                        ? ` · ${selected.verifiedBy}`
-                                                        : ''}
+                                                </p>
+                                            </div>
+                                            <div className="col-span-2 rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5">
+                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B7280]">
+                                                    Agency
+                                                </p>
+                                                <p className="mt-1 text-[#111827]">
+                                                    {selected.company || '—'}
+                                                    {selected.city ? ` · ${selected.city}` : ''}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {detailTab === 'documents' ? (
+                                        selected.ffcDocumentUrl ? (
+                                            <div className="rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] p-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#E52323]">
+                                                        <FileText className="h-5 w-5" />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-medium text-[#111827]">
+                                                            FFC Document
+                                                        </p>
+                                                        <p className="truncate text-xs text-[#6B7280]">
+                                                            {selected.ffcDocumentUrl.split('/').pop()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        disabled={previewLoading}
+                                                        onClick={() => void openPreview(selected)}
+                                                        className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-3 text-sm font-medium text-[#111827] transition hover:bg-white disabled:opacity-50"
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                        {previewLoading ? 'Loading…' : 'Preview'}
+                                                    </button>
+                                                    {previewUrl ? (
+                                                        <a
+                                                            href={previewUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#E52323] px-3 text-sm font-semibold text-white transition hover:bg-[#c91d1d]"
+                                                        >
+                                                            <Download className="h-4 w-4" />
+                                                            Open
+                                                        </a>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="rounded-xl border border-dashed border-[#E5E7EB] px-4 py-8 text-center text-sm text-[#6B7280]">
+                                                No FFC document uploaded yet.
+                                            </p>
+                                        )
+                                    ) : null}
+
+                                    {detailTab === 'notes' ? (
+                                        <div className="space-y-3">
+                                            <textarea
+                                                value={notes}
+                                                onChange={(e) => setNotes(e.target.value)}
+                                                placeholder="Internal verification notes (optional)"
+                                                rows={5}
+                                                maxLength={2000}
+                                                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
+                                            />
+                                            <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                                                <span>Draft saved locally</span>
+                                                <span>{notes.length}/2000</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        appendNotesTemplate(
+                                                            'Please provide additional documentation: '
+                                                        )
+                                                    }
+                                                    className="rounded-lg border border-[#E5E7EB] px-2.5 py-1.5 text-xs font-medium text-[#111827] hover:bg-[#F8FAFC]"
+                                                >
+                                                    Request info
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        appendNotesTemplate(
+                                                            'Application returned for corrections: '
+                                                        )
+                                                    }
+                                                    className="rounded-lg border border-[#E5E7EB] px-2.5 py-1.5 text-xs font-medium text-[#111827] hover:bg-[#F8FAFC]"
+                                                >
+                                                    Return
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        appendNotesTemplate(
+                                                            'Review suspended pending: '
+                                                        )
+                                                    }
+                                                    className="rounded-lg border border-[#E5E7EB] px-2.5 py-1.5 text-xs font-medium text-[#111827] hover:bg-[#F8FAFC]"
+                                                >
+                                                    Suspend
+                                                </button>
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-semibold text-[#6B7280]">
+                                                    Rejection reason
+                                                </label>
+                                                <textarea
+                                                    value={rejectionReason}
+                                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                                    placeholder="Required when rejecting"
+                                                    rows={2}
+                                                    className="w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {detailTab === 'activity' ? (
+                                        <ol className="relative space-y-3 border-l border-[#E5E7EB] pl-4 ml-1.5">
+                                            <li className="relative">
+                                                <span className="absolute -left-[1.16rem] top-1 h-2 w-2 rounded-full bg-[#E52323]" />
+                                                <p className="text-sm font-medium text-[#111827]">
+                                                    Application Submitted
+                                                </p>
+                                                <p className="text-xs text-[#6B7280]">
+                                                    {formatDateTime(selected.createdAt)}
                                                 </p>
                                             </li>
-                                        ) : null}
-                                    </ol>
-                                </SectionCard>
+                                            {selected.ffcDocumentUrl ? (
+                                                <li className="relative">
+                                                    <span className="absolute -left-[1.16rem] top-1 h-2 w-2 rounded-full bg-[#2563EB]" />
+                                                    <p className="text-sm font-medium text-[#111827]">
+                                                        Documents Uploaded
+                                                    </p>
+                                                    <p className="text-xs text-[#6B7280]">
+                                                        FFC document on file
+                                                    </p>
+                                                </li>
+                                            ) : null}
+                                            {(selected.verificationNotes ||
+                                                normalizedVerificationStatus(selected) ===
+                                                    'pending') && (
+                                                <li className="relative">
+                                                    <span className="absolute -left-[1.16rem] top-1 h-2 w-2 rounded-full bg-[#F59E0B]" />
+                                                    <p className="text-sm font-medium text-[#111827]">
+                                                        Verification Started
+                                                    </p>
+                                                    <p className="text-xs text-[#6B7280]">
+                                                        {selected.verificationNotes
+                                                            ? 'Notes added by reviewer'
+                                                            : 'Pending staff review'}
+                                                    </p>
+                                                </li>
+                                            )}
+                                            {selected.verificationDate ? (
+                                                <li className="relative">
+                                                    <span className="absolute -left-[1.16rem] top-1 h-2 w-2 rounded-full bg-[#16A34A]" />
+                                                    <p className="text-sm font-medium text-[#111827]">
+                                                        Decision Made
+                                                    </p>
+                                                    <p className="text-xs text-[#6B7280]">
+                                                        {formatDateTime(selected.verificationDate)}
+                                                        {selected.verifiedBy
+                                                            ? ` · ${selected.verifiedBy}`
+                                                            : ''}
+                                                    </p>
+                                                </li>
+                                            ) : null}
+                                        </ol>
+                                    ) : null}
+                                </div>
 
-                                <SectionCard title="Decision">
-                                    <p className="text-xs text-[#6B7280] mb-3">
-                                        Rejection reason (required if rejecting)
-                                    </p>
-                                    <textarea
-                                        value={rejectionReason}
-                                        onChange={(e) => setRejectionReason(e.target.value)}
-                                        placeholder="Rejection reason (required if rejecting)"
-                                        rows={2}
-                                        className="mb-4 w-full rounded-xl border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2.5 text-sm text-[#111827] placeholder:text-[#6B7280] focus:border-[#E52323]/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#E52323]/20"
-                                    />
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {/* Sticky decision bar */}
+                                <div className="shrink-0 border-t border-[#E5E7EB] bg-white px-4 py-3">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <button
                                             type="button"
                                             disabled={actionLoading}
                                             onClick={() => setConfirmAction('approve')}
-                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-4 text-sm font-semibold text-white transition hover:bg-[#15803d] disabled:opacity-50"
+                                            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#16A34A] px-2 text-xs font-semibold text-white transition hover:bg-[#15803d] disabled:opacity-50 sm:text-sm"
                                         >
-                                            <CheckCircle2 className="h-4 w-4" />
-                                            {normalizedVerificationStatus(selected) === 'verified'
-                                                ? 'Re-approve'
-                                                : 'Approve'}
+                                            <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                            <span className="truncate">
+                                                {normalizedVerificationStatus(selected) === 'verified'
+                                                    ? 'Re-approve'
+                                                    : 'Approve'}
+                                            </span>
                                         </button>
                                         <button
                                             type="button"
                                             disabled={actionLoading}
                                             onClick={() => setConfirmAction('reject')}
-                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#DC2626] px-4 text-sm font-semibold text-white transition hover:bg-[#b91c1c] disabled:opacity-50"
+                                            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#DC2626] px-2 text-xs font-semibold text-white transition hover:bg-[#b91c1c] disabled:opacity-50 sm:text-sm"
                                         >
-                                            <XCircle className="h-4 w-4" />
+                                            <XCircle className="h-4 w-4 shrink-0" />
                                             Reject
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() =>
+                                            onClick={() => {
+                                                setDetailTab('notes');
                                                 appendNotesTemplate(
                                                     'Please provide additional documentation: '
-                                                )
-                                            }
-                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC]"
+                                                );
+                                            }}
+                                            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-[#E5E7EB] px-2 text-xs font-medium text-[#111827] transition hover:bg-[#F8FAFC] sm:text-sm"
                                         >
-                                            Request More Information
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                appendNotesTemplate(
-                                                    'Application returned for corrections: '
-                                                )
-                                            }
-                                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC]"
-                                        >
-                                            Return Application
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                appendNotesTemplate(
-                                                    'Review suspended pending: '
-                                                )
-                                            }
-                                            className="sm:col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC]"
-                                        >
-                                            Suspend Review
+                                            Request info
                                         </button>
                                     </div>
-                                </SectionCard>
+                                </div>
                             </div>
                         ) : (
                             <div className="rounded-2xl border border-dashed border-[#E5E7EB] bg-white px-6 py-16 text-center">

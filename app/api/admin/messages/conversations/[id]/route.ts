@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertAdminRequest } from '@/lib/admin-auth';
-import { ensureAdminParticipant } from '@/lib/admin-messages';
+import { adminProfileId, ensureAdminParticipant } from '@/lib/admin-messages';
 import { messagesDb } from '@/lib/messages';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -26,6 +26,17 @@ export async function GET(request: NextRequest, context: Ctx) {
         if (error || !conversation) {
             return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
         }
+
+        const adminId = adminProfileId(auth.email);
+        const now = new Date().toISOString();
+
+        // Mark conversation read for this staff participant when opening the thread.
+        await db
+            .from('message_participants')
+            .update({ last_read_at: now })
+            .eq('conversation_id', id)
+            .eq('account_type', 'admin')
+            .eq('profile_id', adminId);
 
         const [{ data: participants }, { data: messages }] = await Promise.all([
             db
