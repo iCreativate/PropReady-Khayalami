@@ -98,6 +98,7 @@ export default function AdminMessagesPage() {
     const [apptLocation, setApptLocation] = useState('');
     const [apptNotes, setApptNotes] = useState('');
     const [objectingId, setObjectingId] = useState<string | null>(null);
+    const [reproposingId, setReproposingId] = useState<string | null>(null);
     const [suggestStarts, setSuggestStarts] = useState('');
     const [suggestNotes, setSuggestNotes] = useState('');
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -158,6 +159,7 @@ export default function AdminMessagesPage() {
 
     useEffect(() => {
         setObjectingId(null);
+        setReproposingId(null);
         setSuggestStarts('');
         setSuggestNotes('');
     }, [selectedId]);
@@ -242,8 +244,13 @@ export default function AdminMessagesPage() {
 
     async function respondAppointment(
         appointmentId: string,
-        status: 'accepted' | 'declined',
-        opts?: { suggestedStartsAt?: string; suggestedNotes?: string }
+        status: 'accepted' | 'declined' | 'cancelled',
+        opts?: {
+            suggestedStartsAt?: string;
+            suggestedNotes?: string;
+            reproposeStartsAt?: string;
+            reproposeNotes?: string;
+        }
     ) {
         setSending(true);
         setError('');
@@ -256,11 +263,14 @@ export default function AdminMessagesPage() {
                     status,
                     suggestedStartsAt: opts?.suggestedStartsAt || undefined,
                     suggestedNotes: opts?.suggestedNotes || undefined,
+                    reproposeStartsAt: opts?.reproposeStartsAt || undefined,
+                    reproposeNotes: opts?.reproposeNotes || undefined,
                 }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Could not update appointment');
             setObjectingId(null);
+            setReproposingId(null);
             setSuggestStarts('');
             setSuggestNotes('');
             if (selectedId) await loadThread(selectedId, { silent: true });
@@ -646,6 +656,7 @@ export default function AdminMessagesPage() {
                                                           mine={isAdmin}
                                                           sending={sending}
                                                           objecting={objectingId === appointmentId}
+                                                          reproposing={reproposingId === appointmentId}
                                                           suggestStarts={suggestStarts}
                                                           suggestNotes={suggestNotes}
                                                           onApprove={() =>
@@ -655,6 +666,7 @@ export default function AdminMessagesPage() {
                                                               )
                                                           }
                                                           onStartObject={() => {
+                                                              setReproposingId(null);
                                                               setObjectingId(appointmentId);
                                                               setSuggestStarts(
                                                                   meta.startsAt
@@ -682,6 +694,48 @@ export default function AdminMessagesPage() {
                                                                           suggestStarts
                                                                       ).toISOString(),
                                                                       suggestedNotes:
+                                                                          suggestNotes.trim() ||
+                                                                          undefined,
+                                                                  }
+                                                              );
+                                                          }}
+                                                          onRetract={() => {
+                                                              const ok = window.confirm(
+                                                                  'Retract this approved appointment? It will be removed from the viewings calendar.'
+                                                              );
+                                                              if (!ok) return;
+                                                              void respondAppointment(
+                                                                  appointmentId,
+                                                                  'cancelled'
+                                                              );
+                                                          }}
+                                                          onStartRepropose={() => {
+                                                              setObjectingId(null);
+                                                              setReproposingId(appointmentId);
+                                                              setSuggestStarts(
+                                                                  meta.startsAt
+                                                                      ? toDatetimeLocalValue(
+                                                                            String(meta.startsAt)
+                                                                        )
+                                                                      : ''
+                                                              );
+                                                              setSuggestNotes('');
+                                                          }}
+                                                          onCancelRepropose={() => {
+                                                              setReproposingId(null);
+                                                              setSuggestStarts('');
+                                                              setSuggestNotes('');
+                                                          }}
+                                                          onSubmitRepropose={() => {
+                                                              if (!suggestStarts) return;
+                                                              void respondAppointment(
+                                                                  appointmentId,
+                                                                  'cancelled',
+                                                                  {
+                                                                      reproposeStartsAt: new Date(
+                                                                          suggestStarts
+                                                                      ).toISOString(),
+                                                                      reproposeNotes:
                                                                           suggestNotes.trim() ||
                                                                           undefined,
                                                                   }

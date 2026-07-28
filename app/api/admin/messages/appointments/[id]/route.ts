@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { assertAdminRequest } from '@/lib/admin-auth';
 import { adminDisplayName, adminProfileId, ensureAdminParticipant } from '@/lib/admin-messages';
-import { createViewingFromMessageAppointment } from '@/lib/message-appointment-viewing';
+import {
+    cancelViewingForAppointment,
+    createViewingFromMessageAppointment,
+} from '@/lib/message-appointment-viewing';
 import {
     messagesDb,
     serializeAppointment,
@@ -163,6 +166,16 @@ export async function PATCH(request: NextRequest, context: Ctx) {
         const now = new Date().toISOString();
         let viewingId: string | null = appointment.viewing_id;
         const objectedWithSuggestion = status === 'declined' && Boolean(suggestedStartsAt);
+        const reproposeStartsAt = body.reproposeStartsAt
+            ? String(body.reproposeStartsAt).trim()
+            : '';
+        if (reproposeStartsAt && Number.isNaN(Date.parse(reproposeStartsAt))) {
+            return NextResponse.json(
+                { error: 'Valid reproposeStartsAt required' },
+                { status: 400 }
+            );
+        }
+        const isRetractWithRepropose = status === 'cancelled' && Boolean(reproposeStartsAt);
 
         if (status === 'accepted') {
             const [{ data: conversation }, { data: participants }] = await Promise.all([
@@ -185,6 +198,10 @@ export async function PATCH(request: NextRequest, context: Ctx) {
                         (participants || []) as ParticipantRow[]
                     )) || viewingId;
             }
+        }
+
+        if (status === 'cancelled') {
+            await cancelViewingForAppointment(appointment as AppointmentRow);
         }
 
         const { data: updated, error: updErr } = await db
@@ -210,7 +227,9 @@ export async function PATCH(request: NextRequest, context: Ctx) {
                   ? objectedWithSuggestion
                       ? 'Appointment objected — new time suggested'
                       : 'Appointment objected'
-                  : 'Appointment cancelled';
+                  : isRetractWithRepropose
+                    ? 'Appointment retracted — new time proposed'
+                    : 'Appointment retracted';
 
         if (appointment.message_id) {
             const { data: msg } = await db
@@ -244,7 +263,9 @@ export async function PATCH(request: NextRequest, context: Ctx) {
                   ? objectedWithSuggestion
                       ? `${adminName} objected and suggested a new time`
                       : `${adminName} objected to the appointment`
-                  : `${adminName} cancelled the appointment`;
+                  : isRetractWithRepropose
+                    ? `${adminName} retracted the appointment and proposed a new time`
+                    : `${adminName} retracted the appointment`;
 
         await db.from('message_items').insert({
             conversation_id: appointment.conversation_id,
@@ -263,10 +284,13 @@ export async function PATCH(request: NextRequest, context: Ctx) {
         });
 
         let counter: Awaited<ReturnType<typeof createCounterProposal>> | null = null;
-        if (objectedWithSuggestion) {
+        if (objectedWithSuggestion || isRetractWithRepropose) {
+            const newStarts = objectedWithSuggestion ? suggestedStartsAt : reproposeStartsAt;
             const suggestedNotes = body.suggestedNotes
                 ? String(body.suggestedNotes).trim()
-                : null;
+                : body.reproposeNotes
+                  ? String(body.reproposeNotes).trim()
+                  : null;
             const location =
                 body.suggestedLocation != null
                     ? String(body.suggestedLocation).trim() || null
@@ -274,11 +298,11 @@ export async function PATCH(request: NextRequest, context: Ctx) {
 
             counter = await createCounterProposal({
                 conversationId: appointment.conversation_id,
-                startsAt: new Date(suggestedStartsAt).toISOString(),
+                startsAt: new Date(newStarts).toISOString(),
                 location,
                 notes:
                     suggestedNotes ||
-                    `Counter-proposal to appointment ${appointmentId.slice(0, 8)}`,
+                    `New proposal after ${objectedWithSuggestion ? 'objection' : 'retract'} (${appointmentId.slice(0, 8)})`,
                 adminId,
                 adminName,
                 inReplyToAppointmentId: appointmentId,

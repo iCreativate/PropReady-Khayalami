@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Check, X } from 'lucide-react';
+import { Calendar, Check, RotateCcw, Undo2, X } from 'lucide-react';
 
 export function toDatetimeLocalValue(iso: string) {
     const d = new Date(iso);
@@ -15,6 +15,7 @@ export default function AppointmentCalendarCard({
     mine,
     sending,
     objecting,
+    reproposing,
     suggestStarts,
     suggestNotes,
     onApprove,
@@ -23,12 +24,17 @@ export default function AppointmentCalendarCard({
     onSuggestStartsChange,
     onSuggestNotesChange,
     onSubmitObject,
+    onRetract,
+    onStartRepropose,
+    onCancelRepropose,
+    onSubmitRepropose,
 }: {
     meta: Record<string, unknown>;
     body: string | null;
     mine: boolean;
     sending: boolean;
     objecting: boolean;
+    reproposing?: boolean;
     suggestStarts: string;
     suggestNotes: string;
     onApprove: () => void;
@@ -37,6 +43,10 @@ export default function AppointmentCalendarCard({
     onSuggestStartsChange: (value: string) => void;
     onSuggestNotesChange: (value: string) => void;
     onSubmitObject: () => void;
+    onRetract?: () => void;
+    onStartRepropose?: () => void;
+    onCancelRepropose?: () => void;
+    onSubmitRepropose?: () => void;
 }) {
     const startsAt = meta.startsAt ? String(meta.startsAt) : '';
     const starts = startsAt ? new Date(startsAt) : null;
@@ -70,7 +80,7 @@ export default function AppointmentCalendarCard({
                   ? 'Objected · new time suggested'
                   : 'Objected'
               : status === 'cancelled'
-                ? 'Cancelled'
+                ? 'Retracted'
                 : 'Awaiting response';
 
     const statusTone =
@@ -83,6 +93,7 @@ export default function AppointmentCalendarCard({
                 : 'bg-amber-50 text-amber-800 border-amber-200';
 
     const canRespond = status === 'proposed' && !mine;
+    const canManageApproved = status === 'accepted' && Boolean(onRetract && onStartRepropose);
 
     return (
         <div className="w-full max-w-sm rounded-2xl border border-charcoal/[0.1] bg-white shadow-[0_2px_14px_rgba(44,44,44,0.06)] overflow-hidden">
@@ -169,6 +180,69 @@ export default function AppointmentCalendarCard({
                                     type="button"
                                     disabled={sending}
                                     onClick={onCancelObject}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-charcoal/60 hover:bg-charcoal/[0.04]"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {canManageApproved && !reproposing ? (
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            <button
+                                type="button"
+                                disabled={sending}
+                                onClick={onRetract}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-charcoal/15 text-charcoal hover:bg-charcoal/[0.04] disabled:opacity-60"
+                            >
+                                <Undo2 className="w-3.5 h-3.5" />
+                                Retract
+                            </button>
+                            <button
+                                type="button"
+                                disabled={sending}
+                                onClick={onStartRepropose}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gold text-white disabled:opacity-60"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Re-propose
+                            </button>
+                        </div>
+                    ) : null}
+
+                    {canManageApproved && reproposing ? (
+                        <div className="pt-2 space-y-2 border-t border-charcoal/[0.08]">
+                            <p className="text-xs font-medium text-charcoal">
+                                Propose a new date & time
+                            </p>
+                            <input
+                                type="datetime-local"
+                                required
+                                value={suggestStarts}
+                                onChange={(e) => onSuggestStartsChange(e.target.value)}
+                                className="w-full h-10 rounded-xl border border-charcoal/[0.12] px-3 text-sm text-charcoal"
+                            />
+                            <textarea
+                                value={suggestNotes}
+                                onChange={(e) => onSuggestNotesChange(e.target.value)}
+                                rows={2}
+                                placeholder="Optional note"
+                                className="w-full rounded-xl border border-charcoal/[0.12] px-3 py-2 text-sm text-charcoal"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    disabled={sending || !suggestStarts}
+                                    onClick={onSubmitRepropose}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gold text-white disabled:opacity-60"
+                                >
+                                    Send new proposal
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={sending}
+                                    onClick={onCancelRepropose}
                                     className="px-3 py-1.5 rounded-lg text-xs font-semibold text-charcoal/60 hover:bg-charcoal/[0.04]"
                                 >
                                     Cancel

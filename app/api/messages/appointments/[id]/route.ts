@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
-import { createViewingFromMessageAppointment } from '@/lib/message-appointment-viewing';
+import { createViewingFromMessageAppointment, cancelViewingForAppointment } from '@/lib/message-appointment-viewing';
 import {
     displayNameForUser,
     messagesDb,
@@ -162,6 +162,16 @@ export async function PATCH(
         const now = new Date().toISOString();
         let viewingId: string | null = appointment.viewing_id;
         const objectedWithSuggestion = status === 'declined' && Boolean(suggestedStartsAt);
+        const reproposeStartsAt = body.reproposeStartsAt
+            ? String(body.reproposeStartsAt).trim()
+            : '';
+        if (reproposeStartsAt && Number.isNaN(Date.parse(reproposeStartsAt))) {
+            return NextResponse.json(
+                { error: 'Valid reproposeStartsAt required' },
+                { status: 400 }
+            );
+        }
+        const isRetractWithRepropose = status === 'cancelled' && Boolean(reproposeStartsAt);
 
         if (status === 'accepted') {
             const [{ data: conversation }, { data: participants }] = await Promise.all([
@@ -186,6 +196,10 @@ export async function PATCH(
             }
         }
 
+        if (status === 'cancelled') {
+            await cancelViewingForAppointment(appointment as AppointmentRow);
+        }
+
         const { data: updated, error: updErr } = await messagesDb()
             .from('message_appointments')
             .update({
@@ -203,14 +217,16 @@ export async function PATCH(
         if (updErr || !updated) throw updErr || new Error('Could not update appointment');
 
         const displayName = displayNameForUser(session.user);
-        let messageBody =
+        const messageBody =
             status === 'accepted'
                 ? 'Appointment approved'
                 : status === 'declined'
                   ? objectedWithSuggestion
                       ? 'Appointment objected — new time suggested'
                       : 'Appointment objected'
-                  : 'Appointment cancelled';
+                  : isRetractWithRepropose
+                    ? 'Appointment retracted — new time proposed'
+                    : 'Appointment retracted';
 
         if (appointment.message_id) {
             const { data: msg } = await messagesDb()
@@ -230,7 +246,7 @@ export async function PATCH(
                         appointmentId,
                         status,
                         viewingId,
-                        suggestedStartsAt: suggestedStartsAt || null,
+                        suggestedStartsAt: suggestedStartsAt || reproposeStartsAt || null,
                     },
                     body: messageBody,
                 })
@@ -244,7 +260,9 @@ export async function PATCH(
                   ? objectedWithSuggestion
                       ? `${displayName} objected and suggested a new time`
                       : `${displayName} objected to the appointment`
-                  : `${displayName} cancelled the appointment`;
+                  : isRetractWithRepropose
+                    ? `${displayName} retracted the appointment and proposed a new time`
+                    : `${displayName} retracted the appointment`;
 
         await messagesDb().from('message_items').insert({
             conversation_id: appointment.conversation_id,
@@ -254,7 +272,7 @@ export async function PATCH(
                 appointmentId,
                 status,
                 viewingId,
-                suggestedStartsAt: suggestedStartsAt || null,
+                suggestedStartsAt: suggestedStartsAt || reproposeStartsAt || null,
             },
             sender_account_type: null,
             sender_profile_id: null,
@@ -263,10 +281,13 @@ export async function PATCH(
         });
 
         let counter: Awaited<ReturnType<typeof createCounterProposal>> | null = null;
-        if (objectedWithSuggestion) {
+        if (objectedWithSuggestion || isRetractWithRepropose) {
+            const newStarts = objectedWithSuggestion ? suggestedStartsAt : reproposeStartsAt;
             const suggestedNotes = body.suggestedNotes
                 ? String(body.suggestedNotes).trim()
-                : null;
+                : body.reproposeNotes
+                  ? String(body.reproposeNotes).trim()
+                  : null;
             const location =
                 body.suggestedLocation != null
                     ? String(body.suggestedLocation).trim() || null
@@ -274,9 +295,11 @@ export async function PATCH(
 
             counter = await createCounterProposal({
                 conversationId: appointment.conversation_id,
-                startsAt: new Date(suggestedStartsAt).toISOString(),
+                startsAt: new Date(newStarts).toISOString(),
                 location,
-                notes: suggestedNotes || `Counter-proposal to appointment ${appointmentId.slice(0, 8)}`,
+                notes:
+                    suggestedNotes ||
+                    `New proposal after ${objectedWithSuggestion ? 'objection' : 'retract'} (${appointmentId.slice(0, 8)})`,
                 accountType: session.user.accountType,
                 profileId: session.user.profileId,
                 displayName,
