@@ -7,68 +7,98 @@ export const WELCOME_ANNOUNCEMENT_TITLE = 'Welcome to PropReady';
 export const PROPREADY_SYSTEM_PROFILE_ID = 'system_propready';
 export const PROPREADY_SYSTEM_NAME = 'PropReady';
 
-export const WELCOME_ANNOUNCEMENT_BODY = `PropReady helps South Africans buy and sell homes with clarity and confidence.
+export const WELCOME_ANNOUNCEMENT_BODY = `PropReady is a learning platform for buyers and sellers — built to help you make confident property decisions and avoid costly mistakes.
 
-Here's what you can do on the platform:
+We're here to teach you the home journey end to end: affordability, bonds, viewings, offers, transfers, and selling with clarity.
+
+Start with the Learning Hub
+• Buyers: explore /learn for guides on home loans, prequalification, first-time buyer tips, transfer costs, FLISP, and common mistakes to avoid
+• Investors: visit /learn/investors for investor-focused learning
+• Agents: use the Learning Hub at /agents/learn for scripts, process tips, and client-ready guidance
+
+What else you can do on PropReady
 • Get a free soft pre-qualification and understand your buying power
-• Browse listings and book property viewings with verified agents
+• Use the bond calculator and tools before you commit
+• Browse listings and book viewings with verified agents
 • Message agents, originators, and PropReady staff in one inbox
 • Upload FICA documents and optionally complete a full bond prequalification
 • Sellers can add properties, request valuations, and connect with agents
-• Learn through guides and tools that demystify the property journey
 
-Explore your dashboard, complete your profile, and reach out anytime — we're here to help you get home-ready.`;
+Open your dashboard, complete your profile, and dive into the Learning Hub — the smartest place to start before you buy or sell.`;
 
 function welcomeInboxBody(accountType: AccountType): string {
-    const intro = `Welcome to PropReady — Your Home. Ready.
+    const learningCore = `PropReady is a learning platform for buyers and sellers. We teach you how to make the right decisions, avoid expensive mistakes, and move through the property journey with confidence — not guesswork.
 
-PropReady is South Africa's home-readiness platform. We help buyers, sellers, estate agents, and bond originators work together with clarity — from first enquiry to keys in hand.`;
-
-    const learnMore = `
-
-Learn more on the platform
-• Open your dashboard for a guided overview of your next steps
-• Browse educational tools and calculators that demystify deposits, affordability, and the bond process
-• Use Messages to ask PropReady staff, agents, or originators anything about your journey
-• Complete your profile so recommendations and matches stay relevant
-
-Reply in this chat anytime if you need help — we're here with you.`;
+Push into the Learning Hub first
+• Buyers & sellers: open the Learning Center (/learn) for home loans, prequalification, the buying process, transfer costs, FLISP, first-time tips, and “mistakes to avoid” guides
+• Investors: explore /learn/investors
+• Read practical articles before you make offers, apply for a bond, or list a property — learning first saves time and money`;
 
     if (accountType === 'agent') {
-        return `${intro}
+        return `Welcome to PropReady — Your Home. Ready.
+
+PropReady helps South Africans buy and sell with clarity — and it's also a learning platform that prepares buyers and sellers to make smarter decisions and avoid common pitfalls.
+
+Your Learning Hub
+• Open /agents/learn for agent-focused lessons, lead conversion tips, and client-ready explanations
+• Point buyers and sellers to /learn so they arrive informed, not overwhelmed
 
 What you can do as an agent
 • Manage buyer and seller leads from one workspace
 • Message clients, upload documents, and propose viewings
-• Review PPRA / FFC verification status and grow your PropReady presence
+• Keep PPRA / FFC verification current and grow your PropReady presence
 • Share listings and keep conversations organised in Messages
 
-${learnMore.trim()}`;
+Other platform features to use with clients
+• Soft pre-qualification and buying-power clarity
+• Bond calculator and educational tools
+• Secure document sharing and appointment scheduling in Messages
+
+Reply here anytime — we're with you.`;
     }
 
     if (accountType === 'originator') {
-        return `${intro}
+        return `Welcome to PropReady — Your Home. Ready.
+
+PropReady is a learning platform for buyers and sellers, and a collaboration hub for originators. Informed buyers make cleaner applications and fewer avoidable mistakes.
+
+Help clients learn first
+• Point them to the Learning Center at /learn (home loans, prequalification, bond pitfalls, transfer costs, FLISP)
+• Use Messages to answer questions as they work through the guides
 
 What you can do as an originator
 • Connect with pre-qualified buyers who need bond guidance
 • Message clients and PropReady staff from one inbox
 • Track appointments and document requests as applications progress
-• Stay visible to agents and buyers looking for trusted originator support
+• Stay visible to agents and buyers looking for trusted support
 
-${learnMore.trim()}`;
+Other features on the platform
+• Soft pre-qualification insights
+• Secure messaging and document flow
+• Appointment scheduling with buyers and agents
+
+Reply in this chat anytime if you need help.`;
     }
 
-    return `${intro}
+    return `Welcome to PropReady — Your Home. Ready.
+
+${learningCore}
 
 What you can do as a buyer or seller
 • Get a free soft pre-qualification and understand your buying power
+• Use the bond calculator before you commit
 • Browse listings and book property viewings with verified agents
 • Upload FICA documents and optionally complete a full bond prequalification
 • Sellers can add properties, request valuations, and connect with agents
 • Message agents, originators, and PropReady staff in one inbox
 
-${learnMore.trim()}`;
+Make Learning Hub part of every step
+• First-time buyer mistakes, bond application pitfalls, trusts, deceased estates, and more are covered in /learn
+• Come back to the guides whenever you're unsure — PropReady is here to teach, not just transact
+
+Reply in this chat anytime if you need help — we're here with you.`;
 }
+
 
 /**
  * Remove staff-broadcast Welcome threads that flooded Admin → Messages.
@@ -118,16 +148,14 @@ export async function ensureWelcomeAnnouncement() {
             .maybeSingle();
 
         if (existing?.id) {
-            if (!existing.active) {
-                await supabase
-                    .from('admin_announcements')
-                    .update({
-                        active: true,
-                        body: WELCOME_ANNOUNCEMENT_BODY,
-                        updated_at: new Date().toISOString(),
-                    })
-                    .eq('id', existing.id);
-            }
+            await supabase
+                .from('admin_announcements')
+                .update({
+                    active: true,
+                    body: WELCOME_ANNOUNCEMENT_BODY,
+                    updated_at: new Date().toISOString(),
+                })
+                .eq('id', existing.id);
             return;
         }
 
@@ -177,13 +205,34 @@ export async function sendWelcomeInboxMessage(input: {
                 .limit(1)
                 .maybeSingle();
             if (existingWelcome?.id) {
+                // Keep copy current for users who already received a welcome thread.
+                await db
+                    .from('message_items')
+                    .update({
+                        body: welcomeInboxBody(input.accountType),
+                    })
+                    .eq('conversation_id', existingWelcome.id)
+                    .eq('sender_profile_id', PROPREADY_SYSTEM_PROFILE_ID)
+                    .contains('meta', { isWelcome: true });
+
+                const preview =
+                    'Welcome to PropReady! Learn how to buy/sell smarter in the Learning Hub.';
+                await db
+                    .from('message_conversations')
+                    .update({
+                        last_message_preview: preview.slice(0, 140),
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', existingWelcome.id);
+
                 return { sent: false as const, reason: 'already_exists' as const };
             }
         }
 
         const now = new Date().toISOString();
         const body = welcomeInboxBody(input.accountType);
-        const preview = 'Welcome to PropReady! Learn what you can do on the platform.';
+        const preview =
+            'Welcome to PropReady! Learn how to buy/sell smarter in the Learning Hub.';
 
         const { data: conversation, error: convErr } = await db
             .from('message_conversations')
