@@ -6,6 +6,7 @@ import {
     findExistingAccountsByEmail,
 } from '@/lib/email-availability';
 import { createServiceClient } from '@/lib/supabase-admin';
+import { ensureWelcomeAnnouncement } from '@/lib/welcome-announcement';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -145,6 +146,8 @@ export async function POST(request: NextRequest) {
             console.error('Supabase createLead error (from users/register):', leadError);
             // Don't fail registration; user and quiz are saved; lead can be retried or fixed
         }
+
+        void ensureWelcomeAnnouncement();
 
         return NextResponse.json({ success: true });
     } catch (err) {

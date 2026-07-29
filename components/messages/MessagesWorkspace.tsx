@@ -31,6 +31,7 @@ import AppointmentCalendarCard, {
 } from '@/components/messages/AppointmentCalendarCard';
 import AttachmentMessage from '@/components/messages/AttachmentMessage';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
+import VoiceNoteRecorder from '@/components/messages/VoiceNoteRecorder';
 
 export type MessagesPortalRole = 'buyer' | 'seller' | 'agent' | 'originator';
 
@@ -628,13 +629,17 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         }
     }
 
-    async function uploadFile(file: File) {
+    async function uploadFile(file: File, opts?: { isVoiceNote?: boolean; durationMs?: number }) {
         if (!activeId) return;
         setSending(true);
         setError('');
         try {
             const fd = new FormData();
             fd.append('file', file);
+            if (opts?.isVoiceNote) {
+                fd.append('isVoiceNote', '1');
+                if (opts.durationMs != null) fd.append('durationMs', String(opts.durationMs));
+            }
             const res = await fetch(`/api/messages/conversations/${activeId}/documents`, {
                 method: 'POST',
                 credentials: 'include',
@@ -796,7 +801,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         contacts.find((c) => `${c.accountType}:${c.profileId}` === selectedContactKey) || null;
 
     const inputClass =
-        'w-full rounded-xl border border-[#E5E7EB] bg-white px-3.5 text-sm text-[#111827] placeholder:text-[#9CA3AF] outline-none transition focus:border-[#E52323]/40 focus:ring-2 focus:ring-[#E52323]/10';
+        'w-full rounded-xl border border-[#E5E7EB] bg-white px-3.5 text-base sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] outline-none transition focus:border-[#E52323]/40 focus:ring-2 focus:ring-[#E52323]/10';
 
     const cardClass =
         'rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]';
@@ -1429,7 +1434,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                 onSubmit={sendText}
                                 className="border-t border-[#E5E7EB] bg-[#FAFBFC] p-3"
                             >
-                                <div className="flex items-end gap-2">
+                                <div className="flex flex-wrap items-end gap-2">
                                     <div ref={emojiRef} className="relative shrink-0">
                                         <button
                                             type="button"
@@ -1475,6 +1480,13 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                     >
                                         <Paperclip className="h-4 w-4" />
                                     </button>
+                                    <VoiceNoteRecorder
+                                        disabled={sending || !activeId}
+                                        accentColor={PRIMARY}
+                                        onRecorded={(file, durationMs) =>
+                                            uploadFile(file, { isVoiceNote: true, durationMs })
+                                        }
+                                    />
                                     <textarea
                                         ref={draftRef}
                                         value={draft}
@@ -1492,7 +1504,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                     <button
                                         type="button"
                                         onClick={() => setShowAppt(true)}
-                                        className={`${secondaryBtnClass} !h-10 !w-10 !px-0 shrink-0`}
+                                        className={`${secondaryBtnClass} !h-10 !w-10 !px-0 shrink-0 hidden sm:inline-flex`}
                                         title="Propose appointment"
                                     >
                                         <CalendarPlus className="h-4 w-4" />

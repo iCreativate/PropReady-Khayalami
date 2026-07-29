@@ -5,6 +5,7 @@ import {
     MESSAGE_ATTACHMENT_MAX_BYTES,
     MESSAGE_ATTACHMENT_MIME_TYPES,
     displayNameForUser,
+    isMessageAudioMime,
     messagesDb,
     requireParticipant,
     serializeMessage,
@@ -40,7 +41,7 @@ export async function POST(
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
         if (file.size > MESSAGE_ATTACHMENT_MAX_BYTES) {
-            return NextResponse.json({ error: 'File must be 5MB or smaller' }, { status: 400 });
+            return NextResponse.json({ error: 'File must be 15MB or smaller' }, { status: 400 });
         }
 
         const mime = file.type || 'application/pdf';
@@ -50,10 +51,20 @@ export async function POST(
             )
         ) {
             return NextResponse.json(
-                { error: 'Use PDF, Word, JPG, PNG, or WebP' },
+                { error: 'Use PDF, Word, JPG, PNG, WebP, or audio (voice note)' },
                 { status: 400 }
             );
         }
+
+        const isVoice =
+            formData.get('isVoiceNote') === '1' ||
+            formData.get('isVoiceNote') === 'true' ||
+            isMessageAudioMime(mime);
+        const durationRaw = formData.get('durationMs');
+        const durationMs =
+            typeof durationRaw === 'string' && Number.isFinite(Number(durationRaw))
+                ? Math.max(0, Math.round(Number(durationRaw)))
+                : undefined;
 
         const docId = crypto.randomUUID();
         const safeName = file.name.replace(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 120) || 'file';
@@ -72,7 +83,7 @@ export async function POST(
         }
 
         const now = new Date().toISOString();
-        const preview = `Shared a file: ${safeName}`;
+        const preview = isVoice ? 'Sent a voice note' : `Shared a file: ${safeName}`;
 
         const { data: message, error: msgErr } = await messagesDb()
             .from('message_items')
@@ -80,7 +91,14 @@ export async function POST(
                 conversation_id: conversationId,
                 kind: 'document',
                 body: preview,
-                meta: { documentId: docId, fileName: safeName, mimeType: mime, sizeBytes: file.size },
+                meta: {
+                    documentId: docId,
+                    fileName: safeName,
+                    mimeType: mime,
+                    sizeBytes: file.size,
+                    ...(isVoice ? { isVoiceNote: true } : {}),
+                    ...(durationMs != null ? { durationMs } : {}),
+                },
                 sender_account_type: session.user.accountType,
                 sender_profile_id: session.user.profileId,
                 sender_name: displayNameForUser(session.user),

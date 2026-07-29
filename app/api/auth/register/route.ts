@@ -9,6 +9,7 @@ import {
     duplicateEmailConflictResponse,
     findExistingAccountsByEmail,
 } from '@/lib/email-availability';
+import { ensureWelcomeAnnouncement } from '@/lib/welcome-announcement';
 
 export async function POST(request: NextRequest) {
     try {
@@ -113,6 +114,8 @@ export async function POST(request: NextRequest) {
         }
 
         await upsertAccountFromProfile(email, accountType, profile.id, password);
+
+        void ensureWelcomeAnnouncement();
 
         return NextResponse.json({
             success: true,

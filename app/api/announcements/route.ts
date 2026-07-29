@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
 import { createServiceClient } from '@/lib/supabase-admin';
+import { ensureWelcomeAnnouncement } from '@/lib/welcome-announcement';
 
 /** Active announcements for the signed-in account's audience. */
 export async function GET(request: NextRequest) {
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
     if (!supabase) {
         return NextResponse.json({ announcements: [] });
     }
+
+    await ensureWelcomeAnnouncement();
 
     const accountType = session.user.accountType;
     const now = new Date().toISOString();

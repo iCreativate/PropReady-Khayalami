@@ -2414,3 +2414,46 @@ body {
 .footer-app-btn:hover svg {
   transform: scale(var(--scale-icon));
 }
+
+/* -------------------------------------------------------------------------- */
+/* Mobile responsiveness — prevent iOS zoom + horizontal overflow             */
+/* -------------------------------------------------------------------------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .form-control,
+  .auth-input,
+  .pvo-input,
+  input.form-control,
+  textarea.form-control,
+  select.form-control {
+    font-size: 16px !important;
+  }
+
+  :where(
+    input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='hidden']):not([type='image']):not([type='color']),
+    select,
+    textarea
+  ) {
+    font-size: 16px;
+  }
+
+  /* Avoid accidental horizontal scroll from fixed-width children */
+  img,
+  video,
+  canvas,
+  svg,
+  iframe {
+    max-width: 100%;
+  }
+}
+

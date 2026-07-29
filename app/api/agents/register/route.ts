@@ -17,6 +17,7 @@ import {
     findExistingAccountsByEmail,
 } from '@/lib/email-availability';
 import { normalizeBuyerPlan } from '@/lib/agent-plans';
+import { ensureWelcomeAnnouncement } from '@/lib/welcome-announcement';
 
 export async function POST(request: NextRequest) {
     const supabaseUrl = getSupabaseUrl();
@@ -201,6 +202,8 @@ export async function POST(request: NextRequest) {
             }
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
+
+        void ensureWelcomeAnnouncement();
 
         return NextResponse.json({ success: true });
     } catch (err) {

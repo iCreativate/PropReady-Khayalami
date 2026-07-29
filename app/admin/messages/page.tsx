@@ -40,6 +40,7 @@ import AppointmentCalendarCard, {
     toDatetimeLocalValue,
 } from '@/components/messages/AppointmentCalendarCard';
 import AttachmentMessage from '@/components/messages/AttachmentMessage';
+import VoiceNoteRecorder from '@/components/messages/VoiceNoteRecorder';
 
 type Participant = {
     accountType: string;
@@ -520,13 +521,17 @@ export default function AdminMessagesPage() {
         }
     }
 
-    async function uploadFile(file: File) {
+    async function uploadFile(file: File, opts?: { isVoiceNote?: boolean; durationMs?: number }) {
         if (!selectedId || !file) return;
         setSending(true);
         setError('');
         try {
             const fd = new FormData();
             fd.append('file', file);
+            if (opts?.isVoiceNote) {
+                fd.append('isVoiceNote', '1');
+                if (opts.durationMs != null) fd.append('durationMs', String(opts.durationMs));
+            }
             const res = await fetch(
                 `/api/admin/messages/conversations/${selectedId}/documents`,
                 {
@@ -732,7 +737,7 @@ export default function AdminMessagesPage() {
     }
 
     const inputClass =
-        'w-full rounded-xl border border-[#E5E7EB] bg-white px-3.5 text-sm text-[#111827] placeholder:text-[#9CA3AF] outline-none transition focus:border-[#E52323]/40 focus:ring-2 focus:ring-[#E52323]/10';
+        'w-full rounded-xl border border-[#E5E7EB] bg-white px-3.5 text-base sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] outline-none transition focus:border-[#E52323]/40 focus:ring-2 focus:ring-[#E52323]/10';
 
     const cardClass =
         'rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]';
@@ -1497,7 +1502,7 @@ export default function AdminMessagesPage() {
                                     onSubmit={sendMessage}
                                     className="border-t border-[#E5E7EB] bg-[#FAFBFC] p-3"
                                 >
-                                    <div className="flex items-end gap-2">
+                                    <div className="flex flex-wrap items-end gap-2">
                                         <div ref={emojiRef} className="relative shrink-0">
                                             <button
                                                 type="button"
@@ -1571,7 +1576,7 @@ export default function AdminMessagesPage() {
                                             onClick={() => imageFileRef.current?.click()}
                                             title="Upload image"
                                             aria-label="Upload image"
-                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                                            className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                                         >
                                             <ImageIcon className="h-4 w-4" />
                                         </button>
@@ -1581,13 +1586,17 @@ export default function AdminMessagesPage() {
                                             onClick={() => docFileRef.current?.click()}
                                             title="Upload document"
                                             aria-label="Upload document"
-                                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
+                                            className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#6B7280] transition hover:bg-[#F8FAFC] disabled:opacity-50"
                                         >
                                             <FileText className="h-4 w-4" />
                                         </button>
-                                        <DisabledAction title="Voice notes coming soon" className="h-10 w-10 shrink-0">
-                                            <Mic className="h-4 w-4" />
-                                        </DisabledAction>
+                                        <VoiceNoteRecorder
+                                            disabled={sending || !selectedId}
+                                            accentColor={PRIMARY}
+                                            onRecorded={(file, durationMs) =>
+                                                uploadFile(file, { isVoiceNote: true, durationMs })
+                                            }
+                                        />
                                         <textarea
                                             ref={draftRef}
                                             value={draft}
@@ -1605,7 +1614,7 @@ export default function AdminMessagesPage() {
                                         <button
                                             type="button"
                                             onClick={() => setShowAppt(true)}
-                                            className={`${secondaryBtnClass} !h-10 !w-10 !px-0 shrink-0`}
+                                            className={`${secondaryBtnClass} !h-10 !w-10 !px-0 shrink-0 hidden sm:inline-flex`}
                                             title="Propose appointment"
                                         >
                                             <CalendarPlus className="h-4 w-4" />

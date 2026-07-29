@@ -67,7 +67,9 @@ export default function PortalAnnouncementBanner() {
                     <Megaphone className="w-4 h-4 text-gold shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-charcoal">{item.title}</p>
-                        <p className="text-sm text-charcoal/65 mt-0.5 whitespace-pre-wrap">{item.body}</p>
+                        <p className="text-sm text-charcoal/65 mt-0.5 whitespace-pre-wrap break-words">
+                            {item.body}
+                        </p>
                     </div>
                     <button
                         type="button"

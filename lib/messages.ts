@@ -3,7 +3,7 @@ import type { SessionUser } from '@/lib/auth-enterprise/types';
 import { createServiceClient } from '@/lib/supabase-admin';
 
 export const MESSAGE_ATTACHMENT_BUCKET = 'message-attachments';
-export const MESSAGE_ATTACHMENT_MAX_BYTES = 5 * 1024 * 1024;
+export const MESSAGE_ATTACHMENT_MAX_BYTES = 15 * 1024 * 1024;
 export const MESSAGE_ATTACHMENT_MIME_TYPES = [
     'application/pdf',
     'image/jpeg',
@@ -11,7 +11,30 @@ export const MESSAGE_ATTACHMENT_MIME_TYPES = [
     'image/webp',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'audio/webm',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/ogg',
+    'audio/wav',
+    'audio/x-wav',
+    'audio/aac',
 ] as const;
+
+export const MESSAGE_AUDIO_MIME_TYPES = [
+    'audio/webm',
+    'audio/mp4',
+    'audio/mpeg',
+    'audio/ogg',
+    'audio/wav',
+    'audio/x-wav',
+    'audio/aac',
+] as const;
+
+export function isMessageAudioMime(mime: string) {
+    return MESSAGE_AUDIO_MIME_TYPES.includes(
+        mime as (typeof MESSAGE_AUDIO_MIME_TYPES)[number]
+    );
+}
 
 export type MessageContextType =
     | 'general'
