@@ -21,19 +21,24 @@ export async function GET(request: NextRequest) {
         const { data: conversations, error } = await db
             .from('message_conversations')
             .select(
-                'id, subject, context_type, context_id, last_message_at, last_message_preview, created_at, created_by_account_type'
+                'id, subject, context_type, context_id, last_message_at, last_message_preview, created_at, created_by_account_type, created_by_profile_id'
             )
-            // Mass announcement broadcasts belong on the Announcements page / user portals —
-            // not as dozens of identical threads in the staff inbox.
-            .neq('context_type', 'announcement')
             .order('last_message_at', { ascending: false, nullsFirst: false })
-            .limit(100);
+            .limit(200);
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        const ids = (conversations || []).map((c) => c.id);
+        // Hide mass announcements / welcome fan-out from the staff inbox (banner + user Messages only).
+        const visible = (conversations || []).filter((c) => {
+            if (c.context_type === 'announcement') return false;
+            if (String(c.subject || '') === 'Welcome to PropReady') return false;
+            if (String(c.created_by_profile_id || '') === 'system_propready') return false;
+            return true;
+        });
+
+        const ids = visible.map((c) => c.id);
         const adminId = adminProfileId(auth.email);
 
         const { data: participants } = ids.length
@@ -77,7 +82,7 @@ export async function GET(request: NextRequest) {
             }>;
         }> = [];
 
-        for (const c of conversations || []) {
+        for (const c of visible) {
             const parts = byConv.get(c.id) || [];
             const me = parts.find(
                 (p) => p.account_type === 'admin' && p.profile_id === adminId

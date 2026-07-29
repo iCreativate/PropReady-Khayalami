@@ -71,39 +71,23 @@ ${learnMore.trim()}`;
 }
 
 /**
- * Remove only the old mass-broadcast Welcome threads that included a staff admin
- * participant (those flooded Admin → Messages). Keep per-user PropReady system welcomes.
+ * Remove staff-broadcast Welcome threads that flooded Admin → Messages.
+ * Keeps per-user PropReady system welcomes (created_by = system_propready).
  */
 export async function cleanupWelcomeBroadcastThreads() {
     try {
         const db = messagesDb();
         const { data: rows } = await db
             .from('message_conversations')
-            .select('id')
-            .eq('context_type', 'announcement')
+            .select('id, created_by_profile_id')
             .eq('subject', WELCOME_ANNOUNCEMENT_TITLE)
             .limit(2000);
 
-        const ids = (rows || []).map((r) => String(r.id)).filter(Boolean);
-        if (ids.length === 0) return { deleted: 0 };
+        const toDelete = (rows || [])
+            .filter((r) => String(r.created_by_profile_id || '') !== PROPREADY_SYSTEM_PROFILE_ID)
+            .map((r) => String(r.id))
+            .filter(Boolean);
 
-        const { data: parts } = await db
-            .from('message_participants')
-            .select('conversation_id, account_type, profile_id')
-            .in('conversation_id', ids);
-
-        const spamIds = new Set<string>();
-        for (const p of parts || []) {
-            if (
-                p.account_type === 'admin' &&
-                String(p.profile_id || '').startsWith('admin_') &&
-                p.profile_id !== PROPREADY_SYSTEM_PROFILE_ID
-            ) {
-                spamIds.add(String(p.conversation_id));
-            }
-        }
-
-        const toDelete = [...spamIds];
         if (toDelete.length === 0) return { deleted: 0 };
 
         const { error } = await db.from('message_conversations').delete().in('id', toDelete);
