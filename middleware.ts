@@ -42,35 +42,48 @@ const AUTH_PAGES = [
 ];
 
 export async function middleware(request: NextRequest) {
-    const supabaseResponse = await updateSession(request);
-    const { pathname } = request.nextUrl;
-
-    // Staff console uses pr_admin — keep separate from user/agent sessions
-    if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
-        return supabaseResponse;
-    }
-    if (pathname === '/admin' || pathname.startsWith('/admin/')) {
-        const token = request.cookies.get('pr_admin')?.value;
-        const session = token ? await verifyAdminSessionToken(token) : null;
-        if (!session) {
-            return NextResponse.redirect(new URL('/admin/login', request.url));
-        }
-        return supabaseResponse;
-    }
-
-    const isProtected = PROTECTED_PREFIXES.some(
-        (p) => pathname === p || pathname.startsWith(`${p}/`)
-    );
-    const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p));
-    const isCompleteProfile = pathname.startsWith('/auth/complete-profile');
-    const isConfirmPassword = pathname.startsWith('/auth/confirm-password');
-    const isAuthHandoff = pathname === '/auth/complete';
-
-    if (!isProtected && !isAuthPage && !isCompleteProfile && !isConfirmPassword && !isAuthHandoff) {
-        return supabaseResponse;
+    // Never let middleware take down the whole site on Netlify Edge.
+    let supabaseResponse: NextResponse;
+    try {
+        supabaseResponse = await updateSession(request);
+    } catch (err) {
+        console.error('middleware updateSession:', err);
+        supabaseResponse = NextResponse.next({ request });
     }
 
     try {
+        const { pathname } = request.nextUrl;
+
+        // Staff console uses pr_admin — keep separate from user/agent sessions
+        if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
+            return supabaseResponse;
+        }
+        if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+            const token = request.cookies.get('pr_admin')?.value;
+            let session = null;
+            try {
+                session = token ? await verifyAdminSessionToken(token) : null;
+            } catch (err) {
+                console.error('middleware admin verify:', err);
+            }
+            if (!session) {
+                return NextResponse.redirect(new URL('/admin/login', request.url));
+            }
+            return supabaseResponse;
+        }
+
+        const isProtected = PROTECTED_PREFIXES.some(
+            (p) => pathname === p || pathname.startsWith(`${p}/`)
+        );
+        const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p));
+        const isCompleteProfile = pathname.startsWith('/auth/complete-profile');
+        const isConfirmPassword = pathname.startsWith('/auth/confirm-password');
+        const isAuthHandoff = pathname === '/auth/complete';
+
+        if (!isProtected && !isAuthPage && !isCompleteProfile && !isConfirmPassword && !isAuthHandoff) {
+            return supabaseResponse;
+        }
+
         const auth = await getEdgeAuthFromRequest(request);
         const hasSession = Boolean(auth?.payload.sub || auth?.hasRefresh);
         const impersonatorCookie = request.cookies.get(IMPERSONATOR_COOKIE)?.value?.trim().toLowerCase();
@@ -155,7 +168,12 @@ export async function middleware(request: NextRequest) {
                 new URL(edgeDashboardPath(auth.payload.accountType), request.url)
             );
         }
-    } catch {
+    } catch (err) {
+        console.error('middleware auth gate:', err);
+        const { pathname } = request.nextUrl;
+        const isProtected = PROTECTED_PREFIXES.some(
+            (p) => pathname === p || pathname.startsWith(`${p}/`)
+        );
         if (isProtected) {
             return NextResponse.redirect(new URL('/auth/login', request.url));
         }
