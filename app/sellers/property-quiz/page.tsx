@@ -79,18 +79,35 @@ export default function PropertyQuizPage() {
     };
 
     const handleSubmit = async () => {
-        // Store property quiz information
+        // Store property quiz information and append a seller property record
         if (typeof window !== 'undefined') {
+            const userRaw = localStorage.getItem('propReady_currentUser');
+            const user = userRaw ? JSON.parse(userRaw) : null;
             const propertyQuizInfo = {
                 ...formData,
                 timestamp: new Date().toISOString(),
-                id: `property-quiz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                id: `property-quiz-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                userId: user?.id,
+                email: user?.email,
             };
-            
-            // Store in localStorage
+
             const existingQuizzes = JSON.parse(localStorage.getItem('propReady_propertyQuizzes') || '[]');
             existingQuizzes.push(propertyQuizInfo);
             localStorage.setItem('propReady_propertyQuizzes', JSON.stringify(existingQuizzes));
+
+            if (user?.id) {
+                const { upsertSellerProperty } = await import('@/lib/seller-properties');
+                upsertSellerProperty({
+                    userId: user.id,
+                    email: user.email,
+                    fullName: user.fullName,
+                    phone: user.phone || '',
+                    propertyAddress: formData.propertyAddress.trim(),
+                    propertySize: formData.propertySize,
+                    propertyCondition: formData.propertyCondition,
+                    propertyDescription: formData.propertyDescription,
+                });
+            }
         }
 
         // Redirect to valuation booking page

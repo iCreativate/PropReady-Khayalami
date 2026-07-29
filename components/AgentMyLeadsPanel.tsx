@@ -291,6 +291,11 @@ export default function AgentMyLeadsPanel({
                                                     Pre-qualified with {originator}
                                                 </p>
                                             )}
+                                            {!isSeller && !(originator && lead.prequalifiedWithOriginator) && (
+                                                <p className="text-sm mt-2 text-charcoal/45">
+                                                    No platform prequal (optional)
+                                                </p>
+                                            )}
                                             {isSeller && lead.propertyAddress && (
                                                 <p className="text-sm text-charcoal/55 mt-2 leading-relaxed">
                                                     {lead.propertyAddress}

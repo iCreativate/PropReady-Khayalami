@@ -3,31 +3,34 @@
 import { useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import {
+    sellerPropertyToFormDefaults,
+    upsertSellerProperty,
+    type SellerProperty,
+} from '@/lib/seller-properties';
 
 interface SellerPropertyOnboardingFormProps {
     user: { id: string; fullName?: string; email: string; phone?: string };
     onComplete: () => void | Promise<void>;
+    /** When set, edits an existing property instead of creating a new one. */
+    editingProperty?: SellerProperty | null;
+    /** Soften CTA when adding another property from the dashboard. */
+    mode?: 'onboarding' | 'add' | 'edit';
 }
 
 export default function SellerPropertyOnboardingForm({
     user,
     onComplete,
+    editingProperty = null,
+    mode = 'onboarding',
 }: SellerPropertyOnboardingFormProps) {
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [form, setForm] = useState({
-        propertyAddress: '',
-        propertySuburb: '',
-        propertySize: '',
-        propertyCondition: '',
-        propertyDescription: '',
-        askingPrice: '',
-        bedrooms: '',
-        bathrooms: '',
-    });
+    const [form, setForm] = useState(() => sellerPropertyToFormDefaults(editingProperty));
 
     const totalSteps = 3;
+    const isEdit = mode === 'edit' || Boolean(editingProperty?.id);
 
     function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -70,38 +73,38 @@ export default function SellerPropertyOnboardingForm({
         setLoading(true);
         setError('');
         try {
+            const saved = upsertSellerProperty({
+                id: editingProperty?.id,
+                userId: user.id,
+                email: user.email,
+                fullName: user.fullName,
+                phone: user.phone || '',
+                propertyAddress: form.propertyAddress.trim(),
+                propertySuburb: form.propertySuburb.trim(),
+                suburb: form.propertySuburb.trim(),
+                propertySize: form.propertySize,
+                propertyCondition: form.propertyCondition,
+                propertyDescription: form.propertyDescription,
+                askingPrice: form.askingPrice,
+                currentValue: form.askingPrice,
+                bedrooms: form.bedrooms,
+                bathrooms: form.bathrooms,
+            });
+
             const propertyQuiz = {
                 ...form,
                 timestamp: new Date().toISOString(),
-                id: `property-quiz-${Date.now()}`,
+                id: `property-quiz-${saved.id}`,
                 userId: user.id,
                 email: user.email,
             };
 
             const existingQuizzes = JSON.parse(
                 localStorage.getItem(STORAGE_KEYS.propertyQuizzes) || '[]'
-            );
-            existingQuizzes.push(propertyQuiz);
-            localStorage.setItem(STORAGE_KEYS.propertyQuizzes, JSON.stringify(existingQuizzes));
-
-            const sellerInfo = {
-                id: user.id,
-                fullName: user.fullName,
-                email: user.email,
-                phone: user.phone || '',
-                propertyAddress: form.propertyAddress.trim(),
-                suburb: form.propertySuburb.trim(),
-                propertySize: form.propertySize,
-                propertyCondition: form.propertyCondition,
-                propertyDescription: form.propertyDescription,
-                askingPrice: form.askingPrice,
-                bedrooms: form.bedrooms,
-                bathrooms: form.bathrooms,
-                isSeller: true,
-                timestamp: new Date().toISOString(),
-            };
-
-            localStorage.setItem(STORAGE_KEYS.sellerInfo, JSON.stringify(sellerInfo));
+            ) as Array<{ id?: string }>;
+            const filteredQuizzes = existingQuizzes.filter((q) => q.id !== propertyQuiz.id);
+            filteredQuizzes.push(propertyQuiz);
+            localStorage.setItem(STORAGE_KEYS.propertyQuizzes, JSON.stringify(filteredQuizzes));
 
             const lead = {
                 id: user.id,
@@ -148,6 +151,13 @@ export default function SellerPropertyOnboardingForm({
         }
         await finish();
     }
+
+    const finishLabel =
+        mode === 'edit' || isEdit
+            ? 'Save changes'
+            : mode === 'add'
+              ? 'Add property'
+              : 'Finish & open dashboard';
 
     return (
         <div className="space-y-4">
@@ -293,7 +303,7 @@ export default function SellerPropertyOnboardingForm({
                     {loading ? (
                         'Saving…'
                     ) : step === totalSteps ? (
-                        'Finish & open dashboard'
+                        finishLabel
                     ) : (
                         <span className="inline-flex items-center justify-center gap-1">
                             Next <ArrowRight className="w-4 h-4" />

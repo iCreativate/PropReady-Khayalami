@@ -871,7 +871,9 @@ export default function AgentsDashboardPage() {
                                                             {bondOriginatorLabel(lead.bondOriginator)}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-charcoal/30 text-sm">—</span>
+                                                        <span className={`${AGENT_BADGE} bg-charcoal/[0.04] text-charcoal/50 border border-charcoal/10`}>
+                                                            Optional — no platform prequal
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td className={AGENT_TABLE_CELL}>

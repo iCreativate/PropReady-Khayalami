@@ -47,24 +47,26 @@ export default function ImpersonationBanner() {
     if (!info) return null;
 
     return (
-        <div className="sticky top-0 z-[60] bg-charcoal text-white px-4 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-            <div className="flex items-start gap-2 min-w-0 flex-1">
-                <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-gold" />
-                <p className="text-sm leading-snug">
-                    <span className="font-semibold">Staff access</span>
-                    {' — '}
-                    viewing {info.targetName || info.targetEmail} as {info.adminEmail}. Changes affect
-                    this real account.
-                </p>
+        <div className="sticky top-0 z-[60] border-b border-[#E52323]/30 bg-[#111827] px-4 py-2.5 text-white">
+            <div className="mx-auto flex max-w-[1400px] flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex min-w-0 flex-1 items-start gap-2">
+                    <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#E52323]" />
+                    <p className="text-sm leading-snug text-white/90">
+                        <span className="font-semibold text-white">Staff access</span>
+                        {' — '}
+                        viewing {info.targetName || info.targetEmail} as {info.adminEmail}. Changes
+                        affect this real account.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => void exit()}
+                    className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#E52323] px-3.5 text-xs font-semibold text-white transition hover:bg-[#c91d1d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E52323]/50"
+                >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Exit to admin
+                </button>
             </div>
-            <button
-                type="button"
-                onClick={() => void exit()}
-                className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-lg bg-gold text-white text-xs font-semibold shrink-0"
-            >
-                <LogOut className="w-3.5 h-3.5" />
-                Exit to admin
-            </button>
         </div>
     );
 }

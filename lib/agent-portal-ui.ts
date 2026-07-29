@@ -56,7 +56,7 @@ export const AGENT_SHELL_SIDEBAR =
     'bg-charcoal border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.18)]';
 export const AGENT_SHELL_SIDEBAR_MOBILE =
     'bg-charcoal shadow-2xl border-r border-white/[0.06]';
-export const AGENT_SHELL_CONTENT = 'bg-[#fafafa]';
+export const AGENT_SHELL_CONTENT = 'bg-[#F8FAFC]';
 export const AGENT_SHELL_TOPBAR =
     'bg-white/95 backdrop-blur-md border-b border-charcoal/[0.07] shadow-[0_1px_0_rgba(44,44,44,0.04)]';
 export const AGENT_SHELL_DIVIDER = 'border-white/[0.08]';

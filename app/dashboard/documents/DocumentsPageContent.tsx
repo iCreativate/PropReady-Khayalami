@@ -117,6 +117,7 @@ export default function DocumentsPageContent() {
     const [sendSuccess, setSendSuccess] = useState(false);
     const [sendError, setSendError] = useState('');
     const [previewDoc, setPreviewDoc] = useState<BuyerDocument | null>(null);
+    const [prequalSkipped, setPrequalSkipped] = useState(false);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -141,6 +142,7 @@ export default function DocumentsPageContent() {
         if (storedOriginator) {
             setSelectedOriginator(storedOriginator);
         }
+        setPrequalSkipped(localStorage.getItem(STORAGE_KEYS.prequalSkipped) === '1');
     }, [isHydrated, user, router]);
 
     const uploadSingleFile = useCallback(
@@ -302,6 +304,8 @@ export default function DocumentsPageContent() {
     const handleOriginatorSelect = (originator: BondOriginator) => {
         setSelectedOriginator(originator.id);
         localStorage.setItem(STORAGE_KEYS.selectedOriginator, originator.id);
+        localStorage.removeItem(STORAGE_KEYS.prequalSkipped);
+        setPrequalSkipped(false);
     };
 
     const handleSendToOriginator = async () => {
@@ -403,9 +407,9 @@ success(
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        eyebrow="Extensive bond pre-qualification"
+                        eyebrow="Optional platform prequalification"
                         title="Bond Originators & Documents"
-                        description="Upload your FICA documents and prequalify thoroughly with a bond originator — free for you."
+                        description="Upload FICA documents and optionally prequalify with a PropReady bond originator — free for you. You can skip this and use your agent’s originator instead."
                     >
                         <div className="mt-6 flex flex-wrap gap-3">
                             <div className="px-4 py-2 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.08]">
@@ -433,11 +437,32 @@ success(
                                 <FileText className="w-6 h-6 text-gold" />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-charcoal font-bold text-lg mb-1">Get prequalified faster</h3>
+                                <h3 className="text-charcoal font-bold text-lg mb-1">
+                                    Platform prequalification is optional
+                                </h3>
                                 <p className="text-charcoal/70 leading-relaxed text-sm sm:text-base">
-                                    Your documents are required by law (FICA) to verify your identity and financial
-                                    status for home loan applications.
+                                    You can send documents to a PropReady bond originator, use an originator your
+                                    agent prefers, or skip for now if you are still learning the process. Viewings
+                                    and working with an agent are not blocked.
                                 </p>
+                                {prequalSkipped ? (
+                                    <p className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-charcoal/10 bg-white px-3 py-1 text-xs font-semibold text-charcoal/70">
+                                        <CheckCircle className="h-3.5 w-3.5 text-gold" />
+                                        Skipped for now — you can return anytime
+                                    </p>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            localStorage.setItem(STORAGE_KEYS.prequalSkipped, '1');
+                                            setPrequalSkipped(true);
+                                            success('Prequalification skipped for now. You can continue browsing and booking viewings.');
+                                        }}
+                                        className="mt-3 inline-flex items-center gap-2 rounded-xl border border-charcoal/15 bg-white px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-charcoal/[0.03]"
+                                    >
+                                        Skip for now
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -450,7 +475,7 @@ success(
                                         variant="premium"
                                         eyebrow="Compare & select"
                                         title="Choose Your Bond Originator"
-                                        description="Select a bond originator to send your documents to for prequalification. All services are free."
+                                        description="Optional — select a PropReady bond originator to send documents for prequalification, or skip and use your agent’s preferred originator."
                                     />
                                 </div>
 

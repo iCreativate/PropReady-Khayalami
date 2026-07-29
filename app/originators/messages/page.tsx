@@ -3,11 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
-import PortalPageHeader from '@/components/PortalPageHeader';
-import PortalLoading from '@/components/PortalLoading';
 import MessagesWorkspace from '@/components/messages/MessagesWorkspace';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
-import { ORIGINATOR_PAGE_CONTAINER } from '@/lib/originator-portal-ui';
 
 type OriginatorUser = {
     id: string;
@@ -44,7 +41,11 @@ export default function OriginatorMessagesPage() {
     }, [router]);
 
     if (loading || !user) {
-        return <PortalLoading variant="dashboard" message="Loading messages…" />;
+        return (
+            <div className="flex min-h-dvh items-center justify-center bg-[#F8FAFC]">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#E52323]" />
+            </div>
+        );
     }
 
     return (
@@ -53,20 +54,23 @@ export default function OriginatorMessagesPage() {
             user={user}
             title="Messages"
             pageHeader={
-                <PortalPageHeader
-                    title="Messages"
-                    description="Message buyers, sellers, and agents. Share documents and schedule appointments in-thread."
-                />
+                <div className="min-w-0">
+                    <h2 className="text-[32px] leading-tight font-semibold tracking-tight text-[#111827]">
+                        Messages
+                    </h2>
+                    <p className="mt-3 max-w-2xl text-base text-[#6B7280] leading-relaxed">
+                        Message buyers, sellers, and agents. Share documents and schedule
+                        appointments in-thread.
+                    </p>
+                </div>
             }
         >
-            <div className={ORIGINATOR_PAGE_CONTAINER}>
-                <MessagesWorkspace
-                    role="originator"
-                    profileId={user.id}
-                    accountType="originator"
-                    displayName={user.fullName || user.email}
-                />
-            </div>
+            <MessagesWorkspace
+                role="originator"
+                profileId={user.id}
+                accountType="originator"
+                displayName={user.fullName || user.email}
+            />
         </OriginatorPortalLayout>
     );
 }

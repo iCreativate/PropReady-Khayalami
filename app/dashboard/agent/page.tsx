@@ -8,6 +8,7 @@ import {
     Calendar,
     CheckCircle,
     CheckSquare,
+    FileText,
     Mail,
     MapPin,
     MessageCircle,
@@ -24,6 +25,12 @@ import { PORTAL_CALLOUT, PORTAL_CARD, PORTAL_PAGE_CONTAINER, PORTAL_STAT_ICON } 
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { resolveWorkingAgent, type WorkingAgent } from '@/lib/working-agent';
+import {
+    fetchDocumentGrantStatus,
+    grantDocumentAccess,
+    revokeDocumentAccess,
+    type DocumentGrant,
+} from '@/lib/document-grants';
 
 const AGENT_CHECKLIST = [
     'PPRA / EAAB registered with a current Fidelity Fund Certificate (FFC)',
@@ -70,6 +77,9 @@ export default function MyAgentPage() {
     const { user: currentUser, isHydrated } = useHydratedBuyerPortalUser();
     const [agent, setAgent] = useState<WorkingAgent | null>(null);
     const [isSeller, setIsSeller] = useState(false);
+    const [grant, setGrant] = useState<DocumentGrant | null>(null);
+    const [grantBusy, setGrantBusy] = useState(false);
+    const [grantMessage, setGrantMessage] = useState('');
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -79,18 +89,79 @@ export default function MyAgentPage() {
         }
 
         setIsSeller(readIsSellerPortal(currentUser));
-        setAgent(resolveWorkingAgent(currentUser));
+        const resolved = resolveWorkingAgent(currentUser);
+        setAgent(resolved);
 
         void refreshViewingsFromApi(currentUser, { includeSeller: true }).then((viewings) => {
-            setAgent(resolveWorkingAgent(currentUser, viewings));
+            const next = resolveWorkingAgent(currentUser, viewings);
+            setAgent(next);
         });
     }, [router, isHydrated, currentUser]);
+
+    useEffect(() => {
+        if (!currentUser?.id || !agent?.id || isSeller) {
+            setGrant(null);
+            return;
+        }
+        let cancelled = false;
+        void fetchDocumentGrantStatus({
+            buyerUserId: String(currentUser.id || ''),
+            agentId: agent.id,
+        }).then((g) => {
+            if (!cancelled) setGrant(g);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [currentUser?.id, agent?.id, isSeller]);
 
     if (!isHydrated || !currentUser) {
         return null;
     }
 
     const portal = isSeller ? 'seller' : 'buyer';
+    const hasViewingWithAgent = Boolean(agent?.latestAppointment);
+    const canShareDocs = !isSeller && hasViewingWithAgent;
+
+    async function handleGrant() {
+        if (!currentUser || !agent) return;
+        setGrantBusy(true);
+        setGrantMessage('');
+        const result = await grantDocumentAccess({
+            buyerUserId: String(currentUser.id || ''),
+            buyerEmail: String(currentUser.email || ''),
+            agentId: agent.id,
+            viewingId: agent.latestAppointment?.id || null,
+        });
+        setGrantBusy(false);
+        if (!result.ok) {
+            setGrantMessage(result.error || 'Could not share documents');
+            return;
+        }
+        setGrant(result.grant || null);
+        setGrantMessage('Documents shared with this agent.');
+    }
+
+    async function handleRevoke() {
+        if (!currentUser || !agent) return;
+        const ok = window.confirm(
+            'Revoke this agent’s access to your documents? They will no longer be able to download your FICA or income files.'
+        );
+        if (!ok) return;
+        setGrantBusy(true);
+        setGrantMessage('');
+        const result = await revokeDocumentAccess({
+            buyerUserId: String(currentUser.id || ''),
+            agentId: agent.id,
+        });
+        setGrantBusy(false);
+        if (!result.ok) {
+            setGrantMessage(result.error || 'Could not revoke access');
+            return;
+        }
+        setGrant(null);
+        setGrantMessage('Document access revoked.');
+    }
 
     return (
         <UserPortalLayout
@@ -198,6 +269,57 @@ export default function MyAgentPage() {
                                         Viewings
                                     </Link>
                                 </div>
+
+                                {!isSeller && (
+                                    <div className="mt-6 rounded-xl border border-charcoal/10 bg-charcoal/[0.02] p-4">
+                                        <div className="mb-2 flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-gold" />
+                                            <p className="text-sm font-semibold text-charcoal">
+                                                Document sharing
+                                            </p>
+                                        </div>
+                                        <p className="mb-3 text-xs leading-relaxed text-charcoal/60">
+                                            Agents can only view your FICA and income documents after a viewing
+                                            with them and your explicit agreement. Platform bond prequalification
+                                            remains optional — you can use your agent’s originator or skip it.
+                                        </p>
+                                        {!hasViewingWithAgent ? (
+                                            <p className="text-xs font-medium text-amber-700">
+                                                Book or confirm a viewing with this agent before sharing documents.
+                                            </p>
+                                        ) : grant?.status === 'active' ? (
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
+                                                    <CheckCircle className="h-3.5 w-3.5" />
+                                                    Documents shared
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    disabled={grantBusy}
+                                                    onClick={() => void handleRevoke()}
+                                                    className="rounded-xl border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                                                >
+                                                    Revoke access
+                                                </button>
+                                            </div>
+                                        ) : canShareDocs ? (
+                                            <button
+                                                type="button"
+                                                disabled={grantBusy}
+                                                onClick={() => void handleGrant()}
+                                                className="inline-flex items-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gold/90 disabled:opacity-50"
+                                            >
+                                                <ShieldCheck className="h-4 w-4" />
+                                                {grantBusy
+                                                    ? 'Saving…'
+                                                    : 'Agree to work with this agent & share my documents'}
+                                            </button>
+                                        ) : null}
+                                        {grantMessage ? (
+                                            <p className="mt-2 text-xs text-charcoal/55">{grantMessage}</p>
+                                        ) : null}
+                                    </div>
+                                )}
 
                                 {(agent.ppraNumber || agent.ffcNumber) && (
                                     <div className="mt-6 pt-5 border-t border-charcoal/10">
@@ -307,9 +429,10 @@ export default function MyAgentPage() {
                             </p>
                         </div>
                         <div className="rounded-xl border border-charcoal/10 p-4">
-                            <p className="font-semibold text-charcoal mb-1">3. Stay aligned</p>
+                            <p className="font-semibold text-charcoal mb-1">3. Share documents (optional)</p>
                             <p className="text-charcoal/55 leading-relaxed">
-                                Keep documents, bond prequal, and offers moving together — your agent coordinates.
+                                After a viewing, you can agree to work with the agent and share FICA docs. Bond
+                                prequal on PropReady stays optional.
                             </p>
                         </div>
                     </div>

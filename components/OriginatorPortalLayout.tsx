@@ -195,11 +195,11 @@ export default function OriginatorPortalLayout({
 
             <main className={`lg:pl-64 pt-[4.25rem] min-h-dvh lg:h-dvh lg:overflow-y-auto lg:overscroll-contain ${ORIGINATOR_SHELL_CONTENT}`}>
                 {pageHeader && (
-                    <div className={`${ORIGINATOR_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-8`}>
+                    <div className={`${ORIGINATOR_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
                         <div className={ORIGINATOR_PAGE_CONTAINER}>{pageHeader}</div>
                     </div>
                 )}
-                <div className={`${ORIGINATOR_PAGE_CONTAINER} px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8`}>
+                <div className={`${ORIGINATOR_PAGE_CONTAINER} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
                     <PortalAnnouncementBanner />
                     {children}
                 </div>

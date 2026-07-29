@@ -1,24 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+import { createServiceClient } from '@/lib/supabase-admin';
+import { agentHasDocumentAccess } from '@/lib/document-grants-server';
 
 export async function GET(
-    _request: NextRequest,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id: leadId } = await params;
+    const agentId = request.nextUrl.searchParams.get('agentId')?.trim();
 
     if (!leadId) {
-        return NextResponse.json({ documents: [] });
+        return NextResponse.json({ documents: [], accessGranted: false });
     }
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return NextResponse.json({ documents: [] });
+    // Agents must have an active grant; buyers/owners call without agentId (owner path).
+    if (agentId) {
+        const allowed = await agentHasDocumentAccess(leadId, agentId);
+        if (!allowed) {
+            return NextResponse.json({
+                documents: [],
+                accessGranted: false,
+                reason:
+                    'Buyer has not shared documents yet. A viewing must exist and the buyer must agree to work with you.',
+            });
+        }
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = createServiceClient();
+    if (!supabase) {
+        return NextResponse.json({ documents: [], accessGranted: !agentId });
+    }
 
     const { data, error } = await supabase
         .from('documents')
@@ -28,7 +39,7 @@ export async function GET(
 
     if (error) {
         console.warn('Lead documents fetch failed:', error.message);
-        return NextResponse.json({ documents: [] });
+        return NextResponse.json({ documents: [], accessGranted: Boolean(agentId) || !agentId });
     }
 
     const documents = (data ?? []).map((row) => ({
@@ -38,8 +49,12 @@ export async function GET(
         status: row.status ?? 'uploaded',
         size: row.size ?? undefined,
         uploadedAt: row.uploaded_at,
-        url: row.storage_path ?? null,
+        // Never expose raw storage paths to agents without going through signed download.
+        url: null,
     }));
 
-    return NextResponse.json({ documents });
+    return NextResponse.json({
+        documents,
+        accessGranted: agentId ? true : true,
+    });
 }

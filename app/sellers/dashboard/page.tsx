@@ -3,18 +3,49 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Home, FileText, Building2, Calendar, Phone, Mail, MapPin, DollarSign, Users, CheckCircle, X, Search, Star, Clock } from 'lucide-react';
+import {
+    Home,
+    FileText,
+    Building2,
+    Calendar,
+    Phone,
+    Mail,
+    MapPin,
+    Users,
+    CheckCircle,
+    X,
+    Search,
+    Star,
+    Clock,
+    Pencil,
+    Plus,
+    Trash2,
+} from 'lucide-react';
 import UserPortalLayout from '@/components/UserPortalLayout';
 import PortalPageHeader from '@/components/PortalPageHeader';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 import PpraTrustSection from '@/components/PpraTrustSection';
 import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
-import { PORTAL_PAGE_CONTAINER, PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN, PORTAL_STAT_ICON, PORTAL_CARD, PORTAL_SEARCH_INPUT } from '@/lib/portal-ui';
+import {
+    PORTAL_PAGE_CONTAINER,
+    PORTAL_PRIMARY_BTN,
+    PORTAL_SECONDARY_BTN,
+    PORTAL_STAT_ICON,
+    PORTAL_CARD,
+    PORTAL_SEARCH_INPUT,
+} from '@/lib/portal-ui';
 import PortalLoading from '@/components/PortalLoading';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import SellerPropertyOnboardingForm from '@/components/onboarding/SellerPropertyOnboardingForm';
+import {
+    deleteSellerProperty,
+    getActiveSellerProperty,
+    listSellerProperties,
+    setActiveSellerProperty,
+    type SellerProperty,
+} from '@/lib/seller-properties';
 
 interface Agent {
     id: string;
@@ -44,8 +75,12 @@ export default function SellerDashboardPage() {
         user: onboardingUser,
         completeOnboarding,
     } = useOnboardingGate();
-    const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id: string } | null>(null);
+    const [currentUser, setCurrentUser] = useState<{ fullName: string; email: string; id: string; phone?: string } | null>(null);
     const [sellerInfo, setSellerInfo] = useState<any>(null);
+    const [sellerProperties, setSellerProperties] = useState<SellerProperty[]>([]);
+    const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
+    const [propertyFormMode, setPropertyFormMode] = useState<'add' | 'edit' | null>(null);
+    const [editingProperty, setEditingProperty] = useState<SellerProperty | null>(null);
     const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
     const [showAgentModal, setShowAgentModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -72,10 +107,11 @@ export default function SellerDashboardPage() {
             const user = JSON.parse(userData);
             setCurrentUser(user);
 
-            const storedSellerInfo = localStorage.getItem('propReady_sellerInfo');
-            if (storedSellerInfo) {
-                setSellerInfo(JSON.parse(storedSellerInfo));
-            }
+            const properties = listSellerProperties(user.id);
+            setSellerProperties(properties);
+            const active = getActiveSellerProperty(user.id);
+            setActivePropertyId(active?.id || null);
+            setSellerInfo(active);
 
             const storedSelectedAgent = localStorage.getItem(`propReady_selectedAgent_${user.id}`);
             if (storedSelectedAgent) {
@@ -83,8 +119,7 @@ export default function SellerDashboardPage() {
             }
 
             const storedViewings = JSON.parse(localStorage.getItem('propReady_viewingAppointments') || '[]');
-            const parsedSeller = storedSellerInfo ? JSON.parse(storedSellerInfo) : null;
-            const sellerPhone = parsedSeller?.phone?.replace(/\s/g, '') || '';
+            const sellerPhone = active?.phone?.replace(/\s/g, '') || '';
             const userEmail = user.email?.toLowerCase() || '';
             const matchSeller = (v: any) => {
                 if (v.sellerEmail && v.sellerEmail.toLowerCase() === userEmail) return true;
@@ -119,7 +154,40 @@ export default function SellerDashboardPage() {
 
     const handleSellerOnboardingComplete = async () => {
         await completeOnboarding();
+        setPropertyFormMode(null);
+        setEditingProperty(null);
         setConfirmRefreshKey((k) => k + 1);
+    };
+
+    const refreshProperties = (userId: string) => {
+        const properties = listSellerProperties(userId);
+        setSellerProperties(properties);
+        const active = getActiveSellerProperty(userId);
+        setActivePropertyId(active?.id || null);
+        setSellerInfo(active);
+    };
+
+    const handlePropertyFormComplete = async () => {
+        if (currentUser) refreshProperties(currentUser.id);
+        setPropertyFormMode(null);
+        setEditingProperty(null);
+        setConfirmRefreshKey((k) => k + 1);
+    };
+
+    const handleDeleteProperty = (property: SellerProperty) => {
+        if (!currentUser) return;
+        const ok = window.confirm(
+            `Remove “${property.propertyAddress}” from your seller dashboard? This does not delete a public marketplace listing.`
+        );
+        if (!ok) return;
+        deleteSellerProperty(currentUser.id, property.id);
+        refreshProperties(currentUser.id);
+    };
+
+    const handleSetActiveProperty = (property: SellerProperty) => {
+        if (!currentUser) return;
+        setActiveSellerProperty(currentUser.id, property.id);
+        refreshProperties(currentUser.id);
     };
     useEffect(() => {
         // Load real registered agents
@@ -238,17 +306,149 @@ export default function SellerDashboardPage() {
                             </button>
                         </div>
                     )}
-                    {/* Property Summary Card */}
+                    {/* My Properties */}
+                    <div className={`${PORTAL_CARD} p-6 sm:p-8 mb-8 sm:mb-10`}>
+                        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-charcoal mb-1">My properties</h2>
+                                <p className="text-charcoal/60 text-sm">
+                                    Add, edit, or remove properties you want to sell. These are your seller
+                                    records — not public marketplace listings.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditingProperty(null);
+                                    setPropertyFormMode('add');
+                                }}
+                                className={`${PORTAL_PRIMARY_BTN} shrink-0`}
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add property
+                            </button>
+                        </div>
+
+                        {sellerProperties.length === 0 ? (
+                            <div className="rounded-xl border border-dashed border-charcoal/15 bg-charcoal/[0.02] px-6 py-10 text-center">
+                                <Building2 className="mx-auto mb-3 h-10 w-10 text-charcoal/25" />
+                                <p className="text-sm font-medium text-charcoal">No properties yet</p>
+                                <p className="mt-1 text-sm text-charcoal/55">
+                                    Add the first property you want to sell to get started.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {sellerProperties.map((property) => {
+                                    const isActive = property.id === activePropertyId;
+                                    const value = property.currentValue || property.askingPrice;
+                                    return (
+                                        <div
+                                            key={property.id}
+                                            className={`rounded-2xl border p-5 transition ${
+                                                isActive
+                                                    ? 'border-gold bg-gold/5 shadow-sm'
+                                                    : 'border-charcoal/10 bg-white hover:border-gold/40'
+                                            }`}
+                                        >
+                                            <div className="mb-3 flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                                                        <h3 className="truncate text-lg font-bold text-charcoal">
+                                                            {property.propertyAddress}
+                                                        </h3>
+                                                        {isActive ? (
+                                                            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold">
+                                                                Active
+                                                            </span>
+                                                        ) : null}
+                                                    </div>
+                                                    <p className="text-sm text-charcoal/55">
+                                                        {property.propertySuburb || property.suburb || '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-lg font-bold text-gold">
+                                                        {formatCurrency(parseAmountForDisplay(value))}
+                                                    </p>
+                                                    <p className="text-xs text-charcoal/45">Asking / estimate</p>
+                                                </div>
+                                            </div>
+                                            <div className="mb-4 grid grid-cols-3 gap-2 text-center text-xs">
+                                                <div className="rounded-lg bg-charcoal/[0.03] px-2 py-2">
+                                                    <p className="text-charcoal/45">Beds</p>
+                                                    <p className="font-semibold text-charcoal">
+                                                        {property.bedrooms || '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-lg bg-charcoal/[0.03] px-2 py-2">
+                                                    <p className="text-charcoal/45">Baths</p>
+                                                    <p className="font-semibold text-charcoal">
+                                                        {property.bathrooms || '—'}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-lg bg-charcoal/[0.03] px-2 py-2">
+                                                    <p className="text-charcoal/45">Size</p>
+                                                    <p className="font-semibold text-charcoal">
+                                                        {property.propertySize ||
+                                                            property.buildingSize ||
+                                                            property.landSize ||
+                                                            '—'}
+                                                        {(property.propertySize ||
+                                                            property.buildingSize ||
+                                                            property.landSize) &&
+                                                            ' m²'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {!isActive ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSetActiveProperty(property)}
+                                                        className={PORTAL_SECONDARY_BTN}
+                                                    >
+                                                        Set active
+                                                    </button>
+                                                ) : null}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingProperty(property);
+                                                        setPropertyFormMode('edit');
+                                                    }}
+                                                    className={PORTAL_SECONDARY_BTN}
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteProperty(property)}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Active property summary */}
                     {sellerInfo && (
                         <div className={`${PORTAL_CARD} p-8 mb-8 sm:mb-10 overflow-hidden`}>
                             <div className="flex items-center justify-between mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-charcoal mb-2">Your Property</h2>
-                                        <p className="text-charcoal/60 text-sm">Property listing details</p>
+                                        <h2 className="text-2xl font-bold text-charcoal mb-2">Active property</h2>
+                                        <p className="text-charcoal/60 text-sm">Used for valuation and agent matching</p>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-3xl font-bold text-gold mb-1">
-                                            {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
+                                            {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue || sellerInfo.askingPrice))}
                                         </div>
                                         <p className="text-charcoal/50 text-sm font-medium">Estimated Value</p>
                                     </div>
@@ -256,15 +456,15 @@ export default function SellerDashboardPage() {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                                     <div className="portal-stat-inner">
-                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Property Type</p>
-                                        <p className="text-charcoal font-bold text-xl capitalize">
-                                            {sellerInfo.propertyType || 'N/A'}
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Address</p>
+                                        <p className="text-charcoal font-bold text-xl">
+                                            {sellerInfo.propertyAddress || 'N/A'}
                                         </p>
                                     </div>
                                     <div className="portal-stat-inner">
-                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Timeline</p>
+                                        <p className="text-charcoal/45 text-xs font-medium mb-2 uppercase tracking-[0.08em]">Condition</p>
                                         <p className="text-charcoal font-bold text-xl capitalize">
-                                            {sellerInfo.timeline ? sellerInfo.timeline.replace('-', ' to ') : 'N/A'}
+                                            {sellerInfo.propertyCondition || sellerInfo.propertyType || 'N/A'}
                                         </p>
                                     </div>
                                 </div>
@@ -485,10 +685,10 @@ export default function SellerDashboardPage() {
                         </div>
                     )}
 
-                    {/* Property Details */}
+                    {/* Active property details */}
                     {sellerInfo && (
                         <div className={`${PORTAL_CARD} p-8 mb-8`}>
-                            <h2 className="text-2xl font-bold text-charcoal mb-6">Property Details</h2>
+                            <h2 className="text-2xl font-bold text-charcoal mb-6">Active property details</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="md:col-span-2">
                                     <p className="text-charcoal/60 text-sm mb-1">Property Address</p>
@@ -499,8 +699,8 @@ export default function SellerDashboardPage() {
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-charcoal/60 text-sm mb-1">Property Type</p>
-                                    <p className="text-charcoal font-semibold capitalize">{sellerInfo.propertyType || 'N/A'}</p>
+                                    <p className="text-charcoal/60 text-sm mb-1">Suburb</p>
+                                    <p className="text-charcoal font-semibold capitalize">{sellerInfo.propertySuburb || sellerInfo.suburb || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-charcoal/60 text-sm mb-1">Bedrooms</p>
@@ -511,29 +711,29 @@ export default function SellerDashboardPage() {
                                     <p className="text-charcoal font-semibold">{sellerInfo.bathrooms || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-charcoal/60 text-sm mb-1">Land size</p>
-                                    <p className="text-charcoal font-semibold">{sellerInfo.landSize ? `${sellerInfo.landSize} m²` : 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-charcoal/60 text-sm mb-1">Building / structure size</p>
-                                    <p className="text-charcoal font-semibold">{sellerInfo.buildingSize ? `${sellerInfo.buildingSize} m²` : 'N/A'}</p>
+                                    <p className="text-charcoal/60 text-sm mb-1">Size</p>
+                                    <p className="text-charcoal font-semibold">
+                                        {sellerInfo.propertySize || sellerInfo.buildingSize || sellerInfo.landSize
+                                            ? `${sellerInfo.propertySize || sellerInfo.buildingSize || sellerInfo.landSize} m²`
+                                            : 'N/A'}
+                                    </p>
                                 </div>
                                 <div>
                                     <p className="text-charcoal/60 text-sm mb-1">Estimated Value</p>
                                     <p className="text-gold font-bold text-xl">
-                                        {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue))}
+                                        {formatCurrency(parseAmountForDisplay(sellerInfo.currentValue || sellerInfo.askingPrice))}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-charcoal/60 text-sm mb-1">Reason for Selling</p>
-                                    <p className="text-charcoal font-semibold capitalize">{sellerInfo.reasonForSelling || 'N/A'}</p>
+                                    <p className="text-charcoal/60 text-sm mb-1">Condition</p>
+                                    <p className="text-charcoal font-semibold capitalize">{sellerInfo.propertyCondition || 'N/A'}</p>
                                 </div>
-                                <div>
-                                    <p className="text-charcoal/60 text-sm mb-1">Selling Timeline</p>
-                                    <p className="text-charcoal font-semibold capitalize">
-                                        {sellerInfo.timeline ? sellerInfo.timeline.replace('-', ' to ') : 'N/A'}
-                                    </p>
-                                </div>
+                                {sellerInfo.propertyDescription ? (
+                                    <div className="md:col-span-2">
+                                        <p className="text-charcoal/60 text-sm mb-1">Description</p>
+                                        <p className="text-charcoal font-semibold">{sellerInfo.propertyDescription}</p>
+                                    </div>
+                                ) : null}
                                 {sellerInfo.hasBond && (
                                     <div>
                                         <p className="text-charcoal/60 text-sm mb-1">Bond Balance</p>
@@ -685,7 +885,7 @@ export default function SellerDashboardPage() {
             <OnboardingGateModal
                 open={Boolean(onboardingRequired && onboardingIntent === 'seller' && onboardingUser)}
                 title="Add the property you want to sell"
-                subtitle="Add your property details once so we can set up your seller dashboard. You can’t continue until it’s done."
+                subtitle="Add your property details once so we can set up your seller dashboard. You can add more properties later."
             >
                 {onboardingUser && (
                     <SellerPropertyOnboardingForm
@@ -694,6 +894,41 @@ export default function SellerDashboardPage() {
                     />
                 )}
             </OnboardingGateModal>
+
+            {propertyFormMode && currentUser && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                                <h2 className="text-xl font-bold text-charcoal">
+                                    {propertyFormMode === 'edit' ? 'Edit property' : 'Add another property'}
+                                </h2>
+                                <p className="mt-1 text-sm text-charcoal/55">
+                                    Seller property record only — not a public marketplace listing.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPropertyFormMode(null);
+                                    setEditingProperty(null);
+                                }}
+                                className="rounded-xl border border-charcoal/10 p-2 text-charcoal/60 hover:bg-charcoal/[0.03]"
+                                aria-label="Close"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                        <SellerPropertyOnboardingForm
+                            key={editingProperty?.id || 'new-property'}
+                            user={currentUser}
+                            mode={propertyFormMode}
+                            editingProperty={editingProperty}
+                            onComplete={handlePropertyFormComplete}
+                        />
+                    </div>
+                </div>
+            )}
         </>
     );
 }

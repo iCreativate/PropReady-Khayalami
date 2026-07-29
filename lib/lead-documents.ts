@@ -157,9 +157,63 @@ export function leadDocumentTypeLabel(type: LeadDocumentType): string {
     return labels[type] ?? 'Document';
 }
 
-export async function fetchLeadDocuments(leadId: string): Promise<LeadDocument[]> {
+export async function fetchLeadDocuments(
+    leadId: string,
+    options?: { agentId?: string }
+): Promise<{ documents: LeadDocument[]; accessGranted: boolean; reason?: string }> {
+    const agentId = options?.agentId;
+
+    if (agentId) {
+        // Prefer server grant check; fall back to local grant for demo.
+        try {
+            const res = await fetch(
+                `/api/leads/${encodeURIComponent(leadId)}/documents?agentId=${encodeURIComponent(agentId)}`,
+                { cache: 'no-store' }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                if (data.accessGranted === false) {
+                    const { getLocalActiveGrant } = await import('@/lib/document-grants');
+                    const localGrant = getLocalActiveGrant(leadId, agentId);
+                    if (!localGrant) {
+                        return {
+                            documents: [],
+                            accessGranted: false,
+                            reason:
+                                data.reason ||
+                                'Buyer has not shared documents yet. A viewing must exist and the buyer must agree to work with you.',
+                        };
+                    }
+                    // Local grant: show local/demo docs if any
+                    const local = readLeadDocumentsLocal(leadId);
+                    return { documents: local, accessGranted: true };
+                }
+                if (Array.isArray(data.documents)) {
+                    return {
+                        documents: data.documents.map((d: Record<string, unknown>) =>
+                            normalizeDocument(d)
+                        ),
+                        accessGranted: true,
+                    };
+                }
+            }
+        } catch {
+            /* fall through */
+        }
+
+        const { getLocalActiveGrant } = await import('@/lib/document-grants');
+        if (!getLocalActiveGrant(leadId, agentId)) {
+            return {
+                documents: [],
+                accessGranted: false,
+                reason:
+                    'Buyer has not shared documents yet. A viewing must exist and the buyer must agree to work with you.',
+            };
+        }
+    }
+
     const local = readLeadDocumentsLocal(leadId);
-    if (local.length > 0) return local;
+    if (local.length > 0) return { documents: local, accessGranted: true };
 
     try {
         const res = await fetch(`/api/leads/${encodeURIComponent(leadId)}/documents`, {
@@ -168,12 +222,46 @@ export async function fetchLeadDocuments(leadId: string): Promise<LeadDocument[]
         if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data.documents) && data.documents.length > 0) {
-                return data.documents.map((d: Record<string, unknown>) => normalizeDocument(d));
+                return {
+                    documents: data.documents.map((d: Record<string, unknown>) => normalizeDocument(d)),
+                    accessGranted: true,
+                };
             }
         }
     } catch {
         /* fall through */
     }
 
-    return local;
+    return { documents: local, accessGranted: true };
+}
+
+export async function downloadLeadDocument(input: {
+    buyerUserId: string;
+    documentId: string;
+    agentId: string;
+}): Promise<{ ok: boolean; url?: string; name?: string; error?: string }> {
+    try {
+        const params = new URLSearchParams({
+            userId: input.buyerUserId,
+            documentId: input.documentId,
+            role: 'agent',
+            agentId: input.agentId,
+        });
+        const res = await fetch(`/api/documents/download?${params}`, { cache: 'no-store' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            // Local grant demo: no remote file
+            const { getLocalActiveGrant } = await import('@/lib/document-grants');
+            if (getLocalActiveGrant(input.buyerUserId, input.agentId)) {
+                return {
+                    ok: false,
+                    error: 'Document preview is unavailable offline. Access is granted — ask the buyer to re-upload if needed.',
+                };
+            }
+            return { ok: false, error: data.error || 'Download denied' };
+        }
+        return { ok: true, url: data.url, name: data.name };
+    } catch {
+        return { ok: false, error: 'Download failed' };
+    }
 }

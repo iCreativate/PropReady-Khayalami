@@ -14,14 +14,18 @@ import {
     Upload,
     AlertCircle,
     Building2,
+    Lock,
+    Download,
 } from 'lucide-react';
 import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
 import { bondOriginatorLabel } from '@/lib/bond-originators';
 import {
+    downloadLeadDocument,
     fetchLeadDocuments,
     leadDocumentTypeLabel,
     type LeadDocument,
 } from '@/lib/lead-documents';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 export interface AgentLeadDetail {
     id: string;
     leadType?: 'buyer' | 'seller' | 'investor';
@@ -104,7 +108,20 @@ export default function AgentLeadDetailModal({
 }: AgentLeadDetailModalProps) {
     const [documents, setDocuments] = useState<LeadDocument[]>([]);
     const [docsLoading, setDocsLoading] = useState(true);
+    const [docsAccessGranted, setDocsAccessGranted] = useState(true);
+    const [docsAccessReason, setDocsAccessReason] = useState('');
+    const [downloadBusyId, setDownloadBusyId] = useState<string | null>(null);
     const [status, setStatus] = useState(lead.status);
+    const [agentId, setAgentId] = useState('');
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.currentAgent);
+            setAgentId(raw ? String(JSON.parse(raw).id || '') : '');
+        } catch {
+            setAgentId('');
+        }
+    }, []);
 
     useEffect(() => {
         setStatus(lead.status);
@@ -113,16 +130,36 @@ export default function AgentLeadDetailModal({
     useEffect(() => {
         let cancelled = false;
         setDocsLoading(true);
-        fetchLeadDocuments(lead.id).then((docs) => {
-            if (!cancelled) {
-                setDocuments(docs);
+        const isBuyerLead = leadKind === 'buyer';
+        fetchLeadDocuments(lead.id, isBuyerLead && agentId ? { agentId } : undefined).then(
+            (result) => {
+                if (cancelled) return;
+                setDocuments(result.documents);
+                setDocsAccessGranted(result.accessGranted);
+                setDocsAccessReason(result.reason || '');
                 setDocsLoading(false);
             }
-        });
+        );
         return () => {
             cancelled = true;
         };
-    }, [lead.id]);
+    }, [lead.id, leadKind, agentId]);
+
+    async function handleDownload(doc: LeadDocument) {
+        if (!agentId) return;
+        setDownloadBusyId(doc.id);
+        const result = await downloadLeadDocument({
+            buyerUserId: lead.id,
+            documentId: doc.id,
+            agentId,
+        });
+        setDownloadBusyId(null);
+        if (result.ok && result.url) {
+            window.open(result.url, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        window.alert(result.error || 'Could not open document');
+    }
 
     const isSeller = leadKind === 'seller';
     const HeaderIcon = isSeller ? Building2 : User;
@@ -240,9 +277,15 @@ export default function AgentLeadDetailModal({
                                     value={
                                         lead.prequalifiedWithOriginator && lead.bondOriginator
                                             ? bondOriginatorLabel(lead.bondOriginator)
-                                            : '—'
+                                            : 'No platform prequal (optional)'
                                     }
                                 />
+                                {!lead.prequalifiedWithOriginator ? (
+                                    <div className="col-span-2 rounded-lg border border-charcoal/10 bg-charcoal/[0.02] px-3 py-2 text-xs text-charcoal/60">
+                                        Platform bond prequalification is optional. Buyers may use your preferred
+                                        originator or skip prequal on PropReady.
+                                    </div>
+                                ) : null}
                             </div>
                         </section>
                     )}
@@ -328,6 +371,17 @@ export default function AgentLeadDetailModal({
                         </p>
                         {docsLoading ? (
                             <p className="text-charcoal/50 text-sm">Loading documents…</p>
+                        ) : !isSeller && !docsAccessGranted ? (
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                <div className="mb-2 flex items-center gap-2 text-amber-800">
+                                    <Lock className="h-4 w-4" />
+                                    <p className="text-sm font-semibold">Documents locked</p>
+                                </div>
+                                <p className="text-sm text-amber-900/80">
+                                    {docsAccessReason ||
+                                        'Buyer has not shared documents yet. A viewing must exist and the buyer must agree to work with you.'}
+                                </p>
+                            </div>
                         ) : documents.length === 0 ? (
                             <p className="text-charcoal/50 text-sm">No documents attached for this lead.</p>
                         ) : (
@@ -351,7 +405,20 @@ export default function AgentLeadDetailModal({
                                                 </p>
                                             </div>
                                         </div>
-                                        {documentStatusBadge(doc.status)}
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {documentStatusBadge(doc.status)}
+                                            {!isSeller && docsAccessGranted ? (
+                                                <button
+                                                    type="button"
+                                                    disabled={downloadBusyId === doc.id}
+                                                    onClick={() => void handleDownload(doc)}
+                                                    className="inline-flex items-center gap-1 rounded-lg border border-charcoal/15 px-2.5 py-1.5 text-xs font-semibold text-charcoal transition hover:bg-white disabled:opacity-50"
+                                                >
+                                                    <Download className="h-3.5 w-3.5" />
+                                                    {downloadBusyId === doc.id ? '…' : 'View'}
+                                                </button>
+                                            ) : null}
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
