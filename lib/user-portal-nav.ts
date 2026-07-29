@@ -7,6 +7,7 @@ import {
     ClipboardCheck,
     DollarSign,
     FileText,
+    Gauge,
     Home,
     LayoutDashboard,
     MessageSquare,
@@ -26,6 +27,7 @@ export type BuyerPortalPage =
     | 'prequal'
     | 'agent'
     | 'property-optimizer'
+    | 'smart-bond'
     | 'calculator'
     | 'learn'
     | 'quiz';
@@ -36,6 +38,7 @@ export type SellerPortalPage =
     | 'valuation'
     | 'property-quiz'
     | 'property-optimizer'
+    | 'smart-bond'
     | 'learn'
     | 'agent'
     | 'buyer-dashboard';
@@ -66,6 +69,7 @@ export const BUYER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'prequal', href: '/dashboard/prequal', label: 'My Prequal', icon: ClipboardCheck },
     { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
+    { page: 'smart-bond', href: '/calculator/smart-bond', label: 'Smart Bond Optimizer', icon: Gauge },
     { page: 'calculator', href: '/calculator', label: 'Bond Calculator', icon: Calculator },
     { page: 'learn', href: '/learn', label: 'Learning Center', icon: BookOpen },
     { page: 'quiz', href: '/quiz', label: 'Pre-Qualification Quiz', icon: ClipboardCheck },
@@ -78,6 +82,7 @@ export const SELLER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'property-quiz', href: '/sellers/property-quiz', label: 'List Property', icon: Building2 },
     { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
+    { page: 'smart-bond', href: '/calculator/smart-bond', label: 'Smart Bond Optimizer', icon: Gauge },
     { page: 'learn', href: '/sellers', label: 'Learning Center', icon: BookOpen },
     { page: 'buyer-dashboard', href: '/dashboard', label: 'Buyer Dashboard', icon: Home },
 ];

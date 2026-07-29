@@ -99,6 +99,19 @@ export default function BondCalculatorPage() {
             <div className={`${PORTAL_PAGE_CONTAINER} relative z-10 space-y-6 sm:space-y-8`}>
                 {!user && <div className="mb-2">{pageHeader}</div>}
 
+                <a
+                    href="/calculator/smart-bond"
+                    className={`${PORTAL_CALLOUT} flex flex-wrap items-center justify-between gap-3 transition hover:border-gold/30`}
+                >
+                    <div>
+                        <p className="text-sm font-semibold text-charcoal">New · Smart Bond Optimizer</p>
+                        <p className="mt-0.5 text-sm text-charcoal/60">
+                            Go beyond basic repayments — equity, scenarios, refinance education, and wealth planning.
+                        </p>
+                    </div>
+                    <span className="text-sm font-semibold text-gold">Open flagship tool →</span>
+                </a>
+
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-8">
                     {/* Inputs */}
                     <section className={`lg:col-span-3 ${PORTAL_CARD}`}>

@@ -24,5 +24,7 @@ export const STORAGE_KEYS = {
     activity: 'propReady_activity',
     /** Latest full originator prequal snapshot (also stored per-user key) */
     fullPrequal: 'propReady_fullPrequal',
+    /** Smart Bond Optimizer autosaved planning workspace */
+    smartBondOptimizer: 'propReady_smartBondOptimizer_v1',
     selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
 } as const;
