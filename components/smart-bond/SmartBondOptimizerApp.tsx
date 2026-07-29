@@ -7,12 +7,9 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
-    Cell,
     Legend,
     Line,
     LineChart,
-    Pie,
-    PieChart,
     ResponsiveContainer,
     Tooltip,
     XAxis,
@@ -23,19 +20,23 @@ import {
     Banknote,
     BookOpen,
     Building2,
-    Calculator,
     CalendarClock,
     Download,
+    FileText,
     Gauge,
     Home,
     Landmark,
-    LineChart as LineChartIcon,
+    LayoutGrid,
     Percent,
     PiggyBank,
+    Plus,
     Printer,
     RefreshCw,
+    Rocket,
     Sparkles,
+    SlidersHorizontal,
     Target,
+    Trash2,
     TrendingUp,
     Wallet,
 } from 'lucide-react';
@@ -48,7 +49,6 @@ import {
     compareBaselineVsOptimized,
     DISCLAIMER,
     equityNow,
-    estimateTransferCosts,
     exportAmortisationCsv,
     exportFinancialSummaryPdf,
     formatDate,
@@ -59,13 +59,11 @@ import {
     KNOWLEDGE_ARTICLES,
     loadSmartBondState,
     ltvPct,
-    monthlyPayment,
     portfolioSummary,
     projectEquitySeries,
     RATE_HISTORY_ILLUSTRATIVE,
     rateShockPayment,
     refinanceAnalysis,
-    rentVsBuy,
     saveSmartBondState,
     SA_PRIME_REFERENCE,
     SA_REPO_REFERENCE,
@@ -80,29 +78,30 @@ import {
     type SboTab,
 } from '@/lib/smart-bond';
 import {
-    SboCallout,
-    SboInsightBadge,
-    SboKpi,
-    SboNumberField,
-    SboScoreRing,
-    SboSection,
-    SboSlider,
-    SboTabButton,
+    AIInsightCard,
+    ChartContainer,
+    ComparisonCard,
+    DisclaimerBanner,
+    FinancialInput,
+    MetricCard,
+    Panel,
+    ProgressRing,
+    SectionIntro,
+    SmartSlider,
+    StickyActionBar,
+    TabPill,
+    formatChipZar,
 } from '@/components/smart-bond/sbo-ui';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
-const TABS: Array<{ id: SboTab; label: string }> = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'optimizer', label: 'Optimizer' },
-    { id: 'rates', label: 'Fixed vs Variable' },
-    { id: 'equity', label: 'Equity Builder' },
-    { id: 'investment', label: 'Investment Planner' },
-    { id: 'portfolio', label: 'Portfolio' },
-    { id: 'refinance', label: 'Refinance' },
-    { id: 'scenarios', label: 'Scenarios' },
-    { id: 'goals', label: 'Goals' },
-    { id: 'knowledge', label: 'Knowledge' },
-    { id: 'calculators', label: 'Calculators' },
+const TABS: Array<{ id: SboTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+    { id: 'overview', label: 'Overview', icon: LayoutGrid },
+    { id: 'optimizer', label: 'Optimizer', icon: SlidersHorizontal },
+    { id: 'savings', label: 'Interest Savings', icon: PiggyBank },
+    { id: 'equity', label: 'Equity Builder', icon: TrendingUp },
+    { id: 'investment', label: 'Investment', icon: Building2 },
+    { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'learn', label: 'Learn', icon: BookOpen },
 ];
 
 const GOAL_OPTIONS: Array<{ id: GoalKind; label: string }> = [
@@ -118,6 +117,16 @@ const GOAL_OPTIONS: Array<{ id: GoalKind; label: string }> = [
 const CHART_GOLD = '#DC2626';
 const CHART_SLATE = '#64748B';
 const CHART_TEAL = '#0D9488';
+
+function normalizeTab(t: string): SboTab {
+    if (t === 'rates' || t === 'scenarios') return 'savings';
+    if (t === 'portfolio' || t === 'refinance' || t === 'calculators') return 'investment';
+    if (t === 'knowledge' || t === 'goals') return 'learn';
+    if (['overview', 'optimizer', 'savings', 'equity', 'investment', 'reports', 'learn'].includes(t)) {
+        return t as SboTab;
+    }
+    return 'overview';
+}
 
 export default function SmartBondOptimizerApp() {
     const [hydrated, setHydrated] = useState(false);
@@ -147,18 +156,13 @@ export default function SmartBondOptimizerApp() {
         loanTermYears: 20,
     });
     const [knowledgeId, setKnowledgeId] = useState(KNOWLEDGE_ARTICLES[0].id);
-    const [calcPurchase, setCalcPurchase] = useState(2000000);
-    const [calcDeposit, setCalcDeposit] = useState(400000);
-    const [calcRate, setCalcRate] = useState(11.75);
-    const [calcTerm, setCalcTerm] = useState(20);
-    const [calcRent, setCalcRent] = useState(12000);
 
     useEffect(() => {
         const s = loadSmartBondState();
         setProfile(withDerivedRepayment(s.profile));
         setScenario(s.scenario);
         setPortfolio(s.portfolio);
-        setTab(s.activeTab);
+        setTab(normalizeTab(s.activeTab));
         setInvest((prev) => ({
             ...prev,
             existingBondRepayment: withDerivedRepayment(s.profile).monthlyRepayment,
@@ -253,21 +257,6 @@ export default function SmartBondOptimizerApp() {
         [liveProfile, refiRate, refiTerm, refiFees]
     );
 
-    const transferEst = useMemo(() => estimateTransferCosts(calcPurchase), [calcPurchase]);
-    const rentBuy = useMemo(
-        () =>
-            rentVsBuy({
-                rentMonthly: calcRent,
-                buyPrice: calcPurchase,
-                deposit: calcDeposit,
-                rate: calcRate,
-                termYears: calcTerm,
-                years: 10,
-                appreciationPct: liveProfile.annualAppreciationPct,
-            }),
-        [calcRent, calcPurchase, calcDeposit, calcRate, calcTerm, liveProfile.annualAppreciationPct]
-    );
-
     const goalRoadmap = useMemo(() => {
         const needExtra =
             goal === 'payoff_target' || goal === 'debt_free_retirement' || goal === 'max_equity'
@@ -283,13 +272,13 @@ export default function SmartBondOptimizerApp() {
             interestSaved: projected.interestSaved,
             milestones: [
                 { t: '0–6 mo', d: 'Confirm loan statements, rate type, and access-bond rules with your lender.' },
-                { t: '6–18 mo', d: 'Build payment consistency and emergency buffer before aggressive extras.' },
+                { t: '6–18 mo', d: 'Build payment consistency and an emergency buffer before aggressive extras.' },
                 { t: '18–36 mo', d: 'Track LTV and equity; revisit refinance only if fees and break-even support it.' },
                 {
                     t: '36+ mo',
                     d:
                         goal === 'second_property' || goal === 'portfolio_five' || goal === 'passive_income'
-                            ? 'Reassess affordability for further property only after buffers and lender criteria allow.'
+                            ? 'Reassess affordability for further property only once buffers and lender criteria allow.'
                             : 'Stay the course on extras; review annually when rates or income change.',
                 },
             ],
@@ -311,138 +300,202 @@ export default function SmartBondOptimizerApp() {
         });
     }
 
+    function updatePortfolioRow(idx: number, patch: Partial<PortfolioProperty>) {
+        setPortfolio((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    }
+
     if (!hydrated) {
         return (
-            <div className="space-y-4 animate-pulse">
-                <div className="h-40 rounded-[1.25rem] bg-charcoal/[0.06]" />
+            <div className="space-y-6 animate-pulse">
+                <div className="h-52 rounded-[1.5rem] bg-gradient-to-br from-slate-200 via-slate-100 to-slate-200" />
+                <div className="flex gap-2">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                        <div key={i} className="h-10 w-28 shrink-0 rounded-full bg-slate-100" />
+                    ))}
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={i} className="h-28 rounded-2xl bg-charcoal/[0.06]" />
+                        <div key={i} className="h-28 rounded-[1.15rem] bg-white ring-1 ring-slate-900/[0.04]" />
                     ))}
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="h-72 rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.04]" />
+                    <div className="h-72 rounded-[1.25rem] bg-white ring-1 ring-slate-900/[0.04]" />
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 print:space-y-4">
-            {/* Hero */}
-            <section className="relative overflow-hidden rounded-[1.25rem] border border-charcoal/[0.08] bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#7F1D1D] p-6 text-white shadow-lg sm:p-8">
-                <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gold/20 blur-3xl" />
-                <div className="pointer-events-none absolute -bottom-20 left-10 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
-                <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="max-w-2xl">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">
-                            Flagship · PropReady Intelligence
-                        </p>
-                        <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-                            Smart Bond Optimizer
-                        </h1>
-                        <p className="mt-3 text-sm leading-relaxed text-white/75 sm:text-base">
-                            A premium South African home-loan planning workspace to help you understand your bond,
-                            reduce estimated interest, accelerate repayment, build equity, compare strategies, and
-                            explore long-term property wealth — with clear labels for facts, assumptions, and
-                            estimates.
-                        </p>
+        <div className="pb-28 print:pb-0">
+            <div className="space-y-6 print:space-y-4">
+                {/* Hero */}
+                <section className="relative overflow-hidden rounded-[1.5rem] border border-white/[0.06] bg-gradient-to-br from-[#020617] via-[#0F172A] to-[#450A0A] p-6 text-white shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-10">
+                    <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
+                    <div className="relative flex flex-col gap-8">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                            <div className="max-w-2xl">
+                                <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 ring-1 ring-white/10">
+                                    <Sparkles className="h-3.5 w-3.5 text-gold" />
+                                    Flagship · PropReady Intelligence
+                                </p>
+                                <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+                                    Smart Bond Optimizer
+                                </h1>
+                                <p className="mt-4 text-sm leading-relaxed text-white/70 sm:text-base">
+                                    A premium South African home-loan workspace that turns your bond into a clear plan —
+                                    cut estimated interest, accelerate payoff, grow equity, and explore long-term
+                                    property wealth. Every figure is clearly labelled as fact, estimate, or assumption.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2 print:hidden">
+                                <button
+                                    type="button"
+                                    className={`${PORTAL_SECONDARY_BTN} !border-white/15 !bg-white/10 !text-white hover:!bg-white/15`}
+                                    onClick={() => setTab('reports')}
+                                >
+                                    <FileText className="h-4 w-4" />
+                                    View reports
+                                </button>
+                                <button
+                                    type="button"
+                                    className={PORTAL_PRIMARY_BTN}
+                                    onClick={() => setTab('optimizer')}
+                                >
+                                    <Rocket className="h-4 w-4" />
+                                    Optimise my bond
+                                </button>
+                            </div>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
+                                    Est. interest saved
+                                </p>
+                                <p className="mt-1 text-xl font-semibold tabular-nums text-emerald-300">
+                                    {formatZar(comparison.interestSaved)}
+                                </p>
+                            </div>
+                            <div className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
+                                    Wealth score
+                                </p>
+                                <p className="mt-1 text-xl font-semibold tabular-nums text-white">
+                                    {wealth.score} <span className="text-sm font-normal text-white/50">/ 100</span>
+                                </p>
+                            </div>
+                            <div className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur">
+                                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
+                                    Est. settlement
+                                </p>
+                                <p className="mt-1 text-xl font-semibold tabular-nums text-white">
+                                    {formatDate(settlement)}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 print:hidden">
-                        <button
-                            type="button"
-                            className={`${PORTAL_SECONDARY_BTN} !bg-white/10 !text-white !border-white/20`}
-                            onClick={() => void exportFinancialSummaryPdf(liveProfile)}
-                        >
-                            <Download className="h-4 w-4" />
-                            PDF summary
-                        </button>
-                        <button
-                            type="button"
-                            className={`${PORTAL_SECONDARY_BTN} !bg-white/10 !text-white !border-white/20`}
-                            onClick={() => exportAmortisationCsv(comparison.optimized.rows)}
-                        >
-                            <Download className="h-4 w-4" />
-                            Excel/CSV schedule
-                        </button>
-                        <button
-                            type="button"
-                            className={`${PORTAL_PRIMARY_BTN}`}
-                            onClick={() => window.print()}
-                        >
-                            <Printer className="h-4 w-4" />
-                            Print
-                        </button>
+                </section>
+
+                <DisclaimerBanner>{DISCLAIMER}</DisclaimerBanner>
+
+                {/* Sticky tab nav */}
+                <div className="sticky top-0 z-30 -mx-1 bg-gradient-to-b from-[#F8FAFC] via-[#F8FAFC]/95 to-transparent px-1 py-2 print:hidden">
+                    <div className="flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
+                        {TABS.map((t) => (
+                            <TabPill key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+                                <span className="flex items-center gap-1.5">
+                                    <t.icon className="h-3.5 w-3.5" />
+                                    {t.label}
+                                </span>
+                            </TabPill>
+                        ))}
                     </div>
                 </div>
-            </section>
 
-            <SboCallout>{DISCLAIMER}</SboCallout>
+                {tab === 'overview' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Your bond, at a glance"
+                            title="Overview dashboard"
+                            body="A live snapshot of your property, bond, and progress — built from the figures you enter. Update anything below and every score, chart, and insight recalculates instantly."
+                        />
 
-            {/* Tabs */}
-            <div className="flex gap-2 overflow-x-auto pb-1 print:hidden">
-                {TABS.map((t) => (
-                    <SboTabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
-                        {t.label}
-                    </SboTabButton>
-                ))}
-            </div>
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <MetricCard label="Property value" value={formatZar(liveProfile.propertyValue)} icon={Home} tone="brand" />
+                            <MetricCard label="Outstanding bond" value={formatZar(liveProfile.outstandingBalance)} icon={Landmark} />
+                            <MetricCard label="Monthly repayment" value={formatZar(liveProfile.monthlyRepayment)} icon={Wallet} />
+                            <MetricCard label="Extra monthly" value={formatZar(liveProfile.extraMonthly)} icon={PiggyBank} tone="good" trend="Planned" trendPositive />
+                            <MetricCard label="Interest rate" value={`${formatPct(liveProfile.annualInterestRate, 2)} · ${liveProfile.interestType}`} icon={Percent} tone="info" />
+                            <MetricCard label="Remaining term" value={formatMonthsAsYears(liveProfile.remainingTermMonths)} icon={CalendarClock} />
+                            <MetricCard label="Estimated equity" value={formatZar(equity)} icon={TrendingUp} tone="good" />
+                            <MetricCard
+                                label="Loan-to-value"
+                                value={formatPct(ltv, 1)}
+                                icon={Gauge}
+                                tone={ltv > 90 ? 'danger' : ltv > 80 ? 'warn' : 'good'}
+                                hint="Balance vs property value"
+                            />
+                        </div>
 
-            {tab === 'overview' ? (
-                <div className="space-y-6">
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <SboKpi label="Property value" value={formatZar(liveProfile.propertyValue)} icon={Home} tone="accent" />
-                        <SboKpi label="Outstanding bond" value={formatZar(liveProfile.outstandingBalance)} icon={Landmark} />
-                        <SboKpi label="Original loan" value={formatZar(liveProfile.originalLoanAmount)} icon={Banknote} />
-                        <SboKpi label="Monthly repayment" value={formatZar(liveProfile.monthlyRepayment)} icon={Wallet} />
-                        <SboKpi label="Extra monthly" value={formatZar(liveProfile.extraMonthly)} icon={PiggyBank} tone="good" trend="Planned" />
-                        <SboKpi label="Interest rate" value={`${formatPct(liveProfile.annualInterestRate, 2)} · ${liveProfile.interestType}`} icon={Percent} />
-                        <SboKpi label="Remaining term" value={formatMonthsAsYears(liveProfile.remainingTermMonths)} icon={CalendarClock} />
-                        <SboKpi label="Est. settlement" value={formatDate(settlement)} icon={Target} hint="With current extras (estimate)" />
-                        <SboKpi label="Estimated equity" value={formatZar(equity)} icon={TrendingUp} tone="good" />
-                        <SboKpi label="Loan-to-value" value={formatPct(ltv, 1)} icon={Gauge} tone={ltv > 80 ? 'warn' : 'good'} />
-                        <SboKpi label="Remaining interest" value={formatZar(comparison.baseline.totalInterest)} icon={Activity} hint="Baseline schedule estimate" />
-                        <SboKpi label="Est. interest saved" value={formatZar(comparison.interestSaved)} icon={Sparkles} tone="good" hint="Vs baseline with extras" />
-                    </div>
-
-                    <div className="grid gap-4 lg:grid-cols-[280px_280px_1fr]">
-                        <SboScoreRing score={wealth.score} label="Wealth Score" sub={wealth.label} />
-                        <SboScoreRing score={health.score} label="Bond Health" sub={health.label} />
-                        <SboSection title="Score drivers" subtitle="Proprietary educational scores — not credit scores or bank ratings.">
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                {[...wealth.factors, ...health.factors].slice(0, 6).map((f) => (
-                                    <div key={f.key + f.label} className="rounded-xl border border-charcoal/[0.08] p-3">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium text-charcoal">{f.label}</span>
-                                            <span className="tabular-nums text-charcoal/70">{Math.round(f.score)}</span>
+                        <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,260px)_1fr]">
+                            <ProgressRing score={wealth.score} label="Wealth Score" sub={wealth.label} />
+                            <ProgressRing score={health.score} label="Bond Health" sub={health.label} color="#0D9488" />
+                            <Panel>
+                                <h3 className="text-base font-semibold text-slate-900">Score drivers</h3>
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Proprietary educational scores — not credit scores or bank ratings.
+                                </p>
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    {[...wealth.factors, ...health.factors].slice(0, 6).map((f) => (
+                                        <div key={f.key + f.label} className="rounded-xl bg-slate-50/80 p-3 ring-1 ring-slate-900/[0.04]">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="font-medium text-slate-800">{f.label}</span>
+                                                <span className="tabular-nums text-slate-500">{Math.round(f.score)}</span>
+                                            </div>
+                                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
+                                                <div
+                                                    className="h-full rounded-full bg-gold transition-all"
+                                                    style={{ width: `${Math.min(100, f.score)}%` }}
+                                                />
+                                            </div>
+                                            <p className="mt-1.5 text-[11px] text-slate-500">{f.note}</p>
                                         </div>
-                                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-charcoal/[0.06]">
-                                            <div
-                                                className="h-full rounded-full bg-gold transition-all"
-                                                style={{ width: `${Math.min(100, f.score)}%` }}
-                                            />
-                                        </div>
-                                        <p className="mt-1.5 text-[11px] text-charcoal/50">{f.note}</p>
-                                    </div>
+                                    ))}
+                                </div>
+                            </Panel>
+                        </div>
+
+                        <Panel>
+                            <h3 className="text-base font-semibold text-slate-900">AI Financial Coach</h3>
+                            <p className="mt-1 text-xs text-slate-500">
+                                Plain-language explanations tagged as fact, estimate, assumption, or opportunity.
+                            </p>
+                            <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                {insights.map((ins) => (
+                                    <AIInsightCard
+                                        key={ins.id}
+                                        kind={ins.kind}
+                                        title={ins.title}
+                                        body={ins.body}
+                                        actionLabel={ins.kind === 'opportunity' ? 'Open Optimizer' : undefined}
+                                        onAction={ins.kind === 'opportunity' ? () => setTab('optimizer') : undefined}
+                                    />
                                 ))}
                             </div>
-                        </SboSection>
-                    </div>
+                        </Panel>
 
-                    <SboSection title="AI-assisted insights" subtitle="Plain-language explanations tagged as fact, estimate, assumption, or opportunity.">
-                        <div className="grid gap-3 md:grid-cols-2">
-                            {insights.map((ins) => (
-                                <div key={ins.id} className="rounded-2xl border border-charcoal/[0.08] bg-white p-4">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="font-semibold text-charcoal">{ins.title}</p>
-                                        <SboInsightBadge kind={ins.kind} />
-                                    </div>
-                                    <p className="mt-2 text-sm leading-relaxed text-charcoal/65">{ins.body}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </SboSection>
+                        <ComparisonCard
+                            leftTitle="Current schedule (no extras)"
+                            rightTitle="Optimised with your extras"
+                            leftValue={formatMonthsAsYears(comparison.baseline.monthsToSettle)}
+                            rightValue={formatMonthsAsYears(comparison.optimized.monthsToSettle)}
+                            highlight={`Est. ${formatMonthsAsYears(comparison.monthsSaved)} faster and ${formatZar(comparison.interestSaved)} less interest.`}
+                            footnote="Assumes a constant rate and uninterrupted payments — a planning estimate, not a guarantee."
+                        />
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        <SboSection title="Principal vs interest" subtitle="Yearly view of the optimised path (estimate).">
-                            <div className="h-72">
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <ChartContainer title="Principal vs interest" subtitle="Yearly view of the optimised path (estimate).">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={principalInterestChart}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -454,10 +507,8 @@ export default function SmartBondOptimizerApp() {
                                         <Area type="monotone" dataKey="interest" stackId="1" stroke={CHART_GOLD} fill={CHART_GOLD} fillOpacity={0.35} name="Interest" />
                                     </AreaChart>
                                 </ResponsiveContainer>
-                            </div>
-                        </SboSection>
-                        <SboSection title="Equity trajectory" subtitle="Assumes your appreciation % — property values can fall.">
-                            <div className="h-72">
+                            </ChartContainer>
+                            <ChartContainer title="Equity trajectory" subtitle="Assumes your appreciation % — property values can fall.">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={equitySeries}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -470,147 +521,217 @@ export default function SmartBondOptimizerApp() {
                                         <Line type="monotone" dataKey="value" stroke={CHART_SLATE} strokeWidth={2} name="Property value" dot={false} />
                                     </LineChart>
                                 </ResponsiveContainer>
-                            </div>
-                        </SboSection>
-                    </div>
-
-                    <SboSection title="Quick profile inputs" subtitle="Autosaved locally in your browser.">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            <SboNumberField label="Property value (R)" value={liveProfile.propertyValue} onChange={(n) => patchProfile({ propertyValue: n })} />
-                            <SboNumberField label="Outstanding balance (R)" value={liveProfile.outstandingBalance} onChange={(n) => patchProfile({ outstandingBalance: n, monthlyRepayment: 0 })} />
-                            <SboNumberField label="Original loan (R)" value={liveProfile.originalLoanAmount} onChange={(n) => patchProfile({ originalLoanAmount: n })} />
-                            <SboNumberField label="Interest rate (% p.a.)" value={liveProfile.annualInterestRate} step={0.05} onChange={(n) => patchProfile({ annualInterestRate: n, monthlyRepayment: 0 })} />
-                            <SboNumberField label="Remaining term (months)" value={liveProfile.remainingTermMonths} onChange={(n) => patchProfile({ remainingTermMonths: n, monthlyRepayment: 0 })} />
-                            <SboNumberField label="Monthly income (R)" value={liveProfile.monthlyIncome} onChange={(n) => patchProfile({ monthlyIncome: n })} />
-                            <label className="block space-y-1.5">
-                                <span className="text-sm font-medium text-charcoal/70">Interest type</span>
-                                <select
-                                    className="h-11 w-full rounded-xl border border-charcoal/[0.12] bg-white px-3 text-sm"
-                                    value={liveProfile.interestType}
-                                    onChange={(e) =>
-                                        patchProfile({ interestType: e.target.value as BondProfile['interestType'] })
-                                    }
-                                >
-                                    <option value="variable">Variable (prime-linked)</option>
-                                    <option value="fixed">Fixed (for a period)</option>
-                                </select>
-                            </label>
-                            <SboNumberField label="Annual appreciation assumption (%)" value={liveProfile.annualAppreciationPct} step={0.1} onChange={(n) => patchProfile({ annualAppreciationPct: n })} hint="Assumption — not a forecast" />
-                            <SboNumberField label="Monthly expenses (R)" value={liveProfile.monthlyExpenses} onChange={(n) => patchProfile({ monthlyExpenses: n })} />
+                            </ChartContainer>
                         </div>
-                    </SboSection>
-                </div>
-            ) : null}
 
-            {tab === 'optimizer' ? (
-                <div className="space-y-6">
-                    <SboSection title="Bond Optimizer" subtitle="Sliders update estimated years saved, interest saved, and settlement date instantly.">
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            <div className="space-y-5">
-                                <SboSlider label="Extra monthly repayment" value={liveProfile.extraMonthly} min={0} max={20000} step={100} display={formatZar(liveProfile.extraMonthly)} onChange={(n) => patchProfile({ extraMonthly: n })} />
-                                <SboSlider label="Annual lump sum" value={liveProfile.annualLumpSum} min={0} max={200000} step={1000} display={formatZar(liveProfile.annualLumpSum)} onChange={(n) => patchProfile({ annualLumpSum: n })} />
-                                <SboSlider label="Interest rate" value={liveProfile.annualInterestRate} min={6} max={16} step={0.05} display={formatPct(liveProfile.annualInterestRate, 2)} onChange={(n) => patchProfile({ annualInterestRate: n, monthlyRepayment: 0 })} />
-                                <SboSlider label="Remaining term (months)" value={liveProfile.remainingTermMonths} min={12} max={360} step={1} display={formatMonthsAsYears(liveProfile.remainingTermMonths)} onChange={(n) => patchProfile({ remainingTermMonths: n, monthlyRepayment: 0 })} />
-                                <SboSlider label="Deposit (context)" value={liveProfile.depositAmount} min={0} max={liveProfile.propertyValue} step={5000} display={formatZar(liveProfile.depositAmount)} onChange={(n) => patchProfile({ depositAmount: n })} />
-                                <SboSlider label="Appreciation assumption" value={liveProfile.annualAppreciationPct} min={0} max={12} step={0.1} display={formatPct(liveProfile.annualAppreciationPct, 1)} onChange={(n) => patchProfile({ annualAppreciationPct: n })} />
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <SboKpi label="Years saved (est.)" value={formatMonthsAsYears(comparison.monthsSaved)} icon={Sparkles} tone="good" />
-                                <SboKpi label="Interest saved (est.)" value={formatZar(comparison.interestSaved)} icon={PiggyBank} tone="good" />
-                                <SboKpi label="New settlement (est.)" value={formatDate(settlement)} icon={CalendarClock} />
-                                <SboKpi label="Baseline total interest" value={formatZar(comparison.baseline.totalInterest)} icon={Activity} />
-                                <SboKpi label="Optimised total interest" value={formatZar(comparison.optimized.totalInterest)} icon={TrendingUp} />
-                                <SboKpi label="Total extras paid (est.)" value={formatZar(comparison.optimized.totalExtra)} icon={Wallet} />
-                            </div>
-                        </div>
-                    </SboSection>
-
-                    <SboSection
-                        title="Amortisation schedule"
-                        subtitle="Monthly, quarterly, or yearly aggregation."
-                        action={
-                            <div className="flex gap-2">
-                                {(['monthly', 'quarterly', 'yearly'] as AmortisationView[]).map((v) => (
-                                    <button
-                                        key={v}
-                                        type="button"
-                                        onClick={() => setAmortView(v)}
-                                        className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize ${
-                                            amortView === v ? 'bg-gold text-white' : 'bg-charcoal/[0.05] text-charcoal/70'
-                                        }`}
+                        <Panel>
+                            <SectionIntro
+                                eyebrow="Autosaved locally"
+                                title="Your bond profile"
+                                body="Keep these figures current for accurate estimates across every tab. Nothing is sent anywhere — it's saved in your browser only."
+                            />
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <FinancialInput label="Property value" value={liveProfile.propertyValue} onChange={(n) => patchProfile({ propertyValue: n })} step={10000} />
+                                <FinancialInput label="Outstanding balance" value={liveProfile.outstandingBalance} onChange={(n) => patchProfile({ outstandingBalance: n, monthlyRepayment: 0 })} step={10000} />
+                                <FinancialInput label="Original loan amount" value={liveProfile.originalLoanAmount} onChange={(n) => patchProfile({ originalLoanAmount: n })} step={10000} />
+                                <FinancialInput label="Monthly income" value={liveProfile.monthlyIncome} onChange={(n) => patchProfile({ monthlyIncome: n })} step={500} />
+                                <FinancialInput label="Monthly expenses" value={liveProfile.monthlyExpenses} onChange={(n) => patchProfile({ monthlyExpenses: n })} step={500} />
+                                <FinancialInput
+                                    label="Appreciation assumption"
+                                    value={liveProfile.annualAppreciationPct}
+                                    onChange={(n) => patchProfile({ annualAppreciationPct: n })}
+                                    currency={false}
+                                    step={0.1}
+                                    suffix="% p.a."
+                                    hint="Assumption — not a forecast"
+                                />
+                                <label className="block space-y-1.5">
+                                    <span className="text-sm font-medium text-slate-700">Interest type</span>
+                                    <select
+                                        className="h-11 w-full rounded-2xl bg-white px-3 text-sm font-medium text-slate-900 shadow-sm ring-1 ring-slate-900/[0.08] focus:outline-none focus:ring-2 focus:ring-gold/30"
+                                        value={liveProfile.interestType}
+                                        onChange={(e) => patchProfile({ interestType: e.target.value as BondProfile['interestType'] })}
                                     >
-                                        {v}
-                                    </button>
-                                ))}
+                                        <option value="variable">Variable (prime-linked)</option>
+                                        <option value="fixed">Fixed (for a period)</option>
+                                    </select>
+                                </label>
                             </div>
-                        }
-                    >
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-left text-sm">
-                                <thead className="text-[11px] uppercase tracking-wide text-charcoal/45">
-                                    <tr>
-                                        <th className="py-2 pr-4">Period</th>
-                                        <th className="py-2 pr-4">Payment</th>
-                                        <th className="py-2 pr-4">Principal</th>
-                                        <th className="py-2 pr-4">Interest</th>
-                                        <th className="py-2 pr-4">Extra</th>
-                                        <th className="py-2">Balance</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {amortTable.map((r) => (
-                                        <tr key={r.label} className="border-t border-charcoal/[0.06]">
-                                            <td className="py-2 pr-4 font-medium">{r.label}</td>
-                                            <td className="py-2 pr-4 tabular-nums">{formatZar(r.payment)}</td>
-                                            <td className="py-2 pr-4 tabular-nums">{formatZar(r.principal)}</td>
-                                            <td className="py-2 pr-4 tabular-nums">{formatZar(r.interest)}</td>
-                                            <td className="py-2 pr-4 tabular-nums">{formatZar(r.extra)}</td>
-                                            <td className="py-2 tabular-nums">{formatZar(r.balance)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        <button
-                            type="button"
-                            className={`${PORTAL_SECONDARY_BTN} mt-4`}
-                            onClick={() => exportAmortisationCsv(comparison.optimized.rows)}
-                        >
-                            <Download className="h-4 w-4" /> Download full schedule (CSV)
-                        </button>
-                    </SboSection>
-                </div>
-            ) : null}
+                        </Panel>
+                    </div>
+                ) : null}
 
-            {tab === 'rates' ? (
-                <div className="space-y-6">
-                    <SboSection title="Fixed vs Variable Interest Centre" subtitle="Balanced education for the South African market — not a prediction engine.">
+                {tab === 'optimizer' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Why extras matter"
+                            title="Small extras, big impact"
+                            body="Every rand you add above your scheduled instalment goes straight toward capital — because interest is charged on the reducing balance, extras compound into shorter terms and lower lifetime interest in a standard amortising model."
+                            example="On a R1.2m bond at 11.75%, an extra R1,000/month can save years off the term and a meaningful amount in total interest — try the sliders below to see your own numbers."
+                        />
+
+                        <div className="grid gap-6 lg:grid-cols-2">
+                            <div className="space-y-4">
+                                <SmartSlider
+                                    label="Extra monthly repayment"
+                                    value={liveProfile.extraMonthly}
+                                    min={0}
+                                    max={20000}
+                                    step={100}
+                                    display={formatZar(liveProfile.extraMonthly)}
+                                    onChange={(n) => patchProfile({ extraMonthly: n })}
+                                    why="Paid on top of your instalment every month — reduces capital sooner."
+                                    tooltip="Extra monthly amounts go straight to principal, cutting the interest charged in future months."
+                                    chips={[500, 1000, 2500, 5000].map((v) => ({
+                                        label: formatChipZar(v),
+                                        value: liveProfile.extraMonthly + v,
+                                    }))}
+                                />
+                                <SmartSlider
+                                    label="Annual lump sum"
+                                    value={liveProfile.annualLumpSum}
+                                    min={0}
+                                    max={200000}
+                                    step={1000}
+                                    display={formatZar(liveProfile.annualLumpSum)}
+                                    onChange={(n) => patchProfile({ annualLumpSum: n })}
+                                    why="A yearly bonus, 13th cheque, or tax refund applied to capital each December."
+                                />
+                                <SmartSlider
+                                    label="Interest rate"
+                                    value={liveProfile.annualInterestRate}
+                                    min={6}
+                                    max={16}
+                                    step={0.05}
+                                    display={formatPct(liveProfile.annualInterestRate, 2)}
+                                    onChange={(n) => patchProfile({ annualInterestRate: n, monthlyRepayment: 0 })}
+                                    why="Match this to your latest bank statement for the most accurate projection."
+                                />
+                                <SmartSlider
+                                    label="Remaining term"
+                                    value={liveProfile.remainingTermMonths}
+                                    min={12}
+                                    max={360}
+                                    step={1}
+                                    display={formatMonthsAsYears(liveProfile.remainingTermMonths)}
+                                    onChange={(n) => patchProfile({ remainingTermMonths: n, monthlyRepayment: 0 })}
+                                    why="Months left on your current agreement, per your latest statement."
+                                />
+                                <SmartSlider
+                                    label="Appreciation assumption"
+                                    value={liveProfile.annualAppreciationPct}
+                                    min={0}
+                                    max={12}
+                                    step={0.1}
+                                    display={formatPct(liveProfile.annualAppreciationPct, 1)}
+                                    onChange={(n) => patchProfile({ annualAppreciationPct: n })}
+                                    why="Used only for the equity chart — property values can also fall."
+                                />
+                            </div>
+                            <div className="space-y-4">
+                                <ComparisonCard
+                                    leftTitle="Baseline total interest"
+                                    rightTitle="Optimised total interest"
+                                    leftValue={formatZar(comparison.baseline.totalInterest)}
+                                    rightValue={formatZar(comparison.optimized.totalInterest)}
+                                    highlight={`Estimated saving: ${formatZar(comparison.interestSaved)}`}
+                                    footnote="Estimate based on a standard amortising model with your extras applied."
+                                />
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <MetricCard label="Years saved (est.)" value={formatMonthsAsYears(comparison.monthsSaved)} icon={Sparkles} tone="good" />
+                                    <MetricCard label="New settlement (est.)" value={formatDate(settlement)} icon={CalendarClock} tone="brand" />
+                                    <MetricCard label="Total extras paid (est.)" value={formatZar(comparison.optimized.totalExtra)} icon={Wallet} />
+                                    <MetricCard label="Optimised repayment path" value={formatZar(liveProfile.monthlyRepayment)} icon={Activity} hint="Scheduled instalment, excl. extras" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <Panel>
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-base font-semibold text-slate-900">Amortisation schedule</h3>
+                                    <p className="mt-1 text-xs text-slate-500">Monthly, quarterly, or yearly aggregation of your optimised path.</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    {(['monthly', 'quarterly', 'yearly'] as AmortisationView[]).map((v) => (
+                                        <button
+                                            key={v}
+                                            type="button"
+                                            onClick={() => setAmortView(v)}
+                                            className={`rounded-full px-3 py-1.5 text-xs font-semibold capitalize transition ${
+                                                amortView === v ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                            }`}
+                                        >
+                                            {v}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="max-h-96 overflow-auto rounded-xl ring-1 ring-slate-900/[0.05]">
+                                <table className="min-w-full text-left text-sm">
+                                    <thead className="sticky top-0 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
+                                        <tr>
+                                            <th className="py-2 pl-4 pr-4">Period</th>
+                                            <th className="py-2 pr-4">Payment</th>
+                                            <th className="py-2 pr-4">Principal</th>
+                                            <th className="py-2 pr-4">Interest</th>
+                                            <th className="py-2 pr-4">Extra</th>
+                                            <th className="py-2 pr-4">Balance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {amortTable.map((r) => (
+                                            <tr key={r.label} className="border-t border-slate-100">
+                                                <td className="py-2 pl-4 pr-4 font-medium text-slate-700">{r.label}</td>
+                                                <td className="py-2 pr-4 tabular-nums text-slate-600">{formatZar(r.payment)}</td>
+                                                <td className="py-2 pr-4 tabular-nums text-slate-600">{formatZar(r.principal)}</td>
+                                                <td className="py-2 pr-4 tabular-nums text-slate-600">{formatZar(r.interest)}</td>
+                                                <td className="py-2 pr-4 tabular-nums text-slate-600">{formatZar(r.extra)}</td>
+                                                <td className="py-2 pr-4 tabular-nums text-slate-600">{formatZar(r.balance)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button
+                                type="button"
+                                className={`${PORTAL_SECONDARY_BTN} mt-4`}
+                                onClick={() => exportAmortisationCsv(comparison.optimized.rows)}
+                            >
+                                <Download className="h-4 w-4" /> Download full schedule (CSV)
+                            </button>
+                        </Panel>
+                    </div>
+                ) : null}
+
+                {tab === 'savings' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Interest savings centre"
+                            title="Fixed vs Variable — and rate risk"
+                            body="Balanced education for the South African market. Neither structure is universally better — the right choice depends on your buffers, risk tolerance, and how long you plan to keep the loan."
+                        />
+
                         <div className="grid gap-4 lg:grid-cols-2">
-                            <div className="rounded-2xl border border-charcoal/[0.08] p-5">
-                                <h3 className="font-semibold text-charcoal">Variable (often prime-linked)</h3>
-                                <ul className="mt-3 space-y-2 text-sm text-charcoal/65">
-                                    <li>• Instalments can rise or fall when prime moves.</li>
-                                    <li>• Can benefit if rates decline; budget risk if rates rise.</li>
-                                    <li>• Commonly quoted as prime ± a margin set by your lender.</li>
-                                </ul>
-                            </div>
-                            <div className="rounded-2xl border border-charcoal/[0.08] p-5">
-                                <h3 className="font-semibold text-charcoal">Fixed (for a defined period)</h3>
-                                <ul className="mt-3 space-y-2 text-sm text-charcoal/65">
-                                    <li>• Payment certainty during the fixed window aids budgeting.</li>
-                                    <li>• Break costs / conditions may apply if you exit early.</li>
-                                    <li>• After expiry, loans often revert to a variable structure.</li>
-                                </ul>
-                            </div>
+                            <ComparisonCard
+                                leftTitle="Variable (often prime-linked)"
+                                rightTitle="Fixed (for a defined period)"
+                                leftValue="Moves with prime"
+                                rightValue="Payment certainty"
+                                highlight="Confirm break costs, reversion terms, and margin with your lender before switching."
+                                footnote="Fixed-rate loans usually revert to variable once the fixed period ends."
+                            />
+                            <ComparisonCard
+                                leftTitle="Illustrative repo rate"
+                                rightTitle="Illustrative prime rate"
+                                leftValue={formatPct(SA_REPO_REFERENCE, 2)}
+                                rightValue={formatPct(SA_PRIME_REFERENCE, 2)}
+                                footnote="Educational reference only — verify current SARB / bank publications."
+                            />
                         </div>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                            <SboKpi label="Illustrative repo reference" value={formatPct(SA_REPO_REFERENCE, 2)} icon={Landmark} hint="Educational reference only" />
-                            <SboKpi label="Illustrative prime reference" value={formatPct(SA_PRIME_REFERENCE, 2)} icon={Percent} hint="Update to your bank’s prime" />
-                        </div>
-                    </SboSection>
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        <SboSection title="Rate shock on your instalment" subtitle="Estimated repayment if your rate moves by the shock shown.">
-                            <div className="h-72">
+
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <ChartContainer title="Rate shock on your instalment" subtitle="Estimated repayment if your rate moves by the shock shown.">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={shockData}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -620,10 +741,8 @@ export default function SmartBondOptimizerApp() {
                                         <Bar dataKey="repayment" fill={CHART_GOLD} radius={[8, 8, 0, 0]} name="Est. repayment" />
                                     </BarChart>
                                 </ResponsiveContainer>
-                            </div>
-                        </SboSection>
-                        <SboSection title="Illustrative repo & prime path" subtitle="Simplified educational series — verify official SARB / bank publications.">
-                            <div className="h-72">
+                            </ChartContainer>
+                            <ChartContainer title="Illustrative repo & prime path" subtitle="Simplified educational series — verify official SARB / bank publications.">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart data={RATE_HISTORY_ILLUSTRATIVE}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -635,41 +754,91 @@ export default function SmartBondOptimizerApp() {
                                         <Line type="monotone" dataKey="prime" stroke={CHART_GOLD} name="Prime (illust.)" />
                                     </LineChart>
                                 </ResponsiveContainer>
-                            </div>
-                        </SboSection>
-                    </div>
-                </div>
-            ) : null}
+                            </ChartContainer>
+                        </div>
 
-            {tab === 'equity' ? (
-                <div className="space-y-6">
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <SboKpi label="Estimated equity" value={formatZar(equity)} icon={TrendingUp} tone="good" />
-                        <SboKpi label="LTV" value={formatPct(ltv, 1)} icon={Gauge} />
-                        <SboKpi label="Property value" value={formatZar(liveProfile.propertyValue)} icon={Home} />
-                        <SboKpi label="Bond balance" value={formatZar(liveProfile.outstandingBalance)} icon={Landmark} />
+                        <Panel>
+                            <SectionIntro
+                                title="Scenario stress test"
+                                body="Layer a rate shock, extra repayments, a bonus, appreciation, or an unexpected expense to see how resilient your plan is."
+                            />
+                            <div className="grid gap-6 lg:grid-cols-2">
+                                <div className="space-y-4">
+                                    <SmartSlider
+                                        label="Rate change"
+                                        value={scenario.rateDeltaPct}
+                                        min={-3}
+                                        max={4}
+                                        step={0.25}
+                                        display={`${scenario.rateDeltaPct > 0 ? '+' : ''}${scenario.rateDeltaPct} pp`}
+                                        onChange={(n) => setScenario((s) => ({ ...s, rateDeltaPct: n }))}
+                                    />
+                                    <SmartSlider
+                                        label="Extra monthly add-on"
+                                        value={scenario.extraMonthly}
+                                        min={0}
+                                        max={15000}
+                                        step={100}
+                                        display={formatZar(scenario.extraMonthly)}
+                                        onChange={(n) => setScenario((s) => ({ ...s, extraMonthly: n }))}
+                                    />
+                                    <SmartSlider
+                                        label="Annual bonus / lump sum"
+                                        value={scenario.annualBonus + scenario.lumpSum}
+                                        min={0}
+                                        max={250000}
+                                        step={1000}
+                                        display={formatZar(scenario.annualBonus + scenario.lumpSum)}
+                                        onChange={(n) => setScenario((s) => ({ ...s, annualBonus: n, lumpSum: 0 }))}
+                                    />
+                                    <SmartSlider
+                                        label="Unexpected expense added to balance"
+                                        value={scenario.unexpectedExpense}
+                                        min={0}
+                                        max={200000}
+                                        step={1000}
+                                        display={formatZar(scenario.unexpectedExpense)}
+                                        onChange={(n) => setScenario((s) => ({ ...s, unexpectedExpense: n }))}
+                                    />
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <MetricCard label="Scenario rate" value={formatPct(scenarioProfile.annualInterestRate, 2)} icon={Percent} tone="info" />
+                                    <MetricCard label="Scenario repayment" value={formatZar(scenarioProfile.monthlyRepayment)} icon={Wallet} />
+                                    <MetricCard label="Term (est.)" value={formatMonthsAsYears(scenarioCmp.optimized.monthsToSettle)} icon={CalendarClock} />
+                                    <MetricCard label="Interest (est.)" value={formatZar(scenarioCmp.optimized.totalInterest)} icon={Activity} />
+                                    <MetricCard
+                                        label="Interest vs baseline"
+                                        value={formatZar(comparison.baseline.totalInterest - scenarioCmp.optimized.totalInterest)}
+                                        icon={Sparkles}
+                                        tone={comparison.baseline.totalInterest - scenarioCmp.optimized.totalInterest >= 0 ? 'good' : 'danger'}
+                                    />
+                                    <MetricCard
+                                        label="Months vs baseline"
+                                        value={formatMonthsAsYears(Math.abs(comparison.baseline.monthsToSettle - scenarioCmp.optimized.monthsToSettle))}
+                                        icon={Gauge}
+                                    />
+                                </div>
+                            </div>
+                        </Panel>
                     </div>
-                    <SboSection title="Property Wealth Roadmap" subtitle="Educational journey — borrowing against equity requires lender approval.">
-                        <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                            {[
-                                'Buy & stabilise the primary bond',
-                                'Reduce interest via extras / access deposits',
-                                'Build equity & improve LTV',
-                                'Maintain buffers & insurance',
-                                'Explore further property only if affordable',
-                                'Consider rental income carefully',
-                                'Diversify portfolio thoughtfully',
-                                'Long-term wealth with disciplined risk',
-                            ].map((step, i) => (
-                                <li key={step} className="rounded-2xl border border-charcoal/[0.08] bg-white p-4">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-gold">Step {i + 1}</p>
-                                    <p className="mt-1 text-sm font-medium text-charcoal">{step}</p>
-                                </li>
-                            ))}
-                        </ol>
-                    </SboSection>
-                    <SboSection title="Equity growth chart" subtitle="Combines repayment schedule with your appreciation assumption.">
-                        <div className="h-80">
+                ) : null}
+
+                {tab === 'equity' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Equity & wealth roadmap"
+                            title="Build equity, track LTV"
+                            body="Equity grows as you repay capital and (if it occurs) as property values rise. Loan-to-value (LTV) tells lenders how much cushion exists between your bond and your home's worth."
+                        />
+
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <MetricCard label="Estimated equity" value={formatZar(equity)} icon={TrendingUp} tone="good" />
+                            <MetricCard label="Loan-to-value" value={formatPct(ltv, 1)} icon={Gauge} tone={ltv > 90 ? 'danger' : ltv > 80 ? 'warn' : 'good'} />
+                            <MetricCard label="Property value" value={formatZar(liveProfile.propertyValue)} icon={Home} />
+                            <MetricCard label="Bond balance" value={formatZar(liveProfile.outstandingBalance)} icon={Landmark} />
+                        </div>
+
+                        <ChartContainer title="Equity growth chart" subtitle="Combines your repayment schedule with your appreciation assumption." height="h-80">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={equitySeries}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -679,120 +848,182 @@ export default function SmartBondOptimizerApp() {
                                     <Area type="monotone" dataKey="equity" stroke={CHART_TEAL} fill={CHART_TEAL} fillOpacity={0.3} name="Equity" />
                                 </AreaChart>
                             </ResponsiveContainer>
-                        </div>
-                    </SboSection>
-                </div>
-            ) : null}
+                        </ChartContainer>
 
-            {tab === 'investment' ? (
-                <div className="space-y-6">
-                    <SboSection title="Investment Property Planner" subtitle="Planning estimates only — not an approval or recommendation to buy.">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {(
-                                [
-                                    ['monthlyIncome', 'Monthly income'],
-                                    ['monthlyExpenses', 'Monthly expenses'],
-                                    ['existingBondRepayment', 'Existing bond repayment'],
-                                    ['rentalIncome', 'Expected rent'],
-                                    ['savings', 'Savings available'],
-                                    ['depositAmount', 'Deposit'],
-                                    ['targetPrice', 'Target price'],
-                                    ['maintenanceMonthly', 'Maintenance / mo'],
-                                    ['insuranceMonthly', 'Insurance / mo'],
-                                    ['ratesMonthly', 'Rates & levies / mo'],
-                                    ['vacancyMonthsPerYear', 'Vacancy months / yr'],
-                                    ['interestRate', 'Interest rate %'],
-                                    ['loanTermYears', 'Loan term (years)'],
-                                ] as const
-                            ).map(([key, label]) => (
-                                <SboNumberField
-                                    key={key}
-                                    label={label}
-                                    value={invest[key]}
-                                    step={key === 'interestRate' ? 0.05 : 1}
-                                    onChange={(n) => setInvest((p) => ({ ...p, [key]: n }))}
-                                />
-                            ))}
-                        </div>
-                        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <SboKpi label="Loan needed (est.)" value={formatZar(investResult.loanNeeded)} icon={Landmark} />
-                            <SboKpi label="Repayment (est.)" value={formatZar(investResult.repayment)} icon={Wallet} />
-                            <SboKpi label="Cash flow (est.)" value={formatZar(investResult.cashFlow)} icon={Activity} tone={investResult.cashFlow >= 0 ? 'good' : 'warn'} />
-                            <SboKpi label="DTI (est.)" value={formatPct(investResult.dti, 1)} icon={Gauge} />
-                            <SboKpi label="Gross yield (est.)" value={formatPct(investResult.grossYield, 1)} icon={Percent} />
-                            <SboKpi label="Net yield (est.)" value={formatPct(investResult.netYield, 1)} icon={Percent} />
-                            <SboKpi label="LTV (est.)" value={formatPct(investResult.ltv, 1)} icon={Home} />
-                            <SboKpi
-                                label="Time to deposit (est.)"
-                                value={
-                                    investResult.monthsToDeposit == null
-                                        ? '—'
-                                        : formatMonthsAsYears(investResult.monthsToDeposit)
-                                }
-                                icon={CalendarClock}
+                        <Panel>
+                            <SectionIntro
+                                title="Your wealth roadmap"
+                                body="Pick a goal to see a suggested extra repayment and a staged, educational timeline toward it."
                             />
-                        </div>
-                        <p className="mt-4 text-sm text-charcoal/60">{investResult.affordabilityNote}</p>
-                    </SboSection>
-                </div>
-            ) : null}
-
-            {tab === 'portfolio' ? (
-                <div className="space-y-6">
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        <SboKpi label="Portfolio value" value={formatZar(portSummary.totalValue)} icon={Building2} />
-                        <SboKpi label="Outstanding debt" value={formatZar(portSummary.totalDebt)} icon={Landmark} />
-                        <SboKpi label="Combined equity" value={formatZar(portSummary.equity)} icon={TrendingUp} tone="good" />
-                        <SboKpi label="Monthly rent" value={formatZar(portSummary.rent)} icon={Banknote} />
-                        <SboKpi label="Operating expenses" value={formatZar(portSummary.opex)} icon={Wallet} />
-                        <SboKpi label="Cash flow (est.)" value={formatZar(portSummary.cashFlow)} icon={Activity} tone={portSummary.cashFlow >= 0 ? 'good' : 'warn'} />
-                        <SboKpi label="Gross yield" value={formatPct(portSummary.grossYield, 1)} icon={Percent} />
-                        <SboKpi label="Net yield" value={formatPct(portSummary.netYield, 1)} icon={Percent} />
+                            <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {GOAL_OPTIONS.map((g) => (
+                                        <button
+                                            key={g.id}
+                                            type="button"
+                                            onClick={() => setGoal(g.id)}
+                                            className={`rounded-xl px-4 py-3 text-left text-sm transition ${
+                                                goal === g.id
+                                                    ? 'bg-gold/10 font-semibold text-slate-900 ring-1 ring-gold/30'
+                                                    : 'text-slate-600 ring-1 ring-slate-900/[0.06] hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {g.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                <FinancialInput
+                                    label="Target horizon"
+                                    value={goalYears}
+                                    onChange={setGoalYears}
+                                    currency={false}
+                                    min={1}
+                                    step={1}
+                                    suffix="years"
+                                />
+                            </div>
+                            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                                <MetricCard label="Suggested extra (est.)" value={formatZar(goalRoadmap.needExtra)} icon={PiggyBank} tone="good" />
+                                <MetricCard label="Payoff horizon (est.)" value={formatMonthsAsYears(goalRoadmap.months)} icon={Target} />
+                                <MetricCard label="Interest saved vs baseline (est.)" value={formatZar(goalRoadmap.interestSaved)} icon={Sparkles} tone="good" />
+                            </div>
+                            <div className="mt-6 space-y-0">
+                                {goalRoadmap.milestones.map((m, i) => (
+                                    <div key={m.t} className="relative flex gap-4 pb-6 last:pb-0">
+                                        <div className="flex flex-col items-center">
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gold text-xs font-bold text-white">
+                                                {i + 1}
+                                            </div>
+                                            {i < goalRoadmap.milestones.length - 1 ? (
+                                                <div className="mt-1 w-px flex-1 bg-slate-200" />
+                                            ) : null}
+                                        </div>
+                                        <div className="flex-1 rounded-2xl bg-slate-50/80 p-4 ring-1 ring-slate-900/[0.04]">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-gold">{m.t}</p>
+                                            <p className="mt-1 text-sm text-slate-600">{m.d}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </Panel>
                     </div>
-                    <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-                        <SboScoreRing score={portScore.score} label="Investment Score" sub={portScore.label} />
-                        <SboSection title="Portfolio properties" subtitle="Add residential, rental, holiday, or commercial holdings.">
-                            <div className="space-y-3">
+                ) : null}
+
+                {tab === 'investment' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Investment planner"
+                            title="Plan your next property"
+                            body="Model affordability, yield, and cash flow for a further purchase. These are planning estimates only — not an approval or recommendation to buy."
+                        />
+
+                        <Panel>
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                <FinancialInput label="Monthly income" value={invest.monthlyIncome} onChange={(n) => setInvest((p) => ({ ...p, monthlyIncome: n }))} step={500} />
+                                <FinancialInput label="Monthly expenses" value={invest.monthlyExpenses} onChange={(n) => setInvest((p) => ({ ...p, monthlyExpenses: n }))} step={500} />
+                                <FinancialInput label="Existing bond repayment" value={invest.existingBondRepayment} onChange={(n) => setInvest((p) => ({ ...p, existingBondRepayment: n }))} step={500} />
+                                <FinancialInput label="Expected rent" value={invest.rentalIncome} onChange={(n) => setInvest((p) => ({ ...p, rentalIncome: n }))} step={500} />
+                                <FinancialInput label="Savings available" value={invest.savings} onChange={(n) => setInvest((p) => ({ ...p, savings: n }))} step={5000} />
+                                <FinancialInput label="Deposit" value={invest.depositAmount} onChange={(n) => setInvest((p) => ({ ...p, depositAmount: n }))} step={5000} />
+                                <FinancialInput label="Target price" value={invest.targetPrice} onChange={(n) => setInvest((p) => ({ ...p, targetPrice: n }))} step={10000} />
+                                <FinancialInput label="Maintenance / mo" value={invest.maintenanceMonthly} onChange={(n) => setInvest((p) => ({ ...p, maintenanceMonthly: n }))} step={100} />
+                                <FinancialInput label="Insurance / mo" value={invest.insuranceMonthly} onChange={(n) => setInvest((p) => ({ ...p, insuranceMonthly: n }))} step={100} />
+                                <FinancialInput label="Rates & levies / mo" value={invest.ratesMonthly} onChange={(n) => setInvest((p) => ({ ...p, ratesMonthly: n }))} step={100} />
+                                <FinancialInput
+                                    label="Vacancy"
+                                    value={invest.vacancyMonthsPerYear}
+                                    onChange={(n) => setInvest((p) => ({ ...p, vacancyMonthsPerYear: n }))}
+                                    currency={false}
+                                    step={1}
+                                    suffix="mo / yr"
+                                />
+                                <FinancialInput
+                                    label="Interest rate"
+                                    value={invest.interestRate}
+                                    onChange={(n) => setInvest((p) => ({ ...p, interestRate: n }))}
+                                    currency={false}
+                                    step={0.05}
+                                    suffix="% p.a."
+                                />
+                                <FinancialInput
+                                    label="Loan term"
+                                    value={invest.loanTermYears}
+                                    onChange={(n) => setInvest((p) => ({ ...p, loanTermYears: n }))}
+                                    currency={false}
+                                    step={1}
+                                    suffix="years"
+                                />
+                            </div>
+                            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <MetricCard label="Loan needed (est.)" value={formatZar(investResult.loanNeeded)} icon={Landmark} />
+                                <MetricCard label="Repayment (est.)" value={formatZar(investResult.repayment)} icon={Wallet} />
+                                <MetricCard label="Cash flow (est.)" value={formatZar(investResult.cashFlow)} icon={Activity} tone={investResult.cashFlow >= 0 ? 'good' : 'warn'} />
+                                <MetricCard label="DTI (est.)" value={formatPct(investResult.dti, 1)} icon={Gauge} tone={investResult.dti > 30 ? 'warn' : 'neutral'} />
+                                <MetricCard label="Gross yield (est.)" value={formatPct(investResult.grossYield, 1)} icon={Percent} tone="info" />
+                                <MetricCard label="Net yield (est.)" value={formatPct(investResult.netYield, 1)} icon={Percent} tone="info" />
+                                <MetricCard label="LTV (est.)" value={formatPct(investResult.ltv, 1)} icon={Home} />
+                                <MetricCard
+                                    label="Time to deposit (est.)"
+                                    value={investResult.monthsToDeposit == null ? '—' : formatMonthsAsYears(investResult.monthsToDeposit)}
+                                    icon={CalendarClock}
+                                />
+                            </div>
+                            <p className="mt-4 text-sm text-slate-500">{investResult.affordabilityNote}</p>
+                        </Panel>
+
+                        <Panel>
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-base font-semibold text-slate-900">Portfolio (simplified)</h3>
+                                    <p className="mt-1 text-xs text-slate-500">A lightweight view of your combined property holdings.</p>
+                                </div>
+                                <ProgressRing score={portScore.score} label="Investment Score" sub={portScore.label} color="#0D9488" />
+                            </div>
+                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <MetricCard label="Portfolio value" value={formatZar(portSummary.totalValue)} icon={Building2} />
+                                <MetricCard label="Combined equity" value={formatZar(portSummary.equity)} icon={TrendingUp} tone="good" />
+                                <MetricCard label="Monthly rent" value={formatZar(portSummary.rent)} icon={Banknote} />
+                                <MetricCard label="Cash flow (est.)" value={formatZar(portSummary.cashFlow)} icon={Activity} tone={portSummary.cashFlow >= 0 ? 'good' : 'warn'} />
+                            </div>
+                            <div className="mt-4 space-y-3">
                                 {portfolio.map((p, idx) => (
-                                    <div key={p.id} className="grid gap-2 rounded-xl border border-charcoal/[0.08] p-3 sm:grid-cols-4">
+                                    <div key={p.id} className="grid gap-2 rounded-2xl bg-slate-50/80 p-3 ring-1 ring-slate-900/[0.04] sm:grid-cols-6 sm:items-center">
                                         <input
-                                            className="rounded-lg border border-charcoal/[0.12] px-2 py-2 text-sm sm:col-span-2"
+                                            className="h-9 rounded-lg border border-slate-200 px-2 text-sm sm:col-span-2"
                                             value={p.name}
-                                            onChange={(e) =>
-                                                setPortfolio((rows) =>
-                                                    rows.map((r, i) => (i === idx ? { ...r, name: e.target.value } : r))
-                                                )
-                                            }
+                                            onChange={(e) => updatePortfolioRow(idx, { name: e.target.value })}
                                         />
                                         <select
-                                            className="rounded-lg border border-charcoal/[0.12] px-2 py-2 text-sm"
+                                            className="h-9 rounded-lg border border-slate-200 px-2 text-sm"
                                             value={p.kind}
-                                            onChange={(e) =>
-                                                setPortfolio((rows) =>
-                                                    rows.map((r, i) =>
-                                                        i === idx
-                                                            ? { ...r, kind: e.target.value as PortfolioProperty['kind'] }
-                                                            : r
-                                                    )
-                                                )
-                                            }
+                                            onChange={(e) => updatePortfolioRow(idx, { kind: e.target.value as PortfolioProperty['kind'] })}
                                         >
                                             <option value="residential">Residential</option>
                                             <option value="rental">Rental</option>
                                             <option value="holiday">Holiday</option>
                                             <option value="commercial">Commercial</option>
                                         </select>
+                                        <input
+                                            type="number"
+                                            className="h-9 rounded-lg border border-slate-200 px-2 text-sm tabular-nums"
+                                            value={p.value}
+                                            onChange={(e) => updatePortfolioRow(idx, { value: Number(e.target.value) || 0 })}
+                                            aria-label="Value"
+                                        />
+                                        <input
+                                            type="number"
+                                            className="h-9 rounded-lg border border-slate-200 px-2 text-sm tabular-nums"
+                                            value={p.loanBalance}
+                                            onChange={(e) => updatePortfolioRow(idx, { loanBalance: Number(e.target.value) || 0 })}
+                                            aria-label="Loan balance"
+                                        />
                                         <button
                                             type="button"
-                                            className="text-sm text-gold"
+                                            className="inline-flex h-9 items-center justify-center gap-1 rounded-lg text-sm font-medium text-gold hover:bg-gold/5"
                                             onClick={() => setPortfolio((rows) => rows.filter((_, i) => i !== idx))}
                                         >
-                                            Remove
+                                            <Trash2 className="h-3.5 w-3.5" /> Remove
                                         </button>
-                                        <SboNumberField label="Value" value={p.value} onChange={(n) => setPortfolio((rows) => rows.map((r, i) => (i === idx ? { ...r, value: n } : r)))} />
-                                        <SboNumberField label="Loan" value={p.loanBalance} onChange={(n) => setPortfolio((rows) => rows.map((r, i) => (i === idx ? { ...r, loanBalance: n } : r)))} />
-                                        <SboNumberField label="Rent / mo" value={p.monthlyRent} onChange={(n) => setPortfolio((rows) => rows.map((r, i) => (i === idx ? { ...r, monthlyRent: n } : r)))} />
-                                        <SboNumberField label="Opex / mo" value={p.monthlyExpenses} onChange={(n) => setPortfolio((rows) => rows.map((r, i) => (i === idx ? { ...r, monthlyExpenses: n } : r)))} />
                                     </div>
                                 ))}
                                 <button
@@ -815,201 +1046,146 @@ export default function SmartBondOptimizerApp() {
                                         ])
                                     }
                                 >
-                                    Add property
+                                    <Plus className="h-4 w-4" /> Add property
                                 </button>
                             </div>
-                        </SboSection>
-                    </div>
-                    <SboSection title="Portfolio mix" subtitle="Value share by property.">
-                        <div className="h-72">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={portfolio.map((p) => ({ name: p.name, value: p.value }))}
-                                        dataKey="value"
-                                        nameKey="name"
-                                        outerRadius={100}
-                                        label
-                                    >
-                                        {portfolio.map((_, i) => (
-                                            <Cell key={i} fill={[CHART_GOLD, CHART_TEAL, CHART_SLATE, '#F59E0B'][i % 4]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip formatter={(v: number) => formatZar(v)} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </SboSection>
-                </div>
-            ) : null}
+                        </Panel>
 
-            {tab === 'refinance' ? (
-                <div className="space-y-6">
-                    <SboSection title="Refinance Centre" subtitle="Compare current vs hypothetical refinance — include fees for a fairer estimate.">
-                        <div className="grid gap-4 sm:grid-cols-3">
-                            <SboNumberField label="New rate %" value={refiRate} step={0.05} onChange={setRefiRate} />
-                            <SboNumberField label="New term (months)" value={refiTerm} onChange={setRefiTerm} />
-                            <SboNumberField label="Fees (R)" value={refiFees} onChange={setRefiFees} />
+                        <Panel>
+                            <h3 className="text-base font-semibold text-slate-900">Refinance mini-planner</h3>
+                            <p className="mt-1 text-xs text-slate-500">Compare your current loan against a hypothetical refinance — include fees for a fair estimate.</p>
+                            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                                <FinancialInput label="New rate" value={refiRate} onChange={setRefiRate} currency={false} step={0.05} suffix="%" />
+                                <FinancialInput label="New term" value={refiTerm} onChange={setRefiTerm} currency={false} step={12} suffix="months" />
+                                <FinancialInput label="Fees" value={refiFees} onChange={setRefiFees} step={500} />
+                            </div>
+                            <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <MetricCard label="New repayment (est.)" value={formatZar(refi.newPayment)} icon={Wallet} />
+                                <MetricCard label="Monthly difference" value={formatZar(refi.monthlySaving)} icon={RefreshCw} tone={refi.monthlySaving > 0 ? 'good' : 'warn'} />
+                                <MetricCard label="Interest difference (est.)" value={formatZar(refi.interestSaving)} icon={Percent} />
+                                <MetricCard
+                                    label="Break-even"
+                                    value={Number.isFinite(refi.breakEvenMonths) ? formatMonthsAsYears(refi.breakEvenMonths) : 'N/A'}
+                                    icon={CalendarClock}
+                                />
+                            </div>
+                            <p className="mt-3 text-sm text-slate-500">
+                                Net long-term saving estimate after fees: {formatZar(refi.netLongTermSaving)}. Extending the term can lower
+                                instalments while increasing lifetime interest — weigh both carefully.
+                            </p>
+                        </Panel>
+                    </div>
+                ) : null}
+
+                {tab === 'reports' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Reports centre"
+                            title="Export your plan"
+                            body="Download a PDF summary or the full CSV amortisation schedule, or print this page for your records."
+                        />
+                        <Panel>
+                            <div className="flex flex-wrap gap-2 print:hidden">
+                                <button type="button" className={PORTAL_PRIMARY_BTN} onClick={() => void exportFinancialSummaryPdf(liveProfile)}>
+                                    <Download className="h-4 w-4" /> PDF summary
+                                </button>
+                                <button type="button" className={PORTAL_SECONDARY_BTN} onClick={() => exportAmortisationCsv(comparison.optimized.rows)}>
+                                    <Download className="h-4 w-4" /> Excel / CSV schedule
+                                </button>
+                                <button type="button" className={PORTAL_SECONDARY_BTN} onClick={() => window.print()}>
+                                    <Printer className="h-4 w-4" /> Print
+                                </button>
+                            </div>
+                        </Panel>
+
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            <MetricCard label="Property value" value={formatZar(liveProfile.propertyValue)} icon={Home} />
+                            <MetricCard label="Outstanding bond" value={formatZar(liveProfile.outstandingBalance)} icon={Landmark} />
+                            <MetricCard label="Monthly repayment" value={formatZar(liveProfile.monthlyRepayment)} icon={Wallet} />
+                            <MetricCard label="Extra monthly" value={formatZar(liveProfile.extraMonthly)} icon={PiggyBank} tone="good" />
+                            <MetricCard label="Estimated equity" value={formatZar(equity)} icon={TrendingUp} tone="good" />
+                            <MetricCard label="Loan-to-value" value={formatPct(ltv, 1)} icon={Gauge} tone={ltv > 80 ? 'warn' : 'good'} />
+                            <MetricCard label="Est. settlement" value={formatDate(settlement)} icon={Target} />
+                            <MetricCard label="Est. interest saved" value={formatZar(comparison.interestSaved)} icon={Sparkles} tone="good" />
                         </div>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <SboKpi label="New repayment (est.)" value={formatZar(refi.newPayment)} icon={Wallet} />
-                            <SboKpi label="Monthly difference" value={formatZar(refi.monthlySaving)} icon={RefreshCw} tone={refi.monthlySaving > 0 ? 'good' : 'warn'} />
-                            <SboKpi label="Interest difference (est.)" value={formatZar(refi.interestSaving)} icon={Percent} />
-                            <SboKpi
-                                label="Break-even"
-                                value={
-                                    Number.isFinite(refi.breakEvenMonths)
-                                        ? formatMonthsAsYears(refi.breakEvenMonths)
-                                        : 'N/A'
-                                }
-                                icon={CalendarClock}
+
+                        <div className="grid gap-4 lg:grid-cols-2">
+                            <ComparisonCard
+                                leftTitle="Baseline total interest"
+                                rightTitle="Optimised total interest"
+                                leftValue={formatZar(comparison.baseline.totalInterest)}
+                                rightValue={formatZar(comparison.optimized.totalInterest)}
+                                highlight={`Estimated saving: ${formatZar(comparison.interestSaved)}`}
+                            />
+                            <ComparisonCard
+                                leftTitle="Baseline payoff"
+                                rightTitle="Optimised payoff"
+                                leftValue={formatMonthsAsYears(comparison.baseline.monthsToSettle)}
+                                rightValue={formatMonthsAsYears(comparison.optimized.monthsToSettle)}
+                                highlight={`Estimated ${formatMonthsAsYears(comparison.monthsSaved)} faster`}
+                                footnote="Figures are educational estimates and depend on rates, fees, and payment consistency."
                             />
                         </div>
-                        <p className="mt-3 text-sm text-charcoal/60">
-                            Net long-term saving estimate after fees: {formatZar(refi.netLongTermSaving)}. Extending term can
-                            lower instalments while increasing lifetime interest — review both carefully.
-                        </p>
-                    </SboSection>
-                    <SboSection title="Access bonds (education)" subtitle="Product features differ by lender.">
-                        <div className="prose prose-sm max-w-none text-charcoal/70">
-                            <p>
-                                Flexible / access facilities may let prepaid amounts reduce interest while remaining
-                                withdrawable within limits. Deposits can help; withdrawals restore capital and can extend
-                                costs. Confirm day-count interest rules, redraw conditions, and fees with your bank.
-                            </p>
-                        </div>
-                    </SboSection>
-                </div>
-            ) : null}
+                    </div>
+                ) : null}
 
-            {tab === 'scenarios' ? (
-                <div className="space-y-6">
-                    <SboSection title="Scenario Simulator" subtitle="Layer rate shocks, extras, bonuses, inflation assumptions, and one-off costs.">
-                        <div className="grid gap-4 lg:grid-cols-2">
-                            <div className="space-y-4">
-                                <SboSlider label="Rate change (pp)" value={scenario.rateDeltaPct} min={-3} max={4} step={0.25} display={`${scenario.rateDeltaPct > 0 ? '+' : ''}${scenario.rateDeltaPct}`} onChange={(n) => setScenario((s) => ({ ...s, rateDeltaPct: n }))} />
-                                <SboSlider label="Extra monthly add-on" value={scenario.extraMonthly} min={0} max={15000} step={100} display={formatZar(scenario.extraMonthly)} onChange={(n) => setScenario((s) => ({ ...s, extraMonthly: n }))} />
-                                <SboSlider label="Annual bonus / lump" value={scenario.annualBonus + scenario.lumpSum} min={0} max={250000} step={1000} display={formatZar(scenario.annualBonus + scenario.lumpSum)} onChange={(n) => setScenario((s) => ({ ...s, annualBonus: n, lumpSum: 0 }))} />
-                                <SboSlider label="Appreciation %" value={scenario.appreciationPct} min={0} max={12} step={0.1} display={formatPct(scenario.appreciationPct, 1)} onChange={(n) => setScenario((s) => ({ ...s, appreciationPct: n }))} />
-                                <SboSlider label="Unexpected expense added to balance" value={scenario.unexpectedExpense} min={0} max={200000} step={1000} display={formatZar(scenario.unexpectedExpense)} onChange={(n) => setScenario((s) => ({ ...s, unexpectedExpense: n }))} />
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <SboKpi label="Scenario rate" value={formatPct(scenarioProfile.annualInterestRate, 2)} icon={Percent} />
-                                <SboKpi label="Scenario repayment" value={formatZar(scenarioProfile.monthlyRepayment)} icon={Wallet} />
-                                <SboKpi label="Term (est.)" value={formatMonthsAsYears(scenarioCmp.optimized.monthsToSettle)} icon={CalendarClock} />
-                                <SboKpi label="Interest (est.)" value={formatZar(scenarioCmp.optimized.totalInterest)} icon={Activity} />
-                                <SboKpi label="Interest vs baseline" value={formatZar(comparison.baseline.totalInterest - scenarioCmp.optimized.totalInterest)} icon={Sparkles} tone="good" />
-                                <SboKpi label="Months vs baseline" value={formatMonthsAsYears(comparison.baseline.monthsToSettle - scenarioCmp.optimized.monthsToSettle)} icon={LineChartIcon} />
-                            </div>
-                        </div>
-                    </SboSection>
-                </div>
-            ) : null}
-
-            {tab === 'goals' ? (
-                <div className="space-y-6">
-                    <SboSection title="Goal Planner" subtitle="Personalised educational roadmap from your objective.">
-                        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                            <div className="space-y-3">
-                                {GOAL_OPTIONS.map((g) => (
+                {tab === 'learn' ? (
+                    <div className="space-y-6">
+                        <SectionIntro
+                            eyebrow="Knowledge centre"
+                            title="Learn the fundamentals"
+                            body="Clear, balanced explanations of South African home-loan concepts — foundations, rates, strategy, and investment."
+                        />
+                        <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+                            <div className="space-y-2">
+                                {KNOWLEDGE_ARTICLES.map((a) => (
                                     <button
-                                        key={g.id}
+                                        key={a.id}
                                         type="button"
-                                        onClick={() => setGoal(g.id)}
-                                        className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left text-sm transition ${
-                                            goal === g.id
-                                                ? 'border-gold bg-gold/5 font-semibold text-charcoal'
-                                                : 'border-charcoal/[0.08] text-charcoal/70 hover:bg-[#F8FAFC]'
+                                        onClick={() => setKnowledgeId(a.id)}
+                                        className={`w-full rounded-2xl px-4 py-3 text-left text-sm transition ${
+                                            knowledgeId === a.id
+                                                ? 'bg-gold/10 font-semibold text-slate-900 ring-1 ring-gold/30'
+                                                : 'text-slate-600 ring-1 ring-slate-900/[0.06] hover:bg-slate-50'
                                         }`}
                                     >
-                                        {g.label}
+                                        <p className="text-[10px] uppercase tracking-wide text-slate-400">{a.category}</p>
+                                        <p className="text-slate-900">{a.title}</p>
                                     </button>
                                 ))}
                             </div>
-                            <SboNumberField label="Target horizon (years)" value={goalYears} min={1} onChange={setGoalYears} />
+                            <Panel>
+                                {(() => {
+                                    const article = KNOWLEDGE_ARTICLES.find((a) => a.id === knowledgeId);
+                                    if (!article) return null;
+                                    return (
+                                        <>
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-gold">{article.category}</p>
+                                            <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">{article.title}</h3>
+                                            <p className="mt-2 text-sm text-slate-500">{article.summary}</p>
+                                            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{article.body}</p>
+                                            {article.faqs?.map((f) => (
+                                                <div key={f.q} className="mt-4 rounded-2xl bg-sky-50/70 p-4 ring-1 ring-sky-100">
+                                                    <p className="text-sm font-semibold text-sky-900">{f.q}</p>
+                                                    <p className="mt-1 text-sm text-sky-900/70">{f.a}</p>
+                                                </div>
+                                            ))}
+                                        </>
+                                    );
+                                })()}
+                            </Panel>
                         </div>
-                        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                            <SboKpi label="Suggested extra (est.)" value={formatZar(goalRoadmap.needExtra)} icon={PiggyBank} />
-                            <SboKpi label="Payoff horizon (est.)" value={formatMonthsAsYears(goalRoadmap.months)} icon={Target} />
-                            <SboKpi label="Interest saved vs baseline (est.)" value={formatZar(goalRoadmap.interestSaved)} icon={Sparkles} tone="good" />
-                        </div>
-                        <ol className="mt-5 space-y-3">
-                            {goalRoadmap.milestones.map((m) => (
-                                <li key={m.t} className="rounded-xl border border-charcoal/[0.08] px-4 py-3">
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-gold">{m.t}</p>
-                                    <p className="mt-1 text-sm text-charcoal/70">{m.d}</p>
-                                </li>
-                            ))}
-                        </ol>
-                    </SboSection>
-                </div>
-            ) : null}
-
-            {tab === 'knowledge' ? (
-                <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-                    <div className="space-y-2">
-                        {KNOWLEDGE_ARTICLES.map((a) => (
-                            <button
-                                key={a.id}
-                                type="button"
-                                onClick={() => setKnowledgeId(a.id)}
-                                className={`w-full rounded-xl border px-3 py-3 text-left text-sm ${
-                                    knowledgeId === a.id
-                                        ? 'border-gold bg-gold/5 font-semibold'
-                                        : 'border-charcoal/[0.08] hover:bg-[#F8FAFC]'
-                                }`}
-                            >
-                                <p className="text-[10px] uppercase tracking-wide text-charcoal/45">{a.category}</p>
-                                <p className="text-charcoal">{a.title}</p>
-                            </button>
-                        ))}
                     </div>
-                    <SboSection
-                        title={KNOWLEDGE_ARTICLES.find((a) => a.id === knowledgeId)?.title || 'Knowledge'}
-                        subtitle={KNOWLEDGE_ARTICLES.find((a) => a.id === knowledgeId)?.summary}
-                    >
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-charcoal/70">
-                            {KNOWLEDGE_ARTICLES.find((a) => a.id === knowledgeId)?.body}
-                        </p>
-                        {KNOWLEDGE_ARTICLES.find((a) => a.id === knowledgeId)?.faqs?.map((f) => (
-                            <div key={f.q} className="mt-4 rounded-xl bg-[#F8FAFC] p-4">
-                                <p className="text-sm font-semibold text-charcoal">{f.q}</p>
-                                <p className="mt-1 text-sm text-charcoal/65">{f.a}</p>
-                            </div>
-                        ))}
-                    </SboSection>
-                </div>
-            ) : null}
+                ) : null}
+            </div>
 
-            {tab === 'calculators' ? (
-                <div className="space-y-6">
-                    <SboSection title="Advanced calculators" subtitle="Bond, deposit, transfer costs, rent vs buy, and more — all estimates.">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <SboNumberField label="Purchase price" value={calcPurchase} onChange={setCalcPurchase} />
-                            <SboNumberField label="Deposit" value={calcDeposit} onChange={setCalcDeposit} />
-                            <SboNumberField label="Rate %" value={calcRate} step={0.05} onChange={setCalcRate} />
-                            <SboNumberField label="Term (years)" value={calcTerm} onChange={setCalcTerm} />
-                            <SboNumberField label="Comparable rent / mo" value={calcRent} onChange={setCalcRent} />
-                        </div>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <SboKpi
-                                label="Bond repayment"
-                                value={formatZar(
-                                    monthlyPayment(Math.max(0, calcPurchase - calcDeposit), calcRate, calcTerm * 12)
-                                )}
-                                icon={Calculator}
-                            />
-                            <SboKpi label="Loan amount" value={formatZar(Math.max(0, calcPurchase - calcDeposit))} icon={Landmark} />
-                            <SboKpi label="Deposit %" value={formatPct(calcPurchase ? (calcDeposit / calcPurchase) * 100 : 0, 1)} icon={Percent} />
-                            <SboKpi label="Transfer costs (rough)" value={formatZar(transferEst.total)} icon={BookOpen} hint="Educational approximation" />
-                            <SboKpi label="10y rent paid (est.)" value={formatZar(rentBuy.rentTotal)} icon={Home} />
-                            <SboKpi label="10y buy equity (est.)" value={formatZar(rentBuy.buyEquity)} icon={TrendingUp} />
-                            <SboKpi label="Transfer duty (rough)" value={formatZar(transferEst.transferDuty)} icon={Banknote} />
-                            <SboKpi label="Bond registration (rough)" value={formatZar(transferEst.bondRegistration)} icon={Building2} />
-                        </div>
-                    </SboSection>
-                </div>
-            ) : null}
+            <StickyActionBar
+                summary={`Est. interest saved: ${formatZar(comparison.interestSaved)} · ${formatMonthsAsYears(comparison.monthsSaved)} faster payoff`}
+                primaryLabel="Optimise My Bond"
+                onPrimary={() => setTab('optimizer')}
+                secondaryLabel="Generate Report"
+                onSecondary={() => void exportFinancialSummaryPdf(liveProfile)}
+            />
         </div>
     );
 }

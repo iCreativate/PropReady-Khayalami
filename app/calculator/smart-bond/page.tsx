@@ -24,9 +24,9 @@ export default function SmartBondOptimizerPage() {
     const pageHeader = (
         <PortalPageHeader
             variant="premium"
-            eyebrow="Flagship finance intelligence"
+            eyebrow="Flagship · Financial intelligence"
             title="Smart Bond Optimizer"
-            description="Plan repayments, equity, refinancing, and property wealth with South African home-loan maths — educational estimates, not advice or approvals."
+            description="Understand your home loan, reduce interest, build equity, and plan property wealth — with clear explanations at every step. Educational estimates only."
         />
     );
 

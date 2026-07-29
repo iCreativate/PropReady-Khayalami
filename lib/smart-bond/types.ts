@@ -6,9 +6,13 @@ export type AmortisationView = 'monthly' | 'quarterly' | 'yearly';
 export type SboTab =
     | 'overview'
     | 'optimizer'
-    | 'rates'
+    | 'savings'
     | 'equity'
     | 'investment'
+    | 'reports'
+    | 'learn'
+    // legacy aliases kept for autosaved localStorage
+    | 'rates'
     | 'portfolio'
     | 'refinance'
     | 'scenarios'
