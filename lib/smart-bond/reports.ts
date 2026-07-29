@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import { formatDate, formatMonthsAsYears, formatPct, formatZar } from '@/lib/smart-bond/format';
 import type { BondProfile } from '@/lib/smart-bond/types';
 import { DISCLAIMER } from '@/lib/smart-bond/types';
@@ -35,7 +34,10 @@ export function exportAmortisationCsv(
     downloadTextFile('propready-amortisation.csv', header + body, 'text/csv;charset=utf-8');
 }
 
-export function exportFinancialSummaryPdf(profile: BondProfile) {
+/** Lazy-load jspdf in the browser only — avoids SSR/Edge bundling crashes. */
+export async function exportFinancialSummaryPdf(profile: BondProfile) {
+    if (typeof window === 'undefined') return;
+    const { jsPDF } = await import('jspdf');
     const cmp = compareBaselineVsOptimized(profile);
     const p = cmp.profile;
     const equity = equityNow(p.propertyValue, p.outstandingBalance);

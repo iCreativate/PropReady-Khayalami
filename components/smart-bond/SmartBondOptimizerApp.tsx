@@ -349,7 +349,7 @@ export default function SmartBondOptimizerApp() {
                         <button
                             type="button"
                             className={`${PORTAL_SECONDARY_BTN} !bg-white/10 !text-white !border-white/20`}
-                            onClick={() => exportFinancialSummaryPdf(liveProfile)}
+                            onClick={() => void exportFinancialSummaryPdf(liveProfile)}
                         >
                             <Download className="h-4 w-4" />
                             PDF summary
