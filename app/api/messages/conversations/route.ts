@@ -13,6 +13,7 @@ import {
     type ParticipantRow,
 } from '@/lib/messages';
 import { assertCanStartConversation } from '@/lib/messages-eligibility';
+import { sendWelcomeInboxMessage } from '@/lib/welcome-announcement';
 
 export async function GET(request: NextRequest) {
     const session = await resolveSessionFromRequest(request);
@@ -21,6 +22,13 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        // New (and existing) portal users get a one-time PropReady welcome in Messages.
+        await sendWelcomeInboxMessage({
+            accountType: session.user.accountType,
+            profileId: session.user.profileId,
+            displayName: displayNameForUser(session.user),
+        });
+
         const unreadOnly = request.nextUrl.searchParams.get('unread') === '1';
         const ids = await listConversationIdsForUser(session.user);
         if (ids.length === 0) {

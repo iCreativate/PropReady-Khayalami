@@ -159,7 +159,7 @@ export default function AdminAnnouncementsPage() {
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [audience, setAudience] = useState<AudienceKey>('all');
-    const [alsoMessage, setAlsoMessage] = useState(true);
+    const [alsoMessage, setAlsoMessage] = useState(false);
 
     const load = useCallback(async (opts?: { silent?: boolean }) => {
         if (opts?.silent) {
@@ -404,7 +404,8 @@ export default function AdminAnnouncementsPage() {
                                         Also send as inbox message
                                     </span>
                                     <span className="mt-1 block text-xs text-[#6B7280]">
-                                        Delivers to every matching account when published.
+                                        Optional. Creates an inbox thread per account (can clutter
+                                        staff Messages). Leave off for banner-only updates like Welcome.
                                     </span>
                                 </span>
                             </label>

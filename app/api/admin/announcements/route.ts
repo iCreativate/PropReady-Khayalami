@@ -64,6 +64,9 @@ export async function POST(request: NextRequest) {
         const text = String(body.body || '').trim();
         const audience = String(body.audience || 'all').trim();
         const alsoMessage = body.alsoMessage === true;
+        const isWelcomeBanner =
+            title.toLowerCase() === 'welcome to propready' ||
+            title.toLowerCase().startsWith('welcome to propready');
 
         if (!title || !text) {
             return NextResponse.json({ error: 'Title and body are required' }, { status: 400 });
@@ -99,7 +102,8 @@ export async function POST(request: NextRequest) {
         }
 
         let broadcast: { sent?: number; recipientCount?: number; errorCount?: number } | null = null;
-        if (alsoMessage) {
+        // Welcome is a portal banner for users — never fan-out as inbox threads (floods admin).
+        if (alsoMessage && !isWelcomeBanner) {
             const result = await broadcastAdminMessage({
                 adminEmail: auth.email,
                 audience: audience as BroadcastAudience,

@@ -17,7 +17,7 @@ import {
     findExistingAccountsByEmail,
 } from '@/lib/email-availability';
 import { normalizeBuyerPlan } from '@/lib/agent-plans';
-import { ensureWelcomeAnnouncement } from '@/lib/welcome-announcement';
+import { welcomeNewUser } from '@/lib/welcome-announcement';
 
 export async function POST(request: NextRequest) {
     const supabaseUrl = getSupabaseUrl();
@@ -183,7 +183,15 @@ export async function POST(request: NextRequest) {
                         { status: 500 }
                     );
                 }
-                return NextResponse.json({ success: true, warning: 'PPRA columns missing; run migration' });
+                void welcomeNewUser({
+                    accountType: 'agent',
+                    profileId: String(agentData.id),
+                    displayName: agentData.fullName,
+                });
+                return NextResponse.json({
+                    success: true,
+                    warning: 'PPRA columns missing; run migration',
+                });
             }
             if (isDuplicate) {
                 const hits = await findExistingAccountsByEmail(String(agentData.email));
@@ -203,7 +211,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
 
-        void ensureWelcomeAnnouncement();
+        void welcomeNewUser({
+            accountType: 'agent',
+            profileId: String(agentData.id),
+            displayName: agentData.fullName,
+        });
 
         return NextResponse.json({ success: true });
     } catch (err) {

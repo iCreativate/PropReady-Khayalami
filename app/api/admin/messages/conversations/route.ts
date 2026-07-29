@@ -3,6 +3,7 @@ import { assertAdminRequest } from '@/lib/admin-auth';
 import { adminDisplayName, adminProfileId, ensureAdminParticipant } from '@/lib/admin-messages';
 import { messagesDb } from '@/lib/messages';
 import type { AccountType } from '@/lib/auth-enterprise/config';
+import { cleanupWelcomeBroadcastThreads } from '@/lib/welcome-announcement';
 
 export async function GET(request: NextRequest) {
     const auth = await assertAdminRequest(request);
@@ -11,6 +12,9 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        // Hygiene: remove old staff-broadcast Welcome spam only (keeps per-user system welcomes).
+        await cleanupWelcomeBroadcastThreads();
+
         const db = messagesDb();
         const q = (request.nextUrl.searchParams.get('q') || '').trim().toLowerCase();
 
@@ -19,6 +23,9 @@ export async function GET(request: NextRequest) {
             .select(
                 'id, subject, context_type, context_id, last_message_at, last_message_preview, created_at, created_by_account_type'
             )
+            // Mass announcement broadcasts belong on the Announcements page / user portals —
+            // not as dozens of identical threads in the staff inbox.
+            .neq('context_type', 'announcement')
             .order('last_message_at', { ascending: false, nullsFirst: false })
             .limit(100);
 
