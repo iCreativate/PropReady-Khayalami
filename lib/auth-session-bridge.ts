@@ -16,11 +16,72 @@ export type BridgedSessionUser = {
     accountType?: 'user' | 'agent' | 'originator';
 };
 
+const SESSION_CACHE_TTL_MS = 30_000;
+
+let sessionCache: { value: BridgedSessionUser | null; at: number } | null = null;
+let sessionInflight: Promise<BridgedSessionUser | null> | null = null;
+
 export function clearLegacyAuthStorage() {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEYS.currentUser);
     localStorage.removeItem(STORAGE_KEYS.currentAgent);
     localStorage.removeItem('propReady_currentOriginator');
+    sessionCache = null;
+    sessionInflight = null;
+}
+
+export function invalidateSessionCache() {
+    sessionCache = null;
+    sessionInflight = null;
+}
+
+/** Instant paint from localStorage while cookie session verifies in the background. */
+export function readOptimisticSession(
+    accountType: 'user' | 'agent' | 'originator'
+): BridgedSessionUser | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        if (accountType === 'agent') {
+            const raw = localStorage.getItem(STORAGE_KEYS.currentAgent);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            if (!parsed?.id || !parsed?.email) return null;
+            return {
+                id: String(parsed.id),
+                fullName: parsed.fullName ? String(parsed.fullName) : undefined,
+                email: String(parsed.email),
+                company: parsed.company ? String(parsed.company) : undefined,
+                accountType: 'agent',
+            };
+        }
+        if (accountType === 'originator') {
+            const raw = localStorage.getItem('propReady_currentOriginator');
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            if (!parsed?.id || !parsed?.email) return null;
+            return {
+                id: String(parsed.id),
+                fullName: parsed.fullName ? String(parsed.fullName) : undefined,
+                email: String(parsed.email),
+                organizationId: parsed.organizationId
+                    ? String(parsed.organizationId)
+                    : undefined,
+                accountType: 'originator',
+            };
+        }
+        const raw = localStorage.getItem(STORAGE_KEYS.currentUser);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        if (!parsed?.id || !parsed?.email) return null;
+        return {
+            id: String(parsed.id),
+            fullName: parsed.fullName ? String(parsed.fullName) : undefined,
+            email: String(parsed.email),
+            accountType: 'user',
+        };
+    } catch {
+        return null;
+    }
 }
 
 export function syncLegacySession(
@@ -67,8 +128,7 @@ export function syncLegacySession(
     }
 }
 
-/** Hydrate localStorage from cookie session API. Returns profile id or null. */
-export async function hydrateSessionFromCookies(): Promise<BridgedSessionUser | null> {
+async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
     try {
         const res = await fetch('/api/auth/session', { credentials: 'include' });
         if (res.status === 401) {
@@ -105,4 +165,29 @@ export async function hydrateSessionFromCookies(): Promise<BridgedSessionUser | 
     } catch {
         return null;
     }
+}
+
+/** Hydrate localStorage from cookie session API. Dedupes in-flight requests and caches briefly. */
+export async function hydrateSessionFromCookies(
+    options?: { force?: boolean }
+): Promise<BridgedSessionUser | null> {
+    const force = options?.force === true;
+    const now = Date.now();
+    if (!force && sessionCache && now - sessionCache.at < SESSION_CACHE_TTL_MS) {
+        return sessionCache.value;
+    }
+    if (!force && sessionInflight) {
+        return sessionInflight;
+    }
+
+    sessionInflight = fetchSessionFromCookies()
+        .then((value) => {
+            sessionCache = { value, at: Date.now() };
+            return value;
+        })
+        .finally(() => {
+            sessionInflight = null;
+        });
+
+    return sessionInflight;
 }

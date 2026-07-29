@@ -31,6 +31,9 @@ const NAV: Array<{
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
+let adminSessionCache: { email: string; at: number } | null = null;
+const ADMIN_SESSION_TTL_MS = 60_000;
+
 function NavLinks({
     pathname,
     onNavigate,
@@ -90,24 +93,46 @@ export default function AdminShell({
 }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [email, setEmail] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [email, setEmail] = useState<string | null>(() => {
+        if (
+            adminSessionCache &&
+            Date.now() - adminSessionCache.at < ADMIN_SESSION_TTL_MS
+        ) {
+            return adminSessionCache.email;
+        }
+        return null;
+    });
+    const [loading, setLoading] = useState(() => !email);
     const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
+        if (
+            adminSessionCache &&
+            Date.now() - adminSessionCache.at < ADMIN_SESSION_TTL_MS
+        ) {
+            setEmail(adminSessionCache.email);
+            setLoading(false);
+            return;
+        }
         void (async () => {
             try {
                 const res = await fetch('/api/admin/auth/session', { credentials: 'include' });
                 const data = await res.json().catch(() => ({}));
                 if (cancelled) return;
                 if (!res.ok || !data.authenticated) {
+                    adminSessionCache = null;
                     router.replace('/admin/login');
                     return;
                 }
-                setEmail(data.email || null);
+                const nextEmail = String(data.email || '');
+                adminSessionCache = { email: nextEmail, at: Date.now() };
+                setEmail(nextEmail || null);
             } catch {
-                if (!cancelled) router.replace('/admin/login');
+                if (!cancelled) {
+                    adminSessionCache = null;
+                    router.replace('/admin/login');
+                }
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -123,14 +148,16 @@ export default function AdminShell({
 
     async function signOut() {
         await fetch('/api/admin/auth/session', { method: 'DELETE', credentials: 'include' });
+        adminSessionCache = null;
         router.replace('/admin/login');
     }
 
-    if (loading || !email) return null;
+    const displayEmail = email || 'Signing in…';
+    const ready = Boolean(email) && !loading;
 
     return (
         <div className="min-h-dvh lg:h-dvh lg:overflow-hidden bg-[#F8FAFC] text-[#111827]">
-            {/* Desktop sidebar */}
+            {/* Desktop sidebar — always mounted to avoid white flash on navigation */}
             <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-[260px] flex-col z-40 bg-[#111827] text-white border-r border-white/[0.06]">
                 <div className="px-5 py-6 border-b border-white/[0.08] shrink-0">
                     <p className="text-lg font-semibold tracking-tight">
@@ -144,11 +171,12 @@ export default function AdminShell({
                     <NavLinks pathname={pathname} />
                 </div>
                 <div className="p-4 border-t border-white/[0.08] shrink-0">
-                    <p className="text-xs text-white/40 truncate mb-3">{email}</p>
+                    <p className="text-xs text-white/40 truncate mb-3">{displayEmail}</p>
                     <button
                         type="button"
                         onClick={() => void signOut()}
-                        className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition rounded-lg px-2 py-1.5 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E52323]/70"
+                        disabled={!ready}
+                        className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white transition rounded-lg px-2 py-1.5 hover:bg-white/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E52323]/70 disabled:opacity-40"
                     >
                         <LogOut className="w-4 h-4" />
                         Sign out
@@ -183,11 +211,12 @@ export default function AdminShell({
                             <NavLinks pathname={pathname} onNavigate={() => setMobileOpen(false)} />
                         </div>
                         <div className="p-4 border-t border-white/[0.08]">
-                            <p className="text-xs text-white/40 truncate mb-3">{email}</p>
+                            <p className="text-xs text-white/40 truncate mb-3">{displayEmail}</p>
                             <button
                                 type="button"
                                 onClick={() => void signOut()}
-                                className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white"
+                                disabled={!ready}
+                                className="inline-flex items-center gap-2 text-sm text-white/60 hover:text-white disabled:opacity-40"
                             >
                                 <LogOut className="w-4 h-4" />
                                 Sign out
@@ -218,7 +247,7 @@ export default function AdminShell({
                         </div>
                     </div>
                     <div className="hidden sm:flex items-center gap-2 text-sm text-[#6B7280]">
-                        <span className="truncate max-w-[180px]">{email}</span>
+                        <span className="truncate max-w-[180px]">{displayEmail}</span>
                     </div>
                 </header>
 
@@ -227,7 +256,23 @@ export default function AdminShell({
                 </div>
 
                 <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8">
-                    {children}
+                    {ready ? (
+                        children
+                    ) : (
+                        <div className="space-y-4" role="status" aria-live="polite" aria-busy="true">
+                            <div className="h-10 w-48 animate-pulse rounded-xl bg-white border border-[#E5E7EB]" />
+                            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="h-28 animate-pulse rounded-2xl border border-[#E5E7EB] bg-white"
+                                    />
+                                ))}
+                            </div>
+                            <div className="h-[50vh] animate-pulse rounded-2xl border border-[#E5E7EB] bg-white" />
+                            <span className="sr-only">Loading admin…</span>
+                        </div>
+                    )}
                 </main>
             </div>
         </div>

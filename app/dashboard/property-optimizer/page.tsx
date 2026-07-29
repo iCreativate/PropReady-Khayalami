@@ -1,13 +1,28 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import UserPortalLayout from '@/components/UserPortalLayout';
 import PortalPageHeader from '@/components/PortalPageHeader';
-import PropertyValueOptimizerDashboard from '@/components/property-optimizer/PropertyValueOptimizerDashboard';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import PortalLoading from '@/components/PortalLoading';
+
+const PropertyValueOptimizerDashboard = dynamic(
+    () => import('@/components/property-optimizer/PropertyValueOptimizerDashboard'),
+    {
+        ssr: false,
+        loading: () => (
+            <PortalLoading
+                variant="inline"
+                message="Loading optimizer…"
+                className="min-h-[420px]"
+            />
+        ),
+    }
+);
 
 function readIsSeller(user: { id?: string; email?: string } | null) {
     if (typeof window === 'undefined' || !user) return false;
@@ -36,7 +51,7 @@ export default function PropertyValueOptimizerPage() {
     }, [isHydrated, user, router]);
 
     if (!isHydrated || !user) {
-        return null;
+        return <PortalLoading message="Loading property optimizer…" variant="dashboard" />;
     }
 
     return (

@@ -1,13 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
 import AgentPageHeader from '@/components/AgentPageHeader';
-import AgentViewingsWorkspace from '@/components/AgentViewingsWorkspace';
 import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
 import PortalLoading from '@/components/PortalLoading';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
+
+const AgentViewingsWorkspace = dynamic(
+    () => import('@/components/AgentViewingsWorkspace'),
+    {
+        ssr: false,
+        loading: () => (
+            <PortalLoading variant="inline" message="Loading viewings…" className="min-h-[420px]" />
+        ),
+    }
+);
 
 export default function AgentViewingsPage() {
     const router = useRouter();

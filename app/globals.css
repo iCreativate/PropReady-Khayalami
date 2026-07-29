@@ -47,7 +47,7 @@ html.native-shell .auth-shell {
 /* Keep canvas color consistent so route swaps never flash pure white */
 html,
 body {
-  background-color: #fafafa;
+  background-color: #F8FAFC;
 }
 
 @keyframes app-fade-in {

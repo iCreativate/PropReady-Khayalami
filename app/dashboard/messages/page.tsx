@@ -1,13 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import UserPortalLayout from '@/components/UserPortalLayout';
-import PortalPageHeader from '@/components/PortalPageHeader';
-import PortalLoading from '@/components/PortalLoading';
-import MessagesWorkspace from '@/components/messages/MessagesWorkspace';
+import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
+
+const MessagesWorkspace = dynamic(
+    () => import('@/components/messages/MessagesWorkspace'),
+    {
+        ssr: false,
+        loading: () => <MessagesWorkspaceSkeleton />,
+    }
+);
 
 export default function BuyerMessagesPage() {
     const router = useRouter();
@@ -19,7 +26,13 @@ export default function BuyerMessagesPage() {
     }, [isHydrated, user, router]);
 
     if (!isHydrated || !user) {
-        return <PortalLoading variant="dashboard" message="Loading messages…" />;
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1400px]">
+                    <MessagesWorkspaceSkeleton />
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -28,12 +41,6 @@ export default function BuyerMessagesPage() {
             activePage="messages"
             user={user}
             title="Messages"
-            pageHeader={
-                <PortalPageHeader
-                    title="Messages"
-                    description="Chat live with agents and bond originators, share documents, and propose appointments."
-                />
-            }
         >
             <div className={PORTAL_PAGE_CONTAINER}>
                 <MessagesWorkspace

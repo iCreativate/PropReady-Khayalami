@@ -1,10 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
-import MessagesWorkspace from '@/components/messages/MessagesWorkspace';
-import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
+import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
+import {
+    hydrateSessionFromCookies,
+    readOptimisticSession,
+} from '@/lib/auth-session-bridge';
 
 type OriginatorUser = {
     id: string;
@@ -13,6 +17,14 @@ type OriginatorUser = {
     organizationId?: string;
 };
 
+const MessagesWorkspace = dynamic(
+    () => import('@/components/messages/MessagesWorkspace'),
+    {
+        ssr: false,
+        loading: () => <MessagesWorkspaceSkeleton />,
+    }
+);
+
 export default function OriginatorMessagesPage() {
     const router = useRouter();
     const [user, setUser] = useState<OriginatorUser | null>(null);
@@ -20,6 +32,17 @@ export default function OriginatorMessagesPage() {
 
     useEffect(() => {
         let cancelled = false;
+        const optimistic = readOptimisticSession('originator');
+        if (optimistic) {
+            setUser({
+                id: optimistic.id,
+                fullName: optimistic.fullName || 'Originator',
+                email: optimistic.email,
+                organizationId: optimistic.organizationId,
+            });
+            setLoading(false);
+        }
+
         void (async () => {
             const bridged = await hydrateSessionFromCookies();
             if (cancelled) return;
@@ -42,8 +65,10 @@ export default function OriginatorMessagesPage() {
 
     if (loading || !user) {
         return (
-            <div className="flex min-h-dvh items-center justify-center bg-[#F8FAFC]">
-                <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E5E7EB] border-t-[#E52323]" />
+            <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1400px]">
+                    <MessagesWorkspaceSkeleton />
+                </div>
             </div>
         );
     }
@@ -53,17 +78,6 @@ export default function OriginatorMessagesPage() {
             activePage="messages"
             user={user}
             title="Messages"
-            pageHeader={
-                <div className="min-w-0">
-                    <h2 className="text-[32px] leading-tight font-semibold tracking-tight text-[#111827]">
-                        Messages
-                    </h2>
-                    <p className="mt-3 max-w-2xl text-base text-[#6B7280] leading-relaxed">
-                        Message buyers, sellers, and agents. Share documents and schedule
-                        appointments in-thread.
-                    </p>
-                </div>
-            }
         >
             <MessagesWorkspace
                 role="originator"

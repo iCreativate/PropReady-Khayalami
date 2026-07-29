@@ -53,6 +53,7 @@ import {
     PORTAL_STAT_ICON,
 } from '@/lib/portal-ui';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import PortalLoading from '@/components/PortalLoading';
 
 function parseUploadTypeHint(value: string | null): BuyerDocumentType | undefined {
     if (!value) return undefined;
@@ -388,11 +389,11 @@ success(
     };
 
     if (!isHydrated) {
-        return null;
+        return <PortalLoading message="Loading documents…" variant="dashboard" />;
     }
 
     if (!user) {
-        return null;
+        return <PortalLoading message="Loading documents…" variant="dashboard" />;
     }
 
     const selectedOriginatorName = bondOriginatorLabel(selectedOriginator);

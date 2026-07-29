@@ -31,6 +31,7 @@ import {
     revokeDocumentAccess,
     type DocumentGrant,
 } from '@/lib/document-grants';
+import PortalLoading from '@/components/PortalLoading';
 
 const AGENT_CHECKLIST = [
     'PPRA / EAAB registered with a current Fidelity Fund Certificate (FFC)',
@@ -116,7 +117,7 @@ export default function MyAgentPage() {
     }, [currentUser?.id, agent?.id, isSeller]);
 
     if (!isHydrated || !currentUser) {
-        return null;
+        return <PortalLoading message="Loading agent…" variant="dashboard" />;
     }
 
     const portal = isSeller ? 'seller' : 'buyer';

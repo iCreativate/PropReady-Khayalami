@@ -22,6 +22,7 @@ import {
 } from '@/lib/quiz-result';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 
 type QuizView = 'results' | 'wizard';
 
@@ -1228,7 +1229,7 @@ export default function QuizPage() {
         ) : null;
 
     if (!isHydrated) {
-        return null;
+        return <PortalLoading message="Loading quiz…" variant="dashboard" />;
     }
 
     if (view === 'results' && savedResult && currentUser) {

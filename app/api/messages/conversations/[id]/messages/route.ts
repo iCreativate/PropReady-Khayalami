@@ -28,7 +28,7 @@ export async function GET(
             .select('*')
             .eq('conversation_id', id)
             .order('created_at', { ascending: true })
-            .limit(200);
+            .limit(500);
 
         if (after) {
             query = query.gt('created_at', after);

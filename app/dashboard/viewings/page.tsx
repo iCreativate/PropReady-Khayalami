@@ -13,6 +13,7 @@ import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-vi
 import { PORTAL_PAGE_CONTAINER, PORTAL_STAT_CARD, PORTAL_STAT_ICON } from '@/lib/portal-ui';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { formatLocalYmd, todayLocalYmd, parseLocalYmd } from '@/lib/local-date';
+import PortalLoading from '@/components/PortalLoading';
 
 interface Viewing {
     id: string;
@@ -79,7 +80,7 @@ export default function ViewingsPage() {
     }, [router, confirmRefreshKey, isHydrated, currentUser]);
 
     if (!isHydrated || !currentUser) {
-        return null;
+        return <PortalLoading message="Loading viewings…" variant="dashboard" />;
     }
     
     // Use only real viewing appointments from localStorage

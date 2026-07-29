@@ -32,6 +32,7 @@ import {
     AGENT_BADGE,
     AGENT_CARD_SOFT,
 } from '@/lib/agent-portal-ui';
+import PortalLoading from '@/components/PortalLoading';
 
 export default function AgentVerificationPage() {
     const router = useRouter();
@@ -117,7 +118,9 @@ export default function AgentVerificationPage() {
         }
     };
 
-    if (!agent) return null;
+    if (!agent) {
+        return <PortalLoading message="Loading verification…" variant="dashboard" />;
+    }
 
     return (
         <div className="min-h-screen bg-[#fafafa]">

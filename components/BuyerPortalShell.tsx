@@ -23,7 +23,7 @@ export default function BuyerPortalShell({
     const { user, isHydrated } = useHydratedBuyerPortalUser();
 
     if (!isHydrated) {
-        return <PortalLoading message="Loading portal…" />;
+        return <PortalLoading message="Loading portal…" variant="dashboard" />;
     }
 
     if (user) {

@@ -20,7 +20,7 @@ export default function PortalLoading({
     if (variant === 'dashboard') {
         return (
             <div
-                className={`portal-loading-shell min-h-screen bg-[#fafafa] px-4 sm:px-6 lg:px-8 py-10 sm:py-12 ${className}`}
+                className={`portal-loading-shell min-h-screen bg-[#F8FAFC] px-4 sm:px-6 lg:px-8 py-10 sm:py-12 ${className}`}
                 role="status"
                 aria-live="polite"
                 aria-busy="true"
@@ -55,9 +55,9 @@ export default function PortalLoading({
 
     const shell =
         variant === 'page'
-            ? 'min-h-screen bg-[#fafafa] flex items-center justify-center px-4'
+            ? 'min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4'
             : variant === 'overlay'
-              ? 'absolute inset-0 z-10 flex items-center justify-center bg-[#fafafa]/90 backdrop-blur-[1px]'
+              ? 'absolute inset-0 z-10 flex items-center justify-center bg-[#F8FAFC]/90 backdrop-blur-[1px]'
               : 'flex items-center justify-center py-16 px-4';
 
     return (

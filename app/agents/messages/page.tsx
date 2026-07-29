@@ -1,13 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
-import AgentPageHeader from '@/components/AgentPageHeader';
-import PortalLoading from '@/components/PortalLoading';
-import MessagesWorkspace from '@/components/messages/MessagesWorkspace';
-import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
+import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
+import {
+    hydrateSessionFromCookies,
+    readOptimisticSession,
+} from '@/lib/auth-session-bridge';
 import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
+
+const MessagesWorkspace = dynamic(
+    () => import('@/components/messages/MessagesWorkspace'),
+    {
+        ssr: false,
+        loading: () => <MessagesWorkspaceSkeleton />,
+    }
+);
 
 export default function AgentMessagesPage() {
     const router = useRouter();
@@ -17,6 +27,17 @@ export default function AgentMessagesPage() {
 
     useEffect(() => {
         let cancelled = false;
+        const optimistic = readOptimisticSession('agent');
+        if (optimistic) {
+            setProfileId(optimistic.id);
+            setAgent({
+                fullName: optimistic.fullName || 'Agent',
+                email: optimistic.email,
+                company: optimistic.company,
+            });
+            setLoading(false);
+        }
+
         void (async () => {
             try {
                 const bridged = await hydrateSessionFromCookies();
@@ -41,7 +62,13 @@ export default function AgentMessagesPage() {
     }, [router]);
 
     if (loading || !agent || !profileId) {
-        return <PortalLoading variant="dashboard" message="Loading messages…" />;
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] px-4 py-8 sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-[1400px]">
+                    <MessagesWorkspaceSkeleton />
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -49,12 +76,6 @@ export default function AgentMessagesPage() {
             activePage="messages"
             agent={agent}
             title="Messages"
-            pageHeader={
-                <AgentPageHeader
-                    title="Messages"
-                    description="Talk with buyers, sellers, and bond originators — share files and propose viewings."
-                />
-            }
         >
             <div className={AGENT_PAGE_CONTAINER}>
                 <MessagesWorkspace
