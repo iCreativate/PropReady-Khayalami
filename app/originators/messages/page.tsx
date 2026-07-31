@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import {
     hydrateSessionFromCookies,
@@ -78,6 +79,14 @@ export default function OriginatorMessagesPage() {
             activePage="messages"
             user={user}
             title="Messages"
+            pageHeader={
+                <PortalPageHeader
+                    size="compact"
+                    eyebrow="Inbox"
+                    title="Messages"
+                    description="Coordinate with buyers and PropReady staff on prequalification cases."
+                />
+            }
         >
             <MessagesWorkspace
                 role="originator"

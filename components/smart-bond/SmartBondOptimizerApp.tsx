@@ -93,6 +93,7 @@ import {
     formatChipZar,
 } from '@/components/smart-bond/sbo-ui';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
+import PortalHero, { PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
 
 const TABS: Array<{ id: SboTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid },
@@ -330,72 +331,52 @@ export default function SmartBondOptimizerApp() {
         <div className="pb-28 print:pb-0">
             <div className="space-y-6 print:space-y-4">
                 {/* Hero */}
-                <section className="relative overflow-hidden rounded-[1.5rem] border border-white/[0.06] bg-gradient-to-br from-[#020617] via-[#0F172A] to-[#450A0A] p-6 text-white shadow-[0_20px_60px_rgba(2,6,23,0.35)] sm:p-10">
-                    <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
-                    <div className="relative flex flex-col gap-8">
-                        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                            <div className="max-w-2xl">
-                                <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 ring-1 ring-white/10">
-                                    <Sparkles className="h-3.5 w-3.5 text-gold" />
-                                    Flagship · PropReady Intelligence
-                                </p>
-                                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
-                                    Smart Bond Optimizer
-                                </h1>
-                                <p className="mt-4 text-sm leading-relaxed text-white/70 sm:text-base">
-                                    A premium South African home-loan workspace that turns your bond into a clear plan —
-                                    cut estimated interest, accelerate payoff, grow equity, and explore long-term
-                                    property wealth. Every figure is clearly labelled as fact, estimate, or assumption.
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap gap-2 print:hidden">
-                                <button
-                                    type="button"
-                                    className={`${PORTAL_SECONDARY_BTN} !border-white/15 !bg-white/10 !text-white hover:!bg-white/15`}
-                                    onClick={() => setTab('reports')}
-                                >
-                                    <FileText className="h-4 w-4" />
-                                    View reports
-                                </button>
-                                <button
-                                    type="button"
-                                    className={PORTAL_PRIMARY_BTN}
-                                    onClick={() => setTab('optimizer')}
-                                >
-                                    <Rocket className="h-4 w-4" />
-                                    Optimise my bond
-                                </button>
-                            </div>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
-                                    Est. interest saved
-                                </p>
-                                <p className="mt-1 text-xl font-semibold tabular-nums text-emerald-300">
-                                    {formatZar(comparison.interestSaved)}
-                                </p>
-                            </div>
-                            <div className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
-                                    Wealth score
-                                </p>
-                                <p className="mt-1 text-xl font-semibold tabular-nums text-white">
-                                    {wealth.score} <span className="text-sm font-normal text-white/50">/ 100</span>
-                                </p>
-                            </div>
-                            <div className="rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur">
-                                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/50">
-                                    Est. settlement
-                                </p>
-                                <p className="mt-1 text-xl font-semibold tabular-nums text-white">
-                                    {formatDate(settlement)}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                <PortalHero
+                    eyebrow="Flagship · PropReady Intelligence"
+                    eyebrowIcon={<Sparkles className="h-3.5 w-3.5 text-gold" />}
+                    title="Smart Bond Optimizer"
+                    description="A premium South African home-loan workspace that turns your bond into a clear plan — cut estimated interest, accelerate payoff, grow equity, and explore long-term property wealth. Every figure is clearly labelled as fact, estimate, or assumption."
+                    actions={
+                        <>
+                            <button
+                                type="button"
+                                className={PORTAL_HERO_SECONDARY_BTN}
+                                onClick={() => setTab('reports')}
+                            >
+                                <FileText className="h-4 w-4" />
+                                View reports
+                            </button>
+                            <button
+                                type="button"
+                                className={PORTAL_PRIMARY_BTN}
+                                onClick={() => setTab('optimizer')}
+                            >
+                                <Rocket className="h-4 w-4" />
+                                Optimise my bond
+                            </button>
+                        </>
+                    }
+                    stats={[
+                        {
+                            label: 'Est. interest saved',
+                            value: formatZar(comparison.interestSaved),
+                            tone: 'success',
+                        },
+                        {
+                            label: 'Wealth score',
+                            value: (
+                                <>
+                                    {wealth.score}{' '}
+                                    <span className="text-sm font-normal text-white/50">/ 100</span>
+                                </>
+                            ),
+                        },
+                        {
+                            label: 'Est. settlement',
+                            value: formatDate(settlement),
+                        },
+                    ]}
+                />
 
                 <DisclaimerBanner>{DISCLAIMER}</DisclaimerBanner>
 

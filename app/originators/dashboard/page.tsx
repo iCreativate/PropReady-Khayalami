@@ -26,6 +26,7 @@ import {
     X,
 } from 'lucide-react';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 import { bondOriginatorLabel } from '@/lib/bond-originators';
 import { PREQUAL_STATUS_LABELS, type PrequalCaseStatus } from '@/lib/prequal-cases';
@@ -115,12 +116,12 @@ function PageHeader({
     subtitle: string;
 }) {
     return (
-        <div className="min-w-0">
-            <h2 className="text-[32px] leading-tight font-semibold tracking-tight text-[#111827]">
-                {title}
-            </h2>
-            <p className="mt-3 max-w-2xl text-base text-[#6B7280] leading-relaxed">{subtitle}</p>
-        </div>
+        <PortalPageHeader
+            size="compact"
+            eyebrow="Bond originator workspace"
+            title={title}
+            description={subtitle}
+        />
     );
 }
 

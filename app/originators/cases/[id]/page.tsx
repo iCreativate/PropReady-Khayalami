@@ -12,6 +12,7 @@ import {
     Upload,
 } from 'lucide-react';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 import { BUYER_DOCUMENT_ACCEPT, BUYER_DOCUMENT_SLOTS } from '@/lib/buyer-documents';
 import { PREQUAL_STATUS_LABELS, type PrequalCaseStatus } from '@/lib/prequal-cases';
@@ -281,9 +282,20 @@ export default function OriginatorCasePage() {
             activePage="cases"
             user={user}
             title={buyerDisplayName}
+            pageHeader={
+                <PortalPageHeader
+                    size="compact"
+                    eyebrow="Prequalification case"
+                    title={buyerDisplayName}
+                    description={
+                        caseData.buyerEmail
+                            ? `Manage documents, messages, and status for ${caseData.buyerEmail}.`
+                            : 'Manage documents, messages, and case progress.'
+                    }
+                />
+            }
         >
             <div className="space-y-4">
-                {/* Compact page header */}
                 <div className="flex flex-wrap items-center gap-3">
                     <Link
                         href="/originators/dashboard"
@@ -296,14 +308,6 @@ export default function OriginatorCasePage() {
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#111827] text-xs font-semibold text-white">
                             {initials(caseData.buyerName, caseData.buyerEmail)}
-                        </div>
-                        <div className="min-w-0">
-                            <h2 className="truncate text-lg font-semibold tracking-tight text-[#111827]">
-                                {buyerDisplayName}
-                            </h2>
-                            {caseData.buyerEmail ? (
-                                <p className="truncate text-sm text-[#6B7280]">{caseData.buyerEmail}</p>
-                            ) : null}
                         </div>
                         <span
                             className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${statusTone(caseData.status)}`}

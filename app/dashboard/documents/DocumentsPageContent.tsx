@@ -413,17 +413,17 @@ success(
                         description="Upload FICA documents and optionally prequalify with a PropReady bond originator — free for you. You can skip this and use your agent’s originator instead."
                     >
                         <div className="mt-6 flex flex-wrap gap-3">
-                            <div className="px-4 py-2 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.08]">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-charcoal/45">
+                            <div className="px-4 py-2 rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
                                     Uploaded
                                 </p>
-                                <p className="text-lg font-bold text-charcoal tabular-nums">{documents.length}</p>
+                                <p className="text-lg font-bold text-white tabular-nums">{documents.length}</p>
                             </div>
-                            <div className="px-4 py-2 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.08]">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-charcoal/45">
+                            <div className="px-4 py-2 rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
                                     Originator
                                 </p>
-                                <p className="text-sm font-bold text-charcoal truncate max-w-[12rem]">
+                                <p className="text-sm font-bold text-white truncate max-w-[12rem]">
                                     {selectedOriginatorName || 'Not selected'}
                                 </p>
                             </div>
@@ -473,7 +473,7 @@ success(
                             <div className={PORTAL_CARD}>
                                 <div className={`${PORTAL_CARD_HEADER} bg-charcoal/[0.015]`}>
                                     <PortalPageHeader
-                                        variant="premium"
+                                        variant="section"
                                         eyebrow="Compare & select"
                                         title="Choose Your Bond Originator"
                                         description="Optional — select a PropReady bond originator to send documents for prequalification, or skip and use your agent’s preferred originator."

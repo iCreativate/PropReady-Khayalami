@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
+import AgentPageHeader from '@/components/AgentPageHeader';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import {
     hydrateSessionFromCookies,
@@ -76,6 +77,14 @@ export default function AgentMessagesPage() {
             activePage="messages"
             agent={agent}
             title="Messages"
+            pageHeader={
+                <AgentPageHeader
+                    size="compact"
+                    eyebrow="Inbox"
+                    title="Messages"
+                    description="Message buyers, sellers, and PropReady staff from one place."
+                />
+            }
         >
             <div className={AGENT_PAGE_CONTAINER}>
                 <MessagesWorkspace

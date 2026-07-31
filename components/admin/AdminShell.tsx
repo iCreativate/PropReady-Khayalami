@@ -15,6 +15,17 @@ import {
     Users,
     X,
 } from 'lucide-react';
+import PortalHero from '@/components/PortalHero';
+
+const ADMIN_HERO_COPY: Record<string, string> = {
+    Overview: 'Monitor platform health, pending approvals, and recent activity across PropReady.',
+    'Account Management': 'Search, review, and manage buyer, seller, agent, and originator accounts.',
+    Messages: 'Staff inbox for conversations across buyers, sellers, agents, and originators.',
+    Announcements: 'Publish portal banners and welcome messages for signed-in users.',
+    'Agent Approvals': 'Review PPRA documents and approve or reject agent applications.',
+    'Originator Approvals': 'Review bond originator registrations and staff access requests.',
+    Analytics: 'Track growth, engagement, and operational metrics across the platform.',
+};
 
 const NAV: Array<{
     href: string;
@@ -87,9 +98,13 @@ function NavLinks({
 export default function AdminShell({
     children,
     title,
+    description,
+    eyebrow,
 }: {
     children: ReactNode;
     title?: string;
+    description?: string;
+    eyebrow?: string;
 }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -241,9 +256,9 @@ export default function AdminShell({
                             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
                                 PropReady admin
                             </p>
-                            <h1 className="text-base sm:text-lg font-semibold truncate text-[#111827]">
+                            <p className="text-sm font-medium truncate text-[#111827]/70 sm:hidden">
                                 {title || 'Staff console'}
-                            </h1>
+                            </p>
                         </div>
                     </div>
                     <div className="hidden sm:flex items-center gap-2 text-sm text-[#6B7280]">
@@ -257,10 +272,24 @@ export default function AdminShell({
 
                 <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8">
                     {ready ? (
-                        children
+                        <>
+                            <div className="mb-6 sm:mb-8">
+                                <PortalHero
+                                    size="compact"
+                                    eyebrow={eyebrow || 'PropReady admin'}
+                                    title={title || 'Staff console'}
+                                    description={
+                                        description ||
+                                        (title ? ADMIN_HERO_COPY[title] : undefined) ||
+                                        'Operate accounts, messaging, approvals, and platform analytics.'
+                                    }
+                                />
+                            </div>
+                            {children}
+                        </>
                     ) : (
                         <div className="space-y-4" role="status" aria-live="polite" aria-busy="true">
-                            <div className="h-10 w-48 animate-pulse rounded-xl bg-white border border-[#E5E7EB]" />
+                            <div className="h-28 w-full animate-pulse rounded-[1.5rem] border border-[#E5E7EB] bg-white" />
                             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                                 {Array.from({ length: 4 }).map((_, i) => (
                                     <div

@@ -88,8 +88,8 @@ export const AGENT_NAV_ICON =
 export const AGENT_NAV_ICON_ACTIVE = 'w-[1.25rem] h-[1.25rem] shrink-0 text-gold';
 export const AGENT_NAV_LABEL = 'flex-1 truncate leading-none tracking-[-0.01em]';
 
-export const AGENT_PAGE_HEADER_BAND =
-    'bg-white border-b border-charcoal/[0.06] shadow-elevation-xs';
+/** Soft band behind the global dark PortalHero — no white strip. */
+export const AGENT_PAGE_HEADER_BAND = 'bg-[#F8FAFC]';
 
 export const AGENT_CARD =
     `${UI_CARD_SURFACE} rounded-3xl bg-white overflow-hidden`;

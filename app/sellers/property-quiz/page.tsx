@@ -6,6 +6,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Square, FileText, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import SellerPortalShell from '@/components/SellerPortalShell';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 
 export default function PropertyQuizPage() {
@@ -253,7 +254,19 @@ export default function PropertyQuizPage() {
     );
 
     return (
-        <SellerPortalShell activePage="property-quiz" title="List Property" publicChrome={propertyQuizPublicHeader}>
+        <SellerPortalShell
+            activePage="property-quiz"
+            title="List Property"
+            publicChrome={propertyQuizPublicHeader}
+            pageHeader={
+                <PortalPageHeader
+                    size="compact"
+                    eyebrow="Seller onboarding"
+                    title="List Your Property"
+                    description="Share a few details so we can match you with the right valuation and listing support."
+                />
+            }
+        >
             <div className="relative min-h-[calc(100vh-4.25rem)] flex items-center justify-center">
                 <div className={`${PORTAL_PAGE_CONTAINER} relative z-10 w-full`}>
                     {/* Progress Badge */}

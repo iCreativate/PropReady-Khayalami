@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
-import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { bondOriginatorLabel } from '@/lib/bond-originators';
+import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 
 function initials(name: string, email: string) {
     const source = (name || email || '?').trim();
@@ -64,12 +65,12 @@ export default function OriginatorSettingsPage() {
             user={user}
             title="Settings"
             pageHeader={
-                <div className="min-w-0">
-                    <h2 className="text-[32px] leading-tight font-semibold tracking-tight text-[#111827]">
-                        Settings
-                    </h2>
-                    <p className="mt-2 text-base text-[#6B7280]">Staff profile</p>
-                </div>
+                <PortalPageHeader
+                    size="compact"
+                    eyebrow="Staff profile"
+                    title="Settings"
+                    description="Your originator account details and organisation."
+                />
             }
         >
             {loading && !user ? (

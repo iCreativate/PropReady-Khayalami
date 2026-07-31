@@ -10,7 +10,7 @@ import AgentLearnArticleContent from '@/components/AgentLearnArticleContent';
 import AgentLearnCallout from '@/components/AgentLearnCallout';
 import AgentLearnSection, { AgentLearnBullets, AgentLearnInfo } from '@/components/AgentLearnSection';
 import { LEARN_MODULE_META } from '@/lib/agent-learn-meta';
-import { AGENT_PAGE_CONTAINER, AGENT_SECONDARY_BTN } from '@/lib/agent-portal-ui';
+import { AGENT_PAGE_CONTAINER } from '@/lib/agent-portal-ui';
 
 import { GROWTH_LEARN_ARTICLES } from '@/lib/agent-learn-growth-articles';
 import { COMPLIANCE_LEARN_ARTICLES } from '@/lib/agent-learn-compliance-articles';
@@ -668,7 +668,7 @@ export default function AgentLearnArticlePage() {
                 >
                     <Link
                         href="/agents/learn"
-                        className={`${AGENT_SECONDARY_BTN} mt-4 h-9 px-4 text-xs`}
+                        className="mt-4 inline-flex h-9 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 text-xs font-semibold text-white transition hover:bg-white/15"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Back to Learning Hub

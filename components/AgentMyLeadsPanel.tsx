@@ -161,7 +161,7 @@ export default function AgentMyLeadsPanel({
                     title="My Leads"
                     description="Leads you have contacted with a scheduled viewing appointment"
                 >
-                    <p className="text-charcoal/45 text-sm mt-3 max-w-2xl">
+                    <p className="text-white/60 text-sm mt-3 max-w-2xl">
                         New prequalified leads stay on the{' '}
                         <Link href="/agents/dashboard" className="text-gold font-medium hover:underline">
                             dashboard

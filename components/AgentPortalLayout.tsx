@@ -272,7 +272,7 @@ export default function AgentPortalLayout({
             <main className={`lg:pl-64 pt-[4.25rem] min-h-dvh lg:h-dvh lg:overflow-y-auto lg:overscroll-contain ${AGENT_SHELL_CONTENT}`}>
                 {pageHeader && (
                     <div
-                        className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 lg:py-11`}
+                        className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 lg:py-7`}
                     >
                         <div className={AGENT_PAGE_CONTAINER}>{pageHeader}</div>
                     </div>

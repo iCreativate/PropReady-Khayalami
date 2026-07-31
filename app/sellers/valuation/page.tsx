@@ -6,6 +6,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Home, Search, Filter, Star, Building2, CheckCircle, TrendingUp, MapPin, Phone, Mail, MessageCircle, X, Users, ChevronRight } from 'lucide-react';
 import SellerPortalShell from '@/components/SellerPortalShell';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 import { mapAgentRecord, filterPublicAgents } from '@/lib/map-agent';
 
@@ -152,7 +153,19 @@ export default function ValuationBookingPage() {
 
     return (
         <>
-            <SellerPortalShell activePage="valuation" title="Property Valuation" publicChrome={valuationPublicHeader}>
+            <SellerPortalShell
+                activePage="valuation"
+                title="Property Valuation"
+                publicChrome={valuationPublicHeader}
+                pageHeader={
+                    <PortalPageHeader
+                        size="compact"
+                        eyebrow="Seller tools"
+                        title="Property Valuation"
+                        description="Connect with a verified agent to arrange a professional property valuation."
+                    />
+                }
+            >
                 <div className="relative">
                     <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Thank You Message (if user has account) */}

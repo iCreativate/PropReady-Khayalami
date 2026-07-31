@@ -442,7 +442,7 @@ export default function DashboardPage() {
                     {/* Bond Originators Section */}
                     <div className={`${PORTAL_DASH_WIDGET_LG} border-red-200 ring-1 ring-red-100`}>
                         <PortalPageHeader
-                            variant="premium"
+                            variant="section"
                             eyebrow="Extensive pre-qualification"
                             title="Recommended Bond Originators"
                             description="You’re signed in — choose an originator and upload documents to prequalify more thoroughly."

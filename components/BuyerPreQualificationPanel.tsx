@@ -253,7 +253,7 @@ export default function BuyerPreQualificationPanel({
 
             <div className={`${PORTAL_CARD} p-6 sm:p-8`}>
                 <PortalPageHeader
-                    variant="premium"
+                    variant="section"
                     eyebrow="Home loan partners"
                     title="Recommended Bond Originators"
                     description="Connect with a bond originator to formalise your pre-qualification with the banks."

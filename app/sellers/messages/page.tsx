@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import UserPortalLayout from '@/components/UserPortalLayout';
+import PortalPageHeader from '@/components/PortalPageHeader';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import { useHydratedSellerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
@@ -41,6 +42,14 @@ export default function SellerMessagesPage() {
             activePage="messages"
             user={user}
             title="Messages"
+            pageHeader={
+                <PortalPageHeader
+                    size="compact"
+                    eyebrow="Inbox"
+                    title="Messages"
+                    description="Stay in touch with your agent and PropReady support while you sell."
+                />
+            }
         >
             <div className={PORTAL_PAGE_CONTAINER}>
                 <MessagesWorkspace
