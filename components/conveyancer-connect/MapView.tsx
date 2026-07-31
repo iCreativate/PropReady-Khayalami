@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { GoogleMap, MarkerF, useJsApiLoader } from '@react-google-maps/api';
 import { CC_CARD_FLAT } from '@/components/conveyancer-connect/cc-ui';
@@ -16,10 +16,6 @@ import {
 
 const MAP_CONTAINER = { width: '100%', height: '100%' } as const;
 const SA_CENTER: GeoPoint = { lat: -28.5, lng: 24.7 };
-
-function mapsApiKey(): string {
-    return (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '').trim();
-}
 
 function pinFor(profile: ConveyancerProfile): GeoPoint {
     return resolveOfficeCoords({
@@ -243,6 +239,41 @@ function GoogleOfficeMap({
     );
 }
 
+function useGoogleMapsApiKey(): { apiKey: string | null; loading: boolean } {
+    const buildTimeKey = (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '').trim();
+    const [apiKey, setApiKey] = useState<string | null>(buildTimeKey || null);
+    const [loading, setLoading] = useState(!buildTimeKey);
+
+    useEffect(() => {
+        if (buildTimeKey) {
+            setApiKey(buildTimeKey);
+            setLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch('/api/config/maps');
+                const data = (await res.json()) as { apiKey?: string | null };
+                if (!cancelled) {
+                    setApiKey((data.apiKey || '').trim() || null);
+                }
+            } catch {
+                if (!cancelled) setApiKey(null);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [buildTimeKey]);
+
+    return { apiKey, loading };
+}
+
 export default function MapView({
     profiles,
     origin,
@@ -254,7 +285,7 @@ export default function MapView({
     selectedId?: string;
     onSelect?: (id: string) => void;
 }) {
-    const apiKey = mapsApiKey();
+    const { apiKey, loading } = useGoogleMapsApiKey();
 
     const pins = useMemo(
         () =>
@@ -269,6 +300,16 @@ export default function MapView({
         ? active.profile.offices[0]?.address ||
           `${active.profile.suburb}, ${active.profile.city}, South Africa`
         : '';
+
+    if (loading) {
+        return (
+            <MapShell title="Office map" subtitle="Loading Google Maps…">
+                <div className="flex aspect-[16/11] items-center justify-center bg-slate-50 text-sm text-charcoal/50">
+                    Loading Google Maps…
+                </div>
+            </MapShell>
+        );
+    }
 
     if (!apiKey) {
         return (
