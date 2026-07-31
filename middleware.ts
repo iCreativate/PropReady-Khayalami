@@ -57,6 +57,15 @@ export async function middleware(request: NextRequest) {
     try {
         const { pathname } = request.nextUrl;
 
+        // Block demo/seed tooling in production unless explicitly enabled
+        if (pathname.startsWith('/api/dev')) {
+            const allow =
+                process.env.ALLOW_DEMO_SEED === 'true' || process.env.NODE_ENV === 'development';
+            if (!allow) {
+                return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+        }
+
         // Staff console uses pr_admin — keep separate from user/agent sessions
         if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
             return supabaseResponse;

@@ -215,34 +215,38 @@ export default function AgentSettingsPage() {
 
         setIsSaving(true);
         setSuccessMessage('');
+        setErrors({});
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        if (typeof window !== 'undefined') {
-            const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const agentIndex = agents.findIndex(
-                (a: AgentData) => a.id === formData.id || a.email === formData.email
-            );
-
-            if (agentIndex !== -1) {
-                agents[agentIndex] = {
-                    ...agents[agentIndex],
-                    ...formData,
-                    eaabNumber: formData.eaabNumber.replace(/\D/g, ''),
-                };
-                localStorage.setItem('propReady_agents', JSON.stringify(agents));
+        try {
+            const res = await fetch('/api/agents/profile', {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fullName: formData.fullName,
+                    phone: formData.phone,
+                    company: formData.company,
+                    city: formData.city,
+                    eaabNumber: formData.eaabNumber,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setErrors({ general: String(data.error || 'Could not save profile') });
+                return;
             }
-
-            const existing = JSON.parse(localStorage.getItem('propReady_currentAgent') || '{}');
-            const currentAgent = {
-                id: formData.id,
-                fullName: formData.fullName,
-                email: formData.email,
-                company: formData.company,
-                city: formData.city,
-                plan: existing.plan || agents[agentIndex]?.plan,
-            };
-            localStorage.setItem('propReady_currentAgent', JSON.stringify(currentAgent));
+            if (typeof window !== 'undefined') {
+                const existing = JSON.parse(localStorage.getItem('propReady_currentAgent') || '{}');
+                const currentAgent = {
+                    ...existing,
+                    id: formData.id,
+                    fullName: formData.fullName,
+                    email: formData.email,
+                    company: formData.company,
+                    city: formData.city,
+                };
+                localStorage.setItem('propReady_currentAgent', JSON.stringify(currentAgent));
+            }
             setPortalAgent((prev) =>
                 prev
                     ? {
@@ -254,11 +258,11 @@ export default function AgentSettingsPage() {
                       }
                     : prev
             );
+            setSuccessMessage('Profile updated successfully!');
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } finally {
+            setIsSaving(false);
         }
-
-        setIsSaving(false);
-        setSuccessMessage('Profile updated successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
     };
 
     const handleChangePassword = async (e: React.FormEvent) => {
@@ -270,29 +274,33 @@ export default function AgentSettingsPage() {
 
         setIsSaving(true);
         setSuccessMessage('');
+        setErrors({});
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        if (typeof window !== 'undefined') {
-            const agents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const agentIndex = agents.findIndex(
-                (a: AgentData) => a.id === formData.id || a.email === formData.email
-            );
-
-            if (agentIndex !== -1) {
-                agents[agentIndex].password = passwordData.newPassword;
-                localStorage.setItem('propReady_agents', JSON.stringify(agents));
+        try {
+            const res = await fetch('/api/agents/profile', {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setErrors({ currentPassword: String(data.error || 'Could not change password') });
+                return;
             }
+            setSuccessMessage('Password changed successfully!');
+            setPasswordData({
+                currentPassword: '',
+                newPassword: '',
+                confirmPassword: '',
+            });
+            setTimeout(() => setSuccessMessage(''), 3000);
+        } finally {
+            setIsSaving(false);
         }
-
-        setIsSaving(false);
-        setSuccessMessage('Password changed successfully!');
-        setPasswordData({
-            currentPassword: '',
-            newPassword: '',
-            confirmPassword: '',
-        });
-        setTimeout(() => setSuccessMessage(''), 3000);
     };
 
     if (isLoading) {
@@ -322,6 +330,15 @@ export default function AgentSettingsPage() {
                         <p className="text-emerald-800 font-medium text-sm">{successMessage}</p>
                     </div>
                 )}
+
+                {errors.general ? (
+                    <div
+                        className={`${AGENT_CARD_SOFT} mb-6 p-4 flex items-center gap-3 border-red-500/15 bg-red-500/[0.04]`}
+                    >
+                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                        <p className="text-red-800 font-medium text-sm">{errors.general}</p>
+                    </div>
+                ) : null}
 
                 {portalAgent && (
                     <AgentProfileSummary

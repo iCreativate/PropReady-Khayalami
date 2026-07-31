@@ -146,6 +146,7 @@ const DEMO_LEADS_STORAGE_KEY = 'propReady_demoLeadsSeeded';
 
 export function mergeDemoLeadsIntoStorage(agentId?: string): boolean {
     if (typeof window === 'undefined') return false;
+    if (process.env.NEXT_PUBLIC_ENABLE_DEMO !== '1') return false;
     if (agentId && agentId !== DEMO_AGENT.id) return false;
     if (localStorage.getItem(DEMO_LEADS_STORAGE_KEY) === '1') return false;
 

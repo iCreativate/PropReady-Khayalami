@@ -220,7 +220,7 @@ function OriginatorCardBody({
                         <h3 className="text-lg font-bold text-charcoal">{originator.name}</h3>
                         <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-2 py-0.5 text-xs font-semibold text-charcoal">
                             <Star className="h-3 w-3 fill-gold text-gold" aria-hidden />
-                            {originator.rating}
+                            {originator.badge}
                         </span>
                     </div>
                     <p className="text-sm leading-relaxed text-charcoal/55">{originator.description}</p>

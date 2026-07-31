@@ -16,23 +16,24 @@ const BUCKET_META: Record<MatchBucket, string> = {
 export { BUCKET_META };
 
 function scoreOverall(c: ConveyancerProfile, a: MatchAnswers): number {
-    let score = c.rating * 20 + Math.min(20, c.reviewCount / 10);
-    score += Math.max(0, 25 - c.avgTransferDays / 4);
-    score += Math.max(0, 15 - c.avgResponseHours * 3);
-    score += c.verified ? 8 : 0;
-    score += c.acceptingNewClients ? 5 : -10;
-    if (a.province && c.province === a.province) score += 18;
-    if (a.propertyType === 'commercial' && c.specialisations.includes('commercial')) score += 12;
+    let score = 0;
+    if (c.rating > 0) score += c.rating * 12 + Math.min(12, c.reviewCount / 10);
+    if (c.avgTransferDays > 0) score += Math.max(0, 20 - c.avgTransferDays / 5);
+    if (c.avgResponseHours > 0) score += Math.max(0, 12 - c.avgResponseHours * 2);
+    if (c.yearsInPractice > 0) score += Math.min(15, c.yearsInPractice);
+    score += c.verified ? 20 : 0;
+    score += c.acceptingNewClients ? 8 : -10;
+    if (a.province && c.province === a.province) score += 28;
+    if (a.propertyType === 'commercial' && c.specialisations.includes('commercial')) score += 14;
     if (a.propertyType === 'development' && c.specialisations.includes('developments')) score += 14;
     if (a.propertyType === 'investment' && c.specialisations.includes('investment-property'))
         score += 12;
-    if (a.propertyType === 'residential' && c.specialisations.includes('residential')) score += 8;
+    if (a.propertyType === 'residential' && c.specialisations.includes('residential')) score += 10;
     for (const s of a.specialRequirements) {
-        if (c.specialisations.includes(s) || c.services.includes(s)) score += 6;
+        if (c.specialisations.includes(s) || c.services.includes(s)) score += 8;
     }
     if (a.budgetBand && c.priceBand <= a.budgetBand) score += 8;
-    if (a.timelineWeeks <= 10 && c.avgTransferDays <= 65) score += 10;
-    if (a.propertyValue >= 5_000_000 && c.priceBand >= 3) score += 6;
+    if (c.city) score += 4;
     return score;
 }
 

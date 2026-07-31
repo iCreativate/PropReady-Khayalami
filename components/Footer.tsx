@@ -7,12 +7,9 @@ interface FooterProps {
     variant?: 'default' | 'portal';
 }
 
-const PLAY_STORE_URL =
-    process.env.NEXT_PUBLIC_PLAY_STORE_URL?.trim() ||
-    'https://play.google.com/store/apps';
-const APP_STORE_URL =
-    process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() ||
-    'https://apps.apple.com/app';
+const PLAY_STORE_URL = process.env.NEXT_PUBLIC_PLAY_STORE_URL?.trim() || '';
+const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL?.trim() || '';
+const HAS_STORE_LINKS = Boolean(PLAY_STORE_URL && APP_STORE_URL);
 
 /** Matched-size store badges (official PNGs have unequal padding). */
 function AppleMark() {
@@ -74,14 +71,15 @@ function AppStoreBadge() {
 }
 
 function StoreDownloadButtons() {
+    if (!HAS_STORE_LINKS) return null;
     return (
         <div>
             <h3 className="text-white font-semibold text-sm uppercase tracking-[0.12em] mb-4">
                 Get the App
             </h3>
             <div className="footer-store-badges">
-                <AppStoreBadge />
-                <GooglePlayBadge />
+                {APP_STORE_URL ? <AppStoreBadge /> : null}
+                {PLAY_STORE_URL ? <GooglePlayBadge /> : null}
             </div>
         </div>
     );
@@ -122,11 +120,31 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                         </p>
                         <div className="flex items-center gap-3">
                             {[
-                                { href: 'https://facebook.com', label: 'Facebook', Icon: Facebook },
-                                { href: 'https://twitter.com', label: 'Twitter', Icon: Twitter },
-                                { href: 'https://instagram.com', label: 'Instagram', Icon: Instagram },
-                                { href: 'https://linkedin.com', label: 'LinkedIn', Icon: Linkedin },
-                            ].map(({ href, label, Icon }) => (
+                                {
+                                    href: process.env.NEXT_PUBLIC_FACEBOOK_URL?.trim(),
+                                    label: 'Facebook',
+                                    Icon: Facebook,
+                                },
+                                {
+                                    href: process.env.NEXT_PUBLIC_TWITTER_URL?.trim(),
+                                    label: 'Twitter',
+                                    Icon: Twitter,
+                                },
+                                {
+                                    href: process.env.NEXT_PUBLIC_INSTAGRAM_URL?.trim(),
+                                    label: 'Instagram',
+                                    Icon: Instagram,
+                                },
+                                {
+                                    href: process.env.NEXT_PUBLIC_LINKEDIN_URL?.trim(),
+                                    label: 'LinkedIn',
+                                    Icon: Linkedin,
+                                },
+                            ]
+                                .filter((s): s is { href: string; label: string; Icon: typeof Facebook } =>
+                                    Boolean(s.href)
+                                )
+                                .map(({ href, label, Icon }) => (
                                 <a
                                     key={label}
                                     href={href}
@@ -134,7 +152,6 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                     rel="noopener noreferrer"
                                     className="icon-clickable w-9 h-9 rounded-full bg-white/[0.07] border border-white/[0.08] flex items-center justify-center text-white/55 hover:text-gold hover:bg-gold/10 hover:border-gold/20 transition-all duration-200"
                                     aria-label={label}
-                                    title={`${label} (update URL when social accounts are live)`}
                                 >
                                     <Icon className="w-4 h-4" />
                                 </a>

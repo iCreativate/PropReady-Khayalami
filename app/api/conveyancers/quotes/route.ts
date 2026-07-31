@@ -35,8 +35,16 @@ export async function POST(request: NextRequest) {
         const user = session?.user || null;
         const body = await request.json();
         const conveyancerId = String(body.conveyancerId || '').trim();
+        const name = String(body.name || user?.fullName || '').trim();
+        const email = String(body.email || user?.email || '').trim();
         if (!conveyancerId) {
             return NextResponse.json({ success: false, error: 'conveyancerId required' }, { status: 400 });
+        }
+        if (!name || !email) {
+            return NextResponse.json(
+                { success: false, error: 'Name and email are required' },
+                { status: 400 }
+            );
         }
 
         const supabase = createServiceClient();
@@ -44,11 +52,24 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
         }
 
+        // Ensure firm exists and is approved
+        const { data: firm } = await supabase
+            .from('conveyancers')
+            .select('id, status, firm_name')
+            .eq('id', conveyancerId)
+            .maybeSingle();
+        if (!firm || firm.status !== 'approved') {
+            return NextResponse.json(
+                { success: false, error: 'Conveyancer is not available for quotes' },
+                { status: 404 }
+            );
+        }
+
         const matterId = await ensureConveyancerInquiryMatter({
             conveyancerId,
             clientUserId: user?.accountType === 'user' ? user.profileId : undefined,
-            clientName: body.name || user?.fullName,
-            clientEmail: body.email || user?.email,
+            clientName: name,
+            clientEmail: email,
             agentId: user?.accountType === 'agent' ? user.profileId : undefined,
             propertyLabel: body.location || 'Quote request',
             source: 'quote',
@@ -67,8 +88,8 @@ export async function POST(request: NextRequest) {
                 conveyancer_id: conveyancerId,
                 matter_id: matterId,
                 requester_user_id: user?.accountType === 'user' ? user.profileId : null,
-                requester_name: body.name || user?.fullName || null,
-                requester_email: body.email || user?.email || null,
+                requester_name: name || null,
+                requester_email: email || null,
                 property_type: body.propertyType || null,
                 location: body.location || null,
                 purchase_price: body.purchasePrice ?? null,

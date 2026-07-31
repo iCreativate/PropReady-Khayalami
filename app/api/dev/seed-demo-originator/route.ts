@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { DEMO_ORIGINATOR } from '@/lib/demo-originator';
+import { DEMO_ORIGINATOR, getDemoOriginatorPassword } from '@/lib/demo-originator';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { upsertAccountFromProfile } from '@/lib/auth-enterprise';
 
@@ -11,7 +11,7 @@ function isDevSeedAllowed(): boolean {
 function getDemoCredentials() {
     return {
         email: DEMO_ORIGINATOR.email,
-        password: DEMO_ORIGINATOR.password,
+        password: getDemoOriginatorPassword(),
         organizationId: DEMO_ORIGINATOR.organizationId,
         staffNumber: DEMO_ORIGINATOR.staffNumber,
         loginUrl: '/originators/login',
@@ -28,7 +28,7 @@ function buildOriginatorRow(): Record<string, unknown> {
         phone: DEMO_ORIGINATOR.phone,
         organization_id: DEMO_ORIGINATOR.organizationId,
         staff_number: DEMO_ORIGINATOR.staffNumber,
-        password: DEMO_ORIGINATOR.password,
+        password: getDemoOriginatorPassword(),
         status: DEMO_ORIGINATOR.status,
         updated_at: now,
         created_at: now,
@@ -129,7 +129,7 @@ export async function POST() {
             DEMO_ORIGINATOR.email,
             'originator',
             String(result.data?.id || DEMO_ORIGINATOR.id),
-            DEMO_ORIGINATOR.password
+            getDemoOriginatorPassword()
         );
         await supabase
             .from('auth_accounts')

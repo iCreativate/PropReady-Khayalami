@@ -1,8 +1,30 @@
 import type { MarketContext, PropertyProfile } from './types';
 
+export const BLANK_PROPERTY: PropertyProfile = {
+    id: 'pvo-blank',
+    address: '',
+    suburb: '',
+    municipality: '',
+    province: '',
+    propertyType: 'Freehold House',
+    bedrooms: 3,
+    bathrooms: 2,
+    garages: 1,
+    landSizeSqm: 0,
+    floorSizeSqm: 0,
+    yearBuilt: new Date().getFullYear() - 10,
+    municipalValuation: 0,
+    purchasePrice: 0,
+    purchaseDate: '',
+    bondBalance: 0,
+    existingFeatures: [],
+    conditionScore: 70,
+};
+
+/** @deprecated Prefer BLANK_PROPERTY for production boot — kept for labelled example modelling */
 export const DEMO_PROPERTY: PropertyProfile = {
     id: 'pvo-demo-001',
-    address: '42 Jacaranda Crescent, Bryanston',
+    address: 'Example property (illustrative)',
     suburb: 'Bryanston',
     municipality: 'City of Johannesburg',
     province: 'Gauteng',

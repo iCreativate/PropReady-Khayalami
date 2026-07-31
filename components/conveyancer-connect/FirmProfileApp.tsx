@@ -118,12 +118,18 @@ export default function FirmProfileApp({
                     </>
                 }
                 stats={[
-                    { label: 'Rating', value: String(profile.rating) },
-                    { label: 'Transfers', value: profile.completedTransfers.toLocaleString('en-ZA') },
-                    { label: 'Years', value: String(profile.yearsInPractice) },
                     {
-                        label: 'Response',
-                        value: `${profile.performance.responseRatePct}% · ${profile.avgResponseHours}h`,
+                        label: 'Status',
+                        value: profile.verified ? 'Verified' : 'Listed',
+                    },
+                    { label: 'Location', value: profile.city || 'South Africa' },
+                    {
+                        label: 'Languages',
+                        value: String(profile.languages.length || 1),
+                    },
+                    {
+                        label: 'Services',
+                        value: String(profile.specialisations.length || 1),
                     },
                 ]}
             />
@@ -132,19 +138,23 @@ export default function FirmProfileApp({
                 <button type="button" className={PORTAL_SECONDARY_BTN} onClick={() => setMessageOpen(true)}>
                     Message
                 </button>
-                <a href={`tel:${profile.phone.replace(/\s/g, '')}`} className={PORTAL_SECONDARY_BTN}>
-                    <Phone className="h-4 w-4" />
-                    Call
-                </a>
-                <a
-                    href={profile.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={PORTAL_SECONDARY_BTN}
-                >
-                    <Globe className="h-4 w-4" />
-                    Website
-                </a>
+                {profile.phone ? (
+                    <a href={`tel:${profile.phone.replace(/\s/g, '')}`} className={PORTAL_SECONDARY_BTN}>
+                        <Phone className="h-4 w-4" />
+                        Call
+                    </a>
+                ) : null}
+                {profile.website ? (
+                    <a
+                        href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={PORTAL_SECONDARY_BTN}
+                    >
+                        <Globe className="h-4 w-4" />
+                        Website
+                    </a>
+                ) : null}
                 <button
                     type="button"
                     className={PORTAL_SECONDARY_BTN}

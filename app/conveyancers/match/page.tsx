@@ -9,11 +9,11 @@ import ConveyancerCard from '@/components/conveyancer-connect/ConveyancerCard';
 import { CC_CARD_FLAT, CC_INPUT, CC_LABEL } from '@/components/conveyancer-connect/cc-ui';
 import {
     BUCKET_META,
-    CONVEYANCERS,
     matchConveyancers,
     PROVINCE_LABELS,
     saveMatchAnswers,
     SPECIALTY_LABELS,
+    useConveyancerDirectory,
     type MatchAnswers,
     type ProvinceSlug,
     type Specialty,
@@ -31,13 +31,14 @@ const DEFAULT: MatchAnswers = {
 };
 
 export default function MatchPage() {
+    const { profiles, loading } = useConveyancerDirectory();
     const [step, setStep] = useState(0);
     const [answers, setAnswers] = useState<MatchAnswers>(DEFAULT);
     const [submitted, setSubmitted] = useState(false);
 
     const results = useMemo(
-        () => (submitted ? matchConveyancers(CONVEYANCERS, answers) : []),
-        [submitted, answers]
+        () => (submitted ? matchConveyancers(profiles, answers) : []),
+        [submitted, answers, profiles]
     );
 
     function toggleSpec(s: Specialty) {
@@ -59,11 +60,15 @@ export default function MatchPage() {
             <div className="space-y-6">
                 <PortalHero
                     size="compact"
-                    eyebrow="AI Matching"
+                    eyebrow="Smart Matching"
                     eyebrowIcon={<Sparkles className="h-3.5 w-3.5 text-gold" />}
                     title="Get matched to the right conveyancer"
-                    description="Answer a few questions. We recommend best overall, fastest, best value, highest rated and most experienced — and explain why."
+                    description="Answer a few questions. We rank verified PropReady firms by province, timeline, fee comfort and specialisations — and explain why."
                 />
+
+                {loading ? (
+                    <div className={`${CC_CARD_FLAT} p-6 text-sm text-charcoal/50`}>Loading directory…</div>
+                ) : null}
 
                 {!submitted ? (
                     <div className={`${CC_CARD_FLAT} space-y-4 p-6`}>
@@ -232,11 +237,24 @@ export default function MatchPage() {
                                     Continue
                                 </button>
                             ) : (
-                                <button type="button" className={PORTAL_PRIMARY_BTN} onClick={runMatch}>
+                                <button
+                                    type="button"
+                                    className={PORTAL_PRIMARY_BTN}
+                                    onClick={runMatch}
+                                    disabled={!profiles.length}
+                                >
                                     See recommendations
                                 </button>
                             )}
                         </div>
+                        {!profiles.length && !loading ? (
+                            <p className="text-sm text-charcoal/55">
+                                No verified firms yet.{' '}
+                                <Link href="/conveyancers/register" className="font-semibold text-gold">
+                                    Register a firm
+                                </Link>
+                            </p>
+                        ) : null}
                     </div>
                 ) : (
                     <div className="space-y-5">

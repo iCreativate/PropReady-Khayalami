@@ -1,7 +1,12 @@
 import { DEMO_BUYER_LEADS, DEMO_SELLER_LEADS, DEMO_VIEWINGS } from '@/lib/demo-leads';
 
 /** Shared password for all PropReady demo accounts (buyer, seller, agent). */
-export const DEMO_USER_PASSWORD = 'Demo@123!';
+export function getDemoUserPassword(): string {
+    return process.env.DEMO_USER_PASSWORD?.trim() || 'Demo@123!';
+}
+
+/** @deprecated Prefer getDemoUserPassword() — kept for seed scripts */
+export const DEMO_USER_PASSWORD = getDemoUserPassword();
 
 export const DEMO_BUYER = {
     id: 'demo-buyer-lerato',

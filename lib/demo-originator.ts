@@ -1,27 +1,26 @@
 /**
- * Demo bond originator staff account for local / staging testing.
- * Seed via: npm run seed:demo-originator  OR  POST /api/dev/seed-demo-originator
- *
- * Login: /originators/login
- * Organisation + staff number + email + password below.
+ * Demo originator account for local / staging testing.
+ * Seed via POST /api/dev/seed-demo-originator
+ * Password is only for server seed routes.
  */
 export const DEMO_ORIGINATOR = {
-    id: 'a0000000-0000-4000-8000-0000000000d1',
+    id: 'demo-originator-propready',
     email: 'demo.originator@prop-ready.co.za',
-    password: 'Demo@123!',
     fullName: 'Demo Originator',
-    phone: '+27821234568',
+    phone: '+27820000000',
     organizationId: 'betterbond',
-    organizationName: 'BetterBond',
-    staffNumber: 'PR-BB-DEMO01',
+    staffNumber: 'BB-DEMO-001',
     status: 'approved',
     emailVerified: true,
 } as const;
 
-/** Seed-only credentials — never display these in the public app UI. */
+export function getDemoOriginatorPassword(): string {
+    return process.env.DEMO_ORIGINATOR_PASSWORD?.trim() || 'Demo@123!';
+}
+
 export const DEMO_ORIGINATOR_SEED_CREDENTIALS = {
     email: DEMO_ORIGINATOR.email,
-    password: DEMO_ORIGINATOR.password,
-    organizationId: DEMO_ORIGINATOR.organizationId,
-    staffNumber: DEMO_ORIGINATOR.staffNumber,
+    get password() {
+        return getDemoOriginatorPassword();
+    },
 };

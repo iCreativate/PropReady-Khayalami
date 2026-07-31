@@ -74,8 +74,14 @@ export default function ConveyancerCard({
                             {profile.attorneyName} · {profile.title}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                            <Stars rating={profile.rating} />
-                            <span className="text-charcoal/45">{profile.reviewCount} reviews</span>
+                            {profile.reviewCount > 0 ? (
+                                <>
+                                    <Stars rating={profile.rating} />
+                                    <span className="text-charcoal/45">{profile.reviewCount} reviews</span>
+                                </>
+                            ) : (
+                                <span className="text-charcoal/45">New on PropReady</span>
+                            )}
                             <PricePips band={profile.priceBand} />
                         </div>
                     </div>
@@ -90,10 +96,19 @@ export default function ConveyancerCard({
 
                 {!compact ? (
                     <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        <Stat label="Transfers" value={profile.completedTransfers.toLocaleString('en-ZA')} />
-                        <Stat label="Years" value={String(profile.yearsInPractice)} />
-                        <Stat label="Response" value={`${profile.avgResponseHours}h`} />
-                        <Stat label="Transfer" value={`${profile.avgTransferDays}d`} />
+                        <Stat
+                            label="Location"
+                            value={profile.city || 'SA'}
+                        />
+                        <Stat label="Languages" value={String(profile.languages.length)} />
+                        <Stat
+                            label="Services"
+                            value={String(profile.specialisations.length)}
+                        />
+                        <Stat
+                            label="Status"
+                            value={profile.acceptingNewClients ? 'Open' : 'Full'}
+                        />
                     </div>
                 ) : null}
 

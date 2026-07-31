@@ -8,7 +8,6 @@ import {
     useState,
     type FormEvent,
     type KeyboardEvent,
-    type ReactNode,
 } from 'react';
 import {
     ArrowLeft,
@@ -20,7 +19,6 @@ import {
     Mail,
     Megaphone,
     MessageSquare,
-    Mic,
     MoreHorizontal,
     Paperclip,
     Phone,
@@ -32,7 +30,6 @@ import {
     Smile,
     StickyNote,
     User,
-    Video,
     X,
 } from 'lucide-react';
 import AdminShell from '@/components/admin/AdminShell';
@@ -238,27 +235,6 @@ function ThreadSkeleton() {
                 <div className="h-20 w-[60%] rounded-2xl bg-slate-100" />
             </div>
         </div>
-    );
-}
-
-function DisabledAction({
-    title,
-    children,
-    className = '',
-}: {
-    title: string;
-    children: ReactNode;
-    className?: string;
-}) {
-    return (
-        <button
-            type="button"
-            disabled
-            title={title}
-            className={`inline-flex items-center justify-center rounded-xl border border-[#E5E7EB] bg-white text-[#9CA3AF] opacity-60 cursor-not-allowed ${className}`}
-        >
-            {children}
-        </button>
     );
 }
 
@@ -1246,12 +1222,6 @@ export default function AdminMessagesPage() {
                                         </div>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-1.5">
-                                        <DisabledAction title="Coming soon" className="h-9 w-9">
-                                            <Mic className="h-4 w-4" />
-                                        </DisabledAction>
-                                        <DisabledAction title="Coming soon" className="h-9 w-9">
-                                            <Video className="h-4 w-4" />
-                                        </DisabledAction>
                                         <button
                                             type="button"
                                             onClick={() => setShowAppt(true)}

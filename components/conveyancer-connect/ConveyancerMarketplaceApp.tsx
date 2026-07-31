@@ -21,13 +21,12 @@ import {
 } from '@/components/conveyancer-connect/EngagementModals';
 import { CC_CHIP, CC_CHIP_ACTIVE, CC_CARD_FLAT } from '@/components/conveyancer-connect/cc-ui';
 import {
-    CONVEYANCERS,
     DEFAULT_FILTERS,
+    demoCatalogEnabled,
     filterConveyancers,
+    fetchDirectoryProfiles,
     haversineKm,
     loadCcState,
-    mapDbConveyancerToProfile,
-    mergeLiveConveyancers,
     pushRecentSearch,
     setDarkMode,
     toggleCompare,
@@ -54,7 +53,7 @@ export default function ConveyancerMarketplaceApp({
         ...DEFAULT_FILTERS,
         province: initialProvince,
         city: initialCity,
-        verifiedOnly: true,
+        verifiedOnly: false,
     });
     const [view, setView] = useState<'list' | 'map'>('list');
     const [savedIds, setSavedIds] = useState<string[]>([]);
@@ -65,7 +64,8 @@ export default function ConveyancerMarketplaceApp({
     const [bookFirm, setBookFirm] = useState<ConveyancerProfile | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [selectedMapId, setSelectedMapId] = useState<string | undefined>();
-    const [catalog, setCatalog] = useState<ConveyancerProfile[]>(CONVEYANCERS);
+    const [catalog, setCatalog] = useState<ConveyancerProfile[]>([]);
+    const [loadingDirectory, setLoadingDirectory] = useState(true);
 
     useEffect(() => {
         const s = loadCcState();
@@ -77,14 +77,14 @@ export default function ConveyancerMarketplaceApp({
     useEffect(() => {
         let cancelled = false;
         void (async () => {
+            setLoadingDirectory(true);
             try {
-                const res = await fetch('/api/conveyancers/directory');
-                const data = await res.json().catch(() => ({}));
-                if (cancelled || !res.ok || !Array.isArray(data.conveyancers)) return;
-                const live = data.conveyancers.map(mapDbConveyancerToProfile);
-                setCatalog(mergeLiveConveyancers(live, CONVEYANCERS));
+                const list = await fetchDirectoryProfiles();
+                if (!cancelled) setCatalog(list);
             } catch {
-                /* keep demo catalog */
+                if (!cancelled) setCatalog([]);
+            } finally {
+                if (!cancelled) setLoadingDirectory(false);
             }
         })();
         return () => {
@@ -148,7 +148,7 @@ export default function ConveyancerMarketplaceApp({
                         eyebrow="Conveyancer Connect · PropReady"
                         eyebrowIcon={<Scale className="h-3.5 w-3.5 text-gold" />}
                         title="Find the right conveyancer for your property transfer."
-                        description="Compare verified conveyancing attorneys based on experience, ratings, fees, transfer performance and client satisfaction."
+                        description="Browse PropReady-verified conveyancing firms, request quotes, book consultations, and message attorneys from one place."
                         actions={
                             <>
                                 <a href="#cc-results" className={PORTAL_PRIMARY_BTN}>
@@ -160,9 +160,9 @@ export default function ConveyancerMarketplaceApp({
                             </>
                         }
                         stats={[
-                            { label: 'Tagline', value: 'Compare. Choose with confidence.' },
-                            { label: 'Network', value: `${catalog.length} firms` },
-                            { label: 'Coverage', value: 'Major SA metros' },
+                            { label: 'Directory', value: loadingDirectory ? '…' : `${catalog.length} firms` },
+                            { label: 'Coverage', value: 'South Africa' },
+                            { label: 'Access', value: 'Quotes · Chat · Track' },
                         ]}
                     />
                 ) : null}
@@ -230,14 +230,15 @@ export default function ConveyancerMarketplaceApp({
                     ))}
                 </div>
 
-                <StatsStrip />
+                <StatsStrip firmCount={catalog.length} />
 
+                {featured.length > 0 ? (
                 <section>
                     <div className="mb-4 flex items-end justify-between gap-3">
                         <div>
                             <h2 className="text-xl font-semibold text-charcoal">Featured conveyancers</h2>
                             <p className="text-sm text-charcoal/50">
-                                Verified firms with strong performance and availability.
+                                Verified firms ready to take on new transfer instructions.
                             </p>
                         </div>
                     </div>
@@ -252,11 +253,16 @@ export default function ConveyancerMarketplaceApp({
                                 onCompare={() => handleCompare(p.id)}
                                 onQuote={() => setQuoteFirm(p)}
                                 onBook={() => setBookFirm(p)}
-                                distanceKm={haversineKm(DEFAULT_ORIGIN, p.coords)}
+                                distanceKm={
+                                    p.coords.lat || p.coords.lng
+                                        ? haversineKm(DEFAULT_ORIGIN, p.coords)
+                                        : undefined
+                                }
                             />
                         ))}
                     </div>
                 </section>
+                ) : null}
 
                 <div id="cc-results" className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
                     <div className="hidden lg:block">
@@ -320,12 +326,34 @@ export default function ConveyancerMarketplaceApp({
                                         onCompare={() => handleCompare(p.id)}
                                         onQuote={() => setQuoteFirm(p)}
                                         onBook={() => setBookFirm(p)}
-                                        distanceKm={haversineKm(DEFAULT_ORIGIN, p.coords)}
+                                        distanceKm={
+                                            p.coords.lat || p.coords.lng
+                                                ? haversineKm(DEFAULT_ORIGIN, p.coords)
+                                                : undefined
+                                        }
                                     />
                                 ))}
-                                {!results.length ? (
+                                {loadingDirectory ? (
                                     <div className={`${CC_CARD_FLAT} p-8 text-center text-sm text-charcoal/55`}>
-                                        No conveyancers match these filters. Try widening your search.
+                                        Loading verified firms…
+                                    </div>
+                                ) : !results.length ? (
+                                    <div className={`${CC_CARD_FLAT} space-y-4 p-8 text-center`}>
+                                        <p className="text-sm text-charcoal/55">
+                                            {catalog.length === 0
+                                                ? demoCatalogEnabled()
+                                                    ? 'No conveyancers match these filters.'
+                                                    : 'No verified conveyancers are listed yet. Firms appear here after PropReady admin approval.'
+                                                : 'No conveyancers match these filters. Try widening your search.'}
+                                        </p>
+                                        {catalog.length === 0 ? (
+                                            <Link
+                                                href="/conveyancers/register"
+                                                className={`${PORTAL_PRIMARY_BTN} inline-flex`}
+                                            >
+                                                Register your firm
+                                            </Link>
+                                        ) : null}
                                     </div>
                                 ) : null}
                             </div>

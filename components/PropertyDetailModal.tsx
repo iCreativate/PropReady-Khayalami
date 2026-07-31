@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { X, MapPin, Bed, Bath, Square, Home, Calendar } from 'lucide-react';
 import { getCurrentUser } from '@/lib/auth';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
@@ -28,39 +29,61 @@ interface PropertyDetailModalProps {
 
 export default function PropertyDetailModal({ property, onClose }: PropertyDetailModalProps) {
     const router = useRouter();
-    const { success } = useToast();
+    const { success, error: toastError } = useToast();
+    const [submitting, setSubmitting] = useState(false);
 
     if (!property) return null;
 
-    const handleRequestViewing = () => {
+    const handleRequestViewing = async () => {
         const user = getCurrentUser();
         if (!user) {
             router.push('/login');
             return;
         }
 
-        const quizData = JSON.parse(localStorage.getItem(STORAGE_KEYS.quizResult) || '{}');
-        const appointment = {
-            id: `viewing-${Date.now()}`,
-            propertyId: property.id,
-            propertyTitle: property.title,
-            propertyAddress: property.address,
-            contactName: user.fullName,
-            contactEmail: user.email,
-            contactPhone: quizData.phone || '',
-            contactType: 'buyer' as const,
-            date: '',
-            time: '',
-            notes: `Viewing request from property search: ${property.title}`,
-            status: 'scheduled' as const,
-            timestamp: new Date().toISOString(),
-        };
+        setSubmitting(true);
+        try {
+            const quizData = JSON.parse(localStorage.getItem(STORAGE_KEYS.quizResult) || '{}');
+            const appointment = {
+                id: crypto.randomUUID(),
+                propertyId: property.id,
+                propertyTitle: property.title,
+                propertyAddress: property.address,
+                propertyPrice: property.price,
+                contactName: user.fullName,
+                contactEmail: user.email,
+                contactPhone: quizData.phone || '',
+                contactType: 'buyer' as const,
+                date: new Date().toISOString().slice(0, 10),
+                time: 'TBC',
+                notes: `Viewing request from property search: ${property.title}`,
+                status: 'scheduled' as const,
+                agentId: (property as PropertyDetail & { agentId?: string }).agentId || null,
+            };
 
-        const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.viewingAppointments) || '[]');
-        localStorage.setItem(STORAGE_KEYS.viewingAppointments, JSON.stringify([appointment, ...existing]));
-        logActivity(`Requested viewing for ${property.title}`, user.id);
-        success('Viewing request submitted. Your agent will confirm a date and time.');
-        onClose();
+            const res = await fetch('/api/viewings', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appointment),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                toastError(String(data.error || 'Could not submit viewing request'));
+                return;
+            }
+
+            const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.viewingAppointments) || '[]');
+            localStorage.setItem(
+                STORAGE_KEYS.viewingAppointments,
+                JSON.stringify([appointment, ...existing])
+            );
+            logActivity(`Requested viewing for ${property.title}`, user.id);
+            success('Viewing request submitted. Your agent will confirm a date and time.');
+            onClose();
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -111,11 +134,12 @@ export default function PropertyDetailModal({ property, onClose }: PropertyDetai
                     <div className="flex flex-col gap-3">
                         <button
                             type="button"
-                            onClick={handleRequestViewing}
-                            className="w-full py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition flex items-center justify-center gap-2"
+                            onClick={() => void handleRequestViewing()}
+                            disabled={submitting}
+                            className="w-full py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition flex items-center justify-center gap-2 disabled:opacity-60"
                         >
                             <Calendar className="w-5 h-5" />
-                            Request Viewing
+                            {submitting ? 'Submitting…' : 'Request Viewing'}
                         </button>
                         <Link
                             href="/dashboard/viewings"

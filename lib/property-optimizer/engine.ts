@@ -1,4 +1,4 @@
-import { COMPARABLE_BENCHMARKS, DEMO_MARKET, DEMO_PROPERTY, SUBURB_INSIGHTS } from './demo-data';
+import { COMPARABLE_BENCHMARKS, BLANK_PROPERTY, DEMO_MARKET, DEMO_PROPERTY, SUBURB_INSIGHTS } from './demo-data';
 import { IMPROVEMENT_TEMPLATES, templateToRecommendation } from './improvements';
 import type {
     AcquisitionType,
@@ -1081,7 +1081,7 @@ export function estimateSellSuggestion(params: {
 
 export function buildSnapshotForLocation(
     input: LocationInput,
-    baseProperty: PropertyProfile = DEMO_PROPERTY
+    baseProperty: PropertyProfile = BLANK_PROPERTY
 ): OptimizerSnapshot {
     const area = resolveAreaProfile(input);
     const market = buildMarketFromArea(area);
@@ -1128,7 +1128,7 @@ export function buildSnapshotForLocation(
 }
 
 export function buildOptimizerSnapshot(
-    property: PropertyProfile = DEMO_PROPERTY,
+    property: PropertyProfile = BLANK_PROPERTY,
     market: MarketContext = DEMO_MARKET,
     options?: {
         completedImprovementIds?: string[];
@@ -1213,6 +1213,7 @@ export function buildOptimizerSnapshot(
 
 export {
     COMPARABLE_BENCHMARKS,
+    BLANK_PROPERTY,
     DEMO_MARKET,
     DEMO_PROPERTY,
     SUBURB_INSIGHTS,

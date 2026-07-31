@@ -399,7 +399,7 @@ export default function SmartBondOptimizerApp() {
                         <SectionIntro
                             eyebrow="Your bond, at a glance"
                             title="Overview dashboard"
-                            body="A live snapshot of your property, bond, and progress — built from the figures you enter. Update anything below and every score, chart, and insight recalculates instantly."
+                            body="A working snapshot of your property, bond, and progress — built from the figures you enter. Update anything below and every score, chart, and insight recalculates instantly. Figures are illustrative until you save a real plan."
                         />
 
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

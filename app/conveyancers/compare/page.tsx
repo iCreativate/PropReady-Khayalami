@@ -7,9 +7,10 @@ import CcPageShell from '@/components/conveyancer-connect/CcPageShell';
 import MapView from '@/components/conveyancer-connect/MapView';
 import { CC_CARD_FLAT, PricePips, Stars } from '@/components/conveyancer-connect/cc-ui';
 import {
-    getConveyancerById,
+    findInProfiles,
     loadCcState,
     toggleCompare,
+    useConveyancerDirectory,
     type ConveyancerProfile,
 } from '@/lib/conveyancer-connect';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
@@ -17,21 +18,30 @@ import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 const ROWS: Array<{ label: string; render: (c: ConveyancerProfile) => React.ReactNode }> = [
     { label: 'Firm', render: (c) => c.firmName },
     { label: 'Attorney', render: (c) => c.attorneyName },
-    { label: 'Rating', render: (c) => <Stars rating={c.rating} /> },
-    { label: 'Reviews', render: (c) => c.reviewCount },
-    { label: 'Experience', render: (c) => `${c.yearsInPractice} years` },
-    { label: 'Transfers', render: (c) => c.completedTransfers.toLocaleString('en-ZA') },
+    {
+        label: 'Reviews',
+        render: (c) =>
+            c.reviewCount > 0 ? (
+                <span className="inline-flex items-center gap-2">
+                    <Stars rating={c.rating} />
+                    <span>{c.reviewCount}</span>
+                </span>
+            ) : (
+                'New on PropReady'
+            ),
+    },
+    { label: 'Languages', render: (c) => c.languages.join(', ') || '—' },
     { label: 'Fee band', render: (c) => <PricePips band={c.priceBand} /> },
-    { label: 'Response', render: (c) => `${c.avgResponseHours}h` },
-    { label: 'Avg duration', render: (c) => `${c.avgTransferDays} days` },
-    { label: 'Languages', render: (c) => c.languages.join(', ') },
-    { label: 'Services', render: (c) => c.specialisations.slice(0, 4).join(', ') },
+    { label: 'Services', render: (c) => c.specialisations.slice(0, 4).join(', ') || '—' },
     { label: 'Availability', render: (c) => c.availability },
-    { label: 'Verified', render: (c) => (c.verified ? 'Yes' : 'No') },
+    { label: 'Verified', render: (c) => (c.verified ? 'Yes' : 'Pending') },
     { label: 'Location', render: (c) => `${c.suburb}, ${c.city}` },
+    { label: 'Email', render: (c) => c.email || '—' },
+    { label: 'Phone', render: (c) => c.phone || '—' },
 ];
 
 export default function ComparePage() {
+    const { profiles: directory } = useConveyancerDirectory();
     const [ids, setIds] = useState<string[]>([]);
 
     useEffect(() => {
@@ -39,8 +49,8 @@ export default function ComparePage() {
     }, []);
 
     const profiles = useMemo(
-        () => ids.map((id) => getConveyancerById(id)).filter(Boolean) as ConveyancerProfile[],
-        [ids]
+        () => ids.map((id) => findInProfiles(directory, id)).filter(Boolean) as ConveyancerProfile[],
+        [ids, directory]
     );
 
     function remove(id: string) {

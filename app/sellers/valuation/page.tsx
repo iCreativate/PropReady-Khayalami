@@ -60,34 +60,39 @@ export default function ValuationBookingPage() {
     }, []);
 
     useEffect(() => {
-        // Load real registered agents
-        if (typeof window !== 'undefined') {
-            const storedAgents = JSON.parse(localStorage.getItem('propReady_agents') || '[]');
-            const mapped: Agent[] = filterPublicAgents(
-                storedAgents.map((a: Record<string, unknown>) => {
-                    const m = mapAgentRecord(a);
-                    return {
-                        id: m.id,
-                        name: m.fullName || 'Agent',
-                        company: m.company || 'Agency',
-                        brandName: (a.brandName as string) || m.company,
-                        email: m.email || '',
-                        phone: m.phone || '',
-                        rating: typeof a.rating === 'number' ? (a.rating as number) : 4.8,
-                        totalSales: typeof a.totalSales === 'number' ? (a.totalSales as number) : 0,
-                        experience: (a.experience as string) || '—',
-                        location: (a.location as string) || m.city || 'South Africa',
-                        listingQualityScore:
-                            typeof a.listingQualityScore === 'number'
-                                ? (a.listingQualityScore as number)
-                                : 85,
-                        specialties: Array.isArray(a.specialties) ? (a.specialties as string[]) : [],
-                        verified: m.verified,
-                    };
-                })
-            ) as Agent[];
-            setAgents(mapped);
-        }
+        void (async () => {
+            try {
+                const res = await fetch('/api/agents/directory', { credentials: 'include' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !Array.isArray(data.agents)) {
+                    setAgents([]);
+                    return;
+                }
+                const mapped: Agent[] = filterPublicAgents(
+                    data.agents.map((a: Record<string, unknown>) => {
+                        const m = mapAgentRecord(a);
+                        return {
+                            id: m.id,
+                            name: m.fullName || 'Agent',
+                            company: m.company || 'Agency',
+                            brandName: m.company,
+                            email: m.email || '',
+                            phone: m.phone || '',
+                            rating: 0,
+                            totalSales: 0,
+                            experience: '—',
+                            location: m.city || 'South Africa',
+                            listingQualityScore: 0,
+                            specialties: [] as string[],
+                            verified: m.verified,
+                        };
+                    })
+                ) as Agent[];
+                setAgents(mapped);
+            } catch {
+                setAgents([]);
+            }
+        })();
     }, []);
 
     // Group agents by agency
@@ -326,8 +331,18 @@ export default function ValuationBookingPage() {
                                                 <span className="text-charcoal/50 text-sm">{agency.totalAgents} {agency.totalAgents === 1 ? 'agent' : 'agents'}</span>
                                             </div>
                                             <div className="flex items-center gap-2 mb-2">
-                                                <Star className="w-4 h-4 text-gold fill-gold" />
-                                                <span className="text-charcoal/50 text-sm">{agency.averageRating} average rating</span>
+                                                {agency.averageRating > 0 ? (
+                                                    <>
+                                                        <Star className="w-4 h-4 text-gold fill-gold" />
+                                                        <span className="text-charcoal/50 text-sm">
+                                                            {agency.averageRating.toFixed(1)} average rating
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-charcoal/50 text-sm">
+                                                        PropReady-verified agents
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -396,15 +411,25 @@ export default function ValuationBookingPage() {
                                             </div>
                                             <p className="text-charcoal/50 text-sm truncate mb-2">{agent.company}</p>
                                             <div className="flex items-center gap-2 mb-2">
-                                                <div className="flex items-center gap-1">
-                                                    {[...Array(5)].map((_, i) => (
-                                                        <Star
-                                                            key={i}
-                                                            className={`w-3.5 h-3.5 ${i < Math.floor(agent.rating) ? 'text-gold fill-gold' : 'text-charcoal/30'}`}
-                                                        />
-                                                    ))}
-                                                </div>
-                                                <span className="text-charcoal/50 text-xs">{agent.rating} ({agent.totalSales} sales)</span>
+                                                {agent.rating > 0 ? (
+                                                    <>
+                                                        <div className="flex items-center gap-1">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star
+                                                                    key={i}
+                                                                    className={`w-3.5 h-3.5 ${i < Math.floor(agent.rating) ? 'text-gold fill-gold' : 'text-charcoal/30'}`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-charcoal/50 text-xs">
+                                                            {agent.rating} ({agent.totalSales} sales)
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-charcoal/50 text-xs">
+                                                        PPRA-verified on PropReady
+                                                    </span>
+                                                )}
                                             </div>
                                             <p className="text-charcoal/40 text-xs flex items-center gap-1 mb-3">
                                                 <MapPin className="w-3 h-3" />
@@ -414,6 +439,7 @@ export default function ValuationBookingPage() {
                                     </div>
 
                                     {/* Listing Quality Score */}
+                                    {agent.listingQualityScore > 0 ? (
                                     <div className="mb-4 p-3 bg-gradient-to-br from-gold/5 to-gold/10 rounded-lg border border-gold/20">
                                         <div className="flex items-center justify-between mb-1">
                                             <span className="text-charcoal/50 text-xs font-medium">Listing Quality Score</span>
@@ -426,6 +452,11 @@ export default function ValuationBookingPage() {
                                             ></div>
                                         </div>
                                     </div>
+                                    ) : (
+                                    <div className="mb-4 p-3 rounded-lg border border-charcoal/10 bg-charcoal/[0.02] text-xs text-charcoal/55">
+                                        Contact this agent to book a valuation — ratings appear after completed sales on PropReady.
+                                    </div>
+                                    )}
 
                                     {/* Specialties */}
                                     <div className="mb-4">

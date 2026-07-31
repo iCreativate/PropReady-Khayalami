@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { assertDemoToolsAllowed } from '@/lib/production';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 /**
- * GET /api/leads/debug
- * Call this to see if the database is configured and if the leads table works.
+ * GET /api/leads/debug — development only.
  */
 export async function GET() {
+    const gate = assertDemoToolsAllowed();
+    if (!gate.ok) return gate.response;
+
     const configured = !!(supabaseUrl && supabaseAnonKey);
 
     if (!configured) {
@@ -31,13 +34,6 @@ export async function GET() {
                 tableOk: false,
                 error: countError.message,
                 code: countError.code,
-                hint: countError.code === '42P01'
-                    ? 'Run supabase-schema.sql in Supabase SQL Editor to create the leads table.'
-                    : /column.*does not exist|undefined column/i.test(countError.message)
-                        ? 'Run supabase-migration-leads-seller-columns.sql to add lead_type and seller columns.'
-                        : countError.code === '42501'
-                            ? 'RLS may be blocking. In Supabase SQL Editor run: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
-                            : undefined,
             });
         }
 
@@ -53,27 +49,15 @@ export async function GET() {
                 tableOk: false,
                 error: error.message,
                 code: error.code,
-                hint: error.code === '42P01'
-                    ? 'Run supabase-schema.sql in Supabase SQL Editor to create the leads table.'
-                    : /column.*does not exist|undefined column/i.test(error.message)
-                        ? 'Run supabase-migration-leads-seller-columns.sql to add lead_type and seller columns.'
-                        : error.code === '42501'
-                            ? 'RLS may be blocking. In Supabase SQL Editor run: DROP POLICY IF EXISTS "Allow all operations on leads" ON leads; CREATE POLICY "Allow all operations on leads" ON leads FOR ALL USING (true) WITH CHECK (true);'
-                            : undefined,
             });
         }
 
         const leads = rows || [];
-        const buyerCount = leads.filter((r: { lead_type?: string }) => (r.lead_type || 'buyer') !== 'seller' && (r.lead_type || 'buyer') !== 'investor').length;
-        const sellerCount = leads.filter((r: { lead_type?: string }) => (r.lead_type || '') === 'seller' || (r.lead_type || '') === 'investor').length;
-
         return NextResponse.json({
             configured: true,
             tableOk: true,
             leadCount: totalCount ?? 0,
-            buyerCount,
-            sellerCount,
-            sample: leads.slice(0, 5),
+            sampleCount: Math.min(5, leads.length),
         });
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

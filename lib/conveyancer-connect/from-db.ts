@@ -54,16 +54,18 @@ export type DbConveyancerRow = {
     languages?: string[] | null;
     specialisations?: string[] | null;
     verified_at?: string | null;
+    profile_completion?: number | null;
 };
 
-/** Map an approved DB conveyancer row into marketplace ConveyancerProfile shape. */
+/** Map an approved DB conveyancer into marketplace shape — no invented ratings/reviews. */
 export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerProfile {
     const firmName = row.firm_name || 'Conveyancing firm';
     const attorneyName = row.full_name || firmName;
     const slug = row.firm_slug || row.id;
     const specialty = (row.specialisations || ['residential']).filter(Boolean) as Specialty[];
-    const city = row.city || 'Johannesburg';
+    const city = row.city || '';
     const province = toProvinceSlug(row.province);
+    const suburb = row.suburb || city || '';
 
     return {
         id: row.id,
@@ -72,56 +74,60 @@ export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerPro
         attorneyName,
         title: 'Conveyancing attorney',
         verified: Boolean(row.verified_at),
-        featured: true,
+        featured: Boolean(row.verified_at),
         logoInitials: initials(firmName),
         photoInitials: initials(attorneyName),
         accent: '#B8860B',
-        rating: 4.8,
+        rating: 0,
         reviewCount: 0,
         completedTransfers: 0,
-        yearsInPractice: 5,
+        yearsInPractice: 0,
         province,
-        city,
-        suburb: row.suburb || city,
+        city: city || 'South Africa',
+        suburb: suburb || '—',
         languages: row.languages?.length ? row.languages : ['English'],
-        avgResponseHours: 4,
-        avgTransferDays: 70,
+        avgResponseHours: 0,
+        avgTransferDays: 0,
         priceBand: 2,
         acceptingNewClients: true,
         openToday: true,
         onlineConsultation: true,
         availability: 'available',
         specialisations: specialty.length ? specialty : ['residential'],
-        bio: row.bio || `${firmName} is a PropReady-verified conveyancing practice ready to assist with property transfers.`,
+        bio:
+            row.bio ||
+            `${firmName} is a PropReady-verified conveyancing practice. Contact them for timelines, fees and instruction.`,
         firmHistory: '',
         qualifications: [],
         education: [],
-        memberships: ['LPC'],
+        memberships: [],
         awards: [],
         licences: [],
-        offices: [
-            {
-                label: 'Main office',
-                address: [row.suburb, city, row.province].filter(Boolean).join(', '),
-                suburb: row.suburb || city,
-                city,
-                province,
-                coords: { lat: -26.2041, lng: 28.0473 },
-            },
-        ],
+        offices: city
+            ? [
+                  {
+                      label: 'Practice location',
+                      address: [row.suburb, city, row.province].filter(Boolean).join(', '),
+                      suburb: suburb || city,
+                      city,
+                      province,
+                      coords: { lat: 0, lng: 0 },
+                  },
+              ]
+            : [],
         services: specialty.length ? specialty : ['residential'],
         performance: {
-            avgTransferDays: 70,
-            avgResponseHours: 4,
-            clientSatisfactionPct: 96,
-            repeatClientPct: 40,
+            avgTransferDays: 0,
+            avgResponseHours: 0,
+            clientSatisfactionPct: 0,
+            repeatClientPct: 0,
             transfersCompleted: 0,
-            successRatePct: 98,
-            currentWorkload: 4,
-            monthlyCases: 6,
-            avgReview: 4.8,
-            yearsActive: 5,
-            responseRatePct: 95,
+            successRatePct: 0,
+            currentWorkload: 0,
+            monthlyCases: 0,
+            avgReview: 0,
+            yearsActive: 0,
+            responseRatePct: 0,
         },
         reviews: [],
         documents: [],
@@ -129,16 +135,18 @@ export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerPro
         email: row.email || '',
         website: row.website || '',
         lastActiveAt: new Date().toISOString(),
-        coords: { lat: -26.2041, lng: 28.0473 },
+        coords: { lat: 0, lng: 0 },
     };
 }
 
-/** Merge live DB firms ahead of demo catalog (DB wins on slug/id collision). */
+/** Merge live DB firms ahead of optional demo catalog. */
 export function mergeLiveConveyancers(
     live: ConveyancerProfile[],
     catalog: ConveyancerProfile[]
 ): ConveyancerProfile[] {
     const seen = new Set(live.map((c) => c.id));
-    const catalogFiltered = catalog.filter((c) => !seen.has(c.id) && !live.some((l) => l.slug === c.slug));
+    const catalogFiltered = catalog.filter(
+        (c) => !seen.has(c.id) && !live.some((l) => l.slug === c.slug)
+    );
     return [...live, ...catalogFiltered];
 }

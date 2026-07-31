@@ -2,13 +2,11 @@
  * Demo agent account for local / staging testing.
  * Seed via: npm run seed:demo-agent  OR  POST /api/dev/seed-demo-agent
  *
- * Login: /agents/login
- * Email + password + FFC number below.
+ * Password is only for server seed routes — do not surface in UI.
  */
 export const DEMO_AGENT = {
     id: 'demo-agent-propready',
     email: 'demo.agent@prop-ready.co.za',
-    password: 'Demo@123!',
     fullName: 'Demo Agent',
     phone: '+27821234567',
     company: 'PropReady Demo Realty',
@@ -24,9 +22,15 @@ export const DEMO_AGENT = {
     verificationStatus: 'verified',
 } as const;
 
+export function getDemoAgentPassword(): string {
+    return process.env.DEMO_AGENT_PASSWORD?.trim() || 'Demo@123!';
+}
+
 /** Seed-only credentials — never display these in the public app UI. */
 export const DEMO_AGENT_SEED_CREDENTIALS = {
     email: DEMO_AGENT.email,
-    password: DEMO_AGENT.password,
+    get password() {
+        return getDemoAgentPassword();
+    },
     ffcNumber: DEMO_AGENT.ffcNumber,
 };

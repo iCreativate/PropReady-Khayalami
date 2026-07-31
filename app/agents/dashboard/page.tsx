@@ -154,7 +154,10 @@ export default function AgentsDashboardPage() {
 
             if (agent) {
                 setCurrentAgent(agent as typeof currentAgent);
-                if (agent.id === DEMO_AGENT.id) {
+                if (
+                    process.env.NEXT_PUBLIC_ENABLE_DEMO === '1' &&
+                    agent.id === DEMO_AGENT.id
+                ) {
                     mergeDemoLeadsIntoStorage(String(agent.id));
                 }
             }
@@ -913,7 +916,7 @@ export default function AgentsDashboardPage() {
                                     <p className={AGENT_DASH_EMPTY_DESC}>
                                         {searchTerm || statusFilter !== 'all' || locationFilter === 'nearby'
                                             ? 'Try adjusting your filters (search, status, or area)'
-                                            : <>Sellers come from the database when they complete the seller quiz. Use Refresh above, or check <a href="/api/leads/debug" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">/api/leads/debug</a> to verify the database.</>}
+                                            : <>Sellers come from the database when they complete the seller quiz. Use Refresh above to reload leads.</>}
                                     </p>
                                 </div>
                             ) : (

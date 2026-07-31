@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { X } from 'lucide-react';
 import { CC_INPUT, CC_LABEL } from '@/components/conveyancer-connect/cc-ui';
-import { addBooking, addQuote, upsertThread } from '@/lib/conveyancer-connect';
+import { isLiveFirmId, upsertThread } from '@/lib/conveyancer-connect';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
 function ModalShell({
@@ -64,23 +65,27 @@ export function QuoteModal({
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const liveIds = firmIds.filter(isLiveFirmId);
+    const demoOnly = liveIds.length === 0;
+
     async function submit(e: React.FormEvent) {
         e.preventDefault();
         setError('');
+        if (!name.trim() || !email.trim()) {
+            setError('Name and email are required so the firm can reply.');
+            return;
+        }
+        if (demoOnly) {
+            setError(
+                'This listing is sample data. Browse verified PropReady firms to send a live quote request.'
+            );
+            return;
+        }
         setLoading(true);
         try {
-            addQuote({
-                firmIds,
-                propertyType,
-                location,
-                purchasePrice,
-                bondAmount,
-                timeline,
-                notes,
-            });
-            // Persist to live conveyancer inbox when firm id is a real account UUID
-            for (const firmId of firmIds) {
-                if (!/^[0-9a-f-]{36}$/i.test(firmId)) continue;
+            let lastError = '';
+            let ok = 0;
+            for (const firmId of liveIds) {
                 const res = await fetch('/api/conveyancers/quotes', {
                     method: 'POST',
                     credentials: 'include',
@@ -93,17 +98,19 @@ export function QuoteModal({
                         bondAmount,
                         timeline,
                         notes,
-                        name,
-                        email,
+                        name: name.trim(),
+                        email: email.trim(),
                     }),
                 });
-                if (!res.ok) {
+                if (res.ok) ok += 1;
+                else {
                     const data = await res.json().catch(() => ({}));
-                    // Keep local success if unauthenticated — matter unlocks after login
-                    if (res.status !== 401) {
-                        setError(String(data.error || 'Could not reach firm inbox'));
-                    }
+                    lastError = String(data.error || 'Could not submit quote request');
                 }
+            }
+            if (!ok) {
+                setError(lastError || 'Could not submit quote request');
+                return;
             }
             setSent(true);
             onDone?.();
@@ -116,12 +123,17 @@ export function QuoteModal({
         return (
             <ModalShell title="Quote requested" onClose={onClose}>
                 <p className="text-sm text-charcoal/60">
-                    Your quote request for <strong>{firmLabel}</strong> has been saved. Firms will
-                    respond in the live marketplace (demo stores the request locally for now).
+                    Your request was sent to <strong>{firmLabel}</strong>. They will see it in their
+                    conveyancer portal and can follow up by email or PropReady Messages.
                 </p>
-                <button type="button" className={`${PORTAL_PRIMARY_BTN} mt-5`} onClick={onClose}>
-                    Done
-                </button>
+                <div className="mt-5 flex flex-wrap gap-2">
+                    <Link href="/conveyancers/dashboard" className={PORTAL_PRIMARY_BTN}>
+                        Open my dashboard
+                    </Link>
+                    <button type="button" className={PORTAL_SECONDARY_BTN} onClick={onClose}>
+                        Done
+                    </button>
+                </div>
             </ModalShell>
         );
     }
@@ -133,11 +145,17 @@ export function QuoteModal({
                 {error ? <p className="text-sm text-red-600">{error}</p> : null}
                 <div>
                     <label className={CC_LABEL}>Your name</label>
-                    <input className={CC_INPUT} value={name} onChange={(e) => setName(e.target.value)} />
+                    <input className={CC_INPUT} required value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div>
                     <label className={CC_LABEL}>Email</label>
-                    <input className={CC_INPUT} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input
+                        className={CC_INPUT}
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
                 </div>
                 <div>
                     <label className={CC_LABEL}>Property type</label>
@@ -151,16 +169,32 @@ export function QuoteModal({
                 </div>
                 <div>
                     <label className={CC_LABEL}>Location</label>
-                    <input className={CC_INPUT} value={location} onChange={(e) => setLocation(e.target.value)} required placeholder="Suburb, city" />
+                    <input
+                        className={CC_INPUT}
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        required
+                        placeholder="Suburb, city"
+                    />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className={CC_LABEL}>Purchase price</label>
-                        <input className={CC_INPUT} type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(Number(e.target.value))} />
+                        <input
+                            className={CC_INPUT}
+                            type="number"
+                            value={purchasePrice}
+                            onChange={(e) => setPurchasePrice(Number(e.target.value))}
+                        />
                     </div>
                     <div>
                         <label className={CC_LABEL}>Bond amount</label>
-                        <input className={CC_INPUT} type="number" value={bondAmount} onChange={(e) => setBondAmount(Number(e.target.value))} />
+                        <input
+                            className={CC_INPUT}
+                            type="number"
+                            value={bondAmount}
+                            onChange={(e) => setBondAmount(Number(e.target.value))}
+                        />
                     </div>
                 </div>
                 <div>
@@ -203,43 +237,51 @@ export function BookModal({
     const [notes, setNotes] = useState('');
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    function submit(e: React.FormEvent) {
+    async function submit(e: React.FormEvent) {
         e.preventDefault();
+        setError('');
+        if (!isLiveFirmId(firmId)) {
+            setError(
+                'This listing is sample data. Book consultations with verified PropReady firms from the directory.'
+            );
+            return;
+        }
         setLoading(true);
-        void (async () => {
-            try {
-                addBooking({ firmId, type, slot, name, email, phone, notes });
-                if (/^[0-9a-f-]{36}$/i.test(firmId)) {
-                    await fetch('/api/conveyancers/consultations', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            conveyancerId: firmId,
-                            type,
-                            slot,
-                            name,
-                            email,
-                            phone,
-                            notes,
-                        }),
-                    });
-                }
-                setSent(true);
-                onDone?.();
-            } finally {
-                setLoading(false);
+        try {
+            const res = await fetch('/api/conveyancers/consultations', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    conveyancerId: firmId,
+                    type,
+                    slot,
+                    name,
+                    email,
+                    phone,
+                    notes,
+                }),
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                setError(String(data.error || 'Could not book consultation'));
+                return;
             }
-        })();
+            setSent(true);
+            onDone?.();
+        } finally {
+            setLoading(false);
+        }
     }
 
     if (sent) {
         return (
             <ModalShell title="Consultation booked" onClose={onClose}>
                 <p className="text-sm text-charcoal/60">
-                    Confirmed with <strong>{firmLabel}</strong> for <strong>{slot}</strong> ({type}).
-                    A reminder will sync when calendar integration goes live.
+                    Request sent to <strong>{firmLabel}</strong> for <strong>{slot}</strong> ({type}). The
+                    firm will confirm the appointment from their portal.
                 </p>
                 <button type="button" className={`${PORTAL_PRIMARY_BTN} mt-5`} onClick={onClose}>
                     Done
@@ -251,21 +293,27 @@ export function BookModal({
     return (
         <ModalShell title="Book consultation" onClose={onClose}>
             <form className="space-y-3" onSubmit={submit}>
+                {error ? <p className="text-sm text-red-600">{error}</p> : null}
                 <div>
                     <label className={CC_LABEL}>Type</label>
-                    <select className={CC_INPUT} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+                    <select
+                        className={CC_INPUT}
+                        value={type}
+                        onChange={(e) => setType(e.target.value as typeof type)}
+                    >
                         <option value="virtual">Virtual</option>
                         <option value="office">Office</option>
                         <option value="phone">Phone</option>
                     </select>
                 </div>
                 <div>
-                    <label className={CC_LABEL}>Time slot</label>
+                    <label className={CC_LABEL}>Preferred time</label>
                     <select className={CC_INPUT} value={slot} onChange={(e) => setSlot(e.target.value)}>
                         <option>Tomorrow 10:00</option>
                         <option>Tomorrow 14:30</option>
                         <option>Friday 09:00</option>
                         <option>Monday 11:00</option>
+                        <option>Flexible — firm to propose</option>
                     </select>
                 </div>
                 <div>
@@ -275,7 +323,13 @@ export function BookModal({
                 <div className="grid grid-cols-2 gap-3">
                     <div>
                         <label className={CC_LABEL}>Email</label>
-                        <input className={CC_INPUT} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <input
+                            className={CC_INPUT}
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
                     </div>
                     <div>
                         <label className={CC_LABEL}>Phone</label>
@@ -312,41 +366,45 @@ export function MessagePanel({
     const [sent, setSent] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [loginHint, setLoginHint] = useState(false);
+    const [needLogin, setNeedLogin] = useState(false);
 
     async function submit(e: React.FormEvent) {
         e.preventDefault();
         if (!body.trim()) return;
         setError('');
+        if (!isLiveFirmId(firmId)) {
+            setError('Sample listings cannot receive live messages. Choose a verified PropReady firm.');
+            return;
+        }
         setLoading(true);
         try {
-            upsertThread(firmId, body.trim());
-            if (/^[0-9a-f-]{36}$/i.test(firmId)) {
-                const res = await fetch('/api/messages/conversations', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        subject: `Enquiry — ${firmLabel}`,
-                        contextType: 'conveyancing',
-                        contextId: firmId,
-                        initialMessage: body.trim(),
-                        participants: [
-                            {
-                                accountType: 'conveyancer',
-                                profileId: firmId,
-                                displayName: firmLabel,
-                            },
-                        ],
-                    }),
-                });
-                if (res.status === 401) {
-                    setLoginHint(true);
-                } else if (!res.ok) {
-                    const data = await res.json().catch(() => ({}));
-                    setError(String(data.error || 'Could not send live message'));
-                    return;
-                }
+            const res = await fetch('/api/messages/conversations', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subject: `Enquiry — ${firmLabel}`,
+                    contextType: 'conveyancing',
+                    contextId: firmId,
+                    initialMessage: body.trim(),
+                    participants: [
+                        {
+                            accountType: 'conveyancer',
+                            profileId: firmId,
+                            displayName: firmLabel,
+                        },
+                    ],
+                }),
+            });
+            if (res.status === 401) {
+                setNeedLogin(true);
+                upsertThread(firmId, body.trim());
+                return;
+            }
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                setError(String(data.error || 'Could not start conversation'));
+                return;
             }
             setSent(true);
             setBody('');
@@ -357,25 +415,39 @@ export function MessagePanel({
 
     return (
         <ModalShell title={`Message ${firmLabel}`} onClose={onClose}>
-            <p className="mb-3 text-xs text-charcoal/50">
-                {/^[0-9a-f-]{36}$/i.test(firmId)
-                    ? 'Opens a live PropReady inbox thread with this firm (sign in required).'
-                    : 'Demo firm — messages are stored locally. Verified PropReady firms use the live inbox.'}
-            </p>
-            {sent ? (
+            {needLogin ? (
                 <div className="space-y-3">
-                    <p className="text-sm text-charcoal/70">Message sent{loginHint ? ' locally' : ''}.</p>
-                    {loginHint ? (
-                        <p className="text-sm text-charcoal/55">
-                            Sign in as a buyer or seller to deliver this to the firm&apos;s live inbox.
-                        </p>
-                    ) : null}
-                    <button type="button" className={PORTAL_PRIMARY_BTN} onClick={onClose}>
-                        Done
-                    </button>
+                    <p className="text-sm text-charcoal/70">
+                        Sign in as a buyer or seller to open a live inbox thread with this firm.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/auth/login" className={PORTAL_PRIMARY_BTN}>
+                            Sign in
+                        </Link>
+                        <button type="button" className={PORTAL_SECONDARY_BTN} onClick={onClose}>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            ) : sent ? (
+                <div className="space-y-3">
+                    <p className="text-sm text-charcoal/70">
+                        Message delivered. Continue the conversation from your PropReady Messages inbox.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/dashboard/messages" className={PORTAL_PRIMARY_BTN}>
+                            Open messages
+                        </Link>
+                        <button type="button" className={PORTAL_SECONDARY_BTN} onClick={onClose}>
+                            Done
+                        </button>
+                    </div>
                 </div>
             ) : (
                 <form className="space-y-3" onSubmit={submit}>
+                    <p className="text-xs text-charcoal/50">
+                        Opens a live PropReady conversation with this firm (sign-in required).
+                    </p>
                     {error ? <p className="text-sm text-red-600">{error}</p> : null}
                     <textarea
                         className={CC_INPUT}

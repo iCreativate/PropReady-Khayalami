@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { DEMO_AGENT } from '@/lib/demo-agent';
+import { DEMO_AGENT, getDemoAgentPassword } from '@/lib/demo-agent';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { createClient } from '@supabase/supabase-js';
 import { getSupabaseAnonKey, getSupabaseUrl } from '@/lib/supabase-config';
@@ -16,7 +16,7 @@ function isDevSeedAllowed(): boolean {
 function getDemoCredentials() {
     return {
         email: DEMO_AGENT.email,
-        password: DEMO_AGENT.password,
+        password: getDemoAgentPassword(),
         ffcNumber: DEMO_AGENT.ffcNumber,
         loginUrl: '/agents/login',
         note: 'Credentials returned only from this seed endpoint — not shown in the app UI.',
@@ -36,7 +36,7 @@ function buildAgentRow(): Record<string, unknown> {
         ffc_document_url: DEMO_AGENT.ffcDocumentUrl,
         company: DEMO_AGENT.company,
         city: DEMO_AGENT.city,
-        password: DEMO_AGENT.password,
+        password: getDemoAgentPassword(),
         status: DEMO_AGENT.status,
         plan: DEMO_AGENT.plan,
         seller_plan: DEMO_AGENT.sellerPlan,
@@ -149,7 +149,7 @@ export async function POST() {
             DEMO_AGENT.email,
             'agent',
             String(result.data?.id || DEMO_AGENT.id),
-            DEMO_AGENT.password
+            getDemoAgentPassword()
         );
         const supabaseAuth = createServiceClient();
         if (supabaseAuth) {

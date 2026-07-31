@@ -106,7 +106,7 @@ export default function ConveyancerPortalDashboard() {
                     size="compact"
                     eyebrow="Conveyancer Connect"
                     title={user.firmName || 'Your firm dashboard'}
-                    description="Leads, live inbox, transfer matters, quotes and Deeds Office tracking — built for accessibility to buyers, sellers and agents."
+                    description="Leads, live inbox, transfer matters and quotes. Deeds Office status uses a pluggable provider (manual/simulated until a licensed gateway is configured)."
                 />
             }
         >

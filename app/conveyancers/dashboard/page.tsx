@@ -1,26 +1,64 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PortalHero from '@/components/PortalHero';
 import CcPageShell from '@/components/conveyancer-connect/CcPageShell';
 import { CC_CARD_FLAT, CC_MUTED } from '@/components/conveyancer-connect/cc-ui';
 import {
-    defaultCcState,
-    getConveyancerById,
+    findInProfiles,
     loadCcState,
-    type CcUserState,
+    useConveyancerDirectory,
 } from '@/lib/conveyancer-connect';
+import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
+type Activity = {
+    quotes: Array<Record<string, unknown>>;
+    consultations: Array<Record<string, unknown>>;
+    matters: Array<Record<string, unknown>>;
+};
+
 export default function UserDashboardPage() {
-    const [state, setState] = useState<CcUserState>(defaultCcState());
+    const { profiles } = useConveyancerDirectory();
+    const [savedIds, setSavedIds] = useState<string[]>([]);
+    const [recentSearches, setRecentSearches] = useState<string[]>([]);
+    const [activity, setActivity] = useState<Activity | null>(null);
+    const [signedIn, setSignedIn] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setState(loadCcState());
+        const s = loadCcState();
+        setSavedIds(s.savedIds);
+        setRecentSearches(s.recentSearches);
+
+        void (async () => {
+            const session = await hydrateSessionFromCookies({ force: true });
+            setSignedIn(Boolean(session));
+            if (!session) {
+                setLoading(false);
+                return;
+            }
+            const res = await fetch('/api/conveyancers/my/activity', { credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                setActivity({
+                    quotes: data.quotes || [],
+                    consultations: data.consultations || [],
+                    matters: data.matters || [],
+                });
+            }
+            setLoading(false);
+        })();
     }, []);
 
-    const saved = state.savedIds.map((id) => getConveyancerById(id)).filter(Boolean);
+    const saved = useMemo(
+        () => savedIds.map((id) => findInProfiles(profiles, id)).filter(Boolean),
+        [savedIds, profiles]
+    );
+
+    const messagesHref =
+        signedIn ? '/dashboard/messages' : '/auth/login?type=user&next=/dashboard/messages';
 
     return (
         <CcPageShell title="My Conveyancer Dashboard">
@@ -29,24 +67,36 @@ export default function UserDashboardPage() {
                     size="compact"
                     eyebrow="Your workspace"
                     title="Conveyancer Connect dashboard"
-                    description="Recent searches, saved firms, quotes, appointments, messages and transfer progress — in one place."
+                    description="Quotes, consultations, saved firms and transfer matters linked to your PropReady account."
                     actions={
                         <>
                             <Link href="/conveyancers" className={PORTAL_PRIMARY_BTN}>
                                 Browse
                             </Link>
                             <Link href="/conveyancers/match" className={PORTAL_SECONDARY_BTN}>
-                                AI Match
+                                Smart match
                             </Link>
                         </>
                     }
                 />
 
+                {!signedIn ? (
+                    <div className={`${CC_CARD_FLAT} p-6`}>
+                        <p className="text-sm text-charcoal/60">
+                            Sign in to see live quote requests, consultations and transfer matters. Saved firms
+                            and recent searches still work on this device.
+                        </p>
+                        <Link href="/auth/login" className={`${PORTAL_PRIMARY_BTN} mt-4 inline-flex`}>
+                            Sign in
+                        </Link>
+                    </div>
+                ) : null}
+
                 <div className="grid gap-4 lg:grid-cols-2">
                     <Panel title="Recent searches">
-                        {state.recentSearches.length ? (
+                        {recentSearches.length ? (
                             <ul className="space-y-2">
-                                {state.recentSearches.map((s) => (
+                                {recentSearches.map((s) => (
                                     <li key={s}>
                                         <Link
                                             href={`/conveyancers?q=${encodeURIComponent(s)}`}
@@ -84,35 +134,63 @@ export default function UserDashboardPage() {
                     </Panel>
 
                     <Panel title="Quotes">
-                        {state.quotes.length ? (
+                        {loading ? (
+                            <p className={CC_MUTED}>Loading…</p>
+                        ) : activity?.quotes?.length ? (
                             <ul className="space-y-3">
-                                {state.quotes.map((q) => (
-                                    <li key={q.id} className="rounded-xl bg-charcoal/[0.03] px-3 py-2 text-sm">
-                                        <p className="font-semibold text-charcoal">
-                                            {q.propertyType} · {q.location || 'Location TBC'}
-                                        </p>
-                                        <p className="text-charcoal/50">
-                                            {q.status} · {new Date(q.createdAt).toLocaleDateString('en-ZA')}
-                                        </p>
-                                    </li>
-                                ))}
+                                {activity.quotes.map((q) => {
+                                    const firm = q.conveyancers as
+                                        | { firm_name?: string; firm_slug?: string }
+                                        | null
+                                        | undefined;
+                                    return (
+                                        <li
+                                            key={String(q.id)}
+                                            className="rounded-xl bg-charcoal/[0.03] px-3 py-2 text-sm"
+                                        >
+                                            <p className="font-semibold text-charcoal">
+                                                {String(q.property_type || 'Transfer')} ·{' '}
+                                                {String(q.location || 'Location TBC')}
+                                            </p>
+                                            <p className="text-charcoal/50">
+                                                {firm?.firm_name || 'Firm'} · {String(q.status)} ·{' '}
+                                                {q.created_at
+                                                    ? new Date(String(q.created_at)).toLocaleDateString('en-ZA')
+                                                    : ''}
+                                            </p>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         ) : (
-                            <p className={CC_MUTED}>Request a quote from any firm profile.</p>
+                            <p className={CC_MUTED}>Request a quote from any verified firm profile.</p>
                         )}
                     </Panel>
 
-                    <Panel title="Appointments">
-                        {state.bookings.length ? (
+                    <Panel title="Consultations">
+                        {loading ? (
+                            <p className={CC_MUTED}>Loading…</p>
+                        ) : activity?.consultations?.length ? (
                             <ul className="space-y-3">
-                                {state.bookings.map((b) => (
-                                    <li key={b.id} className="rounded-xl bg-charcoal/[0.03] px-3 py-2 text-sm">
-                                        <p className="font-semibold text-charcoal">
-                                            {b.slot} · {b.type}
-                                        </p>
-                                        <p className="text-charcoal/50">{b.status}</p>
-                                    </li>
-                                ))}
+                                {activity.consultations.map((b) => {
+                                    const firm = b.conveyancers as
+                                        | { firm_name?: string }
+                                        | null
+                                        | undefined;
+                                    return (
+                                        <li
+                                            key={String(b.id)}
+                                            className="rounded-xl bg-charcoal/[0.03] px-3 py-2 text-sm"
+                                        >
+                                            <p className="font-semibold text-charcoal">
+                                                {String(b.slot_label)} · {String(b.consultation_type)}
+                                            </p>
+                                            <p className="text-charcoal/50">
+                                                {firm?.firm_name || 'Firm'} · {String(b.status)}
+                                            </p>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         ) : (
                             <p className={CC_MUTED}>Book a consultation to see it here.</p>
@@ -120,54 +198,54 @@ export default function UserDashboardPage() {
                     </Panel>
 
                     <Panel title="Messages">
-                        {state.threads.length ? (
+                        <p className={CC_MUTED}>
+                            Live firm chats live in your PropReady Messages inbox once you start a conversation.
+                        </p>
+                        <Link href={messagesHref} className={`${PORTAL_SECONDARY_BTN} mt-3`}>
+                            Open messages
+                        </Link>
+                    </Panel>
+
+                    <Panel title="Active transfers">
+                        {loading ? (
+                            <p className={CC_MUTED}>Loading…</p>
+                        ) : activity?.matters?.length ? (
                             <ul className="space-y-3">
-                                {state.threads.map((t) => {
-                                    const firm = getConveyancerById(t.firmId);
+                                {activity.matters.map((m) => {
+                                    const firm = m.conveyancers as
+                                        | { firm_name?: string; firm_slug?: string }
+                                        | null
+                                        | undefined;
                                     return (
-                                        <li key={t.id} className="text-sm">
+                                        <li key={String(m.id)} className="text-sm">
                                             <p className="font-semibold text-charcoal">
-                                                {firm?.firmName || t.firmId}
+                                                {String(m.property_label || 'Transfer')}
                                             </p>
-                                            <p className="text-charcoal/55">
-                                                {t.messages[t.messages.length - 1]?.body}
+                                            <p className="text-charcoal/50">
+                                                {firm?.firm_name || 'Firm'} · {String(m.status)}
                                             </p>
+                                            <Link
+                                                href={`/conveyancers/tracker?matter=${m.id}`}
+                                                className="mt-1 inline-flex text-sm font-semibold text-gold"
+                                            >
+                                                Open tracker →
+                                            </Link>
                                         </li>
                                     );
                                 })}
                             </ul>
                         ) : (
-                            <p className={CC_MUTED}>Secure chat previews appear after you message a firm.</p>
-                        )}
-                    </Panel>
-
-                    <Panel title="Active transfer">
-                        {state.tracker ? (
                             <div>
-                                <p className="text-sm font-semibold text-charcoal">{state.tracker.propertyLabel}</p>
-                                <Link href="/conveyancers/tracker" className="mt-2 inline-flex text-sm font-semibold text-gold">
-                                    Open tracker →
-                                </Link>
-                            </div>
-                        ) : (
-                            <div>
-                                <p className={CC_MUTED}>No active transfer demo yet.</p>
-                                <Link href="/conveyancers/tracker" className={`${PORTAL_SECONDARY_BTN} mt-3`}>
-                                    Start tracker
+                                <p className={CC_MUTED}>
+                                    Transfer trackers appear after you quote, book or message a firm.
+                                </p>
+                                <Link href="/conveyancers" className={`${PORTAL_SECONDARY_BTN} mt-3`}>
+                                    Find a conveyancer
                                 </Link>
                             </div>
                         )}
                     </Panel>
                 </div>
-
-                <Panel title="Recommended next step">
-                    <p className={CC_MUTED}>
-                        Run AI Matching to get explained recommendations for your province and timeline.
-                    </p>
-                    <Link href="/conveyancers/match" className={`${PORTAL_PRIMARY_BTN} mt-3`}>
-                        Get matched
-                    </Link>
-                </Panel>
             </div>
         </CcPageShell>
     );

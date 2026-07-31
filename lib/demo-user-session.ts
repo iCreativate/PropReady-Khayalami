@@ -22,9 +22,11 @@ function mergeLeadIntoStorage(key: 'propReady_leads' | 'propReady_sellers', lead
     localStorage.setItem(key, JSON.stringify(filtered));
 }
 
-/** Populate localStorage so buyer/seller dashboards show pre-filled demo data after login. */
+/** Populate localStorage so buyer/seller dashboards show pre-filled demo data after login.
+ * Production builds never hydrate demo data unless NEXT_PUBLIC_ENABLE_DEMO=1. */
 export function hydrateDemoUserSession(email: string): 'buyer' | 'seller' | null {
     if (typeof window === 'undefined') return null;
+    if (process.env.NEXT_PUBLIC_ENABLE_DEMO !== '1') return null;
 
     const type = getDemoAccountType(email);
     if (!type) return null;
