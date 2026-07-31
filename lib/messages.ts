@@ -177,26 +177,34 @@ export async function resolveProfileByEmail(
     const normalized = email.trim().toLowerCase();
     if (!normalized) return null;
 
-    const table =
-        accountType === 'agent'
-            ? 'agents'
-            : accountType === 'originator'
-              ? 'originators'
-              : accountType === 'conveyancer'
-                ? 'conveyancers'
-                : 'users';
+    if (accountType === 'conveyancer') {
+        const supabase = createServiceClient();
+        if (!supabase) return null;
+        const { data } = await supabase
+            .from('conveyancers')
+            .select('id, full_name, email, firm_name')
+            .eq('email', normalized)
+            .maybeSingle();
+        if (!data?.id) return null;
+        return {
+            profileId: String(data.id),
+            displayName: String(data.full_name || data.firm_name || normalized.split('@')[0]),
+            email: String(data.email || normalized),
+        };
+    }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- conveyancers not yet in generated DB types
-    const { data } = await (messagesDb() as any)
+    const table =
+        accountType === 'agent' ? 'agents' : accountType === 'originator' ? 'originators' : 'users';
+    const { data } = await messagesDb()
         .from(table)
-        .select(accountType === 'conveyancer' ? 'id, full_name, email, firm_name' : 'id, full_name, email')
+        .select('id, full_name, email')
         .eq('email', normalized)
         .maybeSingle();
 
     if (!data?.id) return null;
     return {
         profileId: String(data.id),
-        displayName: String(data.full_name || data.firm_name || normalized.split('@')[0]),
+        displayName: String(data.full_name || normalized.split('@')[0]),
         email: String(data.email || normalized),
     };
 }
