@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        if (accountType === 'agent' || accountType === 'originator') {
+        if (accountType === 'agent' || accountType === 'originator' || accountType === 'conveyancer') {
             const emailError = validateProfessionalWorkEmail(email);
             if (emailError) {
                 return NextResponse.json({ success: false, error: emailError }, { status: 400 });
@@ -57,6 +57,18 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        const firmName = String(body.firmName || body.company || '').trim();
+        const lpcNumber = String(body.lpcNumber || '').trim();
+        const province = String(body.province || '').trim();
+        const city = String(body.city || '').trim();
+
+        if (accountType === 'conveyancer' && !firmName) {
+            return NextResponse.json(
+                { success: false, error: 'Firm name is required' },
+                { status: 400 }
+            );
+        }
+
         const pw = validatePassword(password);
         if (!pw.valid) {
             return NextResponse.json({ success: false, error: pw.errors.join(', ') }, { status: 400 });
@@ -69,6 +81,15 @@ export async function POST(request: NextRequest) {
 
         const table = profileTableForAccountType(accountType);
         const id = crypto.randomUUID();
+        const firmSlug =
+            accountType === 'conveyancer'
+                ? `${firmName
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/^-|-$/g, '')
+                      .slice(0, 48)}-${id.slice(0, 6)}`
+                : undefined;
+
         const row =
             accountType === 'agent'
                 ? { id, full_name: fullName, email, password: '', status: 'pending' }
@@ -82,7 +103,21 @@ export async function POST(request: NextRequest) {
                         ...(staffNumber ? { staff_number: staffNumber } : {}),
                         status: 'pending',
                     }
-                  : { id, full_name: fullName, email, password: '' };
+                  : accountType === 'conveyancer'
+                    ? {
+                          id,
+                          full_name: fullName,
+                          email,
+                          password: '',
+                          firm_name: firmName,
+                          firm_slug: firmSlug,
+                          lpc_number: lpcNumber || null,
+                          province: province || null,
+                          city: city || null,
+                          status: 'pending',
+                          profile_completion: 45,
+                      }
+                    : { id, full_name: fullName, email, password: '' };
 
         const { data: profile, error } = await supabase
             .from(table)
@@ -104,7 +139,12 @@ export async function POST(request: NextRequest) {
                                 ? 'That staff number is already registered for this organisation, or the email is taken'
                                 : 'An account with this email already exists. Please log in or reset your password.',
                         code: 'EMAIL_EXISTS',
-                        loginPath: accountType === 'originator' ? '/originators/login' : '/auth/login',
+                        loginPath:
+                            accountType === 'originator'
+                                ? '/originators/login'
+                                : accountType === 'conveyancer'
+                                  ? '/conveyancers/login'
+                                  : '/auth/login',
                         resetPasswordPath: `/auth/forgot-password?type=${accountType}`,
                     },
                     { status: 409 }
@@ -124,15 +164,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             needsVerification: true,
-            needsApproval: accountType === 'agent' || accountType === 'originator',
+            needsApproval:
+                accountType === 'agent' ||
+                accountType === 'originator' ||
+                accountType === 'conveyancer',
             email,
             accountType,
             message:
-                    accountType === 'originator'
-                        ? 'Verify your email, then wait for PropReady admin approval. Your staff number will be emailed when you are approved.'
-                        : accountType === 'agent'
-                          ? 'Verify your email, then wait for PropReady admin approval before signing in.'
-                          : 'Check your email to verify your account before signing in.',
+                accountType === 'originator'
+                    ? 'Verify your email, then wait for PropReady admin approval. Your staff number will be emailed when you are approved.'
+                    : accountType === 'agent'
+                      ? 'Verify your email, then wait for PropReady admin approval before signing in.'
+                      : accountType === 'conveyancer'
+                        ? 'Verify your email, then wait for PropReady admin approval before accessing your conveyancer portal.'
+                        : 'Check your email to verify your account before signing in.',
         });
     } catch (err) {
         console.error('auth/register:', err);

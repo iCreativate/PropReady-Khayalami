@@ -14,6 +14,7 @@ import {
     BookOpen,
     Settings,
     MessageSquare,
+    Scale,
 } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import ImpersonationBanner from '@/components/ImpersonationBanner';
@@ -53,7 +54,8 @@ export type AgentPortalPage =
     | 'viewings'
     | 'plan'
     | 'learn'
-    | 'settings';
+    | 'settings'
+    | 'conveyancer-connect';
 
 export interface AgentPortalAgent {
     fullName: string;
@@ -91,6 +93,7 @@ const SIDEBAR_LINKS: {
     { page: 'properties', href: '/agents/properties', label: 'Properties', icon: Building2 },
     { page: 'viewings', href: '/agents/viewings', label: 'Viewings', icon: Calendar },
     { page: 'plan', href: '/agents/plan', label: 'Your Plan', icon: CreditCard },
+    { page: 'conveyancer-connect', href: '/conveyancers', label: 'Conveyancer Connect', icon: Scale },
     { page: 'learn', href: '/agents/learn', label: 'Learning Hub', icon: BookOpen },
     { page: 'settings', href: '/agents/settings', label: 'Settings', icon: Settings },
 ];
@@ -98,6 +101,7 @@ const SIDEBAR_LINKS: {
 /** Visual groups only — link order unchanged */
 const NAV_GROUPS: { label: string; pages: AgentPortalPage[] }[] = [
     { label: 'Workspace', pages: ['dashboard', 'messages', 'my-leads', 'properties', 'viewings'] },
+    { label: 'Tools', pages: ['conveyancer-connect'] },
     { label: 'Account', pages: ['plan', 'learn', 'settings'] },
 ];
 

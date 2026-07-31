@@ -47,12 +47,23 @@ async function ensureProfileAndAccount(email: string, accountType: AccountType) 
                         organization_id: 'betterbond',
                         status: 'pending',
                     }
-                  : {
-                        id,
-                        full_name: normalized.split('@')[0],
-                        email: normalized,
-                        password: '',
-                    };
+                  : accountType === 'conveyancer'
+                    ? {
+                          id,
+                          full_name: normalized.split('@')[0],
+                          email: normalized,
+                          password: '',
+                          firm_name: `${normalized.split('@')[0]} Attorneys`,
+                          firm_slug: `firm-${id.slice(0, 8)}`,
+                          status: 'pending',
+                          profile_completion: 35,
+                      }
+                    : {
+                          id,
+                          full_name: normalized.split('@')[0],
+                          email: normalized,
+                          password: '',
+                      };
         const { data, error } = await db()
             .from(table)
             .insert(row as Record<string, unknown>)

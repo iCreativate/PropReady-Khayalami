@@ -9,13 +9,14 @@ import { findAccountByEmail } from '@/lib/auth-enterprise/sessions';
 export type ExistingEmailHit = {
     accountType: AccountType;
     profileId: string;
-    source: 'auth_accounts' | 'users' | 'agents' | 'originators';
+    source: 'auth_accounts' | 'users' | 'agents' | 'originators' | 'conveyancers';
 };
 
 const TYPE_LABEL: Record<AccountType, string> = {
     user: 'buyer/seller',
     agent: 'agent',
     originator: 'bond originator',
+    conveyancer: 'conveyancer',
 };
 
 /** Find any existing account using this email across all portal types. */
@@ -33,7 +34,7 @@ export async function findExistingAccountsByEmail(email: string): Promise<Existi
         hits.push(hit);
     };
 
-    for (const accountType of ['user', 'agent', 'originator'] as AccountType[]) {
+    for (const accountType of ['user', 'agent', 'originator', 'conveyancer'] as AccountType[]) {
         try {
             const account = await findAccountByEmail(normalized, accountType);
             if (account) {
@@ -50,10 +51,14 @@ export async function findExistingAccountsByEmail(email: string): Promise<Existi
 
     const supabase = createServiceClient();
     if (supabase) {
-        const tables: Array<{ table: 'users' | 'agents' | 'originators'; accountType: AccountType }> = [
+        const tables: Array<{
+            table: 'users' | 'agents' | 'originators' | 'conveyancers';
+            accountType: AccountType;
+        }> = [
             { table: 'users', accountType: 'user' },
             { table: 'agents', accountType: 'agent' },
             { table: 'originators', accountType: 'originator' },
+            { table: 'conveyancers', accountType: 'conveyancer' },
         ];
         for (const { table, accountType } of tables) {
             const { data } = await supabase

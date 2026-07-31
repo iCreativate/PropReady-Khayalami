@@ -43,7 +43,9 @@ export type MessageContextType =
     | 'viewing'
     | 'prequal'
     | 'announcement'
-    | 'support';
+    | 'support'
+    | 'conveyancing'
+    | 'transfer';
 export type MessageItemKind = 'text' | 'document' | 'appointment' | 'system';
 export type AppointmentStatus = 'proposed' | 'accepted' | 'declined' | 'cancelled';
 
@@ -175,17 +177,26 @@ export async function resolveProfileByEmail(
     const normalized = email.trim().toLowerCase();
     if (!normalized) return null;
 
-    const table = accountType === 'agent' ? 'agents' : accountType === 'originator' ? 'originators' : 'users';
-    const { data } = await messagesDb()
+    const table =
+        accountType === 'agent'
+            ? 'agents'
+            : accountType === 'originator'
+              ? 'originators'
+              : accountType === 'conveyancer'
+                ? 'conveyancers'
+                : 'users';
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- conveyancers not yet in generated DB types
+    const { data } = await (messagesDb() as any)
         .from(table)
-        .select('id, full_name, email')
+        .select(accountType === 'conveyancer' ? 'id, full_name, email, firm_name' : 'id, full_name, email')
         .eq('email', normalized)
         .maybeSingle();
 
     if (!data?.id) return null;
     return {
         profileId: String(data.id),
-        displayName: String(data.full_name || normalized.split('@')[0]),
+        displayName: String(data.full_name || data.firm_name || normalized.split('@')[0]),
         email: String(data.email || normalized),
     };
 }

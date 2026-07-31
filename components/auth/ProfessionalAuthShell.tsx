@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { BadgeCheck, Building2, Shield } from 'lucide-react';
+import { BadgeCheck, Building2, Scale, Shield } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 
-type ProfessionalRole = 'agent' | 'originator';
+type ProfessionalRole = 'agent' | 'originator' | 'conveyancer';
 
 interface ProfessionalAuthShellProps {
     children: React.ReactNode;
@@ -48,6 +48,18 @@ const ROLE_COPY: Record<
             'Secure document and result exchange',
         ],
         Icon: Building2,
+    },
+    conveyancer: {
+        homeHref: '/conveyancers',
+        badge: 'Conveyancer portal',
+        headline: 'Verified conveyancing firms',
+        body: 'Sign in to manage matters, message clients and agents, and track Deeds Office progress.',
+        points: [
+            'Admin-verified LPC credentials',
+            'Live inbox with buyers, sellers and agents',
+            'Deeds Office lodgement tracking',
+        ],
+        Icon: Scale,
     },
 };
 

@@ -26,5 +26,7 @@ export const STORAGE_KEYS = {
     fullPrequal: 'propReady_fullPrequal',
     /** Smart Bond Optimizer autosaved planning workspace */
     smartBondOptimizer: 'propReady_smartBondOptimizer_v1',
+    /** Conveyancer Connect marketplace local state */
+    conveyancerConnect: 'propReady_conveyancerConnect_v1',
     selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
 } as const;

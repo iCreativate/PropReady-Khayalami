@@ -195,6 +195,25 @@ export async function loadSessionUser(account: AuthAccount): Promise<SessionUser
                 accountType: 'originator',
             });
         }
+    } else if (account.account_type === 'conveyancer') {
+        const { data } = await db()
+            .from('conveyancers')
+            .select('full_name, email, phone, firm_name, status, province, city')
+            .eq('id', account.profile_id)
+            .maybeSingle();
+        if (data) {
+            base.fullName = data.full_name;
+            base.phone = data.phone;
+            base.company = data.firm_name;
+            base.status = data.status;
+            base.profileComplete = isProfileCompleteFromData({
+                account,
+                fullName: data.full_name,
+                phone: data.phone,
+                company: data.firm_name,
+                accountType: 'conveyancer',
+            });
+        }
     } else {
         const { data } = await db()
             .from('users')
@@ -464,6 +483,9 @@ export async function completeVerifiedProfile(
     if (account.account_type === 'originator' && !organizationId) {
         throw new Error('Bond originator organisation is required');
     }
+    if (account.account_type === 'conveyancer' && !company) {
+        throw new Error('Firm name is required');
+    }
     if (needsPassword) {
         if (!input.password) {
             throw new Error('Please create a password for your account');
@@ -490,6 +512,9 @@ export async function completeVerifiedProfile(
     }
     if (account.account_type === 'originator') {
         patch.organization_id = organizationId;
+    }
+    if (account.account_type === 'conveyancer') {
+        patch.firm_name = company;
     }
 
     const { error } = await db().from(table).update(patch).eq('id', account.profile_id);

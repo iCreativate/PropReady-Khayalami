@@ -80,6 +80,24 @@ Other features on the platform
 Reply in this chat anytime if you need help.`;
     }
 
+    if (accountType === 'conveyancer') {
+        return `Welcome to PropReady — Your Home. Ready.
+
+Your conveyancer portal is live. Buyers, sellers and agents can find your firm on Conveyancer Connect and message you when a transfer starts.
+
+Your workspace
+• Open /conveyancers/portal for leads, matters, quotes and Deeds Office tracking
+• Use Messages to talk with clients and referring agents in one inbox
+• Keep your firm profile current so you appear in the public directory after approval
+
+How clients reach you
+• Quote requests and consultation bookings land in your portal
+• Messaging unlocks when someone starts a matter with your firm
+• Share FICA/transfer documents securely in-thread
+
+Reply here anytime — PropReady is with you through registration.`;
+    }
+
     return `Welcome to PropReady — Your Home. Ready.
 
 ${learningCore}

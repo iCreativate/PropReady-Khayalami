@@ -1,7 +1,7 @@
 'use client';
 
 interface OAuthButtonsProps {
-    accountType?: 'user' | 'agent' | 'originator';
+    accountType?: 'user' | 'agent' | 'originator' | 'conveyancer';
 }
 
 const providers = [

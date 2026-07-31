@@ -32,5 +32,6 @@ export function isProfileCompleteFromData(input: {
     if (!input.phone || !isValidPhone(input.phone)) return false;
     if (input.accountType === 'agent' && !input.company?.trim()) return false;
     if (input.accountType === 'originator' && !input.company?.trim()) return false;
+    if (input.accountType === 'conveyancer' && !input.company?.trim()) return false;
     return true;
 }

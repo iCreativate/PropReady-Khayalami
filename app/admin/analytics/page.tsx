@@ -27,6 +27,7 @@ import {
     MessageSquare,
     Minus,
     RefreshCw,
+    Scale,
     ShieldCheck,
     TrendingUp,
     UserCheck,
@@ -68,9 +69,11 @@ type Analytics = {
     users: number;
     agents: number;
     originators: number;
+    conveyancers?: number;
     leads: number;
     pendingAgentApprovals: number;
     pendingOriginatorApprovals: number;
+    pendingConveyancerApprovals?: number;
     conversations: number;
     prequalCases: number;
     viewings: number;
@@ -457,7 +460,10 @@ export default function AdminAnalyticsPage() {
     const insights = useMemo(() => {
         if (!analytics || !series) return [];
         const userTrend = splitTrend(series.users);
-        const pending = analytics.pendingAgentApprovals + analytics.pendingOriginatorApprovals;
+        const pending =
+            analytics.pendingAgentApprovals +
+            analytics.pendingOriginatorApprovals +
+            (analytics.pendingConveyancerApprovals ?? 0);
         const items: Array<{ tone: 'up' | 'down' | 'ok' | 'warn'; text: string }> = [];
         if (userTrend.current > 0 || series.users.length > 0) {
             items.push({
@@ -525,6 +531,14 @@ export default function AdminAnalyticsPage() {
                 href: '/admin/originators',
             });
         }
+        if ((analytics.pendingConveyancerApprovals ?? 0) > 0) {
+            list.push({
+                label: 'Pending conveyancer approvals',
+                detail: `${analytics.pendingConveyancerApprovals} firm onboarding reviews`,
+                urgency: 'high',
+                href: '/admin/conveyancers',
+            });
+        }
         if ((analytics.paymentPendingAgents ?? 0) > 0) {
             list.push({
                 label: 'Failed / pending payments',
@@ -588,7 +602,10 @@ export default function AdminAnalyticsPage() {
 
     const platformHealth = useMemo(() => {
         if (!analytics) return 0;
-        const pending = analytics.pendingAgentApprovals + analytics.pendingOriginatorApprovals;
+        const pending =
+            analytics.pendingAgentApprovals +
+            analytics.pendingOriginatorApprovals +
+            (analytics.pendingConveyancerApprovals ?? 0);
         const payment = analytics.paymentPendingAgents ?? 0;
         let score = 100;
         score -= Math.min(40, pending * 4);
@@ -777,7 +794,8 @@ export default function AdminAnalyticsPage() {
                                         label="Pending Reviews"
                                         value={
                                             analytics.pendingAgentApprovals +
-                                            analytics.pendingOriginatorApprovals
+                                            analytics.pendingOriginatorApprovals +
+                                            (analytics.pendingConveyancerApprovals ?? 0)
                                         }
                                         series={series?.agents || []}
                                         icon={ShieldCheck}
@@ -895,7 +913,7 @@ export default function AdminAnalyticsPage() {
                             title="Compliance"
                             description="Approvals queue and review load"
                         >
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <ExecKpi
                                     label="Pending agent approvals"
                                     value={analytics.pendingAgentApprovals}
@@ -911,6 +929,15 @@ export default function AdminAnalyticsPage() {
                                     series={series?.agents || []}
                                     icon={Clock3}
                                     href="/admin/originators"
+                                    periodLabel={periodLabel}
+                                    accent="#F59E0B"
+                                />
+                                <ExecKpi
+                                    label="Pending conveyancers"
+                                    value={analytics.pendingConveyancerApprovals ?? 0}
+                                    series={series?.agents || []}
+                                    icon={Scale}
+                                    href="/admin/conveyancers"
                                     periodLabel={periodLabel}
                                     accent="#F59E0B"
                                 />

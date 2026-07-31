@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, MessageSquare, X } from 'lucide-react';
 
-export type PortalAppBarRole = 'buyer' | 'seller' | 'agent' | 'originator';
+export type PortalAppBarRole = 'buyer' | 'seller' | 'agent' | 'originator' | 'conveyancer';
 
 type PanelKind = 'messages' | 'notifications' | null;
 
@@ -21,6 +21,7 @@ const HREF: Record<PortalAppBarRole, { messages: string; notifications: string }
     seller: { messages: '/sellers/messages', notifications: '/sellers/dashboard' },
     agent: { messages: '/agents/messages', notifications: '/agents/dashboard' },
     originator: { messages: '/originators/messages', notifications: '/originators/dashboard' },
+    conveyancer: { messages: '/conveyancers/portal/messages', notifications: '/conveyancers/portal' },
 };
 
 const COPY: Record<PortalAppBarRole, { messagesEmpty: string; notificationsEmpty: string }> = {
@@ -39,6 +40,10 @@ const COPY: Record<PortalAppBarRole, { messagesEmpty: string; notificationsEmpty
     originator: {
         messagesEmpty: 'No unread messages. Open your inbox to talk with buyers, sellers, and agents.',
         notificationsEmpty: 'You’re all caught up. New cases and document uploads will show here.',
+    },
+    conveyancer: {
+        messagesEmpty: 'No unread messages. Open your inbox for client and agent transfer chats.',
+        notificationsEmpty: 'You’re all caught up. Quote requests and matter updates will show here.',
     },
 };
 

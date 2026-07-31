@@ -26,6 +26,7 @@ const PROTECTED_PREFIXES = [
     '/originators/messages',
     '/originators/cases',
     '/originators/settings',
+    '/conveyancers/portal',
 ];
 
 const AUTH_PAGES = [
@@ -39,6 +40,8 @@ const AUTH_PAGES = [
     '/agents/register',
     '/originators/login',
     '/originators/register',
+    '/conveyancers/login',
+    '/conveyancers/register',
 ];
 
 export async function middleware(request: NextRequest) {

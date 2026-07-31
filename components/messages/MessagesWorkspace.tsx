@@ -33,7 +33,7 @@ import AttachmentMessage from '@/components/messages/AttachmentMessage';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import VoiceNoteRecorder from '@/components/messages/VoiceNoteRecorder';
 
-export type MessagesPortalRole = 'buyer' | 'seller' | 'agent' | 'originator';
+export type MessagesPortalRole = 'buyer' | 'seller' | 'agent' | 'originator' | 'conveyancer';
 
 type Participant = {
     id: string;
@@ -90,21 +90,26 @@ const ROLE_LABEL: Record<string, string> = {
     user: 'Buyer / Seller',
     agent: 'Agent',
     originator: 'Bond originator',
+    conveyancer: 'Conveyancer',
     admin: 'PropReady staff',
 };
 
 const ROLE_DESCRIPTION: Record<MessagesPortalRole, string> = {
-    buyer: 'Chat live with agents and bond originators, share documents, and propose appointments.',
-    seller: 'Chat with agents and originators about your listing, documents, and appointments.',
-    agent: 'Talk with buyers, sellers, and bond originators — share files and propose viewings.',
+    buyer: 'Chat live with agents, bond originators and conveyancers, share documents, and propose appointments.',
+    seller: 'Chat with agents, originators and conveyancers about your listing, documents, and appointments.',
+    agent: 'Talk with buyers, sellers, conveyancers and bond originators — share files and propose viewings.',
     originator: 'Message buyers, sellers, and agents. Share documents and schedule appointments in-thread.',
+    conveyancer:
+        'Message buyers, sellers and referring agents on your matters. Share transfer documents and schedule consultations.',
 };
 
 const EMPTY_COPY: Record<MessagesPortalRole, string> = {
-    buyer: 'No contacts yet. Agents appear after they contact you (e.g. schedule a viewing). Bond originators appear after you start pre-qualification.',
-    seller: 'No contacts yet. Agents appear after they contact you (e.g. schedule a viewing).',
-    agent: 'No clients yet. Buyers and sellers appear here after you schedule a viewing with them.',
+    buyer: 'No contacts yet. Agents appear after they contact you. Bond originators after prequal. Conveyancers appear from Conveyancer Connect.',
+    seller: 'No contacts yet. Agents appear after they contact you. Conveyancers appear from Conveyancer Connect.',
+    agent: 'No clients yet. Buyers and sellers appear after viewings. Approved conveyancers are available for referrals.',
     originator: 'No buyers yet. They appear after they submit a pre-qualification with your organisation.',
+    conveyancer:
+        'No clients yet. They appear when buyers or agents request a quote, book a consultation, or message your firm.',
 };
 
 const COMMON_EMOJIS = [

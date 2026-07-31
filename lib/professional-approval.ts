@@ -4,12 +4,12 @@ import type { AccountType } from '@/lib/auth-enterprise/config';
 export type ProfessionalAccountStatus = 'pending' | 'approved' | 'rejected' | 'active' | string | null | undefined;
 
 export function isProfessionalAccountType(accountType: AccountType | string | undefined): boolean {
-    return accountType === 'agent' || accountType === 'originator';
+    return accountType === 'agent' || accountType === 'originator' || accountType === 'conveyancer';
 }
 
 /**
- * Agents & originators: only `status === 'approved'` may sign in.
- * Approvals are performed by PropReady admins (/admin/ppra for agents, /admin/originators for staff).
+ * Agents, originators & conveyancers: only `status === 'approved'` may sign in.
+ * Approvals are performed by PropReady admins.
  */
 export function isProfessionalAccountApproved(status: ProfessionalAccountStatus): boolean {
     return (

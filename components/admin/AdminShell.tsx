@@ -11,6 +11,7 @@ import {
     Megaphone,
     Menu,
     MessageSquare,
+    Scale,
     Shield,
     Users,
     X,
@@ -24,6 +25,7 @@ const ADMIN_HERO_COPY: Record<string, string> = {
     Announcements: 'Publish portal banners and welcome messages for signed-in users.',
     'Agent Approvals': 'Review PPRA documents and approve or reject agent applications.',
     'Originator Approvals': 'Review bond originator registrations and staff access requests.',
+    'Conveyancer Approvals': 'Verify conveyancing firms, moderate reviews, and monitor marketplace health.',
     Analytics: 'Track growth, engagement, and operational metrics across the platform.',
 };
 
@@ -39,6 +41,7 @@ const NAV: Array<{
     { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/admin/ppra', label: 'Agent approvals', icon: Shield },
     { href: '/admin/originators', label: 'Originator approvals', icon: Building2 },
+    { href: '/admin/conveyancers', label: 'Conveyancers', icon: Scale },
     { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 

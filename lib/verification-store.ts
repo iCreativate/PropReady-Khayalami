@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase-admin';
 import { profileTableForAccountType } from '@/lib/auth-enterprise/account-profile';
 
-export type AccountType = 'user' | 'agent' | 'originator' | 'admin';
+export type AccountType = 'user' | 'agent' | 'originator' | 'admin' | 'conveyancer';
 
 const OTP_TTL_MS = 15 * 60 * 1000; // 15 minutes
 

@@ -80,9 +80,11 @@ export async function GET(request: NextRequest) {
             users,
             agents,
             originators,
+            conveyancers,
             leads,
             pendingAgents,
             pendingOriginators,
+            pendingConveyancers,
             conversations,
             prequalCases,
             viewings,
@@ -98,6 +100,7 @@ export async function GET(request: NextRequest) {
             supabase.from('users').select('id', { count: 'exact', head: true }),
             supabase.from('agents').select('id', { count: 'exact', head: true }),
             supabase.from('originators').select('id', { count: 'exact', head: true }),
+            supabase.from('conveyancers').select('id', { count: 'exact', head: true }),
             supabase.from('leads').select('id', { count: 'exact', head: true }),
             supabase
                 .from('agents')
@@ -105,6 +108,10 @@ export async function GET(request: NextRequest) {
                 .or('status.eq.pending,verification_status.eq.pending'),
             supabase
                 .from('originators')
+                .select('id', { count: 'exact', head: true })
+                .eq('status', 'pending'),
+            supabase
+                .from('conveyancers')
                 .select('id', { count: 'exact', head: true })
                 .eq('status', 'pending'),
             supabase.from('message_conversations').select('id', { count: 'exact', head: true }),
@@ -171,9 +178,11 @@ export async function GET(request: NextRequest) {
                 users: users.count ?? 0,
                 agents: agents.count ?? 0,
                 originators: originators.count ?? 0,
+                conveyancers: conveyancers.count ?? 0,
                 leads: leads.count ?? 0,
                 pendingAgentApprovals: pendingAgents.count ?? 0,
                 pendingOriginatorApprovals: pendingOriginators.count ?? 0,
+                pendingConveyancerApprovals: pendingConveyancers.count ?? 0,
                 conversations: conversations.count ?? 0,
                 prequalCases: prequalCases.count ?? 0,
                 viewings: viewings.count ?? 0,

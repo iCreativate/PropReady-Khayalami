@@ -22,7 +22,7 @@ export const AUTH_CONFIG = {
     },
 } as const;
 
-export type AccountType = 'user' | 'agent' | 'originator';
+export type AccountType = 'user' | 'agent' | 'originator' | 'conveyancer';
 export type OAuthProvider = 'google' | 'apple';
 
 /** Production canonical URL — never fall back to localhost in deployed builds. */

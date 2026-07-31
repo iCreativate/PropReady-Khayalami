@@ -3,7 +3,7 @@ import { loginPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 
 /** Clear cookie session + legacy localStorage, then hard-navigate to login. */
 export async function signOutClient(options?: {
-    accountType?: 'user' | 'agent' | 'originator';
+    accountType?: 'user' | 'agent' | 'originator' | 'conveyancer';
     redirectTo?: string;
 }) {
     const accountType = options?.accountType || 'user';
@@ -22,6 +22,7 @@ export async function signOutClient(options?: {
         localStorage.removeItem(STORAGE_KEYS.currentUser);
         localStorage.removeItem(STORAGE_KEYS.currentAgent);
         localStorage.removeItem('propReady_currentOriginator');
+        localStorage.removeItem('propReady_currentConveyancer');
         window.location.href = redirectTo;
     }
 }

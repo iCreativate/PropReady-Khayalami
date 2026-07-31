@@ -7,7 +7,14 @@ export type EligibleContact = {
     profileId: string;
     displayName: string;
     email: string;
-    reason: 'agent_contact' | 'prequal' | 'my_lead' | 'prequal_buyer';
+    reason:
+        | 'agent_contact'
+        | 'prequal'
+        | 'my_lead'
+        | 'prequal_buyer'
+        | 'conveyancer_matter'
+        | 'conveyancer_client'
+        | 'conveyancer_directory';
     detail?: string;
 };
 
@@ -260,21 +267,219 @@ export async function listBuyersForOriginator(
     });
 }
 
+function isApprovedConveyancerStatus(status: string | null | undefined): boolean {
+    const s = String(status || '').toLowerCase();
+    return s === 'approved' || s === 'active';
+}
+
+/** Conveyancers a consumer may message — open matters, or browse-start via approved directory. */
+export async function listConveyancersForClient(clientUserId: string): Promise<EligibleContact[]> {
+    const contacts: EligibleContact[] = [];
+    const seen = new Set<string>();
+
+    const { data: matters } = await messagesDb()
+        .from('conveyancer_matters')
+        .select('conveyancer_id, property_label, status')
+        .eq('client_user_id', clientUserId)
+        .neq('status', 'closed');
+
+    const matterIds = [...new Set((matters || []).map((m) => String(m.conveyancer_id)).filter(Boolean))];
+    if (matterIds.length) {
+        const { data: firms } = await messagesDb()
+            .from('conveyancers')
+            .select('id, full_name, email, firm_name, status')
+            .in('id', matterIds);
+
+        for (const c of firms || []) {
+            if (!isApprovedConveyancerStatus(c.status)) continue;
+            const id = String(c.id);
+            if (seen.has(id)) continue;
+            seen.add(id);
+            const matter = (matters || []).find((m) => String(m.conveyancer_id) === id);
+            contacts.push({
+                accountType: 'conveyancer',
+                profileId: id,
+                displayName: String(c.firm_name || c.full_name || c.email || 'Conveyancer'),
+                email: String(c.email || ''),
+                reason: 'conveyancer_matter',
+                detail: matter?.property_label ? String(matter.property_label) : undefined,
+            });
+        }
+    }
+
+    // Approved firms remain reachable for new inquiries from signed-in clients
+    const { data: directory } = await messagesDb()
+        .from('conveyancers')
+        .select('id, full_name, email, firm_name, status, city')
+        .eq('status', 'approved')
+        .limit(40);
+
+    for (const c of directory || []) {
+        const id = String(c.id);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        contacts.push({
+            accountType: 'conveyancer',
+            profileId: id,
+            displayName: String(c.firm_name || c.full_name || c.email || 'Conveyancer'),
+            email: String(c.email || ''),
+            reason: 'conveyancer_directory',
+            detail: c.city ? String(c.city) : undefined,
+        });
+    }
+
+    return contacts;
+}
+
+/** Clients a conveyancer may message — from their matters. */
+export async function listClientsForConveyancer(conveyancerId: string): Promise<EligibleContact[]> {
+    const { data: matters, error } = await messagesDb()
+        .from('conveyancer_matters')
+        .select('client_user_id, client_name, client_email, agent_id, agent_name, property_label, status')
+        .eq('conveyancer_id', conveyancerId)
+        .neq('status', 'closed');
+
+    if (error) throw error;
+    if (!matters?.length) return [];
+
+    const contacts: EligibleContact[] = [];
+    const seen = new Set<string>();
+
+    const buyerIds = [
+        ...new Set(
+            matters.map((m) => (m.client_user_id ? String(m.client_user_id) : '')).filter(Boolean)
+        ),
+    ];
+    const { data: users } = buyerIds.length
+        ? await messagesDb().from('users').select('id, full_name, email').in('id', buyerIds)
+        : { data: [] as Array<{ id: string; full_name: string | null; email: string | null }> };
+
+    const usersById = new Map((users || []).map((u) => [String(u.id), u]));
+
+    for (const m of matters) {
+        if (m.client_user_id) {
+            const id = String(m.client_user_id);
+            if (!seen.has(`user:${id}`)) {
+                seen.add(`user:${id}`);
+                const user = usersById.get(id);
+                contacts.push({
+                    accountType: 'user',
+                    profileId: id,
+                    displayName: String(
+                        user?.full_name || m.client_name || m.client_email?.split('@')[0] || 'Client'
+                    ),
+                    email: String(user?.email || m.client_email || ''),
+                    reason: 'conveyancer_client',
+                    detail: m.property_label ? String(m.property_label) : undefined,
+                });
+            }
+        }
+
+        if (m.agent_id) {
+            const aid = String(m.agent_id);
+            if (!seen.has(`agent:${aid}`)) {
+                seen.add(`agent:${aid}`);
+                const { data: agent } = await messagesDb()
+                    .from('agents')
+                    .select('id, full_name, email')
+                    .eq('id', aid)
+                    .maybeSingle();
+                if (agent?.id) {
+                    contacts.push({
+                        accountType: 'agent',
+                        profileId: String(agent.id),
+                        displayName: String(agent.full_name || m.agent_name || agent.email || 'Agent'),
+                        email: String(agent.email || ''),
+                        reason: 'conveyancer_client',
+                        detail: m.property_label ? String(m.property_label) : undefined,
+                    });
+                }
+            }
+        }
+    }
+
+    return contacts;
+}
+
+/** Agents may message approved conveyancers (referrals) and any already engaged on a matter. */
+export async function listConveyancersForAgent(agentId: string): Promise<EligibleContact[]> {
+    const contacts: EligibleContact[] = [];
+    const seen = new Set<string>();
+
+    const { data: matters } = await messagesDb()
+        .from('conveyancer_matters')
+        .select('conveyancer_id, property_label')
+        .eq('agent_id', agentId)
+        .neq('status', 'closed');
+
+    const linked = [...new Set((matters || []).map((m) => String(m.conveyancer_id)).filter(Boolean))];
+    if (linked.length) {
+        const { data: firms } = await messagesDb()
+            .from('conveyancers')
+            .select('id, full_name, email, firm_name, status')
+            .in('id', linked);
+        for (const c of firms || []) {
+            if (!isApprovedConveyancerStatus(c.status)) continue;
+            const id = String(c.id);
+            seen.add(id);
+            contacts.push({
+                accountType: 'conveyancer',
+                profileId: id,
+                displayName: String(c.firm_name || c.full_name || 'Conveyancer'),
+                email: String(c.email || ''),
+                reason: 'conveyancer_matter',
+                detail: (matters || []).find((m) => String(m.conveyancer_id) === id)?.property_label || undefined,
+            });
+        }
+    }
+
+    const { data: directory } = await messagesDb()
+        .from('conveyancers')
+        .select('id, full_name, email, firm_name, status, city')
+        .eq('status', 'approved')
+        .limit(40);
+
+    for (const c of directory || []) {
+        const id = String(c.id);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        contacts.push({
+            accountType: 'conveyancer',
+            profileId: id,
+            displayName: String(c.firm_name || c.full_name || 'Conveyancer'),
+            email: String(c.email || ''),
+            reason: 'conveyancer_directory',
+            detail: c.city ? String(c.city) : undefined,
+        });
+    }
+
+    return contacts;
+}
+
 export async function listEligibleContacts(user: SessionUser): Promise<EligibleContact[]> {
     if (user.accountType === 'user') {
-        const [agents, originators] = await Promise.all([
+        const [agents, originators, conveyancers] = await Promise.all([
             listContactedAgentsForEmail(user.email),
             listOriginatorsForBuyer(user.profileId),
+            listConveyancersForClient(user.profileId),
         ]);
-        return [...agents, ...originators];
+        return [...agents, ...originators, ...conveyancers];
     }
 
     if (user.accountType === 'agent') {
-        return listConsumersForAgent(user.profileId);
+        const [consumers, conveyancers] = await Promise.all([
+            listConsumersForAgent(user.profileId),
+            listConveyancersForAgent(user.profileId),
+        ]);
+        return [...consumers, ...conveyancers];
     }
 
     if (user.accountType === 'originator') {
         return listBuyersForOriginator(user.profileId, user.organizationId);
+    }
+
+    if (user.accountType === 'conveyancer') {
+        return listClientsForConveyancer(user.profileId);
     }
 
     return [];
@@ -286,9 +491,27 @@ export async function assertCanStartConversation(
 ): Promise<void> {
     // Consumers cannot message other consumers
     if (creator.accountType === 'user' && counterpart.accountType === 'user') {
-        const err = new Error('Buyers and sellers can only message agents or bond originators');
+        const err = new Error(
+            'Buyers and sellers can only message agents, bond originators, or conveyancers'
+        );
         (err as Error & { status: number }).status = 403;
         throw err;
+    }
+
+    // Starting a directory inquiry auto-creates a matter so messaging unlocks
+    if (
+        (creator.accountType === 'user' || creator.accountType === 'agent') &&
+        counterpart.accountType === 'conveyancer'
+    ) {
+        const { ensureConveyancerInquiryMatter } = await import('@/lib/conveyancer-matters');
+        await ensureConveyancerInquiryMatter({
+            conveyancerId: counterpart.profileId,
+            clientUserId: creator.accountType === 'user' ? creator.profileId : undefined,
+            clientName: creator.fullName,
+            clientEmail: creator.email,
+            agentId: creator.accountType === 'agent' ? creator.profileId : undefined,
+            agentName: creator.accountType === 'agent' ? creator.fullName : undefined,
+        });
     }
 
     const eligible = await listEligibleContacts(creator);
@@ -305,10 +528,15 @@ export async function assertCanStartConversation(
         } else if (creator.accountType === 'user' && counterpart.accountType === 'originator') {
             message =
                 'You can message a bond originator only after you have started a pre-qualification with them';
+        } else if (creator.accountType === 'user' && counterpart.accountType === 'conveyancer') {
+            message = 'You can message approved conveyancers from Conveyancer Connect';
         } else if (creator.accountType === 'agent') {
-            message = 'You can only message buyers or sellers you have contacted via a viewing';
+            message =
+                'You can message buyers/sellers you have contacted, or approved conveyancers for referrals';
         } else if (creator.accountType === 'originator') {
             message = 'You can only message buyers who have a pre-qualification case with your organisation';
+        } else if (creator.accountType === 'conveyancer') {
+            message = 'You can only message clients (and their agents) on your open matters';
         }
         const err = new Error(message);
         (err as Error & { status: number }).status = 403;

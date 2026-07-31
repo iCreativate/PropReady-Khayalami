@@ -11,6 +11,7 @@ import {
     Home,
     LayoutDashboard,
     MessageSquare,
+    Scale,
     Search,
     Sparkles,
     Users,
@@ -28,6 +29,7 @@ export type BuyerPortalPage =
     | 'agent'
     | 'property-optimizer'
     | 'smart-bond'
+    | 'conveyancer-connect'
     | 'calculator'
     | 'learn'
     | 'quiz';
@@ -39,6 +41,7 @@ export type SellerPortalPage =
     | 'property-quiz'
     | 'property-optimizer'
     | 'smart-bond'
+    | 'conveyancer-connect'
     | 'learn'
     | 'agent'
     | 'buyer-dashboard';
@@ -70,6 +73,7 @@ export const BUYER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
     { page: 'smart-bond', href: '/calculator/smart-bond', label: 'Smart Bond Optimizer', icon: Gauge },
+    { page: 'conveyancer-connect', href: '/conveyancers', label: 'Conveyancer Connect', icon: Scale },
     { page: 'calculator', href: '/calculator', label: 'Bond Calculator', icon: Calculator },
     { page: 'learn', href: '/learn', label: 'Learning Center', icon: BookOpen },
     { page: 'quiz', href: '/quiz', label: 'Pre-Qualification Quiz', icon: ClipboardCheck },
@@ -83,6 +87,7 @@ export const SELLER_PORTAL_LINKS: UserPortalNavLink[] = [
     { page: 'agent', href: '/dashboard/agent', label: 'My Agent', icon: Users },
     { page: 'property-optimizer', href: '/dashboard/property-optimizer', label: 'Value Optimizer', icon: Sparkles },
     { page: 'smart-bond', href: '/calculator/smart-bond', label: 'Smart Bond Optimizer', icon: Gauge },
+    { page: 'conveyancer-connect', href: '/conveyancers', label: 'Conveyancer Connect', icon: Scale },
     { page: 'learn', href: '/sellers', label: 'Learning Center', icon: BookOpen },
     { page: 'buyer-dashboard', href: '/dashboard', label: 'Buyer Dashboard', icon: Home },
 ];

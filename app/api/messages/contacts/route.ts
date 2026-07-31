@@ -14,17 +14,15 @@ export async function GET(request: NextRequest) {
             {
                 contacts,
                 emptyHint:
-                    session.user.accountType === 'user'
-                        ? contacts.length === 0
-                            ? 'No contacts yet. An agent will appear here after they contact you, and a bond originator after you start pre-qualification.'
-                            : null
-                        : session.user.accountType === 'agent'
-                          ? contacts.length === 0
-                              ? 'No clients yet. Buyers and sellers appear here after you schedule a viewing with them.'
-                              : null
-                          : contacts.length === 0
-                            ? 'No buyers yet. They appear here after they submit a pre-qualification with your organisation.'
-                            : null,
+                    contacts.length === 0
+                        ? session.user.accountType === 'user'
+                            ? 'No contacts yet. Agents appear after they contact you, bond originators after pre-qualification, and conveyancers from Conveyancer Connect.'
+                            : session.user.accountType === 'agent'
+                              ? 'No clients yet. Buyers and sellers appear after viewings; approved conveyancers are available for referrals.'
+                              : session.user.accountType === 'conveyancer'
+                                ? 'No clients yet. They appear when buyers or agents request a quote, book a consultation, or message your firm.'
+                                : 'No buyers yet. They appear here after they submit a pre-qualification with your organisation.'
+                        : null,
             },
             session
         );

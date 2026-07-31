@@ -1,5 +1,6 @@
 import { hydrateDemoUserSession } from '@/lib/demo-user-session';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import type { AccountType } from '@/lib/auth-enterprise/config';
 
 export type BridgedSessionUser = {
     id: string;
@@ -13,7 +14,7 @@ export type BridgedSessionUser = {
     trialStartedAt?: string | null;
     trialEndsAt?: string | null;
     planActivatedAt?: string | null;
-    accountType?: 'user' | 'agent' | 'originator';
+    accountType?: AccountType;
 };
 
 const SESSION_CACHE_TTL_MS = 30_000;
@@ -26,6 +27,7 @@ export function clearLegacyAuthStorage() {
     localStorage.removeItem(STORAGE_KEYS.currentUser);
     localStorage.removeItem(STORAGE_KEYS.currentAgent);
     localStorage.removeItem('propReady_currentOriginator');
+    localStorage.removeItem('propReady_currentConveyancer');
     sessionCache = null;
     sessionInflight = null;
 }
@@ -37,7 +39,7 @@ export function invalidateSessionCache() {
 
 /** Instant paint from localStorage while cookie session verifies in the background. */
 export function readOptimisticSession(
-    accountType: 'user' | 'agent' | 'originator'
+    accountType: AccountType
 ): BridgedSessionUser | null {
     if (typeof window === 'undefined') return null;
     try {
@@ -69,6 +71,19 @@ export function readOptimisticSession(
                 accountType: 'originator',
             };
         }
+        if (accountType === 'conveyancer') {
+            const raw = localStorage.getItem('propReady_currentConveyancer');
+            if (!raw) return null;
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            if (!parsed?.id || !parsed?.email) return null;
+            return {
+                id: String(parsed.id),
+                fullName: parsed.fullName ? String(parsed.fullName) : undefined,
+                email: String(parsed.email),
+                company: parsed.firmName ? String(parsed.firmName) : undefined,
+                accountType: 'conveyancer',
+            };
+        }
         const raw = localStorage.getItem(STORAGE_KEYS.currentUser);
         if (!raw) return null;
         const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -86,7 +101,7 @@ export function readOptimisticSession(
 
 export function syncLegacySession(
     user: BridgedSessionUser,
-    accountType: 'user' | 'agent' | 'originator' = user.accountType || 'user'
+    accountType: AccountType = user.accountType || 'user'
 ) {
     if (typeof window === 'undefined') return;
     if (accountType === 'agent') {
@@ -115,6 +130,16 @@ export function syncLegacySession(
                 organizationId: user.organizationId || user.company,
             })
         );
+    } else if (accountType === 'conveyancer') {
+        localStorage.setItem(
+            'propReady_currentConveyancer',
+            JSON.stringify({
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                firmName: user.company,
+            })
+        );
     } else {
         localStorage.setItem(
             STORAGE_KEYS.currentUser,
@@ -132,7 +157,6 @@ async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
     try {
         const res = await fetch('/api/auth/session', { credentials: 'include' });
         if (res.status === 401) {
-            // Cookie session is gone — drop stale localStorage so portals don't look "logged in"
             clearLegacyAuthStorage();
             return null;
         }
@@ -140,12 +164,11 @@ async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
         const data = await res.json();
         if (!data?.authenticated || !data.user) return null;
 
-        const accountType: 'user' | 'agent' | 'originator' =
-            data.user.accountType === 'agent'
-                ? 'agent'
-                : data.user.accountType === 'originator'
-                  ? 'originator'
-                  : 'user';
+        const rawType = data.user.accountType;
+        const accountType: AccountType =
+            rawType === 'agent' || rawType === 'originator' || rawType === 'conveyancer'
+                ? rawType
+                : 'user';
         const bridged: BridgedSessionUser = {
             id: data.user.profileId || data.user.accountId,
             fullName: data.user.fullName,

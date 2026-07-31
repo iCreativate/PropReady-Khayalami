@@ -7,7 +7,7 @@ interface AuthShellProps {
     children: React.ReactNode;
     title: string;
     subtitle?: string;
-    accountType?: 'user' | 'agent' | 'originator';
+    accountType?: 'user' | 'agent' | 'originator' | 'conveyancer';
     /** Wider form column for multi-step agent registration */
     wide?: boolean;
 }

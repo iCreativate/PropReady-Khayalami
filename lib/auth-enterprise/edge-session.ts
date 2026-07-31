@@ -46,24 +46,30 @@ export async function getEdgeAuthFromRequest(
 export function edgeLoginPath(pathname: string) {
     if (pathname.startsWith('/agents')) return '/agents/login';
     if (pathname.startsWith('/originators')) return '/originators/login';
+    if (pathname.startsWith('/conveyancers/portal') || pathname.startsWith('/conveyancers/login') || pathname.startsWith('/conveyancers/register')) {
+        return '/conveyancers/login';
+    }
     return '/auth/login';
 }
 
 export function edgeDashboardPath(accountType?: string) {
     if (accountType === 'agent') return '/agents/dashboard';
     if (accountType === 'originator') return '/originators/dashboard';
+    if (accountType === 'conveyancer') return '/conveyancers/portal';
     return '/dashboard';
 }
 
 export function edgeProfileCompletePath(accountType?: string) {
     if (accountType === 'agent') return '/auth/complete-profile?type=agent';
     if (accountType === 'originator') return '/auth/complete-profile?type=originator';
+    if (accountType === 'conveyancer') return '/auth/complete-profile?type=conveyancer';
     return '/auth/complete-profile';
 }
 
 export function edgeConfirmPasswordPath(accountType?: string) {
     if (accountType === 'agent') return '/auth/confirm-password?type=agent';
     if (accountType === 'originator') return '/auth/confirm-password?type=originator';
+    if (accountType === 'conveyancer') return '/auth/confirm-password?type=conveyancer';
     return '/auth/confirm-password';
 }
 
