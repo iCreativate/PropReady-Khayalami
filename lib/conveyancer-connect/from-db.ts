@@ -1,4 +1,5 @@
 import type { ConveyancerProfile, ProvinceSlug, Specialty } from '@/lib/conveyancer-connect/types';
+import { coordsForCity } from '@/lib/conveyancer-connect/geo';
 
 const PROVINCE_SLUGS: ProvinceSlug[] = [
     'gauteng',
@@ -66,6 +67,7 @@ export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerPro
     const city = row.city || '';
     const province = toProvinceSlug(row.province);
     const suburb = row.suburb || city || '';
+    const coords = coordsForCity(city || suburb, province);
 
     return {
         id: row.id,
@@ -111,7 +113,7 @@ export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerPro
                       suburb: suburb || city,
                       city,
                       province,
-                      coords: { lat: 0, lng: 0 },
+                      coords,
                   },
               ]
             : [],
@@ -135,7 +137,7 @@ export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerPro
         email: row.email || '',
         website: row.website || '',
         lastActiveAt: new Date().toISOString(),
-        coords: { lat: 0, lng: 0 },
+        coords,
     };
 }
 

@@ -9,4 +9,5 @@ export * from '@/lib/conveyancer-connect/learn';
 export * from '@/lib/conveyancer-connect/from-db';
 export * from '@/lib/conveyancer-connect/directory-client';
 export * from '@/lib/conveyancer-connect/use-directory';
+export * from '@/lib/conveyancer-connect/geo';
 export * from '@/lib/conveyancer-connect/matter-tracker';
