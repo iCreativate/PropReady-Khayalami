@@ -150,14 +150,9 @@ export default function ConveyancerMarketplaceApp({
                         title="Find the right conveyancer for your property transfer."
                         description="Browse PropReady-verified conveyancing firms, request quotes, book consultations, and message attorneys from one place."
                         actions={
-                            <>
-                                <a href="#cc-results" className={PORTAL_PRIMARY_BTN}>
-                                    Find Conveyancers
-                                </a>
-                                <Link href="/conveyancers/become-verified" className={PORTAL_HERO_SECONDARY_BTN}>
-                                    Become a Verified Conveyancer
-                                </Link>
-                            </>
+                            <a href="#cc-results" className={PORTAL_PRIMARY_BTN}>
+                                Find Conveyancers
+                            </a>
                         }
                         stats={[
                             { label: 'Directory', value: loadingDirectory ? '…' : `${catalog.length} firms` },
@@ -343,17 +338,9 @@ export default function ConveyancerMarketplaceApp({
                                             {catalog.length === 0
                                                 ? demoCatalogEnabled()
                                                     ? 'No conveyancers match these filters.'
-                                                    : 'No verified conveyancers are listed yet. Firms appear here after PropReady admin approval.'
+                                                    : 'No verified conveyancers are listed yet. Check back soon — firms appear here after PropReady approval.'
                                                 : 'No conveyancers match these filters. Try widening your search.'}
                                         </p>
-                                        {catalog.length === 0 ? (
-                                            <Link
-                                                href="/conveyancers/register"
-                                                className={`${PORTAL_PRIMARY_BTN} inline-flex`}
-                                            >
-                                                Register your firm
-                                            </Link>
-                                        ) : null}
                                     </div>
                                 ) : null}
                             </div>

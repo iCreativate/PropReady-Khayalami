@@ -249,10 +249,7 @@ export default function MatchPage() {
                         </div>
                         {!profiles.length && !loading ? (
                             <p className="text-sm text-charcoal/55">
-                                No verified firms yet.{' '}
-                                <Link href="/conveyancers/register" className="font-semibold text-gold">
-                                    Register a firm
-                                </Link>
+                                No verified firms yet. Check back soon after PropReady has approved conveyancers.
                             </p>
                         ) : null}
                     </div>
