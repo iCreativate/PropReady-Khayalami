@@ -1,8 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { GoogleMap, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import {
+    APIProvider,
+    AdvancedMarker,
+    Map,
+    Pin,
+    useMap,
+} from '@vis.gl/react-google-maps';
 import { CC_CARD_FLAT } from '@/components/conveyancer-connect/cc-ui';
 import {
     googleMapsDirectionsUrl,
@@ -14,8 +20,9 @@ import {
     type GeoPoint,
 } from '@/lib/conveyancer-connect';
 
-const MAP_CONTAINER = { width: '100%', height: '100%' } as const;
 const SA_CENTER: GeoPoint = { lat: -28.5, lng: 24.7 };
+/** Google’s documented demo Map ID — works for Advanced Markers in development. */
+const DEFAULT_MAP_ID = 'DEMO_MAP_ID';
 
 function pinFor(profile: ConveyancerProfile): GeoPoint {
     return resolveOfficeCoords({
@@ -99,26 +106,42 @@ function ActiveFirmFooter({
     );
 }
 
+function FitBounds({
+    pins,
+    origin,
+}: {
+    pins: { position: GeoPoint }[];
+    origin?: GeoPoint | null;
+}) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!map || pins.length <= 1) return;
+        const bounds = new google.maps.LatLngBounds();
+        pins.forEach((p) => bounds.extend(p.position));
+        if (origin && hasValidCoords(origin)) bounds.extend(origin);
+        map.fitBounds(bounds, 64);
+    }, [map, pins, origin]);
+
+    return null;
+}
+
 function GoogleOfficeMap({
     profiles,
     origin,
     selectedId,
     onSelect,
     apiKey,
+    mapId,
 }: {
     profiles: ConveyancerProfile[];
     origin?: GeoPoint | null;
     selectedId?: string;
     onSelect?: (id: string) => void;
     apiKey: string;
+    mapId: string;
 }) {
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: 'propready-conveyancer-maps',
-        googleMapsApiKey: apiKey,
-    });
-
     const [hoverId, setHoverId] = useState<string | null>(null);
-    const [map, setMap] = useState<google.maps.Map | null>(null);
 
     const pins = useMemo(
         () =>
@@ -146,29 +169,6 @@ function GoogleOfficeMap({
 
     const zoom = pins.length <= 1 ? 12 : pins.length <= 4 ? 10 : 6;
 
-    const onLoad = useCallback(
-        (instance: google.maps.Map) => {
-            setMap(instance);
-            if (pins.length > 1 && typeof google !== 'undefined') {
-                const bounds = new google.maps.LatLngBounds();
-                pins.forEach((p) => bounds.extend(p.position));
-                if (origin && hasValidCoords(origin)) bounds.extend(origin);
-                instance.fitBounds(bounds, 64);
-            }
-        },
-        [pins, origin]
-    );
-
-    const onUnmount = useCallback(() => setMap(null), []);
-
-    if (loadError) {
-        return (
-            <div className={`${CC_CARD_FLAT} p-6 text-sm text-red-600`}>
-                Could not load Google Maps. Check that Maps JavaScript API is enabled for your key.
-            </div>
-        );
-    }
-
     return (
         <MapShell
             title="Office map"
@@ -187,66 +187,71 @@ function GoogleOfficeMap({
             }
         >
             <div className="relative aspect-[16/11] bg-slate-100">
-                {!isLoaded ? (
-                    <div className="flex h-full items-center justify-center text-sm text-charcoal/50">
-                        Loading Google Maps…
-                    </div>
-                ) : (
-                    <GoogleMap
-                        mapContainerStyle={MAP_CONTAINER}
-                        center={center}
-                        zoom={zoom}
-                        onLoad={onLoad}
-                        onUnmount={onUnmount}
-                        options={{
-                            mapTypeControl: false,
-                            streetViewControl: false,
-                            fullscreenControl: true,
-                            clickableIcons: false,
-                        }}
+                <APIProvider apiKey={apiKey}>
+                    <Map
+                        defaultCenter={center}
+                        defaultZoom={zoom}
+                        mapId={mapId}
+                        gestureHandling="greedy"
+                        disableDefaultUI={false}
+                        mapTypeControl={false}
+                        streetViewControl={false}
+                        fullscreenControl
+                        clickableIcons={false}
+                        style={{ width: '100%', height: '100%' }}
                     >
+                        <FitBounds pins={pins} origin={origin} />
                         {origin && hasValidCoords(origin) ? (
-                            <MarkerF
-                                position={origin}
-                                title="Search centre"
-                                icon={{
-                                    path: google.maps.SymbolPath.CIRCLE,
-                                    scale: 8,
-                                    fillColor: '#0ea5e9',
-                                    fillOpacity: 1,
-                                    strokeColor: '#ffffff',
-                                    strokeWeight: 2,
-                                }}
-                            />
+                            <AdvancedMarker position={origin} title="Search centre">
+                                <Pin
+                                    background="#0ea5e9"
+                                    borderColor="#ffffff"
+                                    glyphColor="#ffffff"
+                                    scale={0.9}
+                                />
+                            </AdvancedMarker>
                         ) : null}
                         {pins.map(({ profile, position }) => (
-                            <MarkerF
+                            <AdvancedMarker
                                 key={profile.id}
                                 position={position}
                                 title={profile.firmName}
                                 onClick={() => {
                                     onSelect?.(profile.id);
                                     setHoverId(profile.id);
-                                    map?.panTo(position);
                                 }}
-                                onMouseOver={() => setHoverId(profile.id)}
-                            />
+                                onMouseEnter={() => setHoverId(profile.id)}
+                            >
+                                <Pin
+                                    background="#B8860B"
+                                    borderColor="#ffffff"
+                                    glyphColor="#ffffff"
+                                />
+                            </AdvancedMarker>
                         ))}
-                    </GoogleMap>
-                )}
+                    </Map>
+                </APIProvider>
             </div>
         </MapShell>
     );
 }
 
-function useGoogleMapsApiKey(): { apiKey: string | null; loading: boolean } {
+function useGoogleMapsConfig(): {
+    apiKey: string | null;
+    mapId: string;
+    loading: boolean;
+} {
     const buildTimeKey = (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '').trim();
+    const buildTimeMapId =
+        (process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || '').trim() || DEFAULT_MAP_ID;
     const [apiKey, setApiKey] = useState<string | null>(buildTimeKey || null);
+    const [mapId, setMapId] = useState(buildTimeMapId);
     const [loading, setLoading] = useState(!buildTimeKey);
 
     useEffect(() => {
         if (buildTimeKey) {
             setApiKey(buildTimeKey);
+            setMapId(buildTimeMapId);
             setLoading(false);
             return;
         }
@@ -255,9 +260,13 @@ function useGoogleMapsApiKey(): { apiKey: string | null; loading: boolean } {
         (async () => {
             try {
                 const res = await fetch('/api/config/maps');
-                const data = (await res.json()) as { apiKey?: string | null };
+                const data = (await res.json()) as {
+                    apiKey?: string | null;
+                    mapId?: string | null;
+                };
                 if (!cancelled) {
                     setApiKey((data.apiKey || '').trim() || null);
+                    setMapId((data.mapId || '').trim() || DEFAULT_MAP_ID);
                 }
             } catch {
                 if (!cancelled) setApiKey(null);
@@ -269,9 +278,9 @@ function useGoogleMapsApiKey(): { apiKey: string | null; loading: boolean } {
         return () => {
             cancelled = true;
         };
-    }, [buildTimeKey]);
+    }, [buildTimeKey, buildTimeMapId]);
 
-    return { apiKey, loading };
+    return { apiKey, mapId, loading };
 }
 
 export default function MapView({
@@ -285,7 +294,7 @@ export default function MapView({
     selectedId?: string;
     onSelect?: (id: string) => void;
 }) {
-    const { apiKey, loading } = useGoogleMapsApiKey();
+    const { apiKey, mapId, loading } = useGoogleMapsConfig();
 
     const pins = useMemo(
         () =>
@@ -352,6 +361,7 @@ export default function MapView({
             selectedId={selectedId}
             onSelect={onSelect}
             apiKey={apiKey}
+            mapId={mapId}
         />
     );
 }
