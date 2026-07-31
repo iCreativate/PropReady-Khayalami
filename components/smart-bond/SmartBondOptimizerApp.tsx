@@ -340,7 +340,7 @@ export default function SmartBondOptimizerApp() {
                                     <Sparkles className="h-3.5 w-3.5 text-gold" />
                                     Flagship · PropReady Intelligence
                                 </p>
-                                <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+                                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
                                     Smart Bond Optimizer
                                 </h1>
                                 <p className="mt-4 text-sm leading-relaxed text-white/70 sm:text-base">
