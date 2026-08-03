@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
 import { createServiceClient } from '@/lib/supabase-admin';
-import { ensureWelcomeAnnouncement } from '@/lib/welcome-announcement';
+import {
+    WELCOME_ANNOUNCEMENT_TITLE,
+    deactivateWelcomePortalAnnouncement,
+} from '@/lib/welcome-announcement';
 
-/** Active announcements for the signed-in account's audience. */
+/** Active announcements for the signed-in account's audience (excludes Messages-only welcome). */
 export async function GET(request: NextRequest) {
     const session = await resolveSessionFromRequest(request);
     if (!session) {
@@ -15,7 +18,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ announcements: [] });
     }
 
-    await ensureWelcomeAnnouncement();
+    await deactivateWelcomePortalAnnouncement();
 
     const accountType = session.user.accountType;
     const now = new Date().toISOString();
@@ -33,10 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     const announcements = (data || [])
-        .filter((row) => {
-            // expires_at optional — filter client-side if present later
-            return true;
-        })
+        .filter((row) => String(row.title || '') !== WELCOME_ANNOUNCEMENT_TITLE)
         .map((row) => ({
             id: row.id,
             title: row.title,

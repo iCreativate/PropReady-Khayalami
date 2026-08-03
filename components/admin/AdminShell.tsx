@@ -22,7 +22,7 @@ const ADMIN_HERO_COPY: Record<string, string> = {
     Overview: 'Monitor platform health, pending approvals, and recent activity across PropReady.',
     'Account Management': 'Search, review, and manage buyer, seller, agent, and originator accounts.',
     Messages: 'Staff inbox for conversations across buyers, sellers, agents, and originators.',
-    Announcements: 'Publish portal banners and welcome messages for signed-in users.',
+    Announcements: 'Publish portal banners for signed-in users. Welcome to PropReady is Messages-only.',
     'Agent Approvals': 'Review PPRA documents and approve or reject agent applications.',
     'Originator Approvals': 'Review bond originator registrations and staff access requests.',
     'Conveyancer Approvals': 'Verify conveyancing firms, moderate reviews, and monitor marketplace health.',

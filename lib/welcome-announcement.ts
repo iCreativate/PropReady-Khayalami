@@ -150,44 +150,27 @@ export async function cleanupWelcomeBroadcastThreads() {
     }
 }
 
-/** Idempotently ensure the platform welcome announcement exists (portal banner). */
-export async function ensureWelcomeAnnouncement() {
+/** Deactivate the platform welcome row so it never appears as a portal banner (Messages only). */
+export async function deactivateWelcomePortalAnnouncement() {
     const supabase = createServiceClient();
     if (!supabase) return;
 
     try {
-        const { data: existing } = await supabase
+        await supabase
             .from('admin_announcements')
-            .select('id, active')
-            .eq('title', WELCOME_ANNOUNCEMENT_TITLE)
-            .eq('audience', 'all')
-            .order('published_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (existing?.id) {
-            await supabase
-                .from('admin_announcements')
-                .update({
-                    active: true,
-                    body: WELCOME_ANNOUNCEMENT_BODY,
-                    updated_at: new Date().toISOString(),
-                })
-                .eq('id', existing.id);
-            return;
-        }
-
-        await supabase.from('admin_announcements').insert({
-            title: WELCOME_ANNOUNCEMENT_TITLE,
-            body: WELCOME_ANNOUNCEMENT_BODY,
-            audience: 'all',
-            active: true,
-            created_by_email: 'system@propready.local',
-            published_at: new Date().toISOString(),
-        });
+            .update({
+                active: false,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('title', WELCOME_ANNOUNCEMENT_TITLE);
     } catch (err) {
-        console.error('ensureWelcomeAnnouncement:', err);
+        console.error('deactivateWelcomePortalAnnouncement:', err);
     }
+}
+
+/** @deprecated Use deactivateWelcomePortalAnnouncement — welcome is Messages-only. */
+export async function ensureWelcomeAnnouncement() {
+    await deactivateWelcomePortalAnnouncement();
 }
 
 /**
@@ -316,12 +299,12 @@ export async function sendWelcomeInboxMessage(input: {
     }
 }
 
-/** Banner + per-user inbox welcome for a newly registered account. */
+/** Per-user inbox welcome for a newly registered account (not a portal banner). */
 export async function welcomeNewUser(input: {
     accountType: AccountType;
     profileId: string;
     displayName?: string | null;
 }) {
-    await ensureWelcomeAnnouncement();
+    await deactivateWelcomePortalAnnouncement();
     await sendWelcomeInboxMessage(input);
 }

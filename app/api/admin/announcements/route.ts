@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         }
 
         let broadcast: { sent?: number; recipientCount?: number; errorCount?: number } | null = null;
-        // Welcome is a portal banner for users — never fan-out as inbox threads (floods admin).
+        // Welcome to PropReady is Messages-only (per-user system thread) — never portal-banner fan-out.
         if (alsoMessage && !isWelcomeBanner) {
             const result = await broadcastAdminMessage({
                 adminEmail: auth.email,
@@ -117,6 +117,14 @@ export async function POST(request: NextRequest) {
             };
         }
 
+        // If someone publishes the welcome title as an announcement, keep it inactive for portals.
+        if (isWelcomeBanner) {
+            await supabase
+                .from('admin_announcements')
+                .update({ active: false, updated_at: new Date().toISOString() })
+                .eq('id', data.id);
+        }
+
         return NextResponse.json({
             success: true,
             announcement: {
@@ -124,7 +132,7 @@ export async function POST(request: NextRequest) {
                 title: data.title,
                 body: data.body,
                 audience: data.audience,
-                active: data.active,
+                active: isWelcomeBanner ? false : data.active,
                 publishedAt: data.published_at,
             },
             broadcast,

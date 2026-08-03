@@ -11,6 +11,8 @@ type Announcement = {
 };
 
 const DISMISS_KEY = 'pr_announcement_dismissed';
+/** Welcome lives in Messages only — never show as a portal banner. */
+const MESSAGES_ONLY_TITLES = new Set(['Welcome to PropReady']);
 
 export default function PortalAnnouncementBanner() {
     const [items, setItems] = useState<Announcement[]>([]);
@@ -30,7 +32,11 @@ export default function PortalAnnouncementBanner() {
                 const res = await fetch('/api/announcements', { credentials: 'include' });
                 const data = await res.json().catch(() => ({}));
                 if (!cancelled && Array.isArray(data.announcements)) {
-                    setItems(data.announcements);
+                    setItems(
+                        data.announcements.filter(
+                            (a: Announcement) => !MESSAGES_ONLY_TITLES.has(String(a.title || ''))
+                        )
+                    );
                 }
             } catch {
                 /* ignore */
