@@ -181,7 +181,16 @@ export default function FirmProfileApp({
                     type="button"
                     className={PORTAL_SECONDARY_BTN}
                     onClick={() => {
-                        void navigator.clipboard?.writeText(window.location.href);
+                        const url = window.location.href;
+                        const title = `${profile.firmName} | PropReady`;
+                        const text = `View ${profile.firmName} on PropReady Conveyancer Connect`;
+                        if (navigator.share) {
+                            void navigator.share({ title, text, url }).catch(() => {
+                                void navigator.clipboard?.writeText(url);
+                            });
+                        } else {
+                            void navigator.clipboard?.writeText(url);
+                        }
                     }}
                 >
                     <Share2 className="h-4 w-4" />
