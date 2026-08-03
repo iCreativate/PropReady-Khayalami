@@ -12,6 +12,7 @@
         "type-check": "tsc --noEmit",
         "seed:demo-agent": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-agent | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
         "seed:demo-originator": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-originator | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
+        "seed:demo-conveyancer": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-conveyancer | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
         "seed:demo-leads": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-leads | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
         "seed:demo-users": "curl -s -X POST http://localhost:3000/api/dev/seed-demo-users | node -e \"let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(s),null,2))}catch{console.log(s)}})\"",
         "scrape:suburbs": "node scripts/scrape-property24-suburbs.mjs",
