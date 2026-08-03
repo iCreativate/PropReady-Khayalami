@@ -26,7 +26,9 @@ function VerifyEmailForm() {
             ? '/agents/login'
             : typeParam === 'originator'
               ? '/originators/login'
-              : '/auth/login';
+              : typeParam === 'conveyancer'
+                ? '/conveyancers/login'
+                : '/auth/login';
 
     const markLocalVerified = () => {
         if (typeof window === 'undefined' || !email) return;
@@ -130,7 +132,13 @@ function VerifyEmailForm() {
                         <div className="text-center py-4">
                             <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-3" />
                             <p className="text-charcoal font-semibold mb-2">Email verified!</p>
-                            <p className="text-charcoal/70 text-sm">Redirecting you to sign in…</p>
+                            <p className="text-charcoal/70 text-sm">
+                                {typeParam === 'conveyancer' ||
+                                typeParam === 'agent' ||
+                                typeParam === 'originator'
+                                    ? 'Redirecting to sign in. Portal access opens after PropReady admin approval.'
+                                    : 'Redirecting you to sign in…'}
+                            </p>
                         </div>
                     ) : (
                         <form onSubmit={handleVerify} className="space-y-5">

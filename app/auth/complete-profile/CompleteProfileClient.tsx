@@ -72,7 +72,9 @@ function CompleteProfileInner() {
                             ? '/auth/confirm-password?type=agent'
                             : accountType === 'originator'
                               ? '/auth/confirm-password?type=originator'
-                              : '/auth/confirm-password'
+                              : accountType === 'conveyancer'
+                                ? '/auth/confirm-password?type=conveyancer'
+                                : '/auth/confirm-password'
                     );
                     return;
                 }
@@ -126,7 +128,10 @@ function CompleteProfileInner() {
                 body: JSON.stringify({
                     fullName,
                     phone,
-                    company: accountType === 'agent' ? company : undefined,
+                    company:
+                        accountType === 'agent' || accountType === 'conveyancer'
+                            ? company
+                            : undefined,
                     organizationId: accountType === 'originator' ? organizationId : undefined,
                     eaabNumber: accountType === 'agent' ? eaabNumber : undefined,
                     password: needsPassword ? password : undefined,
@@ -172,8 +177,14 @@ function CompleteProfileInner() {
             title={needsPassword ? 'Finish creating your account' : 'Confirm your identity'}
             subtitle={
                 needsPassword
-                    ? 'Create a password, confirm who you are, then choose buyer or seller. Your dashboard will open with a short required form.'
-                    : 'We need your real details before you can access the portal.'
+                    ? accountType === 'conveyancer'
+                        ? 'Confirm your details and create a password to open the conveyancer portal.'
+                        : accountType === 'agent' || accountType === 'originator'
+                          ? 'Confirm your professional details and create a password to open your portal.'
+                          : 'Create a password, confirm who you are, then choose buyer or seller. Your dashboard will open with a short required form.'
+                    : accountType === 'conveyancer'
+                      ? 'Confirm your firm contact details before accessing the conveyancer portal.'
+                      : 'We need your real details before you can access the portal.'
             }
             accountType={accountType}
         >
@@ -261,6 +272,26 @@ function CompleteProfileInner() {
                             />
                         </div>
                     </>
+                )}
+
+                {accountType === 'conveyancer' && (
+                    <div>
+                        <label className="auth-label" htmlFor="cp-firm">
+                            Firm name
+                        </label>
+                        <div className="auth-input-wrap">
+                            <Building2 className="auth-input-icon" />
+                            <input
+                                id="cp-firm"
+                                className="auth-input"
+                                required
+                                autoComplete="organization"
+                                placeholder="Your conveyancing firm"
+                                value={company}
+                                onChange={(e) => setCompany(e.target.value)}
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {accountType === 'originator' && (

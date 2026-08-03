@@ -227,7 +227,7 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 </a>
                             </li>
                         </ul>
-                        <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                             <Link
                                 href="/agents/login"
                                 className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition text-sm shadow-sm"
@@ -239,6 +239,12 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-white/10 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/15 hover:border-gold/40 transition text-sm"
                             >
                                 Bond Originator
+                            </Link>
+                            <Link
+                                href="/conveyancers/login"
+                                className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-white/10 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/15 hover:border-gold/40 transition text-sm"
+                            >
+                                Conveyancer Login
                             </Link>
                         </div>
 
