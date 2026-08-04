@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+    BookOpen,
     CheckCircle,
     Eye,
     FileText,
     Home,
     RefreshCw,
-    Search,
     TrendingUp,
     Upload,
 } from 'lucide-react';
@@ -112,11 +112,11 @@ export default function BuyerPreQualificationPanel({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-5 sm:gap-6">
-                <Link href="/search" className="premium-card p-5 text-center group">
+                <Link href="/learn" className="premium-card p-5 text-center group">
                     <div className={`${PORTAL_STAT_ICON} mx-auto mb-3`}>
-                        <Search className="w-5 h-5 text-gold" />
+                        <BookOpen className="w-5 h-5 text-gold" />
                     </div>
-                    <h3 className="text-charcoal font-semibold text-sm">Browse Properties</h3>
+                    <h3 className="text-charcoal font-semibold text-sm">Learning Center</h3>
                 </Link>
                 <Link href="/dashboard/documents" className="premium-card p-5 text-center group">
                     <div className={`${PORTAL_STAT_ICON} mx-auto mb-3`}>

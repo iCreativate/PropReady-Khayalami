@@ -4,6 +4,8 @@ import { getLearnCategoryBadge } from '@/lib/agent-learn-meta';
 import {
     AGENT_MODULE_CARD,
     AGENT_MODULE_CARD_ICON,
+    AGENT_MODULE_CARD_INDEX,
+    AGENT_MODULE_CARD_LINK,
     AGENT_BADGE,
 } from '@/lib/agent-portal-ui';
 
@@ -54,13 +56,10 @@ export default function AgentLearnModuleCard({
     return (
         <Link
             href={`/agents/learn/${slug}`}
-            className="block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/30 focus-visible:ring-offset-2 rounded-3xl"
+            className={AGENT_MODULE_CARD_LINK}
         >
             <article className={AGENT_MODULE_CARD}>
-                <span
-                    className="absolute top-4 right-5 text-[3.5rem] font-bold leading-none text-charcoal/[0.04] group-hover:text-gold/[0.08] transition-colors duration-300 select-none tabular-nums"
-                    aria-hidden
-                >
+                <span className={AGENT_MODULE_CARD_INDEX} aria-hidden>
                     {displayIndex}
                 </span>
 

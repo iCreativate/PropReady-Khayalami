@@ -8,6 +8,7 @@ import {
     getEdgeAuthFromRequest,
 } from '@/lib/auth-enterprise/edge-session';
 import { verifyAdminSessionToken, IMPERSONATOR_COOKIE, isAdminEmail } from '@/lib/admin-auth';
+import { PUBLIC_PROPERTIES_ENABLED } from '@/lib/public-properties';
 
 const PROTECTED_PREFIXES = [
     '/dashboard',
@@ -56,6 +57,14 @@ export async function middleware(request: NextRequest) {
 
     try {
         const { pathname } = request.nextUrl;
+
+        // Public Properties browse — off until agents publish listings
+        if (
+            !PUBLIC_PROPERTIES_ENABLED &&
+            (pathname === '/search' || pathname.startsWith('/search/'))
+        ) {
+            return NextResponse.redirect(new URL('/learning-center', request.url));
+        }
 
         // Block demo/seed tooling in production unless explicitly enabled
         if (pathname.startsWith('/api/dev')) {

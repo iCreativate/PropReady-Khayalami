@@ -63,6 +63,37 @@ body {
   animation: app-fade-in 180ms ease-out both;
 }
 
+/* Charcoal + red brand surface (auth panel look) */
+.brand-dark-glow {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(220, 38, 38, 0.45) 0%, transparent 42%),
+    radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
+}
+
+.brand-dark-panel {
+  position: relative;
+  overflow: hidden;
+  background-color: #2c2c2c;
+  color: #fff;
+}
+
+.brand-dark-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.4;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(220, 38, 38, 0.45) 0%, transparent 42%),
+    radial-gradient(circle at 85% 75%, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
+}
+
+.brand-dark-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.native-shell body {
     opacity: 1;
@@ -1524,8 +1555,27 @@ body {
     animation: learn-fade-in var(--duration-moderate) var(--ease-out) both;
   }
 
+  .learn-course-chapter details > summary::-webkit-details-marker {
+    display: none;
+  }
+
   .learn-slide-in {
     animation: learn-slide-in var(--duration-moderate) var(--ease-out) both;
+  }
+
+  @keyframes learn-draw-path {
+    from {
+      stroke-dashoffset: 480;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .learn-draw-path {
+    stroke-dasharray: 480;
+    stroke-dashoffset: 480;
+    animation: learn-draw-path 1.4s var(--ease-out) 0.2s forwards;
   }
 
   .learn-btn-lift {
@@ -1583,10 +1633,12 @@ body {
     }
 
     .learn-animate-in,
-    .learn-slide-in {
+    .learn-slide-in,
+    .learn-draw-path {
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
+      stroke-dashoffset: 0 !important;
     }
 
     .learn-btn-lift:hover,

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronDown, BookOpen } from 'lucide-react';
+import { ChevronDown, BookOpen, Building2, Home, TrendingUp } from 'lucide-react';
 
 export default function LearningCenterDropdown() {
     const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +36,6 @@ export default function LearningCenterDropdown() {
     };
 
     const handleMouseLeave = () => {
-        // Add a delay before closing to allow users to move mouse to dropdown
         timeoutRef.current = setTimeout(() => {
             setIsOpen(false);
         }, 200);
@@ -44,32 +43,68 @@ export default function LearningCenterDropdown() {
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <button
+            <div
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-1 text-charcoal/90 hover:text-charcoal transition"
+                className="flex items-center gap-1"
             >
-                <span>Learning Center</span>
-                <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+                <Link
+                    href="/learning-center"
+                    className="text-charcoal/90 hover:text-charcoal transition"
+                >
+                    Learning Center
+                </Link>
+                <button
+                    type="button"
+                    onClick={() => setIsOpen(!isOpen)}
+                    aria-expanded={isOpen}
+                    aria-label="Learning Center menu"
+                    className="text-charcoal/90 hover:text-charcoal transition p-0.5"
+                >
+                    <ChevronDown
+                        className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                </button>
+            </div>
 
             {isOpen && (
                 <div
                     onMouseEnter={handleMouseEnter}
                     onMouseLeave={handleMouseLeave}
-                    className="absolute top-full left-0 mt-2 w-56 premium-card rounded-xl shadow-2xl border border-charcoal/10 overflow-hidden z-50"
+                    className="absolute top-full left-0 mt-2 w-64 premium-card rounded-xl shadow-2xl border border-charcoal/10 overflow-hidden z-50"
                 >
                     <div className="p-2">
+                        <Link
+                            href="/learning-center"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gold/10 transition-colors group border-b border-charcoal/5 mb-1"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <BookOpen className="w-5 h-5 text-gold shrink-0" />
+                            <div>
+                                <p className="font-semibold text-charcoal">All hubs</p>
+                                <p className="text-xs text-charcoal/60">Buyers, sellers & investors</p>
+                            </div>
+                        </Link>
                         <Link
                             href="/learn"
                             className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gold/10 transition-colors group"
                             onClick={() => setIsOpen(false)}
                         >
-                            <BookOpen className="w-5 h-5 text-gold group-hover:text-gold" />
+                            <Home className="w-5 h-5 text-gold shrink-0" />
                             <div>
                                 <p className="font-semibold text-charcoal">Buyers</p>
                                 <p className="text-xs text-charcoal/60">First-time buyer guides</p>
+                            </div>
+                        </Link>
+                        <Link
+                            href="/sellers"
+                            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gold/10 transition-colors group"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <Building2 className="w-5 h-5 text-gold shrink-0" />
+                            <div>
+                                <p className="font-semibold text-charcoal">Sellers</p>
+                                <p className="text-xs text-charcoal/60">Selling guides & tips</p>
                             </div>
                         </Link>
                         <Link
@@ -77,7 +112,7 @@ export default function LearningCenterDropdown() {
                             className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gold/10 transition-colors group"
                             onClick={() => setIsOpen(false)}
                         >
-                            <BookOpen className="w-5 h-5 text-gold group-hover:text-gold" />
+                            <TrendingUp className="w-5 h-5 text-gold shrink-0" />
                             <div>
                                 <p className="font-semibold text-charcoal">Property Investors</p>
                                 <p className="text-xs text-charcoal/60">Investment strategies & tips</p>

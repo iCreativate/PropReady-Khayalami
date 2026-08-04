@@ -74,15 +74,9 @@ export default function ProfessionalAuthShell({
     const Icon = copy.Icon;
 
     return (
-        <div className="auth-shell min-h-screen flex bg-[#f3f1ef]">
-            <div className="hidden lg:flex lg:w-[46%] relative overflow-hidden bg-charcoal">
-                <div
-                    className="absolute inset-0 opacity-40"
-                    style={{
-                        backgroundImage:
-                            'radial-gradient(circle at 15% 20%, rgba(220,38,38,0.45) 0%, transparent 42%), radial-gradient(circle at 85% 75%, rgba(255,255,255,0.08) 0%, transparent 40%)',
-                    }}
-                />
+        <div className="auth-shell flex min-h-dvh bg-[#f3f1ef] lg:h-dvh lg:max-h-dvh lg:overflow-hidden">
+            <div className="hidden lg:flex lg:w-[46%] lg:shrink-0 relative overflow-hidden bg-charcoal">
+                <div className="pointer-events-none absolute inset-0 opacity-40 brand-dark-glow" aria-hidden />
                 <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
                     <BrandLogo href={copy.homeHref} tone="dark" size="lg" />
                     <div>
@@ -110,7 +104,7 @@ export default function ProfessionalAuthShell({
                 </div>
             </div>
 
-            <div className="flex-1 flex items-start justify-center p-6 sm:p-10 min-h-screen overflow-y-auto">
+            <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overscroll-y-contain flex items-start justify-center p-6 sm:p-10">
                 <div className={`w-full ${wide ? 'max-w-[560px]' : 'max-w-[440px]'} py-4 sm:py-10`}>
                     <div className="lg:hidden mb-8">
                         <BrandLogo href={copy.homeHref} size="lg" />

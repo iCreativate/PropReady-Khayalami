@@ -73,13 +73,13 @@ interface UserPortalLayoutProps {
 
 /** Visual groups only — link order unchanged */
 const BUYER_NAV_GROUPS: { label: string; pages: UserPortalPage[] }[] = [
-    { label: 'Workspace', pages: ['dashboard', 'messages', 'properties', 'viewings', 'documents', 'agent'] },
-    { label: 'Tools', pages: ['property-optimizer', 'smart-bond', 'conveyancer-connect', 'calculator', 'learn', 'quiz'] },
+            { label: 'Workspace', pages: ['dashboard', 'messages', 'viewings', 'documents', 'agent'] },
+    { label: 'Tools', pages: ['property-optimizer', 'property-iq', 'smart-bond', 'conveyancer-connect', 'calculator', 'learn', 'quiz'] },
 ];
 
 const SELLER_NAV_GROUPS: { label: string; pages: UserPortalPage[] }[] = [
     { label: 'Workspace', pages: ['dashboard', 'messages', 'valuation', 'property-quiz', 'agent'] },
-    { label: 'Tools', pages: ['property-optimizer', 'smart-bond', 'conveyancer-connect', 'learn', 'buyer-dashboard'] },
+    { label: 'Tools', pages: ['property-optimizer', 'property-iq', 'smart-bond', 'conveyancer-connect', 'learn', 'buyer-dashboard'] },
 ];
 
 function NavLinks({

@@ -1,5 +1,6 @@
 import { BookOpen, Clock, Layers } from 'lucide-react';
 import { AGENT_BADGE } from '@/lib/agent-portal-ui';
+import { BRAND_DARK_GLOW, BRAND_DARK_SURFACE } from '@/lib/brand-surface';
 
 interface AgentLearnHubHeroProps {
     articleCount: number;
@@ -13,24 +14,21 @@ export default function AgentLearnHubHero({
     topicCount,
 }: AgentLearnHubHeroProps) {
     return (
-        <div className="relative overflow-hidden rounded-3xl border border-charcoal/[0.08] bg-charcoal text-white shadow-[0_8px_40px_rgba(0,0,0,0.12)] mb-8 sm:mb-10">
+        <div
+            className={`${BRAND_DARK_SURFACE} rounded-3xl border border-white/[0.08] shadow-[0_8px_40px_rgba(0,0,0,0.2)] mb-8 sm:mb-10`}
+        >
+            <div className={BRAND_DARK_GLOW} aria-hidden />
             <div
-                className="absolute inset-0 opacity-[0.35]"
-                style={{
-                    backgroundImage:
-                        'radial-gradient(circle at 20% 20%, rgba(220,38,38,0.35) 0%, transparent 45%), radial-gradient(circle at 80% 80%, rgba(220,38,38,0.15) 0%, transparent 40%)',
-                }}
-            />
-            <div
-                className="absolute inset-0 opacity-[0.08]"
+                className="absolute inset-0 opacity-[0.06]"
                 style={{
                     backgroundImage:
                         'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
                     backgroundSize: '24px 24px',
                 }}
+                aria-hidden
             />
 
-            <div className="relative px-6 sm:px-8 lg:px-10 py-8 sm:py-10">
+            <div className="relative z-10 px-6 sm:px-8 lg:px-10 py-8 sm:py-10">
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-gold mb-3">
                     PropReady Academy
                 </p>

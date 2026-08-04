@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
+import { BRAND_DARK_GLOW, BRAND_DARK_SURFACE } from '@/lib/brand-surface';
 
-export const PORTAL_HERO_SHELL =
-    'relative overflow-hidden rounded-[1.5rem] border border-white/[0.06] bg-gradient-to-br from-[#020617] via-[#0F172A] to-[#450A0A] text-white shadow-[0_20px_60px_rgba(2,6,23,0.35)]';
+export const PORTAL_HERO_SHELL = `${BRAND_DARK_SURFACE} rounded-[1.5rem] border border-white/[0.06] shadow-[0_20px_60px_rgba(0,0,0,0.28)]`;
 
 export const PORTAL_HERO_STAT =
     'rounded-2xl bg-white/[0.06] p-4 ring-1 ring-white/10 backdrop-blur';
@@ -48,10 +48,11 @@ export default function PortalHero({
             data-portal-hero
             className={`${PORTAL_HERO_SHELL} ${compact ? 'p-5 sm:p-6' : 'p-6 sm:p-10'} ${className}`}
         >
-            <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
+            <div className={BRAND_DARK_GLOW} aria-hidden />
+            <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gold/25 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-24 left-0 h-56 w-56 rounded-full bg-gold/10 blur-3xl" />
 
-            <div className={`relative flex flex-col ${compact ? 'gap-5' : 'gap-8'}`}>
+            <div className={`relative z-10 flex flex-col ${compact ? 'gap-5' : 'gap-8'}`}>
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                     <div className="max-w-2xl min-w-0">
                         {eyebrow ? (

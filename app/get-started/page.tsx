@@ -17,7 +17,7 @@ function GetStartedContent() {
                 showDesktopNav={false}
                 mobileLinks={[
                     { href: '/auth/login', label: 'Sign in' },
-                    { href: '/learn', label: 'Learner Hub' },
+                    { href: '/learning-center', label: 'Learning Center' },
                 ]}
                 ctaHref="/auth/login"
                 ctaLabel="Sign in"

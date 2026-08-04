@@ -26,11 +26,12 @@ interface PublicSiteHeaderProps {
 
 const DEFAULT_MOBILE: PublicNavLink[] = [
     { href: '/get-started', label: 'Get Started', isButton: true },
-    { href: '/learn', label: 'Learning Center - Buyers' },
-    { href: '/learn/investors', label: 'Learning Center - Investors' },
-    { href: '/sellers', label: 'For Sellers' },
-    { href: '/search', label: 'Properties' },
+    { href: '/learning-center', label: 'Learning Center' },
+    { href: '/learn', label: 'Learning Center — Buyers' },
+    { href: '/sellers', label: 'Learning Center — Sellers' },
+    { href: '/learn/investors', label: 'Learning Center — Investors' },
     { href: '/calculator', label: 'Bond Calculator' },
+    { href: '/property-iq', label: 'Property IQ™' },
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/agents/login', label: 'Agent Login' },
 ];
@@ -51,6 +52,38 @@ export default function PublicSiteHeader({
         >
             <nav className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4 min-w-0">
+                    {showLogo ? <BrandLogo /> : null}
+                </div>
+
+                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                    {showDesktopNav ? (
+                        <div className="hidden md:flex items-center gap-6 lg:gap-8">
+                            <LearningCenterDropdown />
+                            <Link href="/get-started" className={PORTAL_PRIMARY_BTN}>
+                                Get Started
+                            </Link>
+                            <Link
+                                href="/calculator"
+                                className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
+                            >
+                                Bond Calculator
+                            </Link>
+                            <Link
+                                href="/auth/login"
+                                className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
+                            >
+                                Sign in
+                            </Link>
+                            <Link href="/agents/login" className={PORTAL_SECONDARY_BTN}>
+                                Agent Login
+                            </Link>
+                        </div>
+                    ) : ctaHref && ctaLabel ? (
+                        <Link href={ctaHref} className={`hidden sm:inline-flex ${PORTAL_SECONDARY_BTN}`}>
+                            {ctaLabel}
+                        </Link>
+                    ) : null}
+
                     {backHref ? (
                         <Link
                             href={backHref}
@@ -61,49 +94,10 @@ export default function PublicSiteHeader({
                         </Link>
                     ) : null}
 
-                    {showLogo ? <BrandLogo /> : null}
+                    {showDesktopNav || mobileLinks.length > 0 ? (
+                        <MobileNav links={mobileLinks} />
+                    ) : null}
                 </div>
-
-                {showDesktopNav ? (
-                    <div className="hidden md:flex items-center gap-6 lg:gap-8">
-                        <LearningCenterDropdown />
-                        <Link href="/get-started" className={PORTAL_PRIMARY_BTN}>
-                            Get Started
-                        </Link>
-                        <Link href="/sellers" className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition">
-                            For Sellers
-                        </Link>
-                        <Link
-                            href="/search"
-                            className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
-                        >
-                            Properties
-                        </Link>
-                        <Link
-                            href="/calculator"
-                            className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
-                        >
-                            Bond Calculator
-                        </Link>
-                        <Link
-                            href="/auth/login"
-                            className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
-                        >
-                            Sign in
-                        </Link>
-                        <Link href="/agents/login" className={PORTAL_SECONDARY_BTN}>
-                            Agent Login
-                        </Link>
-                    </div>
-                ) : ctaHref && ctaLabel ? (
-                    <Link href={ctaHref} className={`hidden sm:inline-flex ${PORTAL_SECONDARY_BTN}`}>
-                        {ctaLabel}
-                    </Link>
-                ) : null}
-
-                {showDesktopNav || mobileLinks.length > 0 ? (
-                    <MobileNav links={mobileLinks} />
-                ) : null}
             </nav>
         </header>
     );

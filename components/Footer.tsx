@@ -90,12 +90,12 @@ export default function Footer({ variant = 'default' }: FooterProps) {
 
     return (
         <footer
-            className={`bg-charcoal mt-auto ${
-                isPortal ? 'border-t border-white/[0.06]' : 'border-t border-charcoal/20'
+            className={`brand-dark-panel mt-auto ${
+                isPortal ? 'border-t border-white/[0.06]' : 'border-t border-white/[0.08]'
             }`}
         >
             <div
-                className={`mx-auto ${
+                className={`relative z-10 mx-auto ${
                     isPortal
                         ? 'max-w-[1400px] px-6 sm:px-8 lg:px-10 py-14 sm:py-16'
                         : 'container px-4 py-12'
@@ -166,11 +166,12 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                         <ul className="space-y-3">
                             {[
                                 { href: '/get-started', label: 'Get Started' },
-                                { href: '/learn', label: 'Learning Center - Buyers' },
-                                { href: '/learn/investors', label: 'Learning Center - Investors' },
-                                { href: '/sellers', label: 'For Sellers' },
-                                { href: '/search', label: 'Properties' },
+                                { href: '/learning-center', label: 'Learning Center' },
+                                { href: '/learn', label: 'Learning Center — Buyers' },
+                                { href: '/sellers', label: 'Learning Center — Sellers' },
+                                { href: '/learn/investors', label: 'Learning Center — Investors' },
                                 { href: '/calculator', label: 'Bond Calculator' },
+                                { href: '/property-iq', label: 'Property IQ™' },
                                 { href: '/auth/login', label: 'Sign in' },
                             ].map(({ href, label }) => (
                                 <li key={href}>

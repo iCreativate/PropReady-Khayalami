@@ -32,6 +32,7 @@ import {
     PROPERTY_CARD_PRICE,
     PROPERTY_CARD_CHIP_MATCH,
 } from '@/lib/property-card-ui';
+import { PUBLIC_PROPERTIES_ENABLED } from '@/lib/public-properties';
 
 type MatchedListing = ListedProperty & { matchScore: number };
 
@@ -187,9 +188,9 @@ export default function DashboardPage() {
         if (!isHydrated) return;
 
         if (!currentUser) {
-            router.push('/login');
-            return;
-        }
+                router.push('/login');
+                return;
+            }
 
         if (!onboardingLoading && onboardingIntent === 'seller' && onboardingRequired) {
             router.replace('/sellers/dashboard');
@@ -243,7 +244,8 @@ export default function DashboardPage() {
         [agentListings, quizResult?.preQualAmount, quizResult?.score]
     );
 
-    const showSuggestedProperties = agentListings.length > 0 && suggestedProperties.length > 0;
+    const showSuggestedProperties =
+        PUBLIC_PROPERTIES_ENABLED && agentListings.length > 0 && suggestedProperties.length > 0;
 
     if (!isHydrated || !currentUser) {
         return <PortalLoading message="Loading dashboard…" variant="dashboard" />;
@@ -278,16 +280,16 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-4 min-w-0">
                                     <div className={PORTAL_STAT_ICON}>
                                         <Building2 className="w-5 h-5 text-gold" />
-                                    </div>
+                                        </div>
                                     <div className="min-w-0">
                                         <h2 className={PORTAL_DASH_SECTION_TITLE}>Your Property Listing</h2>
                                         <p className={PORTAL_DASH_SECTION_SUB}>Selling your property</p>
                                     </div>
                                 </div>
                                 <Link href="/sellers/dashboard" className={`${PORTAL_PRIMARY_BTN} shrink-0 self-start sm:self-auto`}>
-                                    Go to Seller Dashboard
-                                </Link>
-                            </div>
+                                        Go to Seller Dashboard
+                                    </Link>
+                                </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                                     <div className="portal-stat-inner">
@@ -337,12 +339,12 @@ export default function DashboardPage() {
 
                     {/* Quick Actions */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                        <Link href="/search" className={PORTAL_DASH_QUICK_ACTION}>
+                        <Link href="/learn" className={PORTAL_DASH_QUICK_ACTION}>
                             <div className={`${PORTAL_STAT_ICON} mx-auto mb-3.5 sm:mb-4`}>
                                 <Home className="w-5 h-5 text-gold" />
                             </div>
-                            <h3 className="text-charcoal font-semibold text-sm tracking-tight">Browse Properties</h3>
-                            <p className="text-[11px] text-charcoal/40 mt-1.5 hidden sm:block">Search listings</p>
+                            <h3 className="text-charcoal font-semibold text-sm tracking-tight">Learning Center</h3>
+                            <p className="text-[11px] text-charcoal/40 mt-1.5 hidden sm:block">Buyer lessons</p>
                         </Link>
 
                         <Link href="/dashboard/documents" className={`${PORTAL_DASH_QUICK_ACTION} border-red-200 ring-1 ring-red-100`}>
@@ -474,32 +476,32 @@ export default function DashboardPage() {
                         }`}
                     >
                         {showSuggestedProperties ? (
-                            <div className="lg:col-span-2">
+                        <div className="lg:col-span-2">
                                 <div className={PORTAL_DASH_WIDGET}>
                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5 sm:mb-6">
                                         <div className="min-w-0">
                                             <h2 className={`${PORTAL_DASH_SECTION_TITLE} flex items-center gap-2`}>
                                                 <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-gold shrink-0" />
-                                                Suggested Properties
-                                            </h2>
+                                            Suggested Properties
+                                        </h2>
                                             <p className={`${PORTAL_DASH_SECTION_SUB} sm:ml-8`}>
                                                 From agent listings
                                                 {quizResult && quizResult.preQualAmount > 0
                                                     ? ` · matched to your ${formatCurrency(quizResult.preQualAmount)} prequalification`
                                                     : ''}
                                             </p>
-                                        </div>
-                                        <Link href="/search" className={PORTAL_DASH_LINK}>
-                                            View All
-                                        </Link>
                                     </div>
+                                        <Link href="/search" className={PORTAL_DASH_LINK}>
+                                        View All
+                                    </Link>
+                                </div>
 
                                     <div className="space-y-3">
                                         {suggestedProperties.map((property) => {
                                             const thumb = property.images?.[0];
                                             return (
-                                                <Link
-                                                    key={property.id}
+                                            <Link
+                                                key={property.id}
                                                     href={`/search?property=${encodeURIComponent(property.id)}`}
                                                     className={`${PROPERTY_CARD_ROW} relative`}
                                                 >
@@ -516,7 +518,7 @@ export default function DashboardPage() {
                                                                 <Home className="w-7 h-7 sm:w-8 sm:h-8 text-gold/70" />
                                                             </div>
                                                         )}
-                                                    </div>
+                                                </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h3 className="text-charcoal font-semibold tracking-tight mb-1 truncate">
                                                             {property.title}
@@ -530,8 +532,8 @@ export default function DashboardPage() {
                                                             </span>
                                                             {property.matchScore > 0 ? (
                                                                 <span className={PROPERTY_CARD_CHIP_MATCH}>
-                                                                    {property.matchScore}% Match
-                                                                </span>
+                                                            {property.matchScore}% Match
+                                                        </span>
                                                             ) : null}
                                                         </div>
                                                     </div>
@@ -539,11 +541,11 @@ export default function DashboardPage() {
                                                         propertyId={property.id}
                                                         variant="inline"
                                                     />
-                                                </Link>
+                                            </Link>
                                             );
                                         })}
                                     </div>
-                                </div>
+                                    </div>
                             </div>
                         ) : null}
 
@@ -582,19 +584,19 @@ export default function DashboardPage() {
                                                         {buyerDocuments.length === 1 ? '' : 's'} uploaded
                                                     </p>
                                                     <p className="text-charcoal/40 text-xs">Documents</p>
-                                                </div>
+                                    </div>
                                             ) : null}
                                         </>
                                     ) : (
                                         <div className={PORTAL_DASH_EMPTY}>
                                             <div className={PORTAL_DASH_EMPTY_ICON}>
                                                 <TrendingUp className="w-6 h-6 text-charcoal/30" />
-                                            </div>
+                                    </div>
                                             <p className={PORTAL_DASH_EMPTY_TITLE}>No recent activity yet</p>
                                             <p className={PORTAL_DASH_EMPTY_DESC}>
                                                 Suggested homes appear when agents publish listings. Complete your quiz to get started.
                                             </p>
-                                        </div>
+                                    </div>
                                     )}
                                 </div>
                             </div>
@@ -604,8 +606,8 @@ export default function DashboardPage() {
                                 <div className="flex items-center justify-between gap-3 mb-5">
                                     <h2 className={`${PORTAL_DASH_SECTION_TITLE} !text-lg sm:!text-xl flex items-center gap-2`}>
                                         <Download className="w-5 h-5 text-gold shrink-0" />
-                                        My Documents
-                                    </h2>
+                                    My Documents
+                                </h2>
                                     <Link href="/dashboard/documents" className={PORTAL_DASH_LINK}>
                                         Manage
                                     </Link>
@@ -642,7 +644,7 @@ export default function DashboardPage() {
                                                         title="Preview"
                                                     >
                                                         <Eye className="w-4 h-4" />
-                                                    </button>
+                                    </button>
                                                 )}
                                             </div>
                                         );
@@ -651,7 +653,7 @@ export default function DashboardPage() {
                             </div>
                         </div>
                     </div>
-                    </div>
+                </div>
                 </div>
             </UserPortalLayout>
 

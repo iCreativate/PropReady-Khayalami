@@ -53,9 +53,9 @@ export const AGENT_PAGE_CONTAINER = 'max-w-[1400px] w-full mx-auto pb-8 sm:pb-12
 
 /** Portal chrome — charcoal nav against a light content canvas */
 export const AGENT_SHELL_SIDEBAR =
-    'bg-charcoal border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.18)]';
+    'relative overflow-hidden bg-charcoal brand-dark-panel border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.18)]';
 export const AGENT_SHELL_SIDEBAR_MOBILE =
-    'bg-charcoal shadow-2xl border-r border-white/[0.06]';
+    'relative overflow-hidden bg-charcoal brand-dark-panel shadow-2xl border-r border-white/[0.06]';
 export const AGENT_SHELL_CONTENT = 'bg-[#F8FAFC]';
 export const AGENT_SHELL_TOPBAR =
     'bg-white/95 backdrop-blur-md border-b border-charcoal/[0.07] shadow-[0_1px_0_rgba(44,44,44,0.04)]';
@@ -224,11 +224,40 @@ export const AGENT_PLAN_CARD_CURRENT =
 export const AGENT_SECTION_LABEL =
     'text-sm font-semibold text-charcoal uppercase tracking-[0.08em]';
 
+/** Global learning-hub module card (buyer / seller / investor / agent). */
 export const AGENT_MODULE_CARD =
-    `group ${UI_CARD_SURFACE} ${UI_CARD_INTERACTIVE} relative flex flex-col h-full rounded-3xl bg-white p-6 sm:p-7 overflow-hidden`;
+    `group ${UI_CARD_SURFACE} ${UI_CARD_INTERACTIVE} relative flex flex-col h-full rounded-3xl border border-gold/35 bg-gradient-to-br from-white via-white to-charcoal/[0.03] p-6 sm:p-7 overflow-hidden hover:border-gold/55`;
 
 export const AGENT_MODULE_CARD_ICON =
-    `w-11 h-11 rounded-2xl bg-gradient-to-br from-charcoal/[0.04] to-charcoal/[0.01] border border-charcoal/[0.08] flex items-center justify-center shrink-0 group-hover:from-gold/[0.12] group-hover:to-gold/[0.04] group-hover:border-gold/20 ${UI_TRANSITION_MODERATE}`;
+    `w-11 h-11 rounded-2xl bg-gradient-to-br from-charcoal/[0.04] to-charcoal/[0.01] border border-charcoal/[0.08] shadow-sm flex items-center justify-center shrink-0 group-hover:from-gold/[0.12] group-hover:to-gold/[0.04] group-hover:border-gold/20 ${UI_TRANSITION_MODERATE}`;
+
+/** @deprecated Top strip removed — border lives on AGENT_MODULE_CARD. */
+export const AGENT_MODULE_CARD_ACCENT = 'hidden';
+
+export const AGENT_MODULE_CARD_INDEX =
+    'absolute top-4 right-5 text-[3.5rem] font-bold leading-none text-charcoal/20 group-hover:text-gold/35 transition-colors duration-300 select-none tabular-nums';
+
+export const AGENT_MODULE_CARD_BADGE =
+    'rounded-full border border-charcoal/10 bg-white/25 backdrop-blur-sm px-2.5 py-1 text-[11px] font-semibold text-charcoal/50';
+
+export const AGENT_MODULE_CARD_BADGE_ACTIVE =
+    'rounded-full bg-gold/10 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-gold';
+
+export const AGENT_MODULE_CARD_LINK =
+    'block h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/30 focus-visible:ring-offset-2 rounded-3xl';
+
+/** Expanded learning article shell (opened module). */
+export const AGENT_LEARN_EXPANDED_CARD =
+    'rounded-3xl border border-charcoal/10 bg-white shadow-lg overflow-hidden';
+
+export const AGENT_LEARN_EXPANDED_HERO =
+    'relative overflow-hidden bg-charcoal text-white brand-dark-panel';
+
+export const AGENT_LEARN_EXPANDED_HERO_GLOW =
+    'absolute inset-0 opacity-40 pointer-events-none brand-dark-glow';
+
+export const AGENT_LEARN_EXPANDED_BODY =
+    'px-6 md:px-10 py-8 md:py-10 bg-gradient-to-b from-white to-charcoal/[0.03]';
 
 export const AGENT_LEARN_ARTICLE =
     `${UI_CARD_SURFACE} overflow-hidden rounded-2xl bg-white`;

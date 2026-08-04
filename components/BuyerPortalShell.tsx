@@ -43,7 +43,9 @@ export default function BuyerPortalShell({
     return (
         <div className="min-h-screen bg-white">
             {publicChrome}
-            <main className="relative px-4 pt-24 pb-8 min-h-screen">{children}</main>
+            <main className="relative px-4 sm:px-6 lg:px-8 xl:px-10 pt-24 pb-8 min-h-screen w-full">
+                {children}
+            </main>
         </div>
     );
 }

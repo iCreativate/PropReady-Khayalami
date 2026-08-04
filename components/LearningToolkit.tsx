@@ -89,10 +89,11 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                     {items.map((item) => (
                         <div
                             key={item.id}
-                            className="group premium-card rounded-2xl border border-charcoal/10 overflow-hidden hover:border-gold/30 hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-charcoal/5"
+                            className="group relative overflow-hidden rounded-3xl border border-charcoal/10 bg-gradient-to-br from-white via-white to-charcoal/[0.03] hover:shadow-lg transition-all duration-300"
                         >
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gold/80 via-gold/40 to-transparent" />
                             <div
-                                className="p-4 sm:p-6 cursor-pointer hover:bg-gradient-to-r hover:from-gold/5 hover:to-transparent transition-all duration-300"
+                                className="relative p-4 sm:p-6 cursor-pointer hover:bg-gradient-to-r hover:from-gold/5 hover:to-transparent transition-all duration-300"
                                 onClick={() => toggleExpand(item.id)}
                             >
                                 <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
@@ -158,35 +159,34 @@ export default function LearningToolkit({ items }: LearningToolkitProps) {
                         </div>
 
                         <div 
-                            className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 mx-2 sm:mx-4"
+                            className="relative bg-white rounded-2xl sm:rounded-3xl border border-charcoal/10 shadow-lg max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-100 mx-2 sm:mx-4"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            {/* Header with gradient */}
-                            <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-4 sm:px-8 py-4 sm:py-6 border-b border-gold/20">
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                                <div className="relative flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
+                            {/* Header — shared expanded-card charcoal hero */}
+                            <div className="relative overflow-hidden bg-charcoal text-white px-4 sm:px-8 py-4 sm:py-6 brand-dark-panel">
+                                <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
                                     <div className="flex-1 w-full">
                                         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 flex-shrink-0">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-xl flex items-center justify-center border border-white/15 flex-shrink-0 text-[#FECACA]">
                                                 {getTypeIcon(viewingItem.type)}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 leading-tight break-words">
                                                     {viewingItem.title}
                                                 </h2>
-                                                <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 text-white text-xs sm:text-sm font-semibold">
+                                                <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-xs sm:text-sm font-semibold">
                                                     <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                                     {getTypeLabel(viewingItem.type)}
                                                 </span>
                                             </div>
                                         </div>
-                                        <p className="text-white/90 text-sm sm:text-base sm:ml-[52px] sm:max-w-2xl break-words">
+                                        <p className="text-white/65 text-sm sm:text-base sm:ml-[52px] sm:max-w-2xl break-words">
                                             {viewingItem.description}
                                         </p>
                                     </div>
                                     <button
                                         onClick={closeViewer}
-                                        className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110 self-end sm:self-auto"
+                                        className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-all duration-200 flex items-center justify-center group hover:scale-110 self-end sm:self-auto"
                                         aria-label="Close"
                                     >
                                         <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" />

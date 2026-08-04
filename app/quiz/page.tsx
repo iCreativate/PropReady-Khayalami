@@ -1291,12 +1291,11 @@ export default function QuizPage() {
         <div className="min-h-screen bg-white">
             <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
                 <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
+                    <BrandLogo />
                     <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
                         <ArrowLeft className="w-5 h-5" />
                         <span>Back to Home</span>
                     </Link>
-
-                    <BrandLogo />
                 </nav>
             </header>
 

@@ -597,11 +597,11 @@ export default function ViewingsPage() {
                             <p className="text-charcoal/70 text-lg mb-2">No viewing appointments yet</p>
                             <p className="text-charcoal/50 text-sm mb-6">Schedule your first property viewing with an agent</p>
                             <Link
-                                href="/search"
+                                href="/dashboard/agent"
                                 className="inline-flex items-center gap-2 px-6 py-3 bg-gold text-white font-semibold rounded-lg hover:bg-gold-600 transition"
                             >
                                 <Building2 className="w-5 h-5" />
-                                Browse Properties
+                                Find an agent
                             </Link>
                         </div>
                     )}

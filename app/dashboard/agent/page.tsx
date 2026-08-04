@@ -349,11 +349,11 @@ export default function MyAgentPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <Link
-                                href={isSeller ? '/sellers/dashboard' : '/search'}
+                                href={isSeller ? '/sellers/dashboard' : '/dashboard/agent'}
                                 className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gold text-white text-sm font-semibold hover:bg-gold/90 transition"
                             >
                                 <Search className="w-4 h-4" />
-                                {isSeller ? 'Seller dashboard' : 'Browse properties'}
+                                {isSeller ? 'Seller dashboard' : 'Find an agent'}
                             </Link>
                             <Link
                                 href="/dashboard/viewings"

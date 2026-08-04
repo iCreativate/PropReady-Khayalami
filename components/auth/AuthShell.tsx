@@ -23,15 +23,8 @@ export default function AuthShell({
 
     return (
         <div className="auth-shell min-h-screen flex">
-            <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-charcoal via-charcoal to-[#1a1a1a]" />
-                <div
-                    className="absolute inset-0 opacity-30"
-                    style={{
-                        backgroundImage:
-                            'radial-gradient(circle at 20% 80%, rgba(220,38,38,0.35) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(220,38,38,0.2) 0%, transparent 45%)',
-                    }}
-                />
+            <div className="hidden lg:flex lg:w-[44%] relative overflow-hidden bg-charcoal">
+                <div className="pointer-events-none absolute inset-0 opacity-40 brand-dark-glow" aria-hidden />
                 <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
                     <BrandLogo href={homeHref} tone="dark" size="lg" />
                     <div>

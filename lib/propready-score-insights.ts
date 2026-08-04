@@ -265,8 +265,8 @@ export function buildPropReadyScoreInsights(
                 priority: 'high',
                 title: 'Make offers within your full prequal',
                 body: `Your originator prequal of R${preQual.toLocaleString('en-ZA')} is what agents and sellers will take seriously. Keep offers inside this band unless you top up cash.`,
-                href: '/search',
-                cta: 'Browse in budget',
+                href: '/dashboard/agent',
+                cta: 'Talk to your agent',
                 feature: 'Offer coach',
             },
             {
@@ -322,10 +322,10 @@ export function buildPropReadyScoreInsights(
                 title: viewingCount === 0 ? 'Book targeted viewings' : 'Keep viewing notes sharp',
                 body:
                     viewingCount === 0
-                        ? 'With a full prequal, prioritise listings near your approved amount and book viewings through PropReady.'
+                        ? 'With a full prequal, work with your agent to prioritise homes near your approved amount and book viewings through PropReady.'
                         : 'After each viewing, note condition, comps, and must-haves so your next offer is decisive.',
-                href: viewingCount === 0 ? '/search' : '/dashboard/viewings',
-                cta: viewingCount === 0 ? 'Find homes' : 'Your viewings',
+                href: viewingCount === 0 ? '/dashboard/agent' : '/dashboard/viewings',
+                cta: viewingCount === 0 ? 'Talk to an agent' : 'Your viewings',
                 feature: 'Match engine',
             }
         );
@@ -428,9 +428,9 @@ export function buildPropReadyScoreInsights(
                 id: 'start-viewings',
                 priority: 'medium',
                 title: 'Tour homes in your budget band',
-                body: `Search listings around ${monthlyBudget > 0 ? `R${monthlyBudget.toLocaleString('en-ZA')}/month bond` : 'your soft pre-qual'} and book a viewing so PropReady can match you with a working agent.`,
-                href: '/search',
-                cta: 'Browse matches',
+                body: `Work with your agent around ${monthlyBudget > 0 ? `R${monthlyBudget.toLocaleString('en-ZA')}/month bond` : 'your soft pre-qual'} and book a viewing so PropReady can match you with a working agent.`,
+                href: '/dashboard/agent',
+                cta: 'Find an agent',
                 feature: 'Match engine',
             });
         } else if (viewingCount > 0) {
