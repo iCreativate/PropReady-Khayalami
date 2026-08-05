@@ -101,7 +101,7 @@ export default function ConveyancerPortalLayout({
     return (
         <div className="min-h-dvh bg-[#F8FAFC] text-charcoal">
             <ImpersonationBanner />
-            <aside className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 z-40 ${AGENT_SHELL_SIDEBAR}`}>
+            <aside className={`hidden lg:flex !fixed left-0 top-0 bottom-0 w-64 z-40 ${AGENT_SHELL_SIDEBAR}`}>
                 <div className="px-5 py-5 border-b border-white/[0.08]">
                     <BrandLogo tone="dark" />
                     <p className={`${AGENT_SHELL_SUBTITLE} mt-3 flex items-center gap-1.5`}>
