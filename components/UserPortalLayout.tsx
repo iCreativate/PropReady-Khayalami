@@ -216,7 +216,12 @@ export default function UserPortalLayout({
     };
 
     return (
-        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden flex flex-col ${PORTAL_SHELL_CONTENT}`}>
+        {/*
+          Do not put the fixed desktop sidebar inside a flex-col parent — browsers still
+          treat it as a flex item and reserve its height, pushing main content below the fold.
+          Match AdminShell: fixed aside + independent full-height content column.
+        */}
+        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${PORTAL_SHELL_CONTENT}`}>
             <ImpersonationBanner />
             <aside
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${PORTAL_SHELL_SIDEBAR}`}
@@ -292,8 +297,8 @@ export default function UserPortalLayout({
                 </aside>
             </div>
 
-            {/* Content column — same flex/min-h-0 pattern as AdminShell so the pane can scroll */}
-            <div className="relative flex-1 min-h-0 lg:pl-64 flex flex-col min-w-0">
+            {/* Content column — own viewport height (not flex-1 next to a fixed aside) */}
+            <div className="lg:pl-64 min-h-dvh lg:h-dvh flex flex-col min-w-0">
                 <header
                     className={`sticky top-0 z-30 h-[4.25rem] shrink-0 ${PORTAL_SHELL_TOPBAR}`}
                 >

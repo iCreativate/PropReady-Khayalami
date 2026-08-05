@@ -175,7 +175,8 @@ export default function AgentPortalLayout({
     }, [mobileOpen]);
 
     return (
-        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden flex flex-col ${AGENT_SHELL_CONTENT}`}>
+        {/* Fixed sidebar must not sit in a flex-col with the main column (reserves aside height). */}
+        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${AGENT_SHELL_CONTENT}`}>
             <ImpersonationBanner />
             {/* Desktop sidebar */}
             <aside
@@ -230,8 +231,8 @@ export default function AgentPortalLayout({
                 </aside>
             </div>
 
-            {/* Content column — flex/min-h-0 so the main pane scrolls (matches AdminShell) */}
-            <div className="relative flex-1 min-h-0 lg:pl-64 flex flex-col min-w-0">
+            {/* Content column — own viewport height (not flex-1 next to a fixed aside) */}
+            <div className="lg:pl-64 min-h-dvh lg:h-dvh flex flex-col min-w-0">
                 <header className={`sticky top-0 z-30 h-[4.25rem] shrink-0 ${AGENT_SHELL_TOPBAR}`}>
                     <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
