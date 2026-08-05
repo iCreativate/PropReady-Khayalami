@@ -3,14 +3,9 @@ import { createMagicLink, getAppUrl } from '@/lib/auth-enterprise';
 import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
 
 function resolveAppUrl(request: NextRequest) {
+    // Prefer Origin / nextUrl only when getAppUrl will accept them (blocks deploy-preview hosts).
     const origin = (request.headers.get('origin') || request.nextUrl.origin).replace(/\/$/, '');
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-        return origin;
-    }
-    if (/propready\.live|prop-ready|netlify\.app|vercel\.app/i.test(origin)) {
-        return origin;
-    }
-    return getAppUrl();
+    return getAppUrl(origin);
 }
 
 export async function POST(request: NextRequest) {

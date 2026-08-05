@@ -51,11 +51,47 @@ function isLocalhostUrl(url: string): boolean {
     }
 }
 
+/** Stable public hosts only — never ephemeral Netlify deploy IDs (`abc123--site.netlify.app`). */
+const CANONICAL_APP_HOSTS = new Set([
+    'propready.live',
+    'www.propready.live',
+    'prop-ready.co.za',
+    'www.prop-ready.co.za',
+]);
+
+function hostnameOf(url: string): string | null {
+    try {
+        return new URL(url).hostname.toLowerCase();
+    } catch {
+        return null;
+    }
+}
+
+/** True for deploy-preview / per-deploy Netlify URLs that break Google OAuth allowlists. */
+function isEphemeralDeployUrl(url: string): boolean {
+    const host = hostnameOf(url);
+    if (!host) return true;
+    // e.g. 6a7348b5dcb8da000851386d--stunning-crepe-c51be4.netlify.app
+    if (host.includes('--') && host.endsWith('.netlify.app')) return true;
+    if (host.endsWith('.vercel.app')) return true;
+    return false;
+}
+
+function isAllowedPublicAppUrl(url: string): boolean {
+    if (isLocalhostUrl(url) || isEphemeralDeployUrl(url)) return false;
+    const host = hostnameOf(url);
+    if (!host) return false;
+    if (CANONICAL_APP_HOSTS.has(host)) return true;
+    // Primary Netlify site subdomain (no deploy-id prefix) is acceptable as a fallback.
+    if (/^[a-z0-9-]+\.netlify\.app$/i.test(host) && !host.includes('--')) return true;
+    return false;
+}
+
 /**
  * Public site origin for OAuth redirects, magic links, etc.
- * In production, ignores localhost env misconfigs (common when .env.example is copied to Netlify).
- * In development, never use a production NEXTAUTH_URL — that causes Google redirect_uri_mismatch
- * when signing in on localhost.
+ * In production, never trust ephemeral Netlify deploy hosts — they cause Google
+ * `redirect_uri_mismatch` even when Console lists https://propready.live/.../callback.
+ * In development, never use a production NEXTAUTH_URL — that causes the same mismatch on localhost.
  */
 export function getAppUrl(requestOrigin?: string | null): string {
     if (process.env.NODE_ENV === 'development') {
@@ -71,20 +107,21 @@ export function getAppUrl(requestOrigin?: string | null): string {
         return 'http://localhost:3000';
     }
 
-    // Prefer the live request host when it's a real public origin (OAuth callbacks).
-    if (requestOrigin) {
-        const origin = requestOrigin.replace(/\/$/, '');
-        if (!isLocalhostUrl(origin)) return origin;
-    }
-
     const fromEnv = (
         process.env.NEXT_PUBLIC_APP_URL ||
         process.env.NEXTAUTH_URL ||
         ''
     ).replace(/\/$/, '');
 
-    if (fromEnv && !isLocalhostUrl(fromEnv)) {
+    // Prefer the configured canonical URL (must match Google authorized redirect URIs).
+    if (fromEnv && isAllowedPublicAppUrl(fromEnv)) {
         return fromEnv;
+    }
+
+    // Only accept the live request host when it is a known stable domain.
+    if (requestOrigin) {
+        const origin = requestOrigin.replace(/\/$/, '');
+        if (isAllowedPublicAppUrl(origin)) return origin;
     }
 
     return PRODUCTION_APP_URL;
