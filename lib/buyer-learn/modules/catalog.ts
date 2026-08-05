@@ -1,5 +1,6 @@
 import { buildLessonFromBlueprint, type LessonBlueprint } from '@/lib/buyer-learn/build-lesson';
 import type { LessonModule } from '@/lib/buyer-learn/types';
+import { BUYER_INSURANCE_BLUEPRINTS } from '@/lib/buyer-learn/modules/insurance';
 
 const BLUEPRINTS: LessonBlueprint[] = [
     {
@@ -2391,4 +2392,7 @@ const BLUEPRINTS: LessonBlueprint[] = [
     },
 ];
 
-export const CATALOG_LESSONS: LessonModule[] = BLUEPRINTS.map(buildLessonFromBlueprint);
+export const CATALOG_LESSONS: LessonModule[] = [
+    ...BLUEPRINTS,
+    ...BUYER_INSURANCE_BLUEPRINTS,
+].map(buildLessonFromBlueprint);

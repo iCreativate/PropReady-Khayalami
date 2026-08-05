@@ -54,10 +54,21 @@ function isLocalhostUrl(url: string): boolean {
 /**
  * Public site origin for OAuth redirects, magic links, etc.
  * In production, ignores localhost env misconfigs (common when .env.example is copied to Netlify).
+ * In development, never use a production NEXTAUTH_URL — that causes Google redirect_uri_mismatch
+ * when signing in on localhost.
  */
 export function getAppUrl(requestOrigin?: string | null): string {
     if (process.env.NODE_ENV === 'development') {
-        return (process.env.NEXTAUTH_URL || 'http://localhost:3000').replace(/\/$/, '');
+        if (requestOrigin) {
+            const origin = requestOrigin.replace(/\/$/, '');
+            if (isLocalhostUrl(origin)) return origin;
+        }
+        const fromEnv = (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || '').replace(
+            /\/$/,
+            ''
+        );
+        if (fromEnv && isLocalhostUrl(fromEnv)) return fromEnv;
+        return 'http://localhost:3000';
     }
 
     // Prefer the live request host when it's a real public origin (OAuth callbacks).

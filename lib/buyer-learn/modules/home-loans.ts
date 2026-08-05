@@ -47,9 +47,9 @@ const CHAPTERS: LessonChapter[] = [
             price: 1350000,
             deposit: 135000,
             bond: 1215000,
-            ratePct: 11.75,
+            ratePct: 10.5,
             monthly: 12400,
-            note: 'Educational estimate — not a bank quote.',
+            note: 'Educational estimate near recent prime bands — not a bank quote. Confirm live pricing with lenders.',
         },
         mistakes: [
             'Treating the purchase price as the only number that matters.',
@@ -470,9 +470,9 @@ const CHAPTERS: LessonChapter[] = [
             price: 1350000,
             deposit: 135000,
             bond: 1215000,
-            ratePct: 11.75,
+            ratePct: 10.5,
             monthly: 12400,
-            note: 'Document delays are the most avoidable timeline killers.',
+            note: 'Document delays are the most avoidable timeline killers. Figures are educational only.',
         },
         mistakes: [
             'Submitting blurry photos of ID documents.',

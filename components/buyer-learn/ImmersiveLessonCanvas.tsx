@@ -332,6 +332,7 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
                                         index={index}
                                         total={chapters.length}
                                         status={status}
+                                        hubBasePath={hubBasePath}
                                         isReview={
                                             openChapterId === chapter.id &&
                                             completedChapterIds.includes(chapter.id)

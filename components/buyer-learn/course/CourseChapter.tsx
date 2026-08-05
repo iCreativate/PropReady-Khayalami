@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
     AlertTriangle,
+    ArrowRight,
+    Calendar,
     CheckCircle2,
     ChevronDown,
     Lightbulb,
@@ -12,7 +15,7 @@ import {
 import type { LessonChapter } from '@/lib/buyer-learn/types';
 import ChapterIllustrationArt from '@/components/buyer-learn/course/ChapterIllustrationArt';
 import SectionReveal from '@/components/buyer-learn/SectionReveal';
-import { LEARN_BTN_PRIMARY, LEARN_LABEL } from '@/lib/learn-course-ui';
+import { LEARN_BTN_GHOST, LEARN_BTN_PRIMARY, LEARN_LABEL } from '@/lib/learn-course-ui';
 
 function formatZar(n: number): string {
     return new Intl.NumberFormat('en-ZA', {
@@ -22,12 +25,20 @@ function formatZar(n: number): string {
     }).format(n);
 }
 
+function journeyCta(hubBasePath?: string): { href: string; label: string; seller: boolean } {
+    if (hubBasePath === '/sellers') {
+        return { href: '/sellers/property-quiz', label: 'Book a Free Valuation', seller: true };
+    }
+    return { href: '/get-started', label: 'Start your journey', seller: false };
+}
+
 export default function CourseChapter({
     chapter,
     index,
     total,
     status = 'open',
     isReview = false,
+    hubBasePath = '/learn',
     onFinishChapter,
     onReopen,
     onCloseReview,
@@ -37,6 +48,7 @@ export default function CourseChapter({
     total: number;
     status?: 'open' | 'completed' | 'locked';
     isReview?: boolean;
+    hubBasePath?: string;
     onFinishChapter?: () => void;
     onReopen?: () => void;
     onCloseReview?: () => void;
@@ -47,6 +59,7 @@ export default function CourseChapter({
     const [quizPick, setQuizPick] = useState<string | null>(null);
     const [deepOpen, setDeepOpen] = useState(false);
     const [quizDone, setQuizDone] = useState(false);
+    const journey = journeyCta(hubBasePath);
 
     const shell = tinted
         ? 'bg-gradient-to-br from-[#fffcf8] via-white to-[#f7f4f0] text-charcoal border-[rgba(28,28,28,0.08)] shadow-[0_1px_2px_rgba(28,28,28,0.04),0_12px_40px_rgba(28,28,28,0.05)]'
@@ -61,6 +74,17 @@ export default function CourseChapter({
         if (!quizPick) return;
         setQuizDone(true);
     }
+
+    const journeyLink = (
+        <Link href={journey.href} className={`${LEARN_BTN_GHOST} inline-flex`}>
+            {journey.seller ? (
+                <Calendar className="h-4 w-4" strokeWidth={2} />
+            ) : (
+                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            )}
+            {journey.label}
+        </Link>
+    );
 
     if (status === 'completed') {
         return (
@@ -225,40 +249,70 @@ export default function CourseChapter({
                         </div>
                         <div className="grid md:grid-cols-2 gap-0">
                             <div className="p-5 sm:p-6">
-                                <p className={`text-sm leading-relaxed ${muted}`}>{chapter.caseStudy.story}</p>
+                                <p className={`text-sm leading-relaxed whitespace-pre-line ${muted}`}>
+                                    {chapter.caseStudy.story}
+                                </p>
                                 <p className={`mt-4 text-xs ${muted}`}>
                                     {chapter.caseStudy.city} · {chapter.caseStudy.propertyLabel}
                                 </p>
                             </div>
                             <div className="p-5 sm:p-6 bg-charcoal/[0.03]">
-                                <dl className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                        <dt className={muted}>Price</dt>
-                                        <dd className="mt-1 font-semibold tabular-nums">
-                                            {formatZar(chapter.caseStudy.price)}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className={muted}>Deposit</dt>
-                                        <dd className="mt-1 font-semibold tabular-nums">
-                                            {formatZar(chapter.caseStudy.deposit)}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className={muted}>Bond</dt>
-                                        <dd className="mt-1 font-semibold tabular-nums">
-                                            {formatZar(chapter.caseStudy.bond)}
-                                        </dd>
-                                    </div>
-                                    <div>
-                                        <dt className={muted}>Est. monthly</dt>
-                                        <dd className="mt-1 font-semibold tabular-nums text-gold">
-                                            {formatZar(chapter.caseStudy.monthly)}
-                                        </dd>
-                                    </div>
-                                </dl>
+                                {chapter.caseStudy.highlights &&
+                                chapter.caseStudy.highlights.length > 0 ? (
+                                    <dl className="grid grid-cols-1 gap-4 text-sm">
+                                        {chapter.caseStudy.highlights.map((h) => (
+                                            <div key={h.label}>
+                                                <dt className={muted}>{h.label}</dt>
+                                                <dd className="mt-1 font-semibold text-charcoal">
+                                                    {h.value}
+                                                </dd>
+                                            </div>
+                                        ))}
+                                    </dl>
+                                ) : null}
+                                {typeof chapter.caseStudy.price === 'number' ? (
+                                    <dl
+                                        className={`grid grid-cols-2 gap-4 text-sm ${
+                                            chapter.caseStudy.highlights?.length ? 'mt-5 pt-5 border-t border-charcoal/10' : ''
+                                        }`}
+                                    >
+                                        <div>
+                                            <dt className={muted}>Price</dt>
+                                            <dd className="mt-1 font-semibold tabular-nums">
+                                                {formatZar(chapter.caseStudy.price)}
+                                            </dd>
+                                        </div>
+                                        {typeof chapter.caseStudy.deposit === 'number' ? (
+                                            <div>
+                                                <dt className={muted}>Deposit</dt>
+                                                <dd className="mt-1 font-semibold tabular-nums">
+                                                    {formatZar(chapter.caseStudy.deposit)}
+                                                </dd>
+                                            </div>
+                                        ) : null}
+                                        {typeof chapter.caseStudy.bond === 'number' ? (
+                                            <div>
+                                                <dt className={muted}>Bond</dt>
+                                                <dd className="mt-1 font-semibold tabular-nums">
+                                                    {formatZar(chapter.caseStudy.bond)}
+                                                </dd>
+                                            </div>
+                                        ) : null}
+                                        {typeof chapter.caseStudy.monthly === 'number' ? (
+                                            <div>
+                                                <dt className={muted}>Est. monthly</dt>
+                                                <dd className="mt-1 font-semibold tabular-nums text-gold">
+                                                    {formatZar(chapter.caseStudy.monthly)}
+                                                </dd>
+                                            </div>
+                                        ) : null}
+                                    </dl>
+                                ) : null}
                                 <p className={`mt-4 text-xs leading-relaxed ${muted}`}>
-                                    @ {chapter.caseStudy.ratePct}% · {chapter.caseStudy.note}
+                                    {typeof chapter.caseStudy.ratePct === 'number'
+                                        ? `Illustrative ${chapter.caseStudy.ratePct}% · `
+                                        : ''}
+                                    {chapter.caseStudy.note}
                                 </p>
                             </div>
                         </div>
@@ -487,18 +541,21 @@ export default function CourseChapter({
                                             ? chapter.bridge.teaser
                                             : 'Close this chapter to unlock your course summary.'}
                                     </p>
-                                    <button
-                                        type="button"
-                                        onClick={isReview ? onCloseReview : onFinishChapter}
-                                        className={`${LEARN_BTN_PRIMARY} mt-5 inline-flex`}
-                                    >
-                                        <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
-                                        {isReview
-                                            ? 'Close review'
-                                            : index < total - 1
-                                              ? 'Complete chapter & continue'
-                                              : 'Complete chapter'}
-                                    </button>
+                                    <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={isReview ? onCloseReview : onFinishChapter}
+                                            className={`${LEARN_BTN_PRIMARY} inline-flex`}
+                                        >
+                                            <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+                                            {isReview
+                                                ? 'Close review'
+                                                : index < total - 1
+                                                  ? 'Complete chapter & continue'
+                                                  : 'Complete chapter'}
+                                        </button>
+                                        {journeyLink}
+                                    </div>
                                 </div>
                             </div>
                         )}

@@ -47,7 +47,7 @@ export default function ImpersonationBanner() {
     if (!info) return null;
 
     return (
-        <div className="sticky top-0 z-[60] border-b border-[#E52323]/30 bg-[#111827] px-4 py-2.5 text-white">
+        <div className="sticky top-0 z-[60] shrink-0 border-b border-[#E52323]/30 bg-[#111827] px-4 py-2.5 text-white">
             <div className="mx-auto flex max-w-[1400px] flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <div className="flex min-w-0 flex-1 items-start gap-2">
                     <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#E52323]" />

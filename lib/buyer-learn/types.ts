@@ -82,12 +82,15 @@ export interface ExampleCard {
     id: string;
     city: string;
     propertyLabel: string;
-    price: number;
-    deposit: number;
-    bond: number;
-    ratePct: number;
-    monthly: number;
     note: string;
+    /** Purchase-style figures — only when the topic is about buying/financing. */
+    price?: number;
+    deposit?: number;
+    bond?: number;
+    ratePct?: number;
+    monthly?: number;
+    /** Topic-specific facts shown instead of (or with) purchase figures. */
+    highlights?: Array<{ label: string; value: string }>;
 }
 
 export interface QuizQuestion {

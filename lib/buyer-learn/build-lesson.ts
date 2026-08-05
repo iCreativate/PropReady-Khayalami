@@ -1,4 +1,5 @@
 import type {
+    ChapterCaseStudy,
     LearnerPersona,
     LessonChapter,
     LessonDifficulty,
@@ -70,6 +71,9 @@ const PERSONAS: LearnerPersona[] = [
     },
 ];
 
+/** Educational illustration only — not a live bank quote. Confirm current prime with lenders. */
+const ILLUSTRATIVE_RATE_PCT = 10.5;
+
 export type LessonBlueprint = {
     slug: string;
     title: string;
@@ -88,10 +92,12 @@ export type LessonBlueprint = {
         title: string;
         body: string;
         whyItMatters?: string;
-        /** Chapter-specific “See it move” cards. Falls back to lesson steps. */
+        /** Chapter-specific “See it move” cards. Falls back to expanded lesson steps. */
         steps?: Array<{ label: string; detail: string }>;
         /** Chapter deep dive. Falls back to timeline entry. */
         deepDive?: { title: string; body: string };
+        /** Optional topic-aligned case study override. */
+        caseStudy?: Partial<ChapterCaseStudy> & { headline?: string; story?: string };
     }>;
     steps: Array<{ label: string; detail: string }>;
     timeline: Array<{ title: string; detail: string; duration: string }>;
@@ -120,6 +126,395 @@ export type LessonBlueprint = {
     personaIndex?: number;
 };
 
+type TopicKind =
+    | 'finance'
+    | 'insurance'
+    | 'process'
+    | 'legal'
+    | 'costs'
+    | 'agents'
+    | 'investing'
+    | 'selling'
+    | 'general';
+
+function detectTopicKind(slug: string, chapterTitle: string, lessonTitle: string): TopicKind {
+    const hay = `${slug} ${chapterTitle} ${lessonTitle}`.toLowerCase();
+    if (/insurance|insurer|uninsured|cover|landlord cover|sum insured/.test(hay)) return 'insurance';
+    if (/bond|loan|prequal|afford|deposit|rate|financing|credit|nca|surety|home-loans/.test(hay))
+        return 'finance';
+    if (/trust|deceased|estate|otp|conveyanc|deed|resolution|company|cc\b|legal|fica|flisp/.test(hay))
+        return 'legal';
+    if (/\bagents?\b|mandate|ppra|estate agent/.test(hay)) return 'agents';
+    if (/yield|roi|rental|portfolio|investor|landlord|buy-to-let|gearing|returns|strategies/.test(hay))
+        return 'investing';
+    if (/sell|pricing|cma|marketing|staging|viewing|seller/.test(hay)) return 'selling';
+    if (/transfer.?cost|transfer duty|attorney fee|levy|selling cost|net proceed|costs/.test(hay))
+        return 'costs';
+    if (/process|timeline|step|offer|registration|transfer|buying-process/.test(hay)) return 'process';
+    return 'general';
+}
+
+function firstSentences(text: string, max = 2): string {
+    const cleaned = text.replace(/\s+/g, ' ').trim();
+    const parts = cleaned.split(/(?<=[.!?])\s+/).filter(Boolean);
+    return parts.slice(0, max).join(' ');
+}
+
+function expandStepDetail(label: string, detail: string, chapterBody: string, chapterTitle: string): string {
+    const trimmed = detail.trim();
+    if (trimmed.length >= 160) return trimmed;
+
+    const context = firstSentences(chapterBody, 2);
+    const extras = [
+        `In South African practice, “${label}” sits inside the broader lesson on ${chapterTitle.toLowerCase()}.`,
+        context,
+        'Treat this as an educational walkthrough — confirm bank, insurer, conveyancer, or tax details with licensed professionals before you act.',
+    ]
+        .filter(Boolean)
+        .join('\n\n');
+
+    if (trimmed.length === 0) return extras;
+    return `${trimmed}\n\n${extras}`;
+}
+
+function buildSeeItMoveSteps(
+    obj: LessonBlueprint['objectives'][number],
+    bp: LessonBlueprint
+): Array<{ label: string; detail: string }> {
+    if (obj.steps && obj.steps.length > 0) {
+        return obj.steps.map((s) => ({
+            label: s.label,
+            detail: expandStepDetail(s.label, s.detail, obj.body, obj.title),
+        }));
+    }
+
+    // Prefer curated lesson walkthroughs, tied back to this chapter’s topic.
+    if (bp.steps.length > 0) {
+        return bp.steps.map((s) => ({
+            label: s.label,
+            detail: expandStepDetail(
+                s.label,
+                `${s.detail}\n\nHow this connects to “${obj.title}”: ${firstSentences(obj.body, 2)}`,
+                obj.body,
+                obj.title
+            ),
+        }));
+    }
+
+    const paragraphs = obj.body
+        .split(/\n\n+/)
+        .map((p) => p.trim())
+        .filter((p) => p.length > 40);
+
+    if (paragraphs.length >= 2) {
+        return paragraphs.slice(0, 4).map((p, i) => ({
+            label: i === 0 ? `Understand ${obj.title}` : `Apply step ${i + 1}`,
+            detail: expandStepDetail(
+                i === 0 ? obj.title : `Step ${i + 1}`,
+                p,
+                obj.body,
+                obj.title
+            ),
+        }));
+    }
+
+    return [
+        {
+            label: `Frame ${obj.title}`,
+            detail: expandStepDetail(obj.title, obj.body, obj.body, obj.title),
+        },
+        {
+            label: 'Check South African process touchpoints',
+            detail: expandStepDetail(
+                'Process touchpoints',
+                'Identify who must act next — lender, insurer, conveyancer, agent, body corporate, or accountant — and what document or proof they need.',
+                obj.body,
+                obj.title
+            ),
+        },
+        {
+            label: 'Verify before you commit',
+            detail: expandStepDetail(
+                'Verify',
+                'Write down open questions and confirm answers in writing. Educational modules explain frameworks; live quotes, policies, and OTPs are deal-specific.',
+                obj.body,
+                obj.title
+            ),
+        },
+    ];
+}
+
+function formatZarShort(n: number): string {
+    return `R${Math.round(n).toLocaleString('en-ZA')}`;
+}
+
+function buildTopicCaseStudy(
+    bp: LessonBlueprint,
+    obj: LessonBlueprint['objectives'][number],
+    persona: LearnerPersona,
+    index: number
+): ChapterCaseStudy {
+    if (obj.caseStudy?.headline && obj.caseStudy?.story) {
+        return {
+            id: `cs-${bp.slug}-${index}`,
+            headline: obj.caseStudy.headline,
+            story: obj.caseStudy.story,
+            city: obj.caseStudy.city || persona.city,
+            propertyLabel: obj.caseStudy.propertyLabel || persona.propertyLabel,
+            note:
+                obj.caseStudy.note ||
+                'Educational illustration — not a live quote, policy schedule, or legal opinion.',
+            price: obj.caseStudy.price,
+            deposit: obj.caseStudy.deposit,
+            bond: obj.caseStudy.bond,
+            ratePct: obj.caseStudy.ratePct,
+            monthly: obj.caseStudy.monthly,
+            highlights: obj.caseStudy.highlights,
+        };
+    }
+
+    const topic = detectTopicKind(bp.slug, obj.title, bp.title);
+    const deposit = Math.round(persona.propertyPrice * (persona.depositPct / 100));
+    const bond = persona.propertyPrice - deposit;
+    const focus = firstSentences(obj.body, 2);
+    const baseNote =
+        'Educational illustration using a realistic South African scenario — confirm live figures with licensed professionals.';
+
+    switch (topic) {
+        case 'insurance': {
+            const rebuildBand = Math.round(persona.propertyPrice * 0.85);
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} checks cover before transfer`,
+                story: `${persona.name} is looking at a ${persona.propertyLabel} in ${persona.city}. For “${obj.title}”, the decision is not the purchase price alone — it is whether building and contents risks are scheduled correctly, whether the bank is noted as interested party if a bond is registered, and whether the sum insured tracks rebuild cost.\n\n${focus}\n\n${persona.name} asks the insurer/intermediary for a written schedule that matches this chapter’s checklist before registration.`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: baseNote,
+                highlights: [
+                    { label: 'Focus', value: obj.title },
+                    { label: 'Property type', value: persona.propertyLabel },
+                    {
+                        label: 'Rebuild check',
+                        value: `Ask whether sum insured ≈ rebuild (illustrative band near ${formatZarShort(rebuildBand)})`,
+                    },
+                    { label: 'Bond link', value: 'Bank usually requires continuous building cover' },
+                ],
+            };
+        }
+        case 'finance':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} applies “${obj.title}” to a ${persona.city} purchase`,
+                story: `${persona.bio} On a ${persona.propertyLabel} around ${formatZarShort(persona.propertyPrice)}, this chapter’s topic — ${obj.title} — is the filter before OTP or bond submission.\n\n${focus}\n\n${persona.name} separates deposit cash from transfer/bond costs and treats any repayment figure as educational until a lender issues a formal quote.`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                price: persona.propertyPrice,
+                deposit,
+                bond,
+                ratePct: ILLUSTRATIVE_RATE_PCT,
+                note: `${baseNote} Illustrative rate near recent prime bands (${ILLUSTRATIVE_RATE_PCT}% shown) — not your offered rate.`,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Deposit planning', value: `${persona.depositPct}% · ${formatZarShort(deposit)}` },
+                    { label: 'Loan planning', value: formatZarShort(bond) },
+                    { label: 'Next proof', value: 'Soft/full assessment docs — not Instagram finishes' },
+                ],
+            };
+        case 'costs':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} budgets beyond the headline price`,
+                story: `${persona.name} in ${persona.city} is working through “${obj.title}” on a ${persona.propertyLabel}. Purchase price is only the headline — transfer duty (where applicable), attorney fees, bond registration costs, and moving buffers sit beside it.\n\n${focus}\n\n${persona.name} builds a written cost sheet before making an offer, then verifies each line with a conveyancer or originator.`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                price: persona.propertyPrice,
+                deposit,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Headline price', value: formatZarShort(persona.propertyPrice) },
+                    { label: 'Cash besides deposit', value: 'Transfer + bond costs + buffer' },
+                    { label: 'Verify with', value: 'Conveyancer cost estimate / duty tables' },
+                ],
+            };
+        case 'legal':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} verifies authority before signing`,
+                story: `For “${obj.title}”, ${persona.name} treats paperwork and legal capacity as deal-breakers — not admin. On a ${persona.propertyLabel} in ${persona.city}, the wrong seller, missing resolution, or unread OTP clause can stall transfer or finance.\n\n${focus}\n\n${persona.name} refuses to sign until the conveyancer confirms the parties and annexures match this chapter’s checks.`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Property', value: persona.propertyLabel },
+                    { label: 'Gate', value: 'Authority + FICA + OTP clauses in writing' },
+                    { label: 'Professional', value: 'Conveyancer / attorney review' },
+                ],
+            };
+        case 'agents':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} chooses professional help on purpose`,
+                story: `${persona.name} applies “${obj.title}” while searching around ${persona.city}. Commission, mandate type, and verification status change incentives — so ${persona.name} asks clear questions before sharing finances or signing a mandate.\n\n${focus}`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Ask for', value: 'PPRA status / mandate terms in writing' },
+                    { label: 'Money rule', value: 'Never pay deposits into personal accounts' },
+                    { label: 'Property context', value: persona.propertyLabel },
+                ],
+            };
+        case 'investing':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} underwrites “${obj.title}” like a deal memo`,
+                story: `${persona.bio} Before committing near ${persona.city}, ${persona.name} tests this chapter’s idea against rent, vacancy, rates/levies, insurance, and debt service — not against excitement.\n\n${focus}`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                price: persona.propertyPrice,
+                deposit,
+                bond,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Asset', value: persona.propertyLabel },
+                    { label: 'Underwrite', value: 'Rent − costs − vacancy − debt service' },
+                    { label: 'Deposit plan', value: `${persona.depositPct}% · ${formatZarShort(deposit)}` },
+                ],
+            };
+        case 'selling':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} sells with process, not panic`,
+                story: `While preparing a ${persona.city} sale, ${persona.name} uses “${obj.title}” as the decision filter — pricing evidence, mandate clarity, or risk handover — instead of social-media anecdotes.\n\n${focus}`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Evidence', value: 'Comps / CMA before emotion' },
+                    { label: 'Risk', value: 'Insurance live until registration' },
+                    { label: 'Net sheet', value: 'Price − commission − bond settle − costs' },
+                ],
+            };
+        case 'process':
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} sequences the journey correctly`,
+                story: `${persona.name} maps “${obj.title}” onto a ${persona.propertyLabel} path in ${persona.city}: what must happen before OTP, before bond grant, and before registration.\n\n${focus}\n\nSkipping sequence is how deposits and timelines get burned.`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'City', value: persona.city },
+                    { label: 'Sequence', value: 'Learn → documents → offer → finance → transfer' },
+                    { label: 'Owner of next step', value: 'Name the professional responsible' },
+                ],
+            };
+        default:
+            return {
+                id: `cs-${bp.slug}-${index}`,
+                headline: `${persona.name} applies “${obj.title}” in ${persona.city}`,
+                story: `${persona.bio} This chapter is about ${obj.title.toLowerCase()} on a ${persona.propertyLabel}.\n\n${focus}\n\n${persona.name} writes one action from this chapter before moving to the next module.`,
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: baseNote,
+                highlights: [
+                    { label: 'Chapter focus', value: obj.title },
+                    { label: 'Context', value: persona.propertyLabel },
+                    { label: 'City', value: persona.city },
+                    { label: 'Action', value: 'One written check before committing money' },
+                ],
+            };
+    }
+}
+
+function buildTopicMistakes(
+    bp: LessonBlueprint,
+    obj: LessonBlueprint['objectives'][number],
+    fallback: string[]
+): string[] {
+    const fromKnowledge = bp.knowledge
+        .filter((k) => k.variant === 'mistake' || k.variant === 'warning')
+        .map((k) => k.body || k.title)
+        .filter(Boolean);
+
+    const topic = detectTopicKind(bp.slug, obj.title, bp.title);
+    const topical: Record<TopicKind, string[]> = {
+        insurance: [
+            `Treating “${obj.title}” as optional while a bond still requires building cover.`,
+            'Insuring for purchase price instead of rebuild / replacement cost.',
+            'Assuming body-corporate or seller cover automatically protects you after occupation.',
+        ],
+        finance: [
+            `Skipping “${obj.title}” and discovering the gap after OTP.`,
+            'Taking new credit during assessment without checking impact on affordability.',
+            'Confusing a soft estimate with a formal grant.',
+        ],
+        costs: [
+            'Budgeting only the purchase price and forgetting transfer/bond cash.',
+            'Using informal WhatsApp figures instead of conveyancer estimates.',
+            `Ignoring how “${obj.title}” changes net cash needed at transfer.`,
+        ],
+        legal: [
+            'Signing before authority, FICA, or OTP annexures are clear.',
+            'Paying funds into personal accounts outside the conveyancer trust channel.',
+            `Treating “${obj.title}” as paperwork instead of a deal gate.`,
+        ],
+        agents: [
+            'Appointing on personality alone without mandate terms in writing.',
+            'Sharing bank statements before verifying the professional channel.',
+            'Ignoring walk-away signs once excitement builds.',
+        ],
+        investing: [
+            'Underwriting with best-case rent and zero vacancy.',
+            'Ignoring insurance, levies, and rates in net yield.',
+            `Buying before “${obj.title}” is written into the deal memo.`,
+        ],
+        selling: [
+            'Pricing from need or emotion instead of comparable evidence.',
+            'Letting cover lapse between acceptance and registration.',
+            'Hiding known defects that later derail the OTP.',
+        ],
+        process: [
+            'Jumping steps because a WhatsApp group said it was “fine”.',
+            'Losing days because nobody owns the next document.',
+            `Starting the next stage before “${obj.title}” is complete.`,
+        ],
+        general: fallback,
+    };
+
+    const merged = [...fromKnowledge.slice(0, 2), ...topical[topic]];
+    return Array.from(new Set(merged)).slice(0, 3);
+}
+
+function buildTopicExercise(
+    obj: LessonBlueprint['objectives'][number],
+    persona: LearnerPersona
+): LessonChapter['exercise'] {
+    return {
+        kind: 'choice',
+        prompt: `Quick judgement call for ${persona.name} on “${obj.title}”:`,
+        options: [
+            {
+                id: 'good',
+                label: `Apply this chapter’s checks before committing money or signing`,
+                feedback: `Yes — “${obj.title}” is a decision filter, not trivia.`,
+                correct: true,
+            },
+            {
+                id: 'bad',
+                label: 'Skip it and hope the agent or bank catches everything later',
+                feedback: 'That is how expensive surprises and stalled transfers happen.',
+            },
+        ],
+    };
+}
+
 export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
     const persona = PERSONAS[(bp.personaIndex ?? 0) % PERSONAS.length];
     const objectives = bp.objectives.map((o, i) => ({
@@ -129,6 +524,7 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
     }));
 
     const chapters = buildChaptersFromBlueprint(bp, persona);
+    const topic = detectTopicKind(bp.slug, bp.title, bp.title);
 
     const sections: LessonSection[] = [
         {
@@ -145,7 +541,7 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
             steps: bp.steps.map((s, i) => ({
                 id: `step-${i}`,
                 label: s.label,
-                detail: s.detail,
+                detail: expandStepDetail(s.label, s.detail, bp.subtitle, bp.title),
             })),
         },
         {
@@ -156,12 +552,12 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
             decisions: [
                 {
                     id: 'd1',
-                    prompt: `${persona.name} is about to make a money decision on this topic. What should come first?`,
+                    prompt: `${persona.name} is studying “${bp.title}”. What should come first?`,
                     options: [
                         {
                             id: 'learn',
-                            label: 'Learn the rules and numbers first',
-                            outcome: `Smart. ${persona.name} avoids expensive mistakes by understanding the process before committing.`,
+                            label: 'Learn this module’s rules and checks first',
+                            outcome: `Smart. ${persona.name} avoids expensive mistakes by understanding “${bp.title}” before committing.`,
                             recommended: true,
                         },
                         {
@@ -174,20 +570,19 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
                 },
                 {
                     id: 'd2',
-                    prompt: `On a ${persona.propertyLabel} at roughly R${(persona.propertyPrice / 1000).toFixed(0)}k, what matters most right now?`,
+                    prompt: `On a ${persona.propertyLabel} in ${persona.city}, what matters most for this lesson?`,
                     options: [
                         {
                             id: 'budget',
-                            label: 'True monthly cost including fees',
-                            outcome:
-                                'Yes — purchase price is only the headline. Fees, rates, and buffers decide affordability.',
+                            label: 'The specific checks taught in this module',
+                            outcome: `Yes — apply “${bp.title}” to the real deal, then confirm with professionals.`,
                             recommended: true,
                         },
                         {
                             id: 'looks',
                             label: 'Whether the finishes look Instagram-ready',
                             outcome:
-                                'Nice-to-have, not decisive. Banks and conveyancers care about documents and numbers first.',
+                                'Nice-to-have, not decisive. Process, documents, and verified numbers come first.',
                         },
                     ],
                 },
@@ -222,42 +617,11 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
             type: 'examples',
             id: 'examples',
             title: 'South African snapshots',
-            subtitle: 'Educational figures using mid-market bands — not quotes.',
-            items: [
-                {
-                    id: 'ex-1',
-                    city: persona.city,
-                    propertyLabel: persona.propertyLabel,
-                    price: persona.propertyPrice,
-                    deposit: Math.round(persona.propertyPrice * (persona.depositPct / 100)),
-                    bond: Math.round(persona.propertyPrice * (1 - persona.depositPct / 100)),
-                    ratePct: 11.75,
-                    monthly: Math.round(persona.netSalary * 0.32),
-                    note: `${persona.name}'s ballpark — keep transfer and bond costs separate from the deposit.`,
-                },
-                {
-                    id: 'ex-2',
-                    city: 'Cape Town',
-                    propertyLabel: 'Compact sectional · Metro fringe',
-                    price: 1550000,
-                    deposit: 155000,
-                    bond: 1395000,
-                    ratePct: 11.75,
-                    monthly: 15000,
-                    note: 'Coastal entry prices run hotter — income and deposit must stretch further.',
-                },
-                {
-                    id: 'ex-3',
-                    city: 'Johannesburg',
-                    propertyLabel: 'Family home · Northern suburbs edge',
-                    price: 2200000,
-                    deposit: 440000,
-                    bond: 1760000,
-                    ratePct: 11.5,
-                    monthly: 18600,
-                    note: 'Larger deposits can improve pricing odds on bigger tickets.',
-                },
-            ],
+            subtitle:
+                topic === 'finance' || topic === 'costs' || topic === 'investing'
+                    ? 'Educational planning bands — not bank quotes or valuations.'
+                    : 'Scenario cards tied to this lesson — not live quotes.',
+            items: buildLessonSnapshots(bp, persona, topic),
         },
         {
             type: 'quiz',
@@ -291,7 +655,6 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
         },
     ];
 
-    // Insert tool on cost-related lessons
     if (
         bp.includeAffordabilityTool ||
         bp.slug === 'transfer-costs' ||
@@ -332,14 +695,133 @@ export function buildLessonFromBlueprint(bp: LessonBlueprint): LessonModule {
     };
 }
 
+function buildLessonSnapshots(
+    bp: LessonBlueprint,
+    persona: LearnerPersona,
+    topic: TopicKind
+) {
+    const deposit = Math.round(persona.propertyPrice * (persona.depositPct / 100));
+    const bond = persona.propertyPrice - deposit;
+
+    if (topic === 'insurance') {
+        return [
+            {
+                id: 'ex-1',
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: 'Educational scenario for this insurance lesson — not a policy quote.',
+                highlights: [
+                    { label: 'Lesson', value: bp.title },
+                    { label: 'Ask', value: 'Building vs contents vs bond requirement' },
+                    { label: 'Sum insured', value: 'Rebuild / replacement — not purchase price' },
+                ],
+            },
+            {
+                id: 'ex-2',
+                city: 'Cape Town',
+                propertyLabel: 'Sectional title · body corporate building policy',
+                note: 'Confirm what the body corporate covers before you skip owners’ contents.',
+                highlights: [
+                    { label: 'Often covered', value: 'Building (via body corporate)' },
+                    { label: 'Usually yours', value: 'Contents + improvements' },
+                    { label: 'Proof', value: 'Written schedule / levy statement extract' },
+                ],
+            },
+            {
+                id: 'ex-3',
+                city: 'Johannesburg',
+                propertyLabel: 'Freestanding home · bonded',
+                note: 'Lenders typically require continuous building cover with the bank noted.',
+                highlights: [
+                    { label: 'Bank need', value: 'Building cover in force' },
+                    { label: 'Owner choice', value: 'Contents + liability extras' },
+                    { label: 'Risk', value: 'Lapse can breach bond conditions' },
+                ],
+            },
+        ];
+    }
+
+    if (topic === 'legal' || topic === 'process' || topic === 'agents' || topic === 'selling') {
+        return [
+            {
+                id: 'ex-1',
+                city: persona.city,
+                propertyLabel: persona.propertyLabel,
+                note: 'Scenario tied to this lesson — not a valuation or quote.',
+                highlights: [
+                    { label: 'Lesson', value: bp.title },
+                    { label: 'Persona', value: `${persona.name} · ${persona.role}` },
+                    { label: 'Gate', value: firstSentences(bp.subtitle, 1) },
+                ],
+            },
+            {
+                id: 'ex-2',
+                city: 'Pretoria',
+                propertyLabel: 'Document-first purchase / sale',
+                note: 'Process discipline beats speed when OTPs and FICA are involved.',
+                highlights: [
+                    { label: 'Order', value: 'Authority → documents → signatures' },
+                    { label: 'Money', value: 'Conveyancer trust account only' },
+                    { label: 'Advice', value: 'Licensed professionals for deal-specific calls' },
+                ],
+            },
+            {
+                id: 'ex-3',
+                city: 'Durban',
+                propertyLabel: 'Transfer timeline awareness',
+                note: 'Ranges vary by bank, municipality, and completeness of packs.',
+                highlights: [
+                    { label: 'Expect', value: 'Weeks to months — not overnight' },
+                    { label: 'Delays', value: 'Missing docs, rates clearances, bond conditions' },
+                    { label: 'Owner', value: 'Know who chases each dependency' },
+                ],
+            },
+        ];
+    }
+
+    return [
+        {
+            id: 'ex-1',
+            city: persona.city,
+            propertyLabel: persona.propertyLabel,
+            price: persona.propertyPrice,
+            deposit,
+            bond,
+            ratePct: ILLUSTRATIVE_RATE_PCT,
+            note: `${persona.name}'s planning band for “${bp.title}” — educational only; confirm with lenders.`,
+            highlights: [
+                { label: 'Lesson', value: bp.title },
+                { label: 'Deposit plan', value: `${persona.depositPct}%` },
+            ],
+        },
+        {
+            id: 'ex-2',
+            city: 'Cape Town',
+            propertyLabel: 'Compact sectional · Metro fringe',
+            price: 1550000,
+            deposit: 155000,
+            bond: 1395000,
+            ratePct: ILLUSTRATIVE_RATE_PCT,
+            note: 'Coastal entry prices often run hotter — income and deposit must stretch further. Educational band only.',
+        },
+        {
+            id: 'ex-3',
+            city: 'Johannesburg',
+            propertyLabel: 'Family home · Northern suburbs edge',
+            price: 2200000,
+            deposit: 440000,
+            bond: 1760000,
+            ratePct: ILLUSTRATIVE_RATE_PCT,
+            note: 'Larger deposits can improve pricing odds on bigger tickets — still not a bank quote.',
+        },
+    ];
+}
+
 function buildChaptersFromBlueprint(
     bp: LessonBlueprint,
     persona: LearnerPersona
 ): LessonChapter[] {
     const myth = bp.knowledge.find((k) => k.variant === 'myth-fact');
-    const mistakes = bp.knowledge
-        .filter((k) => k.variant === 'mistake' || k.variant === 'warning')
-        .map((k) => k.body || k.title);
     const tips = bp.knowledge.filter((k) => k.variant === 'tip' || k.variant === 'takeaway');
 
     return bp.objectives.map((obj, i) => {
@@ -351,28 +833,21 @@ function buildChaptersFromBlueprint(
                 { id: 'false', label: 'False' },
             ],
             correctId: 'true',
-            explanation: 'Clear concepts before commitment protect your deposit and timeline.',
+            explanation: `Clear concepts on “${obj.title}” before commitment protect your deposit and timeline.`,
         };
-        const stepSlice =
-            obj.steps && obj.steps.length > 0
-                ? obj.steps
-                : bp.steps.length
-                  ? bp.steps
-                  : [{ label: obj.title, detail: obj.body }];
+        const stepSlice = buildSeeItMoveSteps(obj, bp);
         const tone = i % 2 === 0 ? 'dark' : 'light';
-        const deposit = Math.round(persona.propertyPrice * (persona.depositPct / 100));
-        const bond = persona.propertyPrice - deposit;
         const timelineEntry = bp.timeline[i % Math.max(bp.timeline.length, 1)];
 
         return {
             id: `ch-${bp.slug}-${i}`,
             title: obj.title,
-            eyebrow: `Chapter idea ${i + 1}`,
+            eyebrow: `Chapter ${i + 1}`,
             plainEnglish: obj.body,
             whyItMatters:
                 obj.whyItMatters ||
                 tips[i % Math.max(tips.length, 1)]?.body ||
-                `${persona.name} in ${persona.city} uses this before signing anything expensive.`,
+                `${persona.name} in ${persona.city} uses “${obj.title}” before signing anything expensive.`,
             tone,
             illustration: (['strategy', 'costs', 'deposit', 'rates', 'bond', 'default'] as const)[
                 i % 6
@@ -382,50 +857,19 @@ function buildChaptersFromBlueprint(
                 label: s.label,
                 detail: s.detail,
             })),
-            caseStudy: {
-                id: `cs-${bp.slug}-${i}`,
-                headline: `${persona.name}'s ${persona.city} snapshot`,
-                story: `${persona.bio} This chapter applies directly to a ${persona.propertyLabel}.`,
-                city: persona.city,
-                propertyLabel: persona.propertyLabel,
-                price: persona.propertyPrice,
-                deposit,
-                bond,
-                ratePct: 11.75,
-                monthly: Math.round(persona.netSalary * 0.3),
-                note: 'Educational figures — confirm with your lender.',
-            },
-            mistakes:
-                mistakes.length > 0
-                    ? mistakes.slice(0, 3)
-                    : [
-                          'Rushing without numbers',
-                          'Ignoring fees and buffers',
-                          'Copying someone else’s deal blindly',
-                      ],
+            caseStudy: buildTopicCaseStudy(bp, obj, persona, i),
+            mistakes: buildTopicMistakes(bp, obj, [
+                `Rushing past “${obj.title}” without a written check`,
+                'Ignoring fees, buffers, or professional confirmations',
+                'Copying someone else’s deal blindly',
+            ]),
             mythFact: {
-                myth: myth?.myth || 'You can skip learning and “figure it out later”.',
+                myth: myth?.myth || `You can skip “${obj.title}” and figure it out after you sign.`,
                 fact:
                     myth?.fact ||
-                    'Clear concepts before commitment save deposits, time, and stress.',
+                    `Clear understanding of “${obj.title}” before commitment saves deposits, time, and stress.`,
             },
-            exercise: {
-                kind: 'choice' as const,
-                prompt: `Quick judgement call for ${persona.name}:`,
-                options: [
-                    {
-                        id: 'good',
-                        label: 'Learn the numbers and process first',
-                        feedback: 'Yes — curiosity before commitment.',
-                        correct: true,
-                    },
-                    {
-                        id: 'bad',
-                        label: 'Sign now and research afterwards',
-                        feedback: 'That is how expensive surprises happen.',
-                    },
-                ],
-            },
+            exercise: buildTopicExercise(obj, persona),
             checklist:
                 i === bp.objectives.length - 1
                     ? {
@@ -442,22 +886,22 @@ function buildChaptersFromBlueprint(
                 explanation: quiz.explanation,
             },
             deepDive: {
-                title: obj.deepDive?.title || timelineEntry?.title || 'Go deeper',
+                title: obj.deepDive?.title || timelineEntry?.title || `Go deeper on ${obj.title}`,
                 body:
                     obj.deepDive?.body ||
-                    timelineEntry?.detail ||
+                    (timelineEntry
+                        ? `${timelineEntry.detail}${timelineEntry.duration ? ` Typical timing: ${timelineEntry.duration}.` : ''}\n\n${firstSentences(obj.body, 2)}`
+                        : undefined) ||
                     bp.knowledge.find((k) => k.variant === 'law' || k.variant === 'definition')
                         ?.body ||
-                    'Advanced detail varies by bank, suburb, and structure — verify with professionals.',
+                    `Advanced detail on “${obj.title}” varies by bank, suburb, insurer, and legal structure — verify with licensed professionals. ${firstSentences(obj.body, 2)}`,
             },
             bridge: {
                 nextLabel:
-                    i < bp.objectives.length - 1
-                        ? bp.objectives[i + 1].title
-                        : bp.nextTitle,
+                    i < bp.objectives.length - 1 ? bp.objectives[i + 1].title : bp.nextTitle,
                 teaser:
                     i < bp.objectives.length - 1
-                        ? `Next up: ${bp.objectives[i + 1].body}`
+                        ? `Next up: ${firstSentences(bp.objectives[i + 1].body, 2)}`
                         : bp.nextDescription,
             },
         };

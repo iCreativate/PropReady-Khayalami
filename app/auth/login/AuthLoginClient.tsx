@@ -3,21 +3,36 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, AlertCircle, Sparkles } from 'lucide-react';
+import { Mail, AlertCircle, Sparkles, ArrowLeft } from 'lucide-react';
 import AuthShell from '@/components/auth/AuthShell';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
+import LoginRolePicker from '@/components/auth/LoginRolePicker';
 import { syncLegacySession } from '@/lib/auth-session-bridge';
 import { loginPathForAccountType, parseAccountType } from '@/lib/auth-enterprise/account-profile';
+import {
+    getLoginRoleOption,
+    parseLoginAudience,
+    parseLoginRole,
+    persistLoginRole,
+    PROFESSIONALS_LOGIN_HREF,
+    readPersistedLoginRole,
+    type LoginRole,
+    type LoginRoleOption,
+} from '@/lib/auth-login-roles';
 
 type AuthMode = 'password' | 'magic';
 
 export default function AuthLoginClient() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const audience = parseLoginAudience(searchParams.get('audience'));
+    const isProfessionals = audience === 'professionals';
     const requestedType = parseAccountType(searchParams.get('type'));
+    const requestedRole = parseLoginRole(searchParams.get('role'));
     const errorParam = searchParams.get('error');
 
+    const [role, setRole] = useState<LoginRole | null>(null);
     const [mode, setMode] = useState<AuthMode>('password');
     const [email, setEmail] = useState('');
     const [rememberDevice, setRememberDevice] = useState(false);
@@ -40,17 +55,86 @@ export default function AuthLoginClient() {
     } | null>(null);
 
     useEffect(() => {
-        if (requestedType === 'agent' || requestedType === 'originator') {
-            router.replace(loginPathForAccountType(requestedType));
+        if (isProfessionals) {
+            setRole(null);
+            if (requestedRole === 'agent' || requestedRole === 'originator' || requestedRole === 'conveyancer') {
+                router.replace(loginPathForAccountType(requestedRole));
+            }
+            return;
         }
-    }, [requestedType, router]);
+        if (
+            requestedType === 'agent' ||
+            requestedType === 'originator' ||
+            requestedType === 'conveyancer'
+        ) {
+            router.replace(loginPathForAccountType(requestedType));
+            return;
+        }
+        if (requestedRole === 'agent' || requestedRole === 'originator' || requestedRole === 'conveyancer') {
+            router.replace(loginPathForAccountType(requestedRole));
+            return;
+        }
+        if (requestedRole === 'buyer' || requestedRole === 'seller') {
+            setRole(requestedRole);
+            persistLoginRole(requestedRole);
+            return;
+        }
+        const stored = readPersistedLoginRole();
+        if (stored === 'buyer' || stored === 'seller') {
+            setRole(stored);
+        }
+    }, [isProfessionals, requestedType, requestedRole, router]);
 
-    if (requestedType === 'agent' || requestedType === 'originator') {
+    if (
+        !isProfessionals &&
+        (requestedType === 'agent' ||
+            requestedType === 'originator' ||
+            requestedType === 'conveyancer' ||
+            requestedRole === 'agent' ||
+            requestedRole === 'originator' ||
+            requestedRole === 'conveyancer')
+    ) {
         return (
             <div className="min-h-screen flex items-center justify-center text-charcoal/55 text-sm">
                 Redirecting to professional sign-in…
             </div>
         );
+    }
+
+    if (
+        isProfessionals &&
+        (requestedRole === 'agent' ||
+            requestedRole === 'originator' ||
+            requestedRole === 'conveyancer')
+    ) {
+        return (
+            <div className="min-h-screen flex items-center justify-center text-charcoal/55 text-sm">
+                Redirecting to professional sign-in…
+            </div>
+        );
+    }
+
+    function handleRoleSelect(option: LoginRoleOption) {
+        persistLoginRole(option.id);
+        if (option.href) {
+            router.push(option.href);
+            return;
+        }
+        setRole(option.id);
+        setError('');
+        setInfo('');
+    }
+
+    function clearRole() {
+        setRole(null);
+        setError('');
+        setInfo('');
+        setOtpChallenge(null);
+        try {
+            sessionStorage.removeItem('propReady_loginRole');
+        } catch {
+            /* ignore */
+        }
     }
 
     async function handlePasswordLogin(e: React.FormEvent) {
@@ -123,6 +207,10 @@ export default function AuthLoginClient() {
         }
     }
 
+    const roleMeta = role ? getLoginRoleOption(role) : null;
+    const postLoginRedirect =
+        role === 'seller' ? '/sellers/dashboard' : '/dashboard';
+
     if (otpChallenge) {
         return (
             <AuthShell
@@ -139,7 +227,10 @@ export default function AuthLoginClient() {
                     }
                     onVerified={(data) => {
                         syncLegacySession(data.user as Parameters<typeof syncLegacySession>[0], 'user');
-                        window.location.assign(data.redirectTo || '/auth/confirm-password?type=user');
+                        const next =
+                            data.redirectTo ||
+                            `/auth/confirm-password?type=user&next=${encodeURIComponent(postLoginRedirect)}`;
+                        window.location.assign(next);
                     }}
                     onBack={() => {
                         setOtpChallenge(null);
@@ -155,8 +246,65 @@ export default function AuthLoginClient() {
         );
     }
 
+    if (isProfessionals || !role) {
+        return (
+            <AuthShell
+                title="Who’s signing in?"
+                subtitle={
+                    isProfessionals
+                        ? 'Choose your professional role to continue to the right portal.'
+                        : 'Choose buyer or seller to continue to your PropReady account.'
+                }
+                accountType="user"
+                variant="roles"
+                rolesAudience={audience}
+            >
+                <LoginRolePicker audience={audience} onSelect={handleRoleSelect} />
+                {isProfessionals ? (
+                    <p className="text-center text-sm text-charcoal/55 mt-8">
+                        Buying or selling?{' '}
+                        <Link href="/auth/login" className="text-gold font-medium hover:underline">
+                            Buyer & seller sign-in
+                        </Link>
+                    </p>
+                ) : (
+                    <>
+                        <p className="text-center text-sm text-charcoal/55 mt-8">
+                            New here?{' '}
+                            <Link href="/get-started" className="text-gold font-medium hover:underline">
+                                Get started with a quiz
+                            </Link>
+                        </p>
+                        <p className="text-center text-xs text-charcoal/40 mt-4 leading-relaxed">
+                            Agent, bond originator or conveyancer?{' '}
+                            <Link
+                                href={PROFESSIONALS_LOGIN_HREF}
+                                className="text-gold font-medium hover:underline"
+                            >
+                                Professional sign-in
+                            </Link>
+                        </p>
+                    </>
+                )}
+            </AuthShell>
+        );
+    }
+
     return (
-        <AuthShell title="Welcome back" subtitle="Sign in to your PropReady account" accountType="user">
+        <AuthShell
+            title={`Sign in as ${roleMeta?.label ?? 'Buyer'}`}
+            subtitle={
+                role === 'seller'
+                    ? 'Access your seller dashboard, listings and messages'
+                    : 'Access your buyer dashboard, prequal and learning'
+            }
+            accountType="user"
+        >
+            <button type="button" onClick={clearRole} className="auth-role-change mb-5">
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Change account type
+            </button>
+
             <div className="auth-tabs mb-6">
                 <button
                     type="button"
@@ -181,7 +329,10 @@ export default function AuthLoginClient() {
             )}
             {info && <div className="auth-alert auth-alert-info mb-4">{info}</div>}
             {devMagicLink && (
-                <a href={devMagicLink} className="block mb-4 text-sm text-gold font-medium hover:underline break-all">
+                <a
+                    href={devMagicLink}
+                    className="block mb-4 text-sm text-gold font-medium hover:underline break-all"
+                >
                     Open magic link
                 </a>
             )}
@@ -200,20 +351,18 @@ export default function AuthLoginClient() {
                     />
                 </div>
                 {mode === 'password' && (
-                    <>
-                        <div className="flex items-center justify-between mb-6 text-sm">
-                            <label className="flex items-center gap-2 text-charcoal/70 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={rememberDevice}
-                                    onChange={(e) => setRememberDevice(e.target.checked)}
-                                    className="rounded border-charcoal/20 text-gold focus:ring-gold"
-                                />
-                                Trust this device
-                            </label>
-                            <span className="text-charcoal/45">Password is entered after the code.</span>
-                        </div>
-                    </>
+                    <div className="flex items-center justify-between mb-6 text-sm">
+                        <label className="flex items-center gap-2 text-charcoal/70 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={rememberDevice}
+                                onChange={(e) => setRememberDevice(e.target.checked)}
+                                className="rounded border-charcoal/20 text-gold focus:ring-gold"
+                            />
+                            Trust this device
+                        </label>
+                        <span className="text-charcoal/45">Password is entered after the code.</span>
+                    </div>
                 )}
                 <button type="submit" disabled={loading} className="auth-btn-primary w-full mb-6">
                     {loading
@@ -234,15 +383,6 @@ export default function AuthLoginClient() {
                 New here?{' '}
                 <Link href="/get-started" className="text-gold font-medium hover:underline">
                     Get started with a quiz
-                </Link>
-            </p>
-            <p className="text-center text-xs text-charcoal/40 mt-4 space-x-3">
-                <Link href="/agents/login" className="hover:text-gold transition">
-                    Agent portal
-                </Link>
-                <span aria-hidden>·</span>
-                <Link href="/originators/login" className="hover:text-gold transition">
-                    Bond originator portal
                 </Link>
             </p>
         </AuthShell>

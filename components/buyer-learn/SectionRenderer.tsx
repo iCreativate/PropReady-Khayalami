@@ -180,11 +180,24 @@ export default function SectionRenderer({
                                 </p>
                                 <h3 className="mt-1 font-semibold text-charcoal">{ex.propertyLabel}</h3>
                                 <dl className="mt-4 space-y-2 text-sm">
-                                    <Row label="Price" value={formatZar(ex.price)} />
-                                    <Row label="Deposit" value={formatZar(ex.deposit)} />
-                                    <Row label="Bond" value={formatZar(ex.bond)} />
-                                    <Row label="Rate" value={`${ex.ratePct}%`} />
-                                    <Row label="~Monthly" value={formatZar(ex.monthly)} emph />
+                                    {ex.highlights?.map((h) => (
+                                        <Row key={h.label} label={h.label} value={h.value} />
+                                    ))}
+                                    {typeof ex.price === 'number' ? (
+                                        <Row label="Price" value={formatZar(ex.price)} />
+                                    ) : null}
+                                    {typeof ex.deposit === 'number' ? (
+                                        <Row label="Deposit" value={formatZar(ex.deposit)} />
+                                    ) : null}
+                                    {typeof ex.bond === 'number' ? (
+                                        <Row label="Bond" value={formatZar(ex.bond)} />
+                                    ) : null}
+                                    {typeof ex.ratePct === 'number' ? (
+                                        <Row label="Illustrative rate" value={`${ex.ratePct}%`} />
+                                    ) : null}
+                                    {typeof ex.monthly === 'number' ? (
+                                        <Row label="~Monthly" value={formatZar(ex.monthly)} emph />
+                                    ) : null}
                                 </dl>
                                 <p className="mt-3 text-xs text-charcoal/50 leading-relaxed">
                                     {ex.note}

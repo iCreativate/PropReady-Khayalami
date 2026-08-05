@@ -362,3 +362,260 @@ export function buildCoachInsight(input: {
     return { headline, body, actions: actions.slice(0, 3) };
 }
 
+/** Debt-to-income: bond instalment + optional living expenses vs gross income. */
+export function debtToIncomeRatio(
+    monthlyRepayment: number,
+    monthlyIncome: number,
+    monthlyExpenses = 0
+): number {
+    if (monthlyIncome <= 0) return 0;
+    return ((monthlyRepayment + monthlyExpenses) / monthlyIncome) * 100;
+}
+
+export type BondScenarioCard = {
+    id: 'current' | 'optimised' | 'aggressive';
+    label: string;
+    monthly: number;
+    interestPaid: number;
+    durationYears: number;
+    durationMonths: number;
+    interestSaved: number;
+    totalCost: number;
+    recommended?: boolean;
+};
+
+export function buildScenarioComparison(input: {
+    purchasePrice: number;
+    deposit: number;
+    interestRate: number;
+    loanTermYears: number;
+    extraMonthly: number;
+}): BondScenarioCard[] {
+    const base = summariseBondRepayment({
+        purchasePrice: input.purchasePrice,
+        deposit: input.deposit,
+        interestRate: input.interestRate,
+        loanTermYears: input.loanTermYears,
+    });
+    const optimisedExtra = input.extraMonthly > 0 ? input.extraMonthly : 1_000;
+    const aggressiveExtra = Math.max(optimisedExtra * 2, 2_500);
+
+    const optimisedImpact = extraPaymentImpact({
+        loanAmount: base.loanAmount,
+        interestRate: input.interestRate,
+        loanTermYears: input.loanTermYears,
+        extraMonthly: optimisedExtra,
+    });
+    const aggressiveImpact = extraPaymentImpact({
+        loanAmount: base.loanAmount,
+        interestRate: input.interestRate,
+        loanTermYears: input.loanTermYears,
+        extraMonthly: aggressiveExtra,
+    });
+
+    const baselineInterest = base.totalInterest;
+    const scenarios: BondScenarioCard[] = [
+        {
+            id: 'current',
+            label: 'Current scenario',
+            monthly: base.monthlyRepayment,
+            interestPaid: base.totalInterest,
+            durationYears: input.loanTermYears,
+            durationMonths: base.payments,
+            interestSaved: 0,
+            totalCost: base.totalPayable,
+        },
+        {
+            id: 'optimised',
+            label: 'Optimised',
+            monthly: optimisedImpact.scheduled + optimisedExtra,
+            interestPaid: Math.max(0, baselineInterest - optimisedImpact.interestSaved),
+            durationYears: Math.round((optimisedImpact.optimizedMonths / 12) * 10) / 10,
+            durationMonths: optimisedImpact.optimizedMonths,
+            interestSaved: optimisedImpact.interestSaved,
+            totalCost: base.loanAmount + Math.max(0, baselineInterest - optimisedImpact.interestSaved),
+            recommended: true,
+        },
+        {
+            id: 'aggressive',
+            label: 'Aggressive repayment',
+            monthly: aggressiveImpact.scheduled + aggressiveExtra,
+            interestPaid: Math.max(0, baselineInterest - aggressiveImpact.interestSaved),
+            durationYears: Math.round((aggressiveImpact.optimizedMonths / 12) * 10) / 10,
+            durationMonths: aggressiveImpact.optimizedMonths,
+            interestSaved: aggressiveImpact.interestSaved,
+            totalCost: base.loanAmount + Math.max(0, baselineInterest - aggressiveImpact.interestSaved),
+        },
+    ];
+    return scenarios;
+}
+
+export type BondChartTab = 'balance' | 'interest' | 'principal' | 'equity' | 'cashflow';
+
+export type BondChartPoint = {
+    year: number;
+    balance: number;
+    interestPaid: number;
+    principalPaid: number;
+    equity: number;
+    cashFlow: number;
+};
+
+export function buildBondChartSeries(input: {
+    purchasePrice: number;
+    loanAmount: number;
+    interestRate: number;
+    loanTermYears: number;
+    extraMonthly?: number;
+    monthlyRepayment: number;
+}): BondChartPoint[] {
+    const curve = yearlyBalanceCurve({
+        loanAmount: input.loanAmount,
+        interestRate: input.interestRate,
+        loanTermYears: input.loanTermYears,
+        extraMonthly: input.extraMonthly,
+    });
+    return curve.map((p) => ({
+        year: p.year,
+        balance: p.balance,
+        interestPaid: p.interestPaid,
+        principalPaid: p.principalPaid,
+        equity: Math.max(0, input.purchasePrice - p.balance),
+        cashFlow: p.year === 0 ? 0 : -input.monthlyRepayment * 12,
+    }));
+}
+
+export type BondInsight = {
+    id: string;
+    icon: 'savings' | 'deposit' | 'dti' | 'rate' | 'term';
+    title: string;
+    body: string;
+};
+
+export function generateBondInsights(input: {
+    monthlyRepayment: number;
+    loanAmount: number;
+    totalInterest: number;
+    depositPct: number;
+    ltvPct: number;
+    interestRate: number;
+    loanTermYears: number;
+    extraMonthly: number;
+    monthsSaved: number;
+    interestSaved: number;
+    dtiPct: number;
+    monthlyIncome: number;
+    affordBand: AffordabilityBand;
+}): BondInsight[] {
+    const insights: BondInsight[] = [];
+
+    const extraForInsight = input.extraMonthly > 0 ? input.extraMonthly : 1_000;
+    const extraPreview = extraPaymentImpact({
+        loanAmount: input.loanAmount,
+        interestRate: input.interestRate,
+        loanTermYears: input.loanTermYears,
+        extraMonthly: extraForInsight,
+    });
+    if (extraPreview.interestSaved > 0) {
+        insights.push({
+            id: 'extra',
+            icon: 'savings',
+            title: 'Accelerate your payoff',
+            body: `Paying an extra ${formatZar(extraForInsight)} monthly could save approximately ${formatZar(extraPreview.interestSaved)} in interest and reduce your bond term by nearly ${Math.round(extraPreview.monthsSaved / 12)} years.`,
+        });
+    }
+
+    if (input.depositPct < 15) {
+        const at15 = summariseBondRepayment({
+            purchasePrice: input.loanAmount / (1 - input.depositPct / 100),
+            deposit: (input.loanAmount / (1 - input.depositPct / 100)) * 0.15,
+            interestRate: input.interestRate,
+            loanTermYears: input.loanTermYears,
+        });
+        if (at15.monthlyRepayment < input.monthlyRepayment) {
+            insights.push({
+                id: 'deposit',
+                icon: 'deposit',
+                title: 'Grow your deposit',
+                body: `Increasing your deposit to 15% could lower your monthly repayment to about ${formatZar(at15.monthlyRepayment)} and improve your LTV position with lenders.`,
+            });
+        }
+    }
+
+    if (input.monthlyIncome > 0) {
+        if (input.dtiPct <= 35) {
+            insights.push({
+                id: 'dti',
+                icon: 'dti',
+                title: 'Healthy debt-to-income',
+                body: `Your debt-to-income ratio of ${input.dtiPct.toFixed(0)}% indicates a comfortable borrowing position relative to your stated income.`,
+            });
+        } else if (input.dtiPct > 45) {
+            insights.push({
+                id: 'dti-tight',
+                icon: 'dti',
+                title: 'DTI needs attention',
+                body: `At ${input.dtiPct.toFixed(0)}% debt-to-income, lenders may view this as stretched. Consider a larger deposit or lower purchase price.`,
+            });
+        }
+    } else if (input.affordBand === 'comfortable') {
+        insights.push({
+            id: 'afford',
+            icon: 'dti',
+            title: 'Repayment within budget',
+            body: 'Your instalment sits within your comfort budget with room for rates, levies and maintenance.',
+        });
+    }
+
+    const stressPlus1 = monthlyPayment(
+        input.loanAmount,
+        input.interestRate + 1,
+        Math.round(input.loanTermYears * 12)
+    );
+    if (stressPlus1 > input.monthlyRepayment * 1.08) {
+        insights.push({
+            id: 'rate',
+            icon: 'rate',
+            title: 'Rate sensitivity',
+            body: `A +1% rate rise would lift your instalment to about ${formatZar(Math.round(stressPlus1))} — stress-test before you offer.`,
+        });
+    }
+
+    if (input.loanTermYears >= 25) {
+        insights.push({
+            id: 'term',
+            icon: 'term',
+            title: 'Term trade-off',
+            body: `A shorter term than ${input.loanTermYears} years typically cuts total interest materially — compare the Optimised scenario above.`,
+        });
+    }
+
+    return insights.slice(0, 4);
+}
+
+export type SavedBondCalculation = {
+    id: string;
+    label: string;
+    savedAt: string;
+    purchasePrice: number;
+    deposit: number;
+    interestRate: number;
+    loanTerm: number;
+    extraMonthly: number;
+    monthlyIncome: number;
+    monthlyExpenses: number;
+    monthlyBudget: number;
+};
+
+export const DEFAULT_BOND_INPUTS = {
+    purchasePrice: 1_800_000,
+    deposit: 180_000,
+    interestRate: 11.75,
+    loanTerm: 20,
+    extraMonthly: 0,
+    monthlyIncome: 0,
+    monthlyExpenses: 0,
+    monthlyBudget: 18_000,
+    affordDepositPct: 10,
+};
+

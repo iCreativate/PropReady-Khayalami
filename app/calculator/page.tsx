@@ -25,9 +25,10 @@ export default function BondCalculatorPage() {
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
+                        size="compact"
                         eyebrow="Home finance"
                         title="Bond Calculator"
-                        description="Model repayments, affordability and cash to close — educational estimates for South African buyers."
+                        description="Model repayments, compare scenarios and export your plan — in one compact dashboard."
                     />
                 }
             >

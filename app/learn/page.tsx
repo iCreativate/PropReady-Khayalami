@@ -116,6 +116,46 @@ const LEARN_MODULES: {
             'What is required when buying property in a company or close corporation name: documents, bond requirements, and tax considerations.',
         icon: 'Briefcase',
     },
+    {
+        href: '/learn/home-insurance',
+        slug: 'home-insurance',
+        title: 'Home Insurance Basics',
+        description:
+            'Building vs contents, bond requirements, and why rebuild cost — not purchase price — sets your sum insured.',
+        icon: 'ShieldCheck',
+    },
+    {
+        href: '/learn/insurance-types',
+        slug: 'insurance-types',
+        title: 'Types of Insurance',
+        description:
+            'Homeowners, contents, bond protection, and liability — different products for different ownership risks.',
+        icon: 'FileText',
+    },
+    {
+        href: '/learn/why-insurance-matters',
+        slug: 'why-insurance-matters',
+        title: 'Why Insurance Matters',
+        description:
+            'How cover protects equity and cash flow — and why banks treat building insurance as non-negotiable.',
+        icon: 'AlertCircle',
+    },
+    {
+        href: '/learn/choosing-an-insurer',
+        slug: 'choosing-an-insurer',
+        title: 'Finding the Right Insurer',
+        description:
+            'Compare more than premium: excesses, exclusions, disclosure, and licensed advice before you bind.',
+        icon: 'CheckCircle',
+    },
+    {
+        href: '/learn/uninsured-risks',
+        slug: 'uninsured-risks',
+        title: 'When You Have No Cover',
+        description:
+            'What happens if cover lapses, you are underinsured, or risk between occupation and transfer is unclear.',
+        icon: 'AlertTriangle',
+    },
 ];
 
 export default function LearnPage() {

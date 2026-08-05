@@ -7,6 +7,7 @@ export const USER_PORTAL_ALWAYS_FOOTER_ROUTES = new Set([
     '/dashboard/viewings',
     '/dashboard/documents',
     '/dashboard/property-optimizer',
+    '/property-iq',
     '/sellers/dashboard',
     '/sellers/messages',
 ]);
@@ -18,7 +19,6 @@ export const USER_PORTAL_ALWAYS_FOOTER_ROUTES = new Set([
 export const USER_PORTAL_PUBLIC_DUAL_ROUTES = new Set([
     '/calculator',
     '/calculator/smart-bond',
-    '/property-iq',
     '/learning-center',
     '/learn',
     '/learn/investors',

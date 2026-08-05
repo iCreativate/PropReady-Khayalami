@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Home, Mail, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { PROFESSIONALS_LOGIN_HREF } from '@/lib/auth-login-roles';
 
 interface FooterProps {
     variant?: 'default' | 'portal';
@@ -171,7 +172,6 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                                 { href: '/sellers', label: 'Learning Center — Sellers' },
                                 { href: '/learn/investors', label: 'Learning Center — Investors' },
                                 { href: '/calculator', label: 'Bond Calculator' },
-                                { href: '/property-iq', label: 'Property IQ™' },
                                 { href: '/auth/login', label: 'Sign in' },
                             ].map(({ href, label }) => (
                                 <li key={href}>
@@ -230,22 +230,10 @@ export default function Footer({ variant = 'default' }: FooterProps) {
                         </ul>
                         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                             <Link
-                                href="/agents/login"
+                                href={PROFESSIONALS_LOGIN_HREF}
                                 className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-gold text-white font-semibold rounded-xl hover:bg-gold-600 transition text-sm shadow-sm"
                             >
-                                Agent Login
-                            </Link>
-                            <Link
-                                href="/originators/login"
-                                className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-white/10 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/15 hover:border-gold/40 transition text-sm"
-                            >
-                                Bond Originator
-                            </Link>
-                            <Link
-                                href="/conveyancers/login"
-                                className="btn-interactive inline-flex items-center justify-center px-5 py-2.5 bg-white/10 border border-white/20 text-white font-semibold rounded-xl hover:bg-white/15 hover:border-gold/40 transition text-sm"
-                            >
-                                Conveyancer Login
+                                Professionals
                             </Link>
                         </div>
 

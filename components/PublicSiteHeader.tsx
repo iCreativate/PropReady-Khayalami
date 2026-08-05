@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileNav from '@/components/MobileNav';
 import LearningCenterDropdown from '@/components/LearningCenterDropdown';
+import { PROFESSIONALS_LOGIN_HREF } from '@/lib/auth-login-roles';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
 export type PublicNavLink = {
@@ -26,14 +27,14 @@ interface PublicSiteHeaderProps {
 
 const DEFAULT_MOBILE: PublicNavLink[] = [
     { href: '/get-started', label: 'Get Started', isButton: true },
+    { href: '/auth/login', label: 'Sign in' },
     { href: '/learning-center', label: 'Learning Center' },
     { href: '/learn', label: 'Learning Center — Buyers' },
     { href: '/sellers', label: 'Learning Center — Sellers' },
     { href: '/learn/investors', label: 'Learning Center — Investors' },
     { href: '/calculator', label: 'Bond Calculator' },
-    { href: '/property-iq', label: 'Property IQ™' },
     { href: '/dashboard', label: 'Dashboard' },
-    { href: '/agents/login', label: 'Agent Login' },
+    { href: PROFESSIONALS_LOGIN_HREF, label: 'Professionals' },
 ];
 
 export default function PublicSiteHeader({
@@ -48,6 +49,7 @@ export default function PublicSiteHeader({
 }: PublicSiteHeaderProps) {
     return (
         <header
+            data-fixed-nav
             className={`fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10 ${className}`}
         >
             <nav className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
@@ -74,8 +76,8 @@ export default function PublicSiteHeader({
                             >
                                 Sign in
                             </Link>
-                            <Link href="/agents/login" className={PORTAL_SECONDARY_BTN}>
-                                Agent Login
+                            <Link href={PROFESSIONALS_LOGIN_HREF} className={PORTAL_SECONDARY_BTN}>
+                                Professionals
                             </Link>
                         </div>
                     ) : ctaHref && ctaLabel ? (

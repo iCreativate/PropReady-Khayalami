@@ -36,6 +36,11 @@ export const BUYER_LEARN_ORDER = [
     'first-time-buyer-mistakes',
     'bond-application-avoid',
     'buying-property-as-business',
+    'home-insurance',
+    'insurance-types',
+    'why-insurance-matters',
+    'choosing-an-insurer',
+    'uninsured-risks',
 ] as const;
 
 export * from '@/lib/buyer-learn/types';

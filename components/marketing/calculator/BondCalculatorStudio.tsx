@@ -1,183 +1,190 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ArrowRight,
+    Area,
+    AreaChart,
+    CartesianGrid,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import {
     Calculator,
-    ChevronDown,
+    Download,
     Lightbulb,
     PiggyBank,
-    Scale,
-    Sparkles,
+    RotateCcw,
+    Save,
+    Share2,
     Wallet,
+    Zap,
 } from 'lucide-react';
 import {
-    PRICE_PRESETS,
+    DEFAULT_BOND_INPUTS,
     DEPOSIT_PRESETS,
+    PRICE_PRESETS,
     TERM_PRESETS,
     acquisitionCashEstimate,
     affordabilityFromBudget,
-    buildCoachInsight,
+    buildBondChartSeries,
+    buildScenarioComparison,
     classifyAffordability,
+    debtToIncomeRatio,
     extraPaymentImpact,
     formatNumber,
     formatZar,
+    generateBondInsights,
     parseMoneyInput,
     recommendTerm,
     stressRepayments,
     summariseBondRepayment,
-    yearlyBalanceCurve,
+    type BondChartTab,
+    type SavedBondCalculation,
 } from '@/lib/bond-calculator';
+import {
+    deleteSavedBondCalculation,
+    readSavedBondCalculations,
+    saveBondCalculation,
+} from '@/lib/bond-calculator-storage';
 
 type Mode = 'repayment' | 'affordability' | 'cash';
+type WhatIfTab = 'rate' | 'extra' | 'term' | 'deposit';
 
 type BondCalculatorStudioProps = {
     embedded?: boolean;
 };
 
-function BalanceCurveChart({
-    points,
-    dark = false,
-}: {
-    points: { year: number; balance: number }[];
-    dark?: boolean;
-}) {
-    const w = 560;
-    const h = 200;
-    const pad = { t: 16, r: 12, b: 28, l: 12 };
-    const maxBal = Math.max(...points.map((p) => p.balance), 1);
-    const maxYear = Math.max(...points.map((p) => p.year), 1);
-    const innerW = w - pad.l - pad.r;
-    const innerH = h - pad.t - pad.b;
-
-    const coords = points.map((p) => ({
-        x: pad.l + (p.year / maxYear) * innerW,
-        y: pad.t + (1 - p.balance / maxBal) * innerH,
-    }));
-
-    const line = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ');
-    const area = `${line} L ${coords[coords.length - 1]?.x ?? pad.l} ${pad.t + innerH} L ${pad.l} ${pad.t + innerH} Z`;
-    const stroke = dark ? '#FECACA' : '#dc2626';
-    const fill = dark ? 'url(#calcBalDark)' : 'url(#calcBalLight)';
-    const axis = dark ? 'rgba(255,255,255,0.2)' : 'rgba(28,28,28,0.12)';
-    const label = dark ? 'rgba(255,255,255,0.4)' : 'rgba(28,28,28,0.4)';
-
-    return (
-        <svg viewBox={`0 0 ${w} ${h}`} className="calc-chart-svg" role="img" aria-label="Loan balance over time">
-            <defs>
-                <linearGradient id="calcBalLight" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#dc2626" stopOpacity="0.28" />
-                    <stop offset="100%" stopColor="#dc2626" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="calcBalDark" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FECACA" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#FECACA" stopOpacity="0" />
-                </linearGradient>
-            </defs>
-            {[0.25, 0.5, 0.75, 1].map((t) => (
-                <line
-                    key={t}
-                    x1={pad.l}
-                    x2={w - pad.r}
-                    y1={pad.t + innerH * t}
-                    y2={pad.t + innerH * t}
-                    stroke={axis}
-                    strokeWidth="1"
-                />
-            ))}
-            <path d={area} fill={fill} />
-            <path
-                d={line}
-                fill="none"
-                stroke={stroke}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-            {coords.map((c, i) =>
-                i === 0 || i === coords.length - 1 || i % Math.ceil(coords.length / 4) === 0 ? (
-                    <circle key={i} cx={c.x} cy={c.y} r="3.5" fill={stroke} />
-                ) : null
-            )}
-            <text x={pad.l} y={h - 6} fill={label} fontSize="11">
-                Year 0
-            </text>
-            <text x={w - pad.r} y={h - 6} fill={label} fontSize="11" textAnchor="end">
-                Year {maxYear}
-            </text>
-        </svg>
-    );
+function useAnimatedNumber(value: number, duration = 420) {
+    const [display, setDisplay] = useState(value);
+    useEffect(() => {
+        const from = display;
+        const to = value;
+        if (from === to) return;
+        const start = performance.now();
+        let frame = 0;
+        const tick = (now: number) => {
+            const t = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - t, 3);
+            setDisplay(Math.round(from + (to - from) * eased));
+            if (t < 1) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(frame);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- animate toward latest target only
+    }, [value, duration]);
+    return display;
 }
 
-function PrincipalInterestRing({
-    principal,
-    interest,
-    dark = false,
-}: {
-    principal: number;
-    interest: number;
-    dark?: boolean;
-}) {
-    const total = Math.max(1, principal + interest);
-    const principalPct = (principal / total) * 100;
-    const r = 54;
-    const c = 2 * Math.PI * r;
-    const principalLen = (principalPct / 100) * c;
-    const track = dark ? 'rgba(255,255,255,0.12)' : 'rgba(28,28,28,0.08)';
+function AnimatedZar({ value, className = '' }: { value: number; className?: string }) {
+    const n = useAnimatedNumber(value);
+    return <span className={className}>{formatZar(n)}</span>;
+}
 
+function MoneyField({
+    id,
+    label,
+    value,
+    min,
+    max,
+    step,
+    onChange,
+    presets,
+    formatValue,
+}: {
+    id: string;
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    step: number;
+    onChange: (v: number) => void;
+    presets?: { label: string; value: number }[];
+    formatValue?: (v: number) => string;
+}) {
+    const display = formatValue ? formatValue(value) : formatZar(value);
     return (
-        <div className="calc-ring-wrap">
-            <svg viewBox="0 0 140 140" className="calc-chart-svg" aria-hidden>
-                <circle cx="70" cy="70" r={r} fill="none" stroke={track} strokeWidth="14" />
-                <circle
-                    cx="70"
-                    cy="70"
-                    r={r}
-                    fill="none"
-                    stroke={dark ? '#fff' : '#1c1c1c'}
-                    strokeWidth="14"
-                    strokeDasharray={`${principalLen} ${c - principalLen}`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 70 70)"
-                    style={{ transition: 'stroke-dasharray 0.7s cubic-bezier(0.22,1,0.36,1)' }}
+        <div className="bc-field">
+            <div className="bc-field-head">
+                <label className="bc-field-label" htmlFor={id}>
+                    {label}
+                </label>
+                <span className="bc-field-value">{display}</span>
+            </div>
+            <input
+                id={id}
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={Math.min(Math.max(value, min), max)}
+                onChange={(e) => onChange(Number(e.target.value))}
+                className="bc-range"
+            />
+            {presets && presets.length > 0 ? (
+                <div className="bc-chips">
+                    {presets.map((p) => (
+                        <button
+                            key={p.label}
+                            type="button"
+                            className={`bc-chip ${value === p.value ? 'bc-chip--active' : ''}`}
+                            onClick={() => onChange(p.value)}
+                        >
+                            {p.label}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+            <div className="bc-input-wrap">
+                <span className="bc-input-prefix">R</span>
+                <input
+                    className="bc-input bc-input--prefix"
+                    inputMode="numeric"
+                    value={value === 0 ? '' : formatNumber(value)}
+                    onChange={(e) => onChange(parseMoneyInput(e.target.value))}
+                    aria-label={`${label} exact amount`}
                 />
-                <circle
-                    cx="70"
-                    cy="70"
-                    r={r}
-                    fill="none"
-                    stroke={dark ? '#F87171' : '#dc2626'}
-                    strokeWidth="14"
-                    strokeDasharray={`${c - principalLen} ${principalLen}`}
-                    strokeDashoffset={-principalLen}
-                    strokeLinecap="round"
-                    transform="rotate(-90 70 70)"
-                    style={{ transition: 'stroke-dasharray 0.7s cubic-bezier(0.22,1,0.36,1)' }}
-                />
-            </svg>
-            <div className="calc-ring-center">
-                <p className={`text-[11px] font-semibold uppercase tracking-wider ${dark ? 'text-white/45' : 'text-charcoal/40'}`}>
-                    Total payable
-                </p>
-                <p className={`text-lg font-semibold tabular-nums tracking-tight ${dark ? 'text-white' : 'text-charcoal'}`}>
-                    {formatZar(principal + interest)}
-                </p>
             </div>
         </div>
     );
 }
 
+const CHART_TAB_CONFIG: { id: BondChartTab; label: string; key: keyof ReturnType<typeof buildBondChartSeries>[0] }[] = [
+    { id: 'balance', label: 'Balance', key: 'balance' },
+    { id: 'interest', label: 'Interest', key: 'interestPaid' },
+    { id: 'principal', label: 'Principal', key: 'principalPaid' },
+    { id: 'equity', label: 'Equity', key: 'equity' },
+    { id: 'cashflow', label: 'Cash flow', key: 'cashFlow' },
+];
+
 export default function BondCalculatorStudio({ embedded = false }: BondCalculatorStudioProps) {
     const [mode, setMode] = useState<Mode>('repayment');
-    const [purchasePrice, setPurchasePrice] = useState(1_800_000);
-    const [deposit, setDeposit] = useState(180_000);
-    const [interestRate, setInterestRate] = useState(11.75);
-    const [loanTerm, setLoanTerm] = useState(20);
-    const [extraMonthly, setExtraMonthly] = useState(0);
-    const [monthlyBudget, setMonthlyBudget] = useState(18_000);
-    const [affordDepositPct, setAffordDepositPct] = useState(10);
-    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [purchasePrice, setPurchasePrice] = useState(DEFAULT_BOND_INPUTS.purchasePrice);
+    const [deposit, setDeposit] = useState(DEFAULT_BOND_INPUTS.deposit);
+    const [interestRate, setInterestRate] = useState(DEFAULT_BOND_INPUTS.interestRate);
+    const [loanTerm, setLoanTerm] = useState(DEFAULT_BOND_INPUTS.loanTerm);
+    const [extraMonthly, setExtraMonthly] = useState(DEFAULT_BOND_INPUTS.extraMonthly);
+    const [monthlyIncome, setMonthlyIncome] = useState(DEFAULT_BOND_INPUTS.monthlyIncome);
+    const [monthlyExpenses, setMonthlyExpenses] = useState(DEFAULT_BOND_INPUTS.monthlyExpenses);
+    const [monthlyBudget, setMonthlyBudget] = useState(DEFAULT_BOND_INPUTS.monthlyBudget);
+    const [affordDepositPct, setAffordDepositPct] = useState(DEFAULT_BOND_INPUTS.affordDepositPct);
+    const [chartTab, setChartTab] = useState<BondChartTab>('balance');
+    const [whatIfTab, setWhatIfTab] = useState<WhatIfTab>('rate');
+    const [saved, setSaved] = useState<SavedBondCalculation[]>([]);
+    const [showSaved, setShowSaved] = useState(false);
+    const [stickyVisible, setStickyVisible] = useState(false);
+
+    useEffect(() => {
+        setSaved(readSavedBondCalculations());
+    }, []);
+
+    useEffect(() => {
+        const onScroll = () => setStickyVisible(window.scrollY > 320);
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
 
     const repayment = useMemo(
         () =>
@@ -188,16 +195,6 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                 loanTermYears: loanTerm,
             }),
         [purchasePrice, deposit, interestRate, loanTerm]
-    );
-
-    const stress = useMemo(
-        () =>
-            stressRepayments({
-                loanAmount: repayment.loanAmount,
-                interestRate,
-                loanTermYears: loanTerm,
-            }),
-        [repayment.loanAmount, interestRate, loanTerm]
     );
 
     const extras = useMemo(
@@ -227,36 +224,59 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
         [purchasePrice, deposit]
     );
 
-    const termCompare = useMemo(
+    const stress = useMemo(
         () =>
-            TERM_PRESETS.map((years) => {
-                const row = summariseBondRepayment({
-                    purchasePrice,
-                    deposit,
-                    interestRate,
-                    loanTermYears: years,
-                });
-                return { years, monthly: row.monthlyRepayment, interest: row.totalInterest };
+            stressRepayments({
+                loanAmount: repayment.loanAmount,
+                interestRate,
+                loanTermYears: loanTerm,
             }),
-        [purchasePrice, deposit, interestRate]
+        [repayment.loanAmount, interestRate, loanTerm]
     );
 
-    const termRec = useMemo(() => recommendTerm(termCompare), [termCompare]);
-
-    const curve = useMemo(
+    const scenarios = useMemo(
         () =>
-            yearlyBalanceCurve({
-                loanAmount: repayment.loanAmount,
+            buildScenarioComparison({
+                purchasePrice,
+                deposit,
                 interestRate,
                 loanTermYears: loanTerm,
                 extraMonthly,
             }),
-        [repayment.loanAmount, interestRate, loanTerm, extraMonthly]
+        [purchasePrice, deposit, interestRate, loanTerm, extraMonthly]
+    );
+
+    const chartSeries = useMemo(
+        () =>
+            buildBondChartSeries({
+                purchasePrice,
+                loanAmount: repayment.loanAmount,
+                interestRate,
+                loanTermYears: loanTerm,
+                extraMonthly,
+                monthlyRepayment: repayment.monthlyRepayment,
+            }),
+        [purchasePrice, repayment.loanAmount, interestRate, loanTerm, extraMonthly, repayment.monthlyRepayment]
+    );
+
+    const chartKey = CHART_TAB_CONFIG.find((t) => t.id === chartTab)?.key ?? 'balance';
+    const chartData = chartSeries.map((p) => ({
+        year: `Y${p.year}`,
+        value: Math.abs(p[chartKey]),
+    }));
+
+    const dti = useMemo(
+        () => debtToIncomeRatio(repayment.monthlyRepayment, monthlyIncome, monthlyExpenses),
+        [repayment.monthlyRepayment, monthlyIncome, monthlyExpenses]
     );
 
     const affordStatus = useMemo(
-        () => classifyAffordability(repayment.monthlyRepayment, monthlyBudget),
-        [repayment.monthlyRepayment, monthlyBudget]
+        () =>
+            classifyAffordability(
+                repayment.monthlyRepayment,
+                monthlyIncome > 0 ? monthlyIncome - monthlyExpenses : monthlyBudget
+            ),
+        [repayment.monthlyRepayment, monthlyIncome, monthlyExpenses, monthlyBudget]
     );
 
     const interestShare =
@@ -264,13 +284,10 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
             ? Math.min(100, (repayment.totalInterest / repayment.totalPayable) * 100)
             : 0;
 
-    const maxTermInterest = Math.max(...termCompare.map((t) => t.interest), 1);
-
-    const coach = useMemo(
+    const insights = useMemo(
         () =>
-            buildCoachInsight({
-                mode,
-                monthly: mode === 'affordability' ? monthlyBudget : repayment.monthlyRepayment,
+            generateBondInsights({
+                monthlyRepayment: repayment.monthlyRepayment,
                 loanAmount: repayment.loanAmount,
                 totalInterest: repayment.totalInterest,
                 depositPct: repayment.depositPct,
@@ -280,54 +297,205 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                 extraMonthly,
                 monthsSaved: extras.monthsSaved,
                 interestSaved: extras.interestSaved,
+                dtiPct: dti,
+                monthlyIncome,
                 affordBand: affordStatus.band,
-                maxPurchase: afford.maxPurchase,
-                cashToClose: cash.cashToClose,
-                purchasePrice,
             }),
         [
-            mode,
-            monthlyBudget,
             repayment,
             interestRate,
             loanTerm,
             extraMonthly,
             extras,
+            dti,
+            monthlyIncome,
             affordStatus.band,
-            afford.maxPurchase,
-            cash.cashToClose,
-            purchasePrice,
         ]
     );
+
+    const recommended = scenarios.find((s) => s.recommended) ?? scenarios[1];
+    const termRec = useMemo(() => {
+        const rows = TERM_PRESETS.map((years) => {
+            const row = summariseBondRepayment({
+                purchasePrice,
+                deposit,
+                interestRate,
+                loanTermYears: years,
+            });
+            return { years, monthly: row.monthlyRepayment, interest: row.totalInterest };
+        });
+        return recommendTerm(rows);
+    }, [purchasePrice, deposit, interestRate]);
 
     const setDepositPct = (pct: number) => {
         setDeposit(Math.round((purchasePrice * pct) / 100));
     };
 
+    const resetCalculator = () => {
+        setPurchasePrice(DEFAULT_BOND_INPUTS.purchasePrice);
+        setDeposit(DEFAULT_BOND_INPUTS.deposit);
+        setInterestRate(DEFAULT_BOND_INPUTS.interestRate);
+        setLoanTerm(DEFAULT_BOND_INPUTS.loanTerm);
+        setExtraMonthly(DEFAULT_BOND_INPUTS.extraMonthly);
+        setMonthlyIncome(DEFAULT_BOND_INPUTS.monthlyIncome);
+        setMonthlyExpenses(DEFAULT_BOND_INPUTS.monthlyExpenses);
+        setMonthlyBudget(DEFAULT_BOND_INPUTS.monthlyBudget);
+        setAffordDepositPct(DEFAULT_BOND_INPUTS.affordDepositPct);
+        setMode('repayment');
+    };
+
+    const snapshot = useCallback(
+        () => ({
+            purchasePrice,
+            deposit,
+            interestRate,
+            loanTerm,
+            extraMonthly,
+            monthlyIncome,
+            monthlyExpenses,
+            monthlyBudget,
+        }),
+        [
+            purchasePrice,
+            deposit,
+            interestRate,
+            loanTerm,
+            extraMonthly,
+            monthlyIncome,
+            monthlyExpenses,
+            monthlyBudget,
+        ]
+    );
+
+    const handleSave = () => {
+        const next = saveBondCalculation(snapshot());
+        setSaved(next);
+        setShowSaved(true);
+    };
+
+    const loadSaved = (item: SavedBondCalculation) => {
+        setPurchasePrice(item.purchasePrice);
+        setDeposit(item.deposit);
+        setInterestRate(item.interestRate);
+        setLoanTerm(item.loanTerm);
+        setExtraMonthly(item.extraMonthly);
+        setMonthlyIncome(item.monthlyIncome);
+        setMonthlyExpenses(item.monthlyExpenses);
+        setMonthlyBudget(item.monthlyBudget);
+    };
+
+    const handleShare = async () => {
+        const text = `Bond estimate: ${formatZar(repayment.monthlyRepayment)}/mo on ${formatZar(purchasePrice)} at ${interestRate}% over ${loanTerm} years — PropReady`;
+        const url = typeof window !== 'undefined' ? window.location.href : 'https://propready.live/calculator';
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'PropReady Bond Calculator', text, url });
+                return;
+            }
+        } catch {
+            /* user cancelled */
+        }
+        try {
+            await navigator.clipboard.writeText(`${text}\n${url}`);
+            alert('Results copied to clipboard.');
+        } catch {
+            alert(text);
+        }
+    };
+
+    const handleExportPdf = async () => {
+        const { jsPDF } = await import('jspdf');
+        const doc = new jsPDF();
+        let y = 16;
+        const line = (label: string, val: string) => {
+            doc.setFontSize(10);
+            doc.text(`${label}: ${val}`, 14, y);
+            y += 7;
+        };
+        doc.setFontSize(16);
+        doc.text('PropReady Bond Calculator', 14, y);
+        y += 10;
+        doc.setFontSize(9);
+        doc.text(`Generated ${new Date().toLocaleString('en-ZA')}`, 14, y);
+        y += 10;
+        line('Purchase price', formatZar(purchasePrice));
+        line('Deposit', `${formatZar(deposit)} (${repayment.depositPct.toFixed(0)}%)`);
+        line('Loan amount', formatZar(repayment.loanAmount));
+        line('Interest rate', `${interestRate.toFixed(2)}%`);
+        line('Term', `${loanTerm} years`);
+        line('Monthly repayment', formatZar(repayment.monthlyRepayment));
+        line('Total interest', formatZar(repayment.totalInterest));
+        line('Total repayment', formatZar(repayment.totalPayable));
+        if (extras.interestSaved > 0) {
+            line('Interest saved (extras)', formatZar(extras.interestSaved));
+            line('Months saved', String(extras.monthsSaved));
+        }
+        if (monthlyIncome > 0) line('Debt-to-income', `${dti.toFixed(1)}%`);
+        line('Cash to close (est.)', formatZar(cash.cashToClose));
+        line('Recommended', recommended.label);
+        y += 4;
+        doc.setFontSize(8);
+        doc.text('Educational estimate only — not financial advice.', 14, y);
+        doc.save(`propready-bond-${Date.now()}.pdf`);
+    };
+
+    const priceMax = 6_000_000;
     const modes: { id: Mode; label: string; icon: typeof Calculator }[] = [
         { id: 'repayment', label: 'Repayment', icon: Calculator },
         { id: 'affordability', label: 'Affordability', icon: Wallet },
         { id: 'cash', label: 'Cash to close', icon: PiggyBank },
     ];
 
-    const priceMax = 6_000_000;
-    const depositMax = Math.max(purchasePrice, 1);
+    const whatIfPresets: Record<WhatIfTab, { label: string; apply: () => void }[]> = {
+        rate: [
+            { label: 'Base rate', apply: () => setInterestRate(interestRate) },
+            { label: '+1% stress', apply: () => setInterestRate(Math.min(18, interestRate + 1)) },
+            { label: '+2% stress', apply: () => setInterestRate(Math.min(18, interestRate + 2)) },
+        ],
+        extra: [
+            { label: 'No extra', apply: () => setExtraMonthly(0) },
+            { label: '+R500', apply: () => setExtraMonthly(500) },
+            { label: '+R1,000', apply: () => setExtraMonthly(1_000) },
+            { label: '+R2,500', apply: () => setExtraMonthly(2_500) },
+        ],
+        term: TERM_PRESETS.map((years) => ({
+            label: `${years} years`,
+            apply: () => setLoanTerm(years),
+        })),
+        deposit: DEPOSIT_PRESETS.map((pct) => ({
+            label: `${pct}% deposit`,
+            apply: () => setDepositPct(pct),
+        })),
+    };
 
     return (
-        <div className={`home-landing calc-landing ${embedded ? 'calc-portal-wrap' : ''}`}>
-            {/* Hero */}
+        <div
+            className={`home-landing bc-dash ${embedded ? 'bc-dash--embedded calc-portal-wrap' : ''}`}
+        >
+            {/* §1 Hero + summary */}
             <section className="hl-surface-dark calc-hero relative">
-                <div className="hl-shell relative z-10">
+                <div className="bc-shell relative z-10">
                     <div className="calc-hero-grid">
                         <div>
                             <p className="hl-eyebrow hl-eyebrow--light">Financial planning</p>
                             <h1 className="hl-display text-[clamp(2.1rem,4.5vw,3.35rem)] text-white tracking-tight leading-[1.08] max-w-[18ch]">
-                                Your bond, told as a story — not a spreadsheet
+                                Calculate your home loan in seconds.
                             </h1>
                             <p className="hl-lede hl-lede--light !max-w-xl !mt-4">
-                                Shape price, deposit, rate and term. Watch repayments, stress, and cash-to-close
-                                respond like a coach walking you through the decision.
+                                Adjust the values below to instantly understand your repayments,
+                                affordability and lifetime borrowing costs.
                             </p>
+                            <div className="bc-trust-row">
+                                <span className="bc-trust-badge bc-trust-badge--light">
+                                    <Zap className="w-3 h-3" /> Live calculations
+                                </span>
+                                <span className="bc-trust-badge bc-trust-badge--light">
+                                    SA lending assumptions
+                                </span>
+                                <span className="bc-trust-badge bc-trust-badge--light">
+                                    Instant updates
+                                </span>
+                            </div>
                         </div>
                         <div className="calc-panel calc-panel--dark">
                             <div className="calc-panel-body space-y-4">
@@ -337,7 +505,7 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                                 <div>
                                     <p className="text-sm text-white/55">Monthly repayment</p>
                                     <p className="text-3xl font-semibold tabular-nums tracking-tight text-white mt-1">
-                                        {formatZar(repayment.monthlyRepayment)}
+                                        <AnimatedZar value={repayment.monthlyRepayment} />
                                     </p>
                                 </div>
                                 <div className="calc-split-track" aria-hidden>
@@ -352,192 +520,179 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">Loan</p>
+                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
+                                            Loan
+                                        </p>
                                         <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
-                                            {formatZar(repayment.loanAmount)}
+                                            <AnimatedZar value={repayment.loanAmount} />
                                         </p>
                                     </div>
                                     <div>
-                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">LTV</p>
+                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
+                                            Deposit
+                                        </p>
                                         <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
-                                            {repayment.ltvPct.toFixed(1)}%
+                                            <AnimatedZar value={deposit} />
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
+                                            Rate · Term
+                                        </p>
+                                        <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
+                                            {interestRate.toFixed(2)}% · {loanTerm} yrs
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
+                                            Affordability
+                                        </p>
+                                        <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
+                                            {affordStatus.label}
                                         </p>
                                     </div>
                                 </div>
+                                {extras.interestSaved > 0 ? (
+                                    <p className="text-xs font-semibold text-emerald-300/90">
+                                        Save ~{formatZar(extras.interestSaved)} · {extras.monthsSaved}{' '}
+                                        mo sooner
+                                    </p>
+                                ) : null}
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Input console */}
-            <section className="calc-story calc-story--tight calc-story--warm">
-                <div className="hl-shell">
-                    <div className="calc-console">
-                        <div className="calc-console-body space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div>
-                                    <p className="calc-story-question !mb-1">Scenario builder</p>
-                                    <h2 className="text-xl font-semibold tracking-tight text-charcoal">
-                                        Dial in your numbers
-                                    </h2>
-                                </div>
-                                <div className="calc-tabs" role="tablist" aria-label="Calculator modes">
-                                    {modes.map(({ id, label, icon: Icon }) => (
-                                        <button
-                                            key={id}
-                                            type="button"
-                                            role="tab"
-                                            aria-selected={mode === id}
-                                            className={`calc-tab ${mode === id ? 'calc-tab--active' : ''}`}
-                                            onClick={() => setMode(id)}
-                                        >
-                                            <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
-                                            {label}
-                                        </button>
-                                    ))}
-                                </div>
+            {/* §2 Calculator */}
+            <section className="bc-spacer-section">
+                <div className="bc-shell">
+                    <div className="bc-card bc-card-pad">
+                        <div className="bc-toolbar">
+                            <div>
+                                <p className="bc-section-title">Calculator</p>
+                                <h2 className="bc-section-heading">Your scenario</h2>
                             </div>
+                            <div className="bc-actions">
+                                <button type="button" className="bc-btn" onClick={resetCalculator}>
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    Reset
+                                </button>
+                                <button type="button" className="bc-btn" onClick={handleShare}>
+                                    <Share2 className="w-3.5 h-3.5" />
+                                    Share
+                                </button>
+                                <button type="button" className="bc-btn" onClick={() => void handleExportPdf()}>
+                                    <Download className="w-3.5 h-3.5" />
+                                    PDF
+                                </button>
+                                <button type="button" className="bc-btn bc-btn--primary" onClick={handleSave}>
+                                    <Save className="w-3.5 h-3.5" />
+                                    Save
+                                </button>
+                            </div>
+                        </div>
 
-                            <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
-                                {mode !== 'affordability' ? (
-                                    <>
-                                        <div className="calc-field">
-                                            <div className="calc-label-row">
-                                                <label className="calc-label" htmlFor="bc-price">
-                                                    Purchase price
-                                                </label>
-                                                <span className="calc-label-value">
-                                                    {formatZar(purchasePrice)}
-                                                </span>
-                                            </div>
-                                            <input
-                                                id="bc-price"
-                                                type="range"
-                                                min={500_000}
-                                                max={priceMax}
-                                                step={25_000}
-                                                value={Math.min(purchasePrice, priceMax)}
-                                                onChange={(e) => {
-                                                    const next = Number(e.target.value);
-                                                    setPurchasePrice(next);
-                                                    if (deposit > next) setDeposit(next);
-                                                }}
-                                                className="calc-range"
-                                            />
-                                            <div className="calc-chip-row">
-                                                {PRICE_PRESETS.map((p) => (
-                                                    <button
-                                                        key={p.value}
-                                                        type="button"
-                                                        className={`calc-chip ${
-                                                            purchasePrice === p.value ? 'calc-chip--active' : ''
-                                                        }`}
-                                                        onClick={() => {
-                                                            setPurchasePrice(p.value);
-                                                            setDeposit(Math.round(p.value * 0.1));
-                                                        }}
-                                                    >
-                                                        {p.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            <p className="calc-tip">
-                                                Typical mid-market bands for first-time and upgrading buyers.
-                                            </p>
-                                        </div>
+                        <div className="bc-mode-tabs mb-5" role="tablist">
+                            {modes.map(({ id, label, icon: Icon }) => (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={mode === id}
+                                    className={`bc-mode-tab ${mode === id ? 'bc-mode-tab--active' : ''}`}
+                                    onClick={() => setMode(id)}
+                                >
+                                    <Icon className="w-3 h-3 inline mr-1 -mt-px" />
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
 
-                                        <div className="calc-field">
-                                            <div className="calc-label-row">
-                                                <label className="calc-label" htmlFor="bc-deposit">
-                                                    Deposit
+                        <div className="bc-grid-12">
+                            {mode !== 'affordability' ? (
+                                <>
+                                    <div className="col-span-12 md:col-span-6">
+                                        <MoneyField
+                                            id="bc-price"
+                                            label="Property price"
+                                            value={purchasePrice}
+                                            min={500_000}
+                                            max={priceMax}
+                                            step={25_000}
+                                            onChange={(v) => {
+                                                setPurchasePrice(v);
+                                                if (deposit > v) setDeposit(v);
+                                            }}
+                                            presets={PRICE_PRESETS.map((p) => ({
+                                                label: p.label,
+                                                value: p.value,
+                                            }))}
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-6">
+                                        <MoneyField
+                                            id="bc-deposit"
+                                            label="Deposit"
+                                            value={deposit}
+                                            min={0}
+                                            max={purchasePrice}
+                                            step={5_000}
+                                            onChange={(v) =>
+                                                setDeposit(Math.min(purchasePrice, v))
+                                            }
+                                            presets={DEPOSIT_PRESETS.map((pct) => ({
+                                                label: `${pct}%`,
+                                                value: Math.round((purchasePrice * pct) / 100),
+                                            }))}
+                                            formatValue={(v) =>
+                                                `${formatZar(v)} · ${repayment.depositPct.toFixed(0)}%`
+                                            }
+                                        />
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="col-span-12 md:col-span-6">
+                                        <MoneyField
+                                            id="bc-budget"
+                                            label="Monthly comfort budget"
+                                            value={monthlyBudget}
+                                            min={5_000}
+                                            max={60_000}
+                                            step={500}
+                                            onChange={setMonthlyBudget}
+                                        />
+                                    </div>
+                                    <div className="col-span-12 md:col-span-6">
+                                        <div className="bc-field">
+                                            <div className="bc-field-head">
+                                                <label className="bc-field-label" htmlFor="bc-afford-dep">
+                                                    Planned deposit %
                                                 </label>
-                                                <span className="calc-label-value">
-                                                    {formatZar(deposit)} · {repayment.depositPct.toFixed(0)}%
-                                                </span>
+                                                <span className="bc-field-value">{affordDepositPct}%</span>
                                             </div>
                                             <input
-                                                id="bc-deposit"
-                                                type="range"
-                                                min={0}
-                                                max={depositMax}
-                                                step={5_000}
-                                                value={Math.min(deposit, depositMax)}
-                                                onChange={(e) =>
-                                                    setDeposit(Math.min(purchasePrice, Number(e.target.value)))
-                                                }
-                                                className="calc-range"
-                                            />
-                                            <div className="calc-chip-row">
-                                                {DEPOSIT_PRESETS.map((pct) => (
-                                                    <button
-                                                        key={pct}
-                                                        type="button"
-                                                        className={`calc-chip ${
-                                                            Math.round(repayment.depositPct) === pct
-                                                                ? 'calc-chip--active'
-                                                                : ''
-                                                        }`}
-                                                        onClick={() => setDepositPct(pct)}
-                                                    >
-                                                        {pct}%
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            <p className="calc-tip">
-                                                10%+ often improves LTV optics; 20% can unlock better pricing.
-                                            </p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="calc-field">
-                                            <div className="calc-label-row">
-                                                <label className="calc-label" htmlFor="bc-budget">
-                                                    Monthly comfort budget
-                                                </label>
-                                                <span className="calc-label-value">
-                                                    {formatZar(monthlyBudget)}
-                                                </span>
-                                            </div>
-                                            <input
-                                                id="bc-budget"
-                                                type="range"
-                                                min={5_000}
-                                                max={60_000}
-                                                step={500}
-                                                value={monthlyBudget}
-                                                onChange={(e) => setMonthlyBudget(Number(e.target.value))}
-                                                className="calc-range"
-                                            />
-                                            <p className="calc-tip">
-                                                What you can sustainably pay — not the maximum a bank might quote.
-                                            </p>
-                                        </div>
-                                        <div className="calc-field">
-                                            <div className="calc-label-row">
-                                                <label className="calc-label" htmlFor="bc-afford-deposit">
-                                                    Planned deposit
-                                                </label>
-                                                <span className="calc-label-value">{affordDepositPct}%</span>
-                                            </div>
-                                            <input
-                                                id="bc-afford-deposit"
+                                                id="bc-afford-dep"
                                                 type="range"
                                                 min={5}
                                                 max={40}
                                                 step={1}
                                                 value={affordDepositPct}
-                                                onChange={(e) => setAffordDepositPct(Number(e.target.value))}
-                                                className="calc-range"
+                                                onChange={(e) =>
+                                                    setAffordDepositPct(Number(e.target.value))
+                                                }
+                                                className="bc-range"
                                             />
-                                            <div className="calc-chip-row">
+                                            <div className="bc-chips">
                                                 {DEPOSIT_PRESETS.filter((p) => p > 0).map((pct) => (
                                                     <button
                                                         key={pct}
                                                         type="button"
-                                                        className={`calc-chip ${
-                                                            affordDepositPct === pct ? 'calc-chip--active' : ''
+                                                        className={`bc-chip ${
+                                                            affordDepositPct === pct
+                                                                ? 'bc-chip--active'
+                                                                : ''
                                                         }`}
                                                         onClick={() => setAffordDepositPct(pct)}
                                                     >
@@ -546,15 +701,19 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                                                 ))}
                                             </div>
                                         </div>
-                                    </>
-                                )}
+                                    </div>
+                                </>
+                            )}
 
-                                <div className="calc-field">
-                                    <div className="calc-label-row">
-                                        <label className="calc-label" htmlFor="bc-rate">
+                            <div className="col-span-12 md:col-span-4">
+                                <div className="bc-field">
+                                    <div className="bc-field-head">
+                                        <label className="bc-field-label" htmlFor="bc-rate">
                                             Interest rate
                                         </label>
-                                        <span className="calc-label-value">{interestRate.toFixed(2)}% p.a.</span>
+                                        <span className="bc-field-value">
+                                            {interestRate.toFixed(2)}% p.a.
+                                        </span>
                                     </div>
                                     <input
                                         id="bc-rate"
@@ -564,19 +723,17 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                                         step={0.25}
                                         value={interestRate}
                                         onChange={(e) => setInterestRate(Number(e.target.value))}
-                                        className="calc-range"
+                                        className="bc-range"
                                     />
-                                    <p className="calc-tip">
-                                        Educational prime + margin proxy — your bank quote will differ.
-                                    </p>
                                 </div>
-
-                                <div className="calc-field">
-                                    <div className="calc-label-row">
-                                        <label className="calc-label" htmlFor="bc-term">
+                            </div>
+                            <div className="col-span-12 md:col-span-4">
+                                <div className="bc-field">
+                                    <div className="bc-field-head">
+                                        <label className="bc-field-label" htmlFor="bc-term">
                                             Loan term
                                         </label>
-                                        <span className="calc-label-value">{loanTerm} years</span>
+                                        <span className="bc-field-value">{loanTerm} years</span>
                                     </div>
                                     <input
                                         id="bc-term"
@@ -586,622 +743,160 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
                                         step={1}
                                         value={loanTerm}
                                         onChange={(e) => setLoanTerm(Number(e.target.value))}
-                                        className="calc-range"
+                                        className="bc-range"
                                     />
-                                    <div className="calc-chip-row">
+                                    <div className="bc-chips">
                                         {TERM_PRESETS.map((years) => (
                                             <button
                                                 key={years}
                                                 type="button"
-                                                className={`calc-chip ${
-                                                    loanTerm === years ? 'calc-chip--active' : ''
+                                                className={`bc-chip ${
+                                                    loanTerm === years ? 'bc-chip--active' : ''
                                                 }`}
                                                 onClick={() => setLoanTerm(years)}
                                             >
-                                                {years} yrs
+                                                {years}y
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             </div>
-
-                            {mode === 'repayment' ? (
-                                <div className="calc-field max-w-xl">
-                                    <div className="calc-label-row">
-                                        <label className="calc-label" htmlFor="bc-extra">
-                                            Extra monthly payment
-                                        </label>
-                                        <span className="calc-label-value">
-                                            {extraMonthly === 0 ? 'None' : `+${formatZar(extraMonthly)}`}
-                                        </span>
-                                    </div>
-                                    <input
-                                        id="bc-extra"
-                                        type="range"
-                                        min={0}
-                                        max={5_000}
-                                        step={100}
-                                        value={extraMonthly}
-                                        onChange={(e) => setExtraMonthly(Number(e.target.value))}
-                                        className="calc-range"
-                                    />
-                                    <div className="calc-chip-row">
-                                        {[0, 500, 1000, 2500].map((v) => (
-                                            <button
-                                                key={v}
-                                                type="button"
-                                                className={`calc-chip ${
-                                                    extraMonthly === v ? 'calc-chip--active' : ''
-                                                }`}
-                                                onClick={() => setExtraMonthly(v)}
-                                            >
-                                                {v === 0 ? 'None' : `+${formatZar(v)}`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : null}
-
-                            <details
-                                className="calc-disclose"
-                                open={showAdvanced}
-                                onToggle={(e) => setShowAdvanced((e.target as HTMLDetailsElement).open)}
-                            >
-                                <summary>
-                                    <ChevronDown className="w-3.5 h-3.5" />
-                                    Exact amounts &amp; comfort budget
-                                </summary>
-                                <div className="mt-4 grid sm:grid-cols-3 gap-4">
-                                    {mode !== 'affordability' ? (
-                                        <>
-                                            <div className="calc-field">
-                                                <label className="calc-label" htmlFor="bc-price-exact">
-                                                    Exact price
-                                                </label>
-                                                <div className="calc-input-wrap">
-                                                    <span className="calc-input-prefix">R</span>
-                                                    <input
-                                                        id="bc-price-exact"
-                                                        className="calc-input calc-input--prefix"
-                                                        inputMode="numeric"
-                                                        value={
-                                                            purchasePrice === 0
-                                                                ? ''
-                                                                : formatNumber(purchasePrice)
-                                                        }
-                                                        onChange={(e) => {
-                                                            const next = parseMoneyInput(e.target.value);
-                                                            setPurchasePrice(next);
-                                                            if (deposit > next) setDeposit(next);
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="calc-field">
-                                                <label className="calc-label" htmlFor="bc-deposit-exact">
-                                                    Exact deposit
-                                                </label>
-                                                <div className="calc-input-wrap">
-                                                    <span className="calc-input-prefix">R</span>
-                                                    <input
-                                                        id="bc-deposit-exact"
-                                                        className="calc-input calc-input--prefix"
-                                                        inputMode="numeric"
-                                                        value={deposit === 0 ? '' : formatNumber(deposit)}
-                                                        onChange={(e) =>
-                                                            setDeposit(
-                                                                Math.min(
-                                                                    purchasePrice,
-                                                                    parseMoneyInput(e.target.value)
-                                                                )
-                                                            )
-                                                        }
-                                                    />
-                                                </div>
-                                            </div>
-                                        </>
-                                    ) : null}
-                                    <div className="calc-field">
-                                        <label className="calc-label" htmlFor="bc-budget-exact">
-                                            Comfort budget / month
-                                        </label>
-                                        <div className="calc-input-wrap">
-                                            <span className="calc-input-prefix">R</span>
-                                            <input
-                                                id="bc-budget-exact"
-                                                className="calc-input calc-input--prefix"
-                                                inputMode="numeric"
-                                                value={monthlyBudget === 0 ? '' : formatNumber(monthlyBudget)}
-                                                onChange={(e) =>
-                                                    setMonthlyBudget(parseMoneyInput(e.target.value))
-                                                }
-                                            />
-                                        </div>
-                                        <p className="calc-tip">Used to colour-code affordability status.</p>
-                                    </div>
-                                </div>
-                            </details>
+                            <div className="col-span-12 md:col-span-4">
+                                <MoneyField
+                                    id="bc-extra"
+                                    label="Extra monthly payment"
+                                    value={extraMonthly}
+                                    min={0}
+                                    max={5_000}
+                                    step={100}
+                                    onChange={setExtraMonthly}
+                                    presets={[
+                                        { label: 'None', value: 0 },
+                                        { label: '+R500', value: 500 },
+                                        { label: '+R1k', value: 1_000 },
+                                        { label: '+R2.5k', value: 2_500 },
+                                    ]}
+                                    formatValue={(v) => (v === 0 ? 'None' : `+${formatZar(v)}`)}
+                                />
+                            </div>
+                            <div className="col-span-12 md:col-span-6">
+                                <MoneyField
+                                    id="bc-income"
+                                    label="Monthly income (optional)"
+                                    value={monthlyIncome}
+                                    min={0}
+                                    max={200_000}
+                                    step={1_000}
+                                    onChange={setMonthlyIncome}
+                                />
+                            </div>
+                            <div className="col-span-12 md:col-span-6">
+                                <MoneyField
+                                    id="bc-expenses"
+                                    label="Monthly expenses (optional)"
+                                    value={monthlyExpenses}
+                                    min={0}
+                                    max={100_000}
+                                    step={500}
+                                    onChange={setMonthlyExpenses}
+                                />
+                            </div>
                         </div>
+
+                        {showSaved && saved.length > 0 ? (
+                            <div className="mt-5 pt-4 border-t border-charcoal/[0.06]">
+                                <p className="bc-section-title mb-2">Saved scenarios</p>
+                                <div className="bc-saved-list">
+                                    {saved.map((item) => (
+                                        <div key={item.id} className="bc-saved-item">
+                                            <button
+                                                type="button"
+                                                className="text-left flex-1 font-semibold hover:text-red-600"
+                                                onClick={() => loadSaved(item)}
+                                            >
+                                                {item.label} · {formatZar(item.purchasePrice)}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="text-charcoal/40 hover:text-red-600 text-xs"
+                                                onClick={() =>
+                                                    setSaved(deleteSavedBondCalculation(item.id))
+                                                }
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                {saved.length >= 2 ? (
+                                    <div className="mt-4 overflow-x-auto">
+                                        <table className="w-full text-xs">
+                                            <thead>
+                                                <tr className="text-left text-charcoal/45 border-b border-charcoal/[0.06]">
+                                                    <th className="py-2 pr-3 font-semibold">Scenario</th>
+                                                    <th className="py-2 pr-3 font-semibold">Price</th>
+                                                    <th className="py-2 pr-3 font-semibold">Rate</th>
+                                                    <th className="py-2 font-semibold">Monthly (est.)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {saved.slice(0, 4).map((item) => {
+                                                    const est = summariseBondRepayment({
+                                                        purchasePrice: item.purchasePrice,
+                                                        deposit: item.deposit,
+                                                        interestRate: item.interestRate,
+                                                        loanTermYears: item.loanTerm,
+                                                    });
+                                                    return (
+                                                        <tr
+                                                            key={`cmp-${item.id}`}
+                                                            className="border-b border-charcoal/[0.04]"
+                                                        >
+                                                            <td className="py-2 pr-3 font-medium">
+                                                                {item.label}
+                                                            </td>
+                                                            <td className="py-2 pr-3 tabular-nums">
+                                                                {formatZar(item.purchasePrice)}
+                                                            </td>
+                                                            <td className="py-2 pr-3 tabular-nums">
+                                                                {item.interestRate}%
+                                                            </td>
+                                                            <td className="py-2 tabular-nums font-semibold">
+                                                                {formatZar(est.monthlyRepayment)}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
                 </div>
             </section>
 
-            {mode === 'repayment' ? (
-                <>
-                    {/* Monthly payment story */}
-                    <section className="calc-story">
-                        <div className="hl-shell">
-                            <p className="calc-story-question">Monthly payment</p>
-                            <h2 className="calc-story-title">What will leave your account each month?</h2>
-                            <p className="calc-story-lede">
-                                This is the instalment story — then how comfortable it feels against your budget,
-                                and what a little extra could buy you.
-                            </p>
-
-                            <div className="calc-metric-hero mt-10">
-                                <div>
-                                    <p className="calc-metric-amount">
-                                        {formatZar(repayment.monthlyRepayment)}
-                                    </p>
-                                    <p className="calc-metric-sub">
-                                        {repayment.payments} payments · {loanTerm} years · educational estimate
-                                    </p>
-                                    <div className="mt-5 flex flex-wrap items-center gap-2">
-                                        <span className={`calc-badge calc-badge--${affordStatus.band}`}>
-                                            {affordStatus.label}
-                                        </span>
-                                        <span className="text-sm text-charcoal/50 max-w-sm">
-                                            {affordStatus.hint}
-                                        </span>
-                                    </div>
-                                    {extraMonthly > 0 && extras.interestSaved > 0 ? (
-                                        <div className="mt-5 inline-flex items-center gap-2">
-                                            <span className="calc-badge calc-badge--save">
-                                                Save ~{formatZar(extras.interestSaved)}
-                                            </span>
-                                            <span className="text-sm text-charcoal/50">
-                                                · settle ~{extras.monthsSaved} months sooner
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <p className="mt-5 text-sm text-charcoal/50 max-w-md leading-relaxed">
-                                            <strong className="text-charcoal/70">Insight:</strong> early years are
-                                            interest-heavy — even small extras cut the tail of the loan.
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="calc-chart-frame">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40 mb-2 px-1">
-                                        Outstanding balance over time
-                                    </p>
-                                    <BalanceCurveChart points={curve} />
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Loan summary — dark */}
-                    <section className="calc-story calc-story--dark">
-                        <div className="hl-shell">
-                            <p className="calc-story-question">Loan summary</p>
-                            <h2 className="calc-story-title text-white">What are you actually financing?</h2>
-                            <p className="calc-story-lede">
-                                Price minus deposit becomes the bond. Over the full term, interest often rivals —
-                                or exceeds — the principal.
-                            </p>
-
-                            <div className="mt-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                                <div className="lg:col-span-4">
-                                    <PrincipalInterestRing
-                                        principal={repayment.loanAmount}
-                                        interest={repayment.totalInterest}
-                                        dark
-                                    />
-                                    <div className="mt-5 flex justify-center gap-5 text-sm">
-                                        <span className="inline-flex items-center gap-2 text-white/70">
-                                            <span className="h-2.5 w-2.5 rounded-full bg-white" /> Principal
-                                        </span>
-                                        <span className="inline-flex items-center gap-2 text-white/70">
-                                            <span className="h-2.5 w-2.5 rounded-full bg-[#F87171]" /> Interest
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="lg:col-span-8 space-y-6">
-                                    <div className="grid sm:grid-cols-3 gap-4">
-                                        <div>
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                                                Loan amount
-                                            </p>
-                                            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">
-                                                {formatZar(repayment.loanAmount)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                                                Total interest
-                                            </p>
-                                            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-[#FECACA]">
-                                                {formatZar(repayment.totalInterest)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                                                Deposit / LTV
-                                            </p>
-                                            <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">
-                                                {repayment.depositPct.toFixed(0)}% · {repayment.ltvPct.toFixed(0)}%
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40 mb-3">
-                                            Repayment timeline
-                                        </p>
-                                        <div className="calc-timeline">
-                                            {[
-                                                {
-                                                    label: 'Year 1',
-                                                    value: extras.yearOneInterest + extras.yearOnePrincipal,
-                                                    hint: `${formatZar(extras.yearOneInterest)} interest`,
-                                                },
-                                                {
-                                                    label: 'Year 5',
-                                                    value: Math.max(
-                                                        0,
-                                                        repayment.loanAmount -
-                                                            (curve.find((p) => p.year === 5)?.balance ??
-                                                                repayment.loanAmount)
-                                                    ),
-                                                    hint: `Balance ~${formatZar(
-                                                        curve.find((p) => p.year === 5)?.balance ??
-                                                            repayment.loanAmount
-                                                    )}`,
-                                                },
-                                                {
-                                                    label: `Year ${loanTerm}`,
-                                                    value: repayment.loanAmount,
-                                                    hint: 'Bond settled (estimate)',
-                                                },
-                                            ].map((row) => (
-                                                <div key={row.label} className="calc-timeline-row">
-                                                    <span className="text-xs font-semibold text-white/55">
-                                                        {row.label}
-                                                    </span>
-                                                    <div className="calc-timeline-bar">
-                                                        <span
-                                                            style={{
-                                                                width: `${Math.min(
-                                                                    100,
-                                                                    (row.value /
-                                                                        Math.max(repayment.loanAmount, 1)) *
-                                                                        100
-                                                                )}%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs text-white/45 text-right">
-                                                        {row.hint}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Interest analysis */}
-                    <section className="calc-story calc-story--warm">
-                        <div className="hl-shell">
-                            <p className="calc-story-question">Interest analysis</p>
-                            <h2 className="calc-story-title">Where does every rand go?</h2>
-                            <p className="calc-story-lede">
-                                See principal versus interest across the full journey — and how extras rewrite the
-                                ending.
-                            </p>
-
-                            <div className="mt-10 grid lg:grid-cols-2 gap-8 items-start">
-                                <div className="space-y-5">
-                                    <div className="calc-split-track !h-3" aria-hidden>
-                                        <span
-                                            className="bg-charcoal"
-                                            style={{ width: `${100 - interestShare}%` }}
-                                        />
-                                        <span
-                                            className="bg-[#dc2626]"
-                                            style={{ width: `${interestShare}%` }}
-                                        />
-                                    </div>
-                                    <div className="flex justify-between text-sm">
-                                        <span>
-                                            Principal{' '}
-                                            <strong className="tabular-nums">
-                                                {formatZar(repayment.loanAmount)}
-                                            </strong>
-                                        </span>
-                                        <span>
-                                            Interest{' '}
-                                            <strong className="tabular-nums text-[#dc2626]">
-                                                {formatZar(repayment.totalInterest)}
-                                            </strong>
-                                        </span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4 pt-2">
-                                        <div>
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-charcoal/40">
-                                                Total repayment
-                                            </p>
-                                            <p className="mt-1 text-xl font-semibold tabular-nums">
-                                                {formatZar(repayment.totalPayable)}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-charcoal/40">
-                                                Interest share
-                                            </p>
-                                            <p className="mt-1 text-xl font-semibold tabular-nums">
-                                                {interestShare.toFixed(0)}%
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="calc-chart-frame !bg-white/90">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40 mb-3">
-                                        Impact of extra repayments
-                                    </p>
-                                    {extraMonthly > 0 ? (
-                                        <div className="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <p className="text-xs text-charcoal/45">Months saved</p>
-                                                <p className="text-2xl font-semibold tabular-nums mt-1">
-                                                    {extras.monthsSaved}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-charcoal/45">Interest saved</p>
-                                                <p className="text-2xl font-semibold tabular-nums mt-1 text-[#0f766e]">
-                                                    {formatZar(extras.interestSaved)}
-                                                </p>
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-charcoal/45">Settle in</p>
-                                                <p className="text-2xl font-semibold tabular-nums mt-1">
-                                                    {(extras.optimizedMonths / 12).toFixed(1)}y
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-charcoal/55 leading-relaxed">
-                                            Nudge the “Extra monthly” slider. Paying a little more than the
-                                            instalment attacks principal early — when interest bites hardest.
-                                        </p>
-                                    )}
-                                    <div className="mt-5 calc-chart-frame !p-0 !border-0 !bg-transparent !shadow-none">
-                                        <BalanceCurveChart points={curve} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* Stress test — dark */}
-                    <section className="calc-story calc-story--dark">
-                        <div className="hl-shell">
-                            <p className="calc-story-question">Stress test</p>
-                            <h2 className="calc-story-title text-white">Can you survive a rate rise?</h2>
-                            <p className="calc-story-lede">
-                                Rates move. Colour-coded scenarios show how your monthly instalment changes if the
-                                cost of money climbs.
-                            </p>
-
-                            <div className="calc-compare mt-10">
-                                {stress.map((row) => {
-                                    const delta = row.monthly - stress[0].monthly;
-                                    const status = classifyAffordability(row.monthly, monthlyBudget);
-                                    return (
-                                        <div
-                                            key={row.bump}
-                                            className={`calc-compare-card ${
-                                                row.bump === 0
-                                                    ? 'calc-compare-card--base'
-                                                    : row.bump >= 2
-                                                      ? 'calc-compare-card--warn'
-                                                      : ''
-                                            }`}
-                                        >
-                                            <p className="text-[11px] font-semibold uppercase tracking-wider text-white/45">
-                                                {row.bump === 0 ? 'Base rate' : `Rate +${row.bump}%`}
-                                            </p>
-                                            <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">
-                                                {formatZar(row.monthly)}
-                                            </p>
-                                            <p className="mt-1 text-xs text-white/45">
-                                                {row.rate.toFixed(2)}% p.a.
-                                            </p>
-                                            <div className="mt-3">
-                                                <span className={`calc-badge calc-badge--${status.band}`}>
-                                                    {status.label}
-                                                </span>
-                                            </div>
-                                            {row.bump > 0 ? (
-                                                <p className="calc-compare-delta">
-                                                    +{formatZar(delta)} / month vs base
-                                                </p>
-                                            ) : (
-                                                <p className="mt-3 text-xs text-white/45 leading-relaxed">
-                                                    Your planning anchor — still verify with a bank quote.
-                                                </p>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <p className="mt-8 text-sm text-white/55 max-w-2xl leading-relaxed">
-                                <strong className="text-white/80">Recommendation:</strong>{' '}
-                                {affordStatus.band === 'tight'
-                                    ? 'At current inputs you are already tight — do not rely on today’s rate holding. Soften price or deposit before you offer.'
-                                    : 'If +2% still feels comfortable, you have a healthier buffer. If it tips into stretch or tight, renegotiate the purchase band.'}
-                            </p>
-                        </div>
-                    </section>
-
-                    {/* Term comparison */}
-                    <section className="calc-story">
-                        <div className="hl-shell">
-                            <p className="calc-story-question">Term comparison</p>
-                            <h2 className="calc-story-title">Which term matches your goal?</h2>
-                            <p className="calc-story-lede">
-                                Shorter terms cost more each month and less overall. Longer terms ease cash flow
-                                and grow the interest bill.
-                            </p>
-
-                            <div className="calc-term-grid mt-10">
-                                {termCompare.map((row) => {
-                                    const isActive = row.years === loanTerm;
-                                    const isRec = row.years === termRec.years;
-                                    const saveVsLong =
-                                        termCompare[termCompare.length - 1].interest - row.interest;
-                                    return (
-                                        <button
-                                            key={row.years}
-                                            type="button"
-                                            onClick={() => setLoanTerm(row.years)}
-                                            className={`calc-term-card ${isActive ? 'calc-term-card--active' : ''} ${
-                                                isRec ? 'calc-term-card--recommend' : ''
-                                            }`}
-                                        >
-                                            <p className="text-sm font-semibold">{row.years} years</p>
-                                            <p className="mt-2 text-lg font-semibold tabular-nums tracking-tight">
-                                                {formatZar(row.monthly)}
-                                            </p>
-                                            <p className="mt-1 text-[11px] text-charcoal/45">/ month</p>
-                                            {saveVsLong > 0 && row.years < 30 ? (
-                                                <span className="mt-3 inline-flex calc-badge calc-badge--save !h-6 !text-[10px]">
-                                                    −{formatZar(saveVsLong)} interest
-                                                </span>
-                                            ) : (
-                                                <span className="mt-3 block text-[11px] text-charcoal/40">
-                                                    Lowest monthly
-                                                </span>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="calc-interest-bars">
-                                <p className="text-[11px] font-semibold uppercase tracking-wider text-charcoal/40 mb-1">
-                                    Total interest by term
-                                </p>
-                                {termCompare.map((row) => (
-                                    <div key={`bar-${row.years}`} className="calc-interest-row">
-                                        <span className="font-semibold text-charcoal/60">{row.years}y</span>
-                                        <div className="calc-interest-fill">
-                                            <span
-                                                style={{
-                                                    width: `${(row.interest / maxTermInterest) * 100}%`,
-                                                    opacity: row.years === loanTerm ? 1 : 0.55,
-                                                }}
-                                            />
-                                        </div>
-                                        <span className="text-right tabular-nums text-charcoal/55">
-                                            {formatZar(row.interest)}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <p className="mt-8 text-sm text-charcoal/55 max-w-2xl leading-relaxed">
-                                <strong className="text-charcoal">Recommended:</strong> {termRec.reason}
-                            </p>
-                        </div>
-                    </section>
-                </>
-            ) : null}
-
+            {/* Mode-specific compact KPI strip */}
             {mode === 'affordability' ? (
-                <section className="calc-story">
-                    <div className="hl-shell">
-                        <p className="calc-story-question">Affordability</p>
-                        <h2 className="calc-story-title">What can this budget unlock?</h2>
-                        <p className="calc-story-lede">
-                            Reverse the calculator: start from the instalment you can live with, then see an
-                            indicative purchase ceiling.
-                        </p>
-
-                        <div className="calc-metric-hero mt-10">
-                            <div>
-                                <p className="calc-metric-amount">{formatZar(afford.maxPurchase)}</p>
-                                <p className="calc-metric-sub">
-                                    Indicative purchase ceiling at {formatZar(monthlyBudget)}/month ·{' '}
-                                    {affordDepositPct}% deposit · {interestRate}% · {loanTerm} years
-                                </p>
-                                <div className="mt-6 grid grid-cols-2 gap-4 max-w-md">
-                                    <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-charcoal/40">
-                                            Max loan
-                                        </p>
-                                        <p className="mt-1 text-xl font-semibold tabular-nums">
-                                            {formatZar(afford.maxLoan)}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-charcoal/40">
-                                            Deposit cash
-                                        </p>
-                                        <p className="mt-1 text-xl font-semibold tabular-nums">
-                                            {formatZar(afford.depositCash)}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="mt-6 flex flex-wrap gap-3">
-                                    <Link href="/get-started" className="hl-btn hl-btn--primary !h-11">
-                                        <span>Start free</span>
-                                        <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
-                                    </Link>
-                                    <Link href="/quiz" className="hl-btn hl-btn--secondary !h-11">
-                                        Soft prequal quiz
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="calc-chart-frame space-y-4">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-charcoal/40">
-                                    Budget composition
-                                </p>
-                                <div className="calc-stack">
-                                    {[
-                                        {
-                                            label: 'Bond instalment (budget)',
-                                            amount: monthlyBudget,
-                                            pct: 100,
-                                        },
-                                        {
-                                            label: 'Suggested buffer (15%)',
-                                            amount: Math.round(monthlyBudget * 0.15),
-                                            pct: 15,
-                                        },
-                                    ].map((item) => (
-                                        <div key={item.label} className="calc-stack-item">
-                                            <div>
-                                                <p className="text-sm font-semibold">{item.label}</p>
-                                                <div className="calc-stack-bar">
-                                                    <span style={{ width: `${item.pct}%` }} />
-                                                </div>
-                                            </div>
-                                            <p className="text-sm font-semibold tabular-nums">
-                                                {formatZar(item.amount)}
-                                            </p>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="text-sm text-charcoal/50 leading-relaxed">
-                                    Banks also assess income, existing debt and credit. Use this as a planning
-                                    band — then prequalify before you offer.
-                                </p>
+                <section className="bc-spacer-section">
+                    <div className="bc-shell">
+                        <div className="bc-card bc-card-pad">
+                            <p className="bc-section-title">Affordability</p>
+                            <p className="text-2xl font-semibold tabular-nums tracking-tight mt-1">
+                                {formatZar(afford.maxPurchase)}
+                            </p>
+                            <p className="text-sm text-charcoal/50 mt-1">
+                                Indicative ceiling at {formatZar(monthlyBudget)}/mo · {affordDepositPct}%
+                                deposit · {loanTerm} years
+                            </p>
+                            <div className="flex gap-6 mt-3 text-sm">
+                                <span>
+                                    Max loan <strong>{formatZar(afford.maxLoan)}</strong>
+                                </span>
+                                <span>
+                                    Deposit cash <strong>{formatZar(afford.depositCash)}</strong>
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1209,137 +904,307 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
             ) : null}
 
             {mode === 'cash' ? (
-                <section className="calc-story calc-story--warm">
-                    <div className="hl-shell">
-                        <p className="calc-story-question">Cash to close</p>
-                        <h2 className="calc-story-title">What cash do you need beyond the bond?</h2>
-                        <p className="calc-story-lede">
-                            Deposit is only part of the story. Transfer duty, attorneys and bond registration
-                            stack on top.
-                        </p>
-
-                        <div className="calc-metric-hero mt-10">
-                            <div>
-                                <p className="calc-metric-amount">{formatZar(cash.cashToClose)}</p>
-                                <p className="calc-metric-sub">
-                                    Estimated cash to close on {formatZar(purchasePrice)} — not a conveyancer
-                                    quote.
-                                </p>
-                            </div>
-                            <div className="calc-stack">
-                                {[
-                                    { label: 'Deposit', amount: cash.deposit },
-                                    ...cash.lines.map((l) => ({ label: l.label, amount: l.amount })),
-                                    { label: 'VAT on taxable fees', amount: cash.vat },
-                                ].map((item) => (
-                                    <div key={item.label} className="calc-stack-item">
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-semibold truncate">{item.label}</p>
-                                            <div className="calc-stack-bar">
-                                                <span
-                                                    style={{
-                                                        width: `${Math.min(
-                                                            100,
-                                                            (item.amount / Math.max(cash.cashToClose, 1)) * 100
-                                                        )}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold tabular-nums shrink-0">
-                                            {formatZar(item.amount)}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
+                <section className="bc-spacer-section">
+                    <div className="bc-shell">
+                        <div className="bc-card bc-card-pad">
+                            <p className="bc-section-title">Cash to close</p>
+                            <p className="text-2xl font-semibold tabular-nums tracking-tight mt-1">
+                                {formatZar(cash.cashToClose)}
+                            </p>
+                            <p className="text-sm text-charcoal/50 mt-1">
+                                Deposit + transfer duty, attorney &amp; bond fees (estimate)
+                            </p>
                         </div>
-                        <p className="mt-6 text-sm text-charcoal/50 max-w-2xl leading-relaxed">
-                            Duty bands and tariffs change. Confirm with your conveyancer and read the{' '}
-                            <Link href="/learn/transfer-costs" className="text-gold underline">
-                                transfer costs lesson
-                            </Link>
-                            .
-                        </p>
                     </div>
                 </section>
             ) : null}
 
-            {/* AI / coach insight */}
-            <section className="calc-story calc-story--tight">
-                <div className="hl-shell">
-                    <div className="calc-coach">
-                        <div className="flex items-start gap-3">
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#dc2626] to-[#b91c1c] text-white shadow-[0_8px_24px_rgba(220,38,38,0.25)]">
-                                <Lightbulb className="w-4 h-4" strokeWidth={1.75} />
-                            </span>
-                            <div className="min-w-0">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#dc2626]">
-                                    PropReady coach
+            {/* §3 Results dashboard */}
+            <section className="bc-spacer-section">
+                <div className="bc-shell space-y-4">
+                    <div>
+                        <p className="bc-section-title">Results</p>
+                        <h2 className="bc-section-heading">Your bond at a glance</h2>
+                    </div>
+                    <div className="bc-kpi-grid">
+                        {[
+                            { label: 'Monthly payment', value: formatZar(repayment.monthlyRepayment) },
+                            {
+                                label: 'Total interest',
+                                value: formatZar(repayment.totalInterest),
+                                accent: true,
+                            },
+                            { label: 'Principal', value: formatZar(repayment.loanAmount) },
+                            { label: 'Total repayment', value: formatZar(repayment.totalPayable) },
+                            {
+                                label: 'Interest saved',
+                                value: formatZar(extras.interestSaved),
+                                good: extras.interestSaved > 0,
+                            },
+                            {
+                                label: 'Years saved',
+                                value:
+                                    extras.monthsSaved > 0
+                                        ? `${(extras.monthsSaved / 12).toFixed(1)} yrs`
+                                        : '—',
+                            },
+                            {
+                                label: 'Debt-to-income',
+                                value: monthlyIncome > 0 ? `${dti.toFixed(1)}%` : '—',
+                            },
+                            {
+                                label: 'Loan-to-value',
+                                value: `${repayment.ltvPct.toFixed(1)}%`,
+                            },
+                        ].map((kpi) => (
+                            <div key={kpi.label} className="bc-kpi">
+                                <p className="bc-kpi-label">{kpi.label}</p>
+                                <p
+                                    className={`bc-kpi-value ${
+                                        kpi.accent ? 'bc-kpi-value--accent' : ''
+                                    } ${kpi.good ? 'bc-kpi-value--good' : ''}`}
+                                >
+                                    {kpi.value}
                                 </p>
-                                <h3 className="mt-1 text-lg font-semibold tracking-tight text-charcoal">
-                                    {coach.headline}
-                                </h3>
-                                <p className="mt-2 text-sm text-charcoal/60 leading-relaxed">{coach.body}</p>
-                                <div className="calc-coach-actions">
-                                    {coach.actions.map((action) => (
-                                        <span key={action} className="calc-coach-pill">
-                                            <Sparkles className="w-3 h-3 text-[#dc2626]" strokeWidth={2} />
-                                            {action}
-                                        </span>
-                                    ))}
-                                </div>
                             </div>
+                        ))}
+                    </div>
+
+                    <div className="bc-card bc-card-pad">
+                        <div className="bc-chart-tabs" role="tablist">
+                            {CHART_TAB_CONFIG.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={chartTab === tab.id}
+                                    className={`bc-chart-tab ${
+                                        chartTab === tab.id ? 'bc-chart-tab--active' : ''
+                                    }`}
+                                    onClick={() => setChartTab(tab.id)}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="bc-chart-frame">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="bcChartFill" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#dc2626" stopOpacity={0.25} />
+                                            <stop offset="100%" stopColor="#dc2626" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(28,28,28,0.06)" />
+                                    <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#888' }} />
+                                    <YAxis
+                                        tick={{ fontSize: 11, fill: '#888' }}
+                                        tickFormatter={(v) =>
+                                            v >= 1_000_000
+                                                ? `R${(v / 1_000_000).toFixed(1)}m`
+                                                : v >= 1000
+                                                  ? `R${(v / 1000).toFixed(0)}k`
+                                                  : `R${v}`
+                                        }
+                                        width={52}
+                                    />
+                                    <Tooltip
+                                        formatter={(v: number) => formatZar(v)}
+                                        contentStyle={{
+                                            borderRadius: 12,
+                                            border: '1px solid rgba(28,28,28,0.08)',
+                                            fontSize: 12,
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="value"
+                                        stroke="#dc2626"
+                                        strokeWidth={2}
+                                        fill="url(#bcChartFill)"
+                                        animationDuration={400}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className={`bc-badge bc-badge--${affordStatus.band}`}>
+                                {affordStatus.label}
+                            </span>
+                            <span className="text-xs text-charcoal/45">{affordStatus.hint}</span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Next steps */}
-            <section className="calc-story calc-story--tight">
-                <div className="hl-shell">
-                    <p className="calc-story-question">Keep going</p>
-                    <h2 className="calc-story-title !max-w-none">Turn insight into a plan</h2>
-                    <div className="calc-next mt-8">
-                        <Link href="/calculator/smart-bond" className="calc-next-link">
-                            <span className="hl-icon !w-10 !h-10 !rounded-xl shrink-0">
-                                <Sparkles className="w-4 h-4" strokeWidth={1.75} />
-                            </span>
-                            <span>
-                                <span className="block font-semibold tracking-tight">Smart Bond Optimizer</span>
-                                <span className="block text-sm text-charcoal/50 mt-1 leading-relaxed">
-                                    Equity scenarios and refinance education beyond basic repayments.
-                                </span>
-                            </span>
-                        </Link>
-                        <Link href="/learn/home-loans" className="calc-next-link">
-                            <span className="hl-icon !w-10 !h-10 !rounded-xl shrink-0">
-                                <Scale className="w-4 h-4" strokeWidth={1.75} />
-                            </span>
-                            <span>
-                                <span className="block font-semibold tracking-tight">Home loans lessons</span>
-                                <span className="block text-sm text-charcoal/50 mt-1 leading-relaxed">
-                                    Prime, LTV and deposits — explained for South African buyers.
-                                </span>
-                            </span>
-                        </Link>
-                        <Link href="/get-started" className="calc-next-link">
-                            <span className="hl-icon !w-10 !h-10 !rounded-xl shrink-0">
-                                <ArrowRight className="w-4 h-4" strokeWidth={1.75} />
-                            </span>
-                            <span>
-                                <span className="block font-semibold tracking-tight">Get started free</span>
-                                <span className="block text-sm text-charcoal/50 mt-1 leading-relaxed">
-                                    Soft prequal and learning hubs so you arrive prepared.
-                                </span>
-                            </span>
-                        </Link>
+            {/* §4 Smart comparison */}
+            <section className="bc-spacer-section">
+                <div className="bc-shell">
+                    <p className="bc-section-title">Smart comparison</p>
+                    <h2 className="bc-section-heading mb-4">Three repayment paths</h2>
+                    <div className="bc-compare-grid">
+                        {scenarios.map((s) => (
+                            <div
+                                key={s.id}
+                                className={`bc-compare-card ${s.recommended ? 'bc-compare-card--rec' : ''}`}
+                            >
+                                {s.recommended ? (
+                                    <span className="bc-compare-rec">Recommended</span>
+                                ) : null}
+                                <p className="font-semibold text-sm mb-3">{s.label}</p>
+                                {[
+                                    ['Monthly payment', formatZar(s.monthly)],
+                                    ['Interest paid', formatZar(s.interestPaid)],
+                                    [
+                                        'Loan duration',
+                                        `${s.durationYears} yrs (${s.durationMonths} mo)`,
+                                    ],
+                                    ['Interest saved', formatZar(s.interestSaved)],
+                                    ['Total cost', formatZar(s.totalCost)],
+                                ].map(([label, val]) => (
+                                    <div key={label} className="bc-compare-metric">
+                                        <span className="text-charcoal/50">{label}</span>
+                                        <span className="font-semibold tabular-nums">{val}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
                     </div>
-                    <p className="mt-10 text-center text-xs text-charcoal/40 max-w-2xl mx-auto leading-relaxed">
-                        Educational estimates only. Actual rates, fees and affordability depend on your credit
-                        profile, the bank’s assessment, and current SARS / conveyancing tariffs.
-                    </p>
                 </div>
             </section>
+
+            {/* §5 What if */}
+            <section className="bc-spacer-section">
+                <div className="bc-shell">
+                    <div className="bc-card bc-card-pad">
+                        <p className="bc-section-title">What if?</p>
+                        <h2 className="bc-section-heading">Instant scenario simulator</h2>
+                        <div className="bc-chart-tabs mt-4" role="tablist">
+                            {(
+                                [
+                                    ['rate', 'Interest rate'],
+                                    ['extra', 'Extra payments'],
+                                    ['term', 'Loan term'],
+                                    ['deposit', 'Deposit'],
+                                ] as const
+                            ).map(([id, label]) => (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    className={`bc-chart-tab ${
+                                        whatIfTab === id ? 'bc-chart-tab--active' : ''
+                                    }`}
+                                    onClick={() => setWhatIfTab(id)}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="bc-whatif-presets">
+                            {whatIfPresets[whatIfTab].map((p) => (
+                                <button
+                                    key={p.label}
+                                    type="button"
+                                    className="bc-whatif-preset"
+                                    onClick={p.apply}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+                        {whatIfTab === 'rate' ? (
+                            <div className="mt-4 grid sm:grid-cols-3 gap-3">
+                                {stress.map((row) => (
+                                    <div
+                                        key={row.bump}
+                                        className="bc-kpi"
+                                    >
+                                        <p className="bc-kpi-label">
+                                            {row.bump === 0 ? 'Base' : `+${row.bump}%`}
+                                        </p>
+                                        <p className="bc-kpi-value">{formatZar(row.monthly)}</p>
+                                        <p className="text-[10px] text-charcoal/40 mt-1">
+                                            {row.rate.toFixed(2)}% p.a.
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="mt-4 text-sm text-charcoal/50">
+                                Tap a preset above — all KPIs and the chart update instantly.
+                                {whatIfTab === 'term' ? ` Recommended: ${termRec.reason}` : ''}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            {/* §6 AI insights */}
+            <section className="bc-spacer-section">
+                <div className="bc-shell">
+                    <p className="bc-section-title">AI insights</p>
+                    <h2 className="bc-section-heading mb-4">Personalised recommendations</h2>
+                    <div className="bc-insight-grid">
+                        {insights.map((insight) => (
+                            <div key={insight.id} className="bc-insight">
+                                <span className="bc-insight-icon">
+                                    <Lightbulb className="w-4 h-4" />
+                                </span>
+                                <div>
+                                    <p className="font-semibold text-sm">{insight.title}</p>
+                                    <p className="text-xs text-charcoal/55 mt-1 leading-relaxed">
+                                        {insight.body}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <p className="bc-shell mt-2 mb-4 text-center text-[11px] text-charcoal/40 max-w-2xl mx-auto">
+                Educational estimates only. Actual rates, fees and affordability depend on your
+                credit profile and bank assessment.
+            </p>
+
+            {/* Sticky summary — desktop */}
+            <div className={`bc-sticky hidden lg:block ${stickyVisible ? 'bc-sticky--visible' : ''}`}>
+                <div className="bc-sticky-inner">
+                    <div className="bc-sticky-metrics">
+                        <div className="bc-sticky-metric">
+                            <span>Monthly</span>
+                            <span>{formatZar(repayment.monthlyRepayment)}</span>
+                        </div>
+                        <div className="bc-sticky-metric">
+                            <span>Interest saved</span>
+                            <span>{formatZar(extras.interestSaved)}</span>
+                        </div>
+                        <div className="bc-sticky-metric">
+                            <span>Term</span>
+                            <span>{loanTerm} yrs</span>
+                        </div>
+                        <div className="bc-sticky-metric">
+                            <span>Recommended</span>
+                            <span>{recommended.label}</span>
+                        </div>
+                        <div className="bc-sticky-metric">
+                            <span>Extra / mo</span>
+                            <span>{extraMonthly ? formatZar(extraMonthly) : '—'}</span>
+                        </div>
+                    </div>
+                    <div className="bc-actions">
+                        <button type="button" className="bc-btn" onClick={() => void handleExportPdf()}>
+                            <Download className="w-3.5 h-3.5" />
+                            Export PDF
+                        </button>
+                        <button type="button" className="bc-btn bc-btn--primary" onClick={handleSave}>
+                            <Save className="w-3.5 h-3.5" />
+                            Save
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

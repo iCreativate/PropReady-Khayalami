@@ -116,6 +116,46 @@ const SELLER_MODULES: {
             'What is required when selling property held by a company or close corporation: resolutions, bond cancellation, and tax considerations.',
         icon: 'Briefcase',
     },
+    {
+        href: '/sellers/home-insurance',
+        progressSlug: 'seller-home-insurance',
+        title: 'Home Insurance While Selling',
+        description:
+            'Keep building cover live until registration, understand vacant-home conditions, and know what buyers will ask for.',
+        icon: 'ShieldCheck',
+    },
+    {
+        href: '/sellers/insurance-types',
+        progressSlug: 'seller-insurance-types',
+        title: 'Types of Insurance for Sellers',
+        description:
+            'Which covers you keep until transfer, what buyers arrange, and how liability sits during show days.',
+        icon: 'FileText',
+    },
+    {
+        href: '/sellers/why-insurance-matters',
+        progressSlug: 'seller-why-insurance-matters',
+        title: 'Why Seller Cover Matters',
+        description:
+            'How a fire or storm mid-sale can destroy timing, buyer finance, and your net proceeds.',
+        icon: 'AlertCircle',
+    },
+    {
+        href: '/sellers/choosing-an-insurer',
+        progressSlug: 'seller-choosing-an-insurer',
+        title: 'Choosing Cover While You Sell',
+        description:
+            'Tell your insurer the home is listed, confirm vacant conditions, and time cancellation for after registration.',
+        icon: 'CheckCircle',
+    },
+    {
+        href: '/sellers/uninsured-risks',
+        progressSlug: 'seller-uninsured-risks',
+        title: 'Selling Without Proper Cover',
+        description:
+            'Vacant-home exclusions, early occupation gaps, and mid-sale disasters that wipe seller proceeds.',
+        icon: 'AlertTriangle',
+    },
 ];
 
 export default async function SellersHubPage() {

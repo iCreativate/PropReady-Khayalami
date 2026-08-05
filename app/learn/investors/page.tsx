@@ -93,6 +93,46 @@ const INVESTOR_MODULES: {
             'What portfolio strategy means — plus diversification, tax planning, realistic expectations, and scaling with systems.',
         icon: 'AlertTriangle',
     },
+    {
+        href: '/learn/investors/home-insurance',
+        progressSlug: 'investor-home-insurance',
+        title: 'Landlord & Building Cover',
+        description:
+            'Investment property insurance as an operating cost: building cover, landlord extensions, and loss of rent in your yield model.',
+        icon: 'ShieldCheck',
+    },
+    {
+        href: '/learn/investors/insurance-types',
+        progressSlug: 'investor-insurance-types',
+        title: 'Types of Investor Insurance',
+        description:
+            'Landlord policies, loss of rent, and liability — and why a standard homeowners policy can fail on a let unit.',
+        icon: 'FileText',
+    },
+    {
+        href: '/learn/investors/why-insurance-matters',
+        progressSlug: 'investor-why-insurance-matters',
+        title: 'Why Investors Insure',
+        description:
+            'How one uninsured event can erase years of yield while the bond, rates, and levies keep running.',
+        icon: 'AlertCircle',
+    },
+    {
+        href: '/learn/investors/choosing-an-insurer',
+        progressSlug: 'investor-choosing-an-insurer',
+        title: 'Choosing Landlord Cover',
+        description:
+            'Disclose letting use and vacancy, then compare landlord wording — not homeowner marketing.',
+        icon: 'CheckCircle',
+    },
+    {
+        href: '/learn/investors/uninsured-risks',
+        progressSlug: 'investor-uninsured-risks',
+        title: 'Investing Uninsured',
+        description:
+            'Vacancy exclusions, tenant damage gaps, and underinsurance — how portfolios quietly go bare.',
+        icon: 'AlertTriangle',
+    },
 ];
 
 export default function InvestorsLearnPage() {

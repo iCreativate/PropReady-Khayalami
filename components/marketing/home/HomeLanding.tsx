@@ -29,6 +29,7 @@ import {
     Wallet,
 } from 'lucide-react';
 import FloatingDashboard from '@/components/marketing/home/FloatingDashboard';
+import AiTutorFab from '@/components/buyer-learn/course/AiTutorFab';
 import { LEARNING_HUBS } from '@/lib/learning-hubs';
 
 function Reveal({
@@ -181,6 +182,7 @@ export default function HomeLanding() {
     const [activeJourney, setActiveJourney] = useState(1);
     const [activeFeature, setActiveFeature] = useState(0);
     const [featureDir, setFeatureDir] = useState(1);
+    const [aiOpen, setAiOpen] = useState(false);
     const featurePause = useRef(false);
 
     const goFeature = (next: number, dir: number) => {
@@ -761,6 +763,15 @@ export default function HomeLanding() {
                     </Reveal>
                 </div>
             </section>
+
+            <AiTutorFab
+                variant="assistant"
+                lessonTitle="PropReady"
+                lessonSubtitle="Your Home. Ready. — South African property learning and tools"
+                hubBasePath="/learn"
+                open={aiOpen}
+                onOpenChange={setAiOpen}
+            />
         </div>
     );
 }

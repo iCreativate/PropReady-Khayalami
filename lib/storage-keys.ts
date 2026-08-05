@@ -30,5 +30,7 @@ export const STORAGE_KEYS = {
     conveyancerConnect: 'propReady_conveyancerConnect_v1',
     /** Buyer immersive Learning Hub progress / XP / bookmarks */
     buyerLearn: 'propReady_buyerLearn_v1',
+    /** Saved bond calculator scenarios (local + account-linked label) */
+    bondCalculatorSaves: 'propReady_bondCalculatorSaves_v1',
     selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
 } as const;

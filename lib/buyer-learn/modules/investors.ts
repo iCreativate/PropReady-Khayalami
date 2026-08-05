@@ -1,5 +1,6 @@
 import { buildLessonFromBlueprint, type LessonBlueprint } from '@/lib/buyer-learn/build-lesson';
 import type { LessonModule } from '@/lib/buyer-learn/types';
+import { INVESTOR_INSURANCE_BLUEPRINTS } from '@/lib/buyer-learn/modules/insurance';
 
 const HUB = '/learn/investors';
 
@@ -1441,10 +1442,13 @@ const BLUEPRINTS: LessonBlueprint[] = [
     }),
 ];
 
-export const INVESTOR_LESSONS: LessonModule[] = BLUEPRINTS.map(buildLessonFromBlueprint);
+export const INVESTOR_LESSONS: LessonModule[] = [
+    ...BLUEPRINTS,
+    ...INVESTOR_INSURANCE_BLUEPRINTS,
+].map(buildLessonFromBlueprint);
 
 export function getInvestorLesson(slug: string): LessonModule | null {
     return INVESTOR_LESSONS.find((l) => l.meta.slug === slug) || null;
 }
 
-export const INVESTOR_LEARN_ORDER = BLUEPRINTS.map((b) => b.slug);
+export const INVESTOR_LEARN_ORDER = [...BLUEPRINTS, ...INVESTOR_INSURANCE_BLUEPRINTS].map((b) => b.slug);

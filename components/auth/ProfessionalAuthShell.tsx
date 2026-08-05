@@ -122,9 +122,9 @@ export default function ProfessionalAuthShell({
                         {children}
                     </div>
                     <p className="text-center text-xs text-charcoal/40 mt-6">
-                        Looking for the buyer or seller account?{' '}
+                        Sign in as a different role?{' '}
                         <Link href="/auth/login" className="text-gold hover:underline font-medium">
-                            Consumer sign-in
+                            Choose account type
                         </Link>
                     </p>
                 </div>

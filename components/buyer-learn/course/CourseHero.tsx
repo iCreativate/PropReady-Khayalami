@@ -17,6 +17,11 @@ function journeyHref(hubBasePath?: string): string {
     return '/get-started';
 }
 
+function journeyLabel(hubBasePath?: string): string {
+    if (hubBasePath === '/sellers') return 'Book a Free Valuation';
+    return 'Start your journey';
+}
+
 function hubBackLabel(hubBasePath?: string): string {
     if (hubBasePath === '/sellers') return '← Sellers hub';
     if (hubBasePath === '/learn/investors') return '← Investors hub';
@@ -68,7 +73,7 @@ export default function CourseHero({
                         <span>{progressPct > 5 ? 'Continue learning' : 'Start learning'}</span>
                     </button>
                     <Link href={journeyHref(hubBasePath)} className="hl-btn hl-btn--ghost">
-                        <span>Start your journey</span>
+                        <span>{journeyLabel(hubBasePath)}</span>
                         <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
                     </Link>
                     <button

@@ -61,7 +61,7 @@ export default function RootLayout({
             <body className={`${inter.className} flex flex-col min-h-screen bg-[#F8FAFC]`}>
                 <AppProviders>
                     <NativeShellInit />
-                    <div className="flex-1">{children}</div>
+                    <div className="flex-1 min-h-0 w-full">{children}</div>
                     <SiteFooter />
                 </AppProviders>
             </body>

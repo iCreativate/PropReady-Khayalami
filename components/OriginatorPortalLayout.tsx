@@ -104,7 +104,7 @@ export default function OriginatorPortalLayout({
     }, [mobileOpen]);
 
     return (
-        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${ORIGINATOR_SHELL_CONTENT}`}>
+        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden flex flex-col ${ORIGINATOR_SHELL_CONTENT}`}>
             <ImpersonationBanner />
             <aside
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${ORIGINATOR_SHELL_SIDEBAR}`}
@@ -150,60 +150,64 @@ export default function OriginatorPortalLayout({
                 </aside>
             </div>
 
-            <header className={`fixed top-0 right-0 left-0 lg:left-64 z-30 h-[4.25rem] ${ORIGINATOR_SHELL_TOPBAR}`}>
-                <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <button
-                            type="button"
-                            onClick={() => setMobileOpen(true)}
-                            className={`lg:hidden ${ORIGINATOR_SHELL_ICON_BTN} !text-charcoal`}
-                        >
-                            <Menu className="w-5 h-5" />
-                        </button>
-                        <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-charcoal/40 leading-none mb-1 hidden sm:block">
-                                {orgName}
-                            </p>
-                            <h1 className="text-lg sm:text-xl font-semibold text-charcoal truncate tracking-tight">
-                                {title ?? activeLabel}
-                            </h1>
+            <div className="relative flex-1 min-h-0 lg:pl-64 flex flex-col min-w-0">
+                <header className={`sticky top-0 z-30 h-[4.25rem] shrink-0 ${ORIGINATOR_SHELL_TOPBAR}`}>
+                    <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <button
+                                type="button"
+                                onClick={() => setMobileOpen(true)}
+                                className={`lg:hidden ${ORIGINATOR_SHELL_ICON_BTN} !text-charcoal`}
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-charcoal/40 leading-none mb-1 hidden sm:block">
+                                    {orgName}
+                                </p>
+                                <h1 className="text-lg sm:text-xl font-semibold text-charcoal truncate tracking-tight">
+                                    {title ?? activeLabel}
+                                </h1>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                            <PortalAppBarAlerts role="originator" />
+                            {user && (
+                                <div className="hidden sm:block text-right">
+                                    <p className="text-sm font-medium text-charcoal truncate max-w-[160px]">
+                                        {user.fullName}
+                                    </p>
+                                    <p className="text-xs text-charcoal/45 truncate max-w-[160px]">{user.email}</p>
+                                </div>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void signOutClient({ accountType: 'originator' });
+                                }}
+                                className={`${ORIGINATOR_SECONDARY_BTN} !h-9 !px-3.5`}
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span className="hidden sm:inline">Sign Out</span>
+                            </button>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                        <PortalAppBarAlerts role="originator" />
-                        {user && (
-                            <div className="hidden sm:block text-right">
-                                <p className="text-sm font-medium text-charcoal truncate max-w-[160px]">
-                                    {user.fullName}
-                                </p>
-                                <p className="text-xs text-charcoal/45 truncate max-w-[160px]">{user.email}</p>
-                            </div>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void signOutClient({ accountType: 'originator' });
-                            }}
-                            className={`${ORIGINATOR_SECONDARY_BTN} !h-9 !px-3.5`}
-                        >
-                            <LogOut className="w-4 h-4" />
-                            <span className="hidden sm:inline">Sign Out</span>
-                        </button>
-                    </div>
-                </div>
-            </header>
+                </header>
 
-            <main className={`lg:pl-64 pt-[4.25rem] min-h-dvh lg:h-dvh lg:overflow-y-auto lg:overscroll-contain ${ORIGINATOR_SHELL_CONTENT}`}>
-                {pageHeader && (
-                    <div className={`${ORIGINATOR_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
-                        <div className={ORIGINATOR_PAGE_CONTAINER}>{pageHeader}</div>
+                <main
+                    className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${ORIGINATOR_SHELL_CONTENT}`}
+                >
+                    {pageHeader && (
+                        <div className={`${ORIGINATOR_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
+                            <div className={ORIGINATOR_PAGE_CONTAINER}>{pageHeader}</div>
+                        </div>
+                    )}
+                    <div className={`${ORIGINATOR_PAGE_CONTAINER} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
+                        <PortalAnnouncementBanner />
+                        {children}
                     </div>
-                )}
-                <div className={`${ORIGINATOR_PAGE_CONTAINER} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
-                    <PortalAnnouncementBanner />
-                    {children}
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 }

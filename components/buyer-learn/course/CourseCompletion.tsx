@@ -1,13 +1,20 @@
 'use client';
 
 import Link from 'next/link';
-import { Award, ArrowRight, Share2, Sparkles } from 'lucide-react';
+import { Award, ArrowRight, Calendar, Share2, Sparkles } from 'lucide-react';
 import {
     LEARN_BTN_GHOST,
     LEARN_BTN_PRIMARY,
     LEARN_CARD,
     LEARN_LABEL,
 } from '@/lib/learn-course-ui';
+
+function journeyCta(hubBasePath: string): { href: string; label: string; seller: boolean } {
+    if (hubBasePath === '/sellers') {
+        return { href: '/sellers/property-quiz', label: 'Book a Free Valuation', seller: true };
+    }
+    return { href: '/get-started', label: 'Start your journey', seller: false };
+}
 
 export default function CourseCompletion({
     title,
@@ -31,6 +38,7 @@ export default function CourseCompletion({
     onShare: () => void;
 }) {
     const href = `${hubBasePath.replace(/\/$/, '')}/${nextSlug}`;
+    const journey = journeyCta(hubBasePath);
 
     return (
         <section
@@ -92,7 +100,9 @@ export default function CourseCompletion({
                         <p className="mt-2 text-sm text-charcoal/60">
                             PropReady Academy · {title}
                         </p>
-                        <p className="mt-1 text-xs text-charcoal/40">Educational achievement · not a formal qualification</p>
+                        <p className="mt-1 text-xs text-charcoal/40">
+                            Educational achievement · not a formal qualification
+                        </p>
                     </div>
 
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -100,6 +110,14 @@ export default function CourseCompletion({
                             <Sparkles className="h-4 w-4" />
                             Continue learning
                             <ArrowRight className="h-4 w-4" />
+                        </Link>
+                        <Link href={journey.href} className={LEARN_BTN_GHOST}>
+                            {journey.seller ? (
+                                <Calendar className="h-4 w-4" />
+                            ) : (
+                                <ArrowRight className="h-4 w-4" />
+                            )}
+                            {journey.label}
                         </Link>
                         <button type="button" className={LEARN_BTN_GHOST} onClick={onShare}>
                             <Share2 className="h-4 w-4" />

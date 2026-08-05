@@ -12,6 +12,7 @@ import { PUBLIC_PROPERTIES_ENABLED } from '@/lib/public-properties';
 
 const PROTECTED_PREFIXES = [
     '/dashboard',
+    '/property-iq',
     '/sellers/dashboard',
     '/sellers/messages',
     '/agents/dashboard',

@@ -175,7 +175,7 @@ export default function AgentPortalLayout({
     }, [mobileOpen]);
 
     return (
-        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${AGENT_SHELL_CONTENT}`}>
+        <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden flex flex-col ${AGENT_SHELL_CONTENT}`}>
             <ImpersonationBanner />
             {/* Desktop sidebar */}
             <aside
@@ -230,62 +230,64 @@ export default function AgentPortalLayout({
                 </aside>
             </div>
 
-            {/* Top app bar */}
-            <header
-                className={`fixed top-0 right-0 left-0 lg:left-64 z-30 h-[4.25rem] ${AGENT_SHELL_TOPBAR}`}
-            >
-                <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <button
-                            type="button"
-                            onClick={() => setMobileOpen(true)}
-                            className={`lg:hidden ${AGENT_ICON_BTN}`}
-                            aria-label="Open menu"
-                            aria-expanded={mobileOpen}
-                        >
-                            <Menu className="w-5 h-5" />
-                        </button>
-                        <div className="min-w-0">
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-charcoal/40 leading-none mb-1 hidden sm:block">
-                                Agent portal
-                            </p>
-                            <h1 className="text-lg sm:text-xl font-semibold text-charcoal truncate tracking-tight leading-tight">
-                                {title ?? activeLabel}
-                            </h1>
+            {/* Content column — flex/min-h-0 so the main pane scrolls (matches AdminShell) */}
+            <div className="relative flex-1 min-h-0 lg:pl-64 flex flex-col min-w-0">
+                <header className={`sticky top-0 z-30 h-[4.25rem] shrink-0 ${AGENT_SHELL_TOPBAR}`}>
+                    <div className="h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <button
+                                type="button"
+                                onClick={() => setMobileOpen(true)}
+                                className={`lg:hidden ${AGENT_ICON_BTN}`}
+                                aria-label="Open menu"
+                                aria-expanded={mobileOpen}
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+                            <div className="min-w-0">
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-charcoal/40 leading-none mb-1 hidden sm:block">
+                                    Agent portal
+                                </p>
+                                <h1 className="text-lg sm:text-xl font-semibold text-charcoal truncate tracking-tight leading-tight">
+                                    {title ?? activeLabel}
+                                </h1>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                            <PortalAppBarAlerts role="agent" />
+                            {agent && <AgentProfileCompact agent={agent} />}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void signOutClient({ accountType: 'agent' });
+                                }}
+                                className={`${AGENT_SECONDARY_BTN} !h-9 !px-3.5`}
+                                title="Sign out"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                <span className="hidden sm:inline">Sign Out</span>
+                            </button>
                         </div>
                     </div>
+                </header>
 
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                        <PortalAppBarAlerts role="agent" />
-                        {agent && <AgentProfileCompact agent={agent} />}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void signOutClient({ accountType: 'agent' });
-                            }}
-                            className={`${AGENT_SECONDARY_BTN} !h-9 !px-3.5`}
-                            title="Sign out"
+                <main
+                    className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${AGENT_SHELL_CONTENT}`}
+                >
+                    {pageHeader && (
+                        <div
+                            className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 lg:py-7`}
                         >
-                            <LogOut className="w-4 h-4" />
-                            <span className="hidden sm:inline">Sign Out</span>
-                        </button>
+                            <div className={AGENT_PAGE_CONTAINER}>{pageHeader}</div>
+                        </div>
+                    )}
+                    <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
+                        <PortalAnnouncementBanner />
+                        {children}
                     </div>
-                </div>
-            </header>
-
-            <main className={`lg:pl-64 pt-[4.25rem] min-h-dvh lg:h-dvh lg:overflow-y-auto lg:overscroll-contain ${AGENT_SHELL_CONTENT}`}>
-                {pageHeader && (
-                    <div
-                        className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 lg:py-7`}
-                    >
-                        <div className={AGENT_PAGE_CONTAINER}>{pageHeader}</div>
-                    </div>
-                )}
-                <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
-                    <PortalAnnouncementBanner />
-                    {children}
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 }
