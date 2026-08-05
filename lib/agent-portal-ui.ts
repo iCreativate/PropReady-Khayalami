@@ -52,8 +52,11 @@ export const AGENT_LOGO_MARK_SM =
 export const AGENT_PAGE_CONTAINER = 'max-w-[1400px] w-full mx-auto pb-8 sm:pb-12';
 
 /** Portal chrome — charcoal nav against a light content canvas */
+// No `relative` here: desktop asides also use Tailwind `fixed`, and in production
+// CSS `.relative` wins over `.fixed` (source order), which pulls the sidebar into
+// normal flow and pushes portal content below the fold.
 export const AGENT_SHELL_SIDEBAR =
-    'relative overflow-hidden bg-charcoal brand-dark-panel border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.18)]';
+    'overflow-hidden bg-charcoal brand-dark-panel border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.18)]';
 export const AGENT_SHELL_SIDEBAR_MOBILE =
     'relative overflow-hidden bg-charcoal brand-dark-panel shadow-2xl border-r border-white/[0.06]';
 export const AGENT_SHELL_CONTENT = 'bg-[#F8FAFC]';
