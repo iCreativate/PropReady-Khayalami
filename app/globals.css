@@ -71,10 +71,13 @@ body {
 }
 
 .brand-dark-panel {
-  position: relative;
+  /* Do NOT set position:relative here — it overrides Tailwind `fixed` on portal
+     sidebars in the production CSS order and pushes main content below the fold.
+     translateZ(0) still creates a containing block for the decorative ::before. */
   overflow: hidden;
   background-color: #2c2c2c;
   color: #fff;
+  transform: translateZ(0);
 }
 
 .brand-dark-panel::before {

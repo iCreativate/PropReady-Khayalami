@@ -107,7 +107,7 @@ export default function OriginatorPortalLayout({
         <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${ORIGINATOR_SHELL_CONTENT}`}>
             <ImpersonationBanner />
             <aside
-                className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${ORIGINATOR_SHELL_SIDEBAR}`}
+                className={`hidden lg:flex !fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${ORIGINATOR_SHELL_SIDEBAR}`}
             >
                 <div className={`px-5 py-5 border-b ${ORIGINATOR_SHELL_DIVIDER} shrink-0`}>
                     <BrandLogo tone="dark" />
