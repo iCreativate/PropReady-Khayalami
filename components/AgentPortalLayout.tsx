@@ -175,8 +175,8 @@ export default function AgentPortalLayout({
     }, [mobileOpen]);
 
     return (
-        {/* Fixed sidebar must not sit in a flex-col with the main column (reserves aside height). */}
         <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${AGENT_SHELL_CONTENT}`}>
+            {/* Fixed aside must not share a flex-col with the main column (reserves aside height). */}
             <ImpersonationBanner />
             {/* Desktop sidebar */}
             <aside

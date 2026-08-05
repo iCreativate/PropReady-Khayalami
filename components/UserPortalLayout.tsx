@@ -216,12 +216,8 @@ export default function UserPortalLayout({
     };
 
     return (
-        {/*
-          Do not put the fixed desktop sidebar inside a flex-col parent — browsers still
-          treat it as a flex item and reserve its height, pushing main content below the fold.
-          Match AdminShell: fixed aside + independent full-height content column.
-        */}
         <div className={`min-h-dvh lg:h-dvh lg:overflow-hidden ${PORTAL_SHELL_CONTENT}`}>
+            {/* Fixed aside must not share a flex-col with the main column (reserves aside height). */}
             <ImpersonationBanner />
             <aside
                 className={`hidden lg:flex fixed left-0 top-0 bottom-0 w-64 flex-col z-40 overflow-hidden ${PORTAL_SHELL_SIDEBAR}`}
