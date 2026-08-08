@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
     Area,
@@ -1461,19 +1462,19 @@ export default function PropertyValueOptimizerDashboard() {
                         <Download className="h-4 w-4" />
                         Export branded PDF
                     </button>
-                    <a
+                    <Link
                         href="/dashboard/agent"
                         className="inline-flex h-12 items-center gap-2 rounded-full border border-black/[0.1] bg-white px-5 text-sm font-semibold text-[#1b1b1b]"
                     >
                         <Share2 className="h-4 w-4" />
                         Share With Agent
-                    </a>
-                    <a
+                    </Link>
+                    <Link
                         href="/conveyancers"
                         className="inline-flex h-12 items-center gap-2 rounded-full border border-black/[0.1] bg-white px-5 text-sm font-semibold text-[#1b1b1b]"
                     >
                         Send To Conveyancer
-                    </a>
+                    </Link>
                     <button
                         type="button"
                         disabled={!snapshot}
