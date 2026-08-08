@@ -64,10 +64,30 @@ export default function UserDashboardPage() {
         <CcPageShell title="My Conveyancer Dashboard">
             <div className="space-y-6">
                 <PortalHero
-                    size="compact"
                     eyebrow="Your workspace"
                     title="Conveyancer Connect dashboard"
                     description="Quotes, consultations, saved firms and transfer matters linked to your PropReady account."
+                    glassLabel="Activity pulse"
+                    metrics={[
+                        { label: 'Saved firms', value: saved.length },
+                        {
+                            label: 'Matters',
+                            value: activity?.matters.length ?? (signedIn ? 0 : '—'),
+                        },
+                    ]}
+                    stats={[
+                        { label: 'Saved firms', value: saved.length },
+                        { label: 'Quotes', value: activity?.quotes.length ?? (signedIn ? 0 : '—') },
+                        {
+                            label: 'Consultations',
+                            value: activity?.consultations.length ?? (signedIn ? 0 : '—'),
+                        },
+                        {
+                            label: 'Matters',
+                            value: activity?.matters.length ?? (signedIn ? 0 : '—'),
+                            tone: 'success',
+                        },
+                    ]}
                     actions={
                         <>
                             <Link href="/conveyancers" className={PORTAL_PRIMARY_BTN}>

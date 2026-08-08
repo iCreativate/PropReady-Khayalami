@@ -1,4 +1,5 @@
 import type { FeeEstimate, FeeEstimateInput, PriceBand } from '@/lib/conveyancer-connect/types';
+import { formatCurrency } from '@/lib/currency';
 
 /** Simplified illustrative SA transfer duty bands (not legal advice). */
 export function transferDuty(propertyValue: number): number {
@@ -88,11 +89,7 @@ export function estimateFees(input: FeeEstimateInput): FeeEstimate {
 }
 
 export function formatZar(amount: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        maximumFractionDigits: 0,
-    }).format(Math.round(amount));
+    return formatCurrency(Math.round(amount));
 }
 
 export const PRICE_BAND_LABELS: Record<PriceBand, string> = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { UserPortalUser } from '@/components/UserPortalLayout';
 import {
     hydrateSessionFromCookies,
@@ -9,8 +9,9 @@ import {
 
 /**
  * Resolve portal user from the live cookie session.
- * Seeds immediately from localStorage after mount so navigations do not flash white,
- * then verifies against `/api/auth/session` (cached / deduped).
+ * Optimistic localStorage is read via useSyncExternalStore so SSR/hydration
+ * both see `null` (getServerSnapshot), avoiding HTML mismatches, then the
+ * client snapshot applies immediately after hydrate.
  */
 async function resolvePortalUser(
     accountType: 'user' | 'agent'
@@ -28,7 +29,7 @@ async function resolvePortalUser(
     };
 }
 
-function optimisticUser(accountType: 'user' | 'agent'): UserPortalUser | null {
+function readOptimisticUser(accountType: 'user' | 'agent'): UserPortalUser | null {
     const bridged = readOptimisticSession(accountType);
     if (!bridged) return null;
     return {
@@ -38,30 +39,61 @@ function optimisticUser(accountType: 'user' | 'agent'): UserPortalUser | null {
     };
 }
 
+/** Cache so getSnapshot returns a stable reference (required by useSyncExternalStore). */
+const optimisticCache = new Map<'user' | 'agent', UserPortalUser | null>();
+
+function getOptimisticSnapshot(accountType: 'user' | 'agent'): UserPortalUser | null {
+    if (typeof window === 'undefined') return null;
+    if (!optimisticCache.has(accountType)) {
+        optimisticCache.set(accountType, readOptimisticUser(accountType));
+    }
+    return optimisticCache.get(accountType) ?? null;
+}
+
+/** No-op subscribe — optimistic session is snapshotted once per page load. */
+function subscribeNoop() {
+    return () => {};
+}
+
+function useOptimisticPortalUser(accountType: 'user' | 'agent') {
+    return useSyncExternalStore(
+        subscribeNoop,
+        () => getOptimisticSnapshot(accountType),
+        () => null
+    );
+}
+
 function useHydratedPortalUser(accountType: 'user' | 'agent') {
+    const optimistic = useOptimisticPortalUser(accountType);
     const [user, setUser] = useState<UserPortalUser | null>(null);
-    const [isHydrated, setIsHydrated] = useState(false);
+    const [sessionChecked, setSessionChecked] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
-        const optimistic = optimisticUser(accountType);
-        if (optimistic) {
-            setUser(optimistic);
-            setIsHydrated(true);
-        }
 
-        void resolvePortalUser(accountType).then((next) => {
-            if (cancelled) return;
-            setUser(next);
-            setIsHydrated(true);
-        });
+        void resolvePortalUser(accountType)
+            .then((next) => {
+                if (cancelled) return;
+                setUser(next);
+                setSessionChecked(true);
+            })
+            .catch(() => {
+                if (cancelled) return;
+                setUser(null);
+                setSessionChecked(true);
+            });
 
         return () => {
             cancelled = true;
         };
     }, [accountType]);
 
-    return { user, isHydrated };
+    return {
+        user: user ?? optimistic,
+        // Hydrated once we have an optimistic client session or API result.
+        // Server + hydration pass: both null → isHydrated false (matches PortalLoading).
+        isHydrated: sessionChecked || optimistic !== null,
+    };
 }
 
 export function useHydratedBuyerPortalUser() {

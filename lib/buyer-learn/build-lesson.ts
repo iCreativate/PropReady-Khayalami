@@ -1,3 +1,4 @@
+import { formatPriceWithCommas } from '@/lib/currency';
 import type {
     ChapterCaseStudy,
     LearnerPersona,
@@ -245,7 +246,7 @@ function buildSeeItMoveSteps(
 }
 
 function formatZarShort(n: number): string {
-    return `R${Math.round(n).toLocaleString('en-ZA')}`;
+    return `R ${formatPriceWithCommas(Math.round(n))}`;
 }
 
 function buildTopicCaseStudy(

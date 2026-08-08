@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-admin';
+import {
+    filterDirectoryConveyancers,
+    isDemoDirectoryConveyancer,
+} from '@/lib/conveyancer-connect/directory-exclusions';
 
 const SELECT_COLS =
     'id, full_name, email, firm_name, firm_slug, phone, province, city, suburb, bio, website, languages, specialisations, status, verified_at, profile_completion';
@@ -27,6 +31,9 @@ export async function GET(request: NextRequest) {
             if (!data) {
                 return NextResponse.json({ success: false, error: 'Firm not found' }, { status: 404 });
             }
+            if (isDemoDirectoryConveyancer(data)) {
+                return NextResponse.json({ success: false, error: 'Firm not found' }, { status: 404 });
+            }
             return NextResponse.json({ success: true, conveyancer: data });
         }
 
@@ -38,7 +45,10 @@ export async function GET(request: NextRequest) {
         if (error) {
             return NextResponse.json({ success: false, error: error.message }, { status: 500 });
         }
-        return NextResponse.json({ success: true, conveyancers: data || [] });
+        return NextResponse.json({
+            success: true,
+            conveyancers: filterDirectoryConveyancers(data || []),
+        });
     } catch (err) {
         console.error('conveyancers/directory:', err);
         return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { formatCurrency } from '@/lib/currency';
 import { Calculator, RefreshCw } from 'lucide-react';
 
 export default function TransferCostCalculator() {
@@ -78,14 +79,7 @@ export default function TransferCostCalculator() {
         calculateCosts(price);
     }, [price]);
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-ZA', {
-            style: 'currency',
-            currency: 'ZAR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
-    };
+    
 
     // Use comma-grouping explicitly (avoids locale NBSP grouping issues)
     const formatNumberInput = (value: string) => {

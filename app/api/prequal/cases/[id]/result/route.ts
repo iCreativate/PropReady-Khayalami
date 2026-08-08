@@ -1,3 +1,4 @@
+import { formatPriceWithCommas } from '@/lib/currency';
 import { NextRequest, NextResponse } from 'next/server';
 import { BUYER_DOCUMENT_MAX_BYTES, BUYER_DOCUMENT_MIME_TYPES } from '@/lib/buyer-documents';
 import { canAccessCase, resolvePrequalActor } from '@/lib/prequal-auth';
@@ -109,7 +110,7 @@ export async function POST(
             sender_role: 'originator',
             sender_profile_id: actor.profileId,
             sender_name: actor.fullName || 'Originator',
-            body: `Full pre-qualification result uploaded for R${officialAmount.toLocaleString('en-ZA')}.${notes ? `\n\n${notes}` : ''}`,
+            body: `Full pre-qualification result uploaded for R ${formatPriceWithCommas(officialAmount)}.${notes ? `\n\n${notes}` : ''}`,
         });
 
         await supabase

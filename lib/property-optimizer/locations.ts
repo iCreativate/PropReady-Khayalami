@@ -1,5 +1,4 @@
 import type { MarketContext, PropertyProfile } from './types';
-import { DEMO_MARKET, DEMO_PROPERTY } from './demo-data';
 import { IMPROVEMENT_TEMPLATES } from './improvements';
 import {
     findSuburbMarketRecord,
@@ -13,6 +12,13 @@ export interface LocationInput {
     municipality?: string;
     province?: string;
     streetAddress?: string;
+    /** Freehold / sectional title / cluster, etc. */
+    propertyType?: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    garages?: number;
+    floorSizeSqm?: number;
+    landSizeSqm?: number;
     /** What the owner paid (ZAR) */
     purchasePrice?: number;
     /** ISO date YYYY-MM-DD */
@@ -82,11 +88,12 @@ export interface AreaProfile {
     province: string;
     /** Verified suburb average from Property24 when available */
     dataSource?: string;
-    dataQuality?: 'verified' | 'reported' | 'estimated';
+    dataQuality?: 'verified' | 'reported' | 'estimated' | 'insufficient';
     priceYear?: number;
     city?: string;
     pricePerSqm: number;
     avgPropertyPrice: number;
+    /** Model assumption only — Property24 JSON has no YoY series yet. */
     historicalAppreciation: number;
     buyerDemand: number;
     rentalDemand: number;
@@ -100,7 +107,7 @@ export interface AreaProfile {
     investmentScore: number;
     plannedDevelopments: string[];
     infrastructureProjects: string[];
-    /** Typical 4-bed house floor size for this area */
+    /** Typical floor size heuristic for deriving R/m² from suburb average */
     typicalFloorSqm: number;
     typicalLandSqm: number;
 }
@@ -358,103 +365,108 @@ export function findAreaProfile(input: LocationInput): AreaProfile | null {
 }
 
 export function resolveAreaProfile(input: LocationInput): AreaProfile {
-    const market = findSuburbMarketRecord({
-        suburb: input.suburb,
-        city: input.municipality,
-        province: input.province,
-    });
+    const suburbName = input.suburb?.trim() || '';
+    const market = suburbName
+        ? findSuburbMarketRecord({
+              suburb: suburbName,
+              city: input.municipality,
+              province: input.province,
+          })
+        : null;
 
-    if (market) {
-        const curated = AREA_PROFILES.find((a) => normalizeKey(a.suburb) === normalizeKey(market.suburb));
-        const base = curated ? mergeCuratedProfile(curated, market) : suburbMarketToAreaProfile(market);
+    // Verified SA data path — Property24 suburb average only.
+    if (market && market.avgPropertyPrice > 0) {
+        const base = suburbMarketToAreaProfile(market);
         return {
             ...base,
             municipality: input.municipality?.trim() || market.municipality,
             province: input.province?.trim() || market.province,
-            dataSource: market.source,
-            dataQuality: market.dataQuality,
+            dataSource: market.source || 'property24',
+            dataQuality: 'verified',
             priceYear: market.priceYear,
             city: market.city,
+            // Never invent project lists — we have no infrastructure feed.
+            plannedDevelopments: [],
+            infrastructureProjects: [],
         };
     }
 
-    const matched = AREA_PROFILES.find(
-        (a) =>
-            normalizeKey(a.suburb) === normalizeKey(input.suburb) ||
-            normalizeKey(a.suburb).includes(normalizeKey(input.suburb)) ||
-            normalizeKey(input.suburb).includes(normalizeKey(a.suburb))
-    );
-    if (matched) {
-        return {
-            ...matched,
-            municipality: input.municipality?.trim() || matched.municipality,
-            province: input.province?.trim() || matched.province,
-            dataQuality: 'reported',
-            dataSource: 'propready-curated',
-        };
-    }
+    const province = input.province?.trim() || '';
+    const floorForAvg =
+        input.floorSizeSqm && input.floorSizeSqm > 0 ? input.floorSizeSqm : 0;
 
-    const province = input.province?.trim() || 'Gauteng';
-    const provDefaults = PROVINCE_DEFAULTS[province] ?? PROVINCE_DEFAULTS.Gauteng;
-    const pricePerSqm = provDefaults.pricePerSqm ?? 8_500;
-    const avgPrice = Math.round(pricePerSqm * 280);
-
+    // No Property24 match — do not invent a suburb average.
     return {
-        key: normalizeKey(input.suburb),
-        suburb: input.suburb.trim(),
-        municipality: input.municipality?.trim() || 'Local Municipality',
+        key: normalizeKey(suburbName) || 'unspecified',
+        suburb: suburbName,
+        municipality: input.municipality?.trim() || '',
         province,
-        pricePerSqm,
-        avgPropertyPrice: avgPrice,
-        historicalAppreciation: provDefaults.historicalAppreciation ?? 5.5,
-        buyerDemand: provDefaults.buyerDemand ?? 65,
-        rentalDemand: 68,
-        luxuryDemand: 60,
-        schoolScore: 70,
-        transportScore: 58,
-        crimeIndex: 50,
+        pricePerSqm: 0,
+        avgPropertyPrice: 0,
+        historicalAppreciation: 0,
+        buyerDemand: 0,
+        rentalDemand: 0,
+        luxuryDemand: 0,
+        schoolScore: 0,
+        transportScore: 0,
+        crimeIndex: 0,
         marketTemperature: 'balanced',
-        lifestyleScore: 68,
-        walkabilityScore: 45,
-        investmentScore: 65,
-        plannedDevelopments: [`${input.suburb} municipal development framework`],
-        infrastructureProjects: [`Provincial infrastructure investment — ${province}`],
-        typicalFloorSqm: 280,
-        typicalLandSqm: 800,
-        dataQuality: 'estimated',
-        dataSource: 'province-model',
+        lifestyleScore: 0,
+        walkabilityScore: 0,
+        investmentScore: 0,
+        plannedDevelopments: [],
+        infrastructureProjects: [],
+        typicalFloorSqm: floorForAvg,
+        typicalLandSqm: input.landSizeSqm && input.landSizeSqm > 0 ? input.landSizeSqm : 0,
+        dataQuality: suburbName ? 'insufficient' : 'insufficient',
+        dataSource: suburbName ? 'unmatched-suburb' : 'none',
     };
 }
 
 export function buildMarketFromArea(area: AreaProfile): MarketContext {
-    const ratio = 0.82 + (area.buyerDemand - 65) / 200;
+    const verified = area.dataQuality === 'verified' && area.avgPropertyPrice > 0;
+    const avg = verified ? area.avgPropertyPrice : 0;
+    const floor = area.typicalFloorSqm > 0 ? area.typicalFloorSqm : 0;
+    const pricePerSqm =
+        verified && floor > 0
+            ? Math.round(avg / floor)
+            : verified
+              ? area.pricePerSqm
+              : 0;
+
     return {
-        avgPropertyPrice: area.avgPropertyPrice,
-        avgSellingPrice: Math.round(area.avgPropertyPrice * 0.96),
-        avgAskingPrice: Math.round(area.avgPropertyPrice * 1.04),
-        avgDaysOnMarket: area.marketTemperature === 'hot' ? 35 : area.marketTemperature === 'warm' ? 47 : 62,
-        buyerDemand: area.buyerDemand,
-        sellerCompetition: Math.max(40, 100 - area.buyerDemand + 20),
-        rentalDemand: area.rentalDemand,
-        luxuryDemand: area.luxuryDemand,
-        investorDemand: Math.round((area.rentalDemand + area.investmentScore) / 2),
-        marketTemperature: area.marketTemperature,
-        propertiesSold90d: Math.round(area.avgPropertyPrice / 25_000),
-        activeListings: Math.round(area.avgPropertyPrice / 12_000),
-        priceGrowthYoY: area.historicalAppreciation * 0.95,
-        inventoryMonths: area.marketTemperature === 'hot' ? 2.4 : 3.5,
-        pricePerSqm: area.pricePerSqm,
+        avgPropertyPrice: avg,
+        // Asking/selling spreads are not in our Property24 extract — leave unset (0).
+        avgSellingPrice: 0,
+        avgAskingPrice: 0,
+        avgDaysOnMarket: 0,
+        buyerDemand: 0,
+        sellerCompetition: 0,
+        rentalDemand: 0,
+        luxuryDemand: 0,
+        investorDemand: 0,
+        marketTemperature: 'balanced',
+        propertiesSold90d: 0,
+        activeListings: 0,
+        priceGrowthYoY: 0,
+        inventoryMonths: 0,
+        pricePerSqm,
+        // Macro assumptions used only in model maths — not suburb facts.
         inflationRate: 5.2,
         primeInterestRate: 11.75,
-        populationGrowth: 2.1,
-        employmentGrowth: 1.6,
-        historicalAppreciation: area.historicalAppreciation,
-        supplyDemandRatio: ratio,
-        crimeIndex: area.crimeIndex,
-        schoolScore: area.schoolScore,
-        transportScore: area.transportScore,
-        plannedDevelopments: area.plannedDevelopments,
-        infrastructureProjects: area.infrastructureProjects,
+        populationGrowth: 0,
+        employmentGrowth: 0,
+        historicalAppreciation: 0,
+        supplyDemandRatio: 1,
+        crimeIndex: 0,
+        schoolScore: 0,
+        transportScore: 0,
+        plannedDevelopments: [],
+        infrastructureProjects: [],
+        dataQuality: verified ? 'verified' : 'insufficient',
+        dataSource: area.dataSource || (verified ? 'property24' : 'none'),
+        priceYear: area.priceYear,
+        hasVerifiedSuburbAverage: verified,
     };
 }
 
@@ -465,18 +477,17 @@ export function buildPropertyForLocation(
 ): PropertyProfile {
     const street = input.streetAddress?.trim();
     const address = street
-        ? `${street}, ${area.suburb}`
-        : `Your property, ${area.suburb}`;
+        ? `${street}, ${area.suburb || 'South Africa'}`
+        : area.suburb
+          ? `Your property, ${area.suburb}`
+          : 'Your property';
 
-    const scale = area.avgPropertyPrice / (DEMO_PROPERTY.purchasePrice * 1.35);
-    const municipalValuation = Math.round(area.avgPropertyPrice * 0.92);
-    const scaledDefault = Math.round(base.purchasePrice * scale * 0.85);
+    const municipalValuation =
+        area.avgPropertyPrice > 0 ? Math.round(area.avgPropertyPrice * 0.92) : 0;
     const purchasePrice =
         typeof input.purchasePrice === 'number' && input.purchasePrice > 0
             ? Math.round(input.purchasePrice)
-            : scaledDefault > 0
-              ? scaledDefault
-              : Math.round(area.avgPropertyPrice * 0.7);
+            : 0;
 
     const completedIds = input.completedImprovementIds ?? [];
     const namedFeatures = completedIds.map((id) => {
@@ -498,11 +509,34 @@ export function buildPropertyForLocation(
     return {
         ...base,
         address,
-        suburb: area.suburb,
-        municipality: area.municipality,
-        province: area.province,
-        landSizeSqm: area.typicalLandSqm,
-        floorSizeSqm: area.typicalFloorSqm,
+        suburb: area.suburb || input.suburb?.trim() || '',
+        municipality: area.municipality || input.municipality?.trim() || '',
+        province: area.province || input.province?.trim() || '',
+        propertyType: input.propertyType?.trim() || base.propertyType,
+        bedrooms:
+            typeof input.bedrooms === 'number' && input.bedrooms > 0
+                ? Math.round(input.bedrooms)
+                : base.bedrooms,
+        bathrooms:
+            typeof input.bathrooms === 'number' && input.bathrooms > 0
+                ? Math.round(input.bathrooms)
+                : base.bathrooms,
+        garages:
+            typeof input.garages === 'number' && input.garages >= 0
+                ? Math.round(input.garages)
+                : base.garages,
+        landSizeSqm:
+            typeof input.landSizeSqm === 'number' && input.landSizeSqm > 0
+                ? Math.round(input.landSizeSqm)
+                : typeof input.landSizeSqm === 'number'
+                  ? 0
+                  : area.typicalLandSqm || 0,
+        floorSizeSqm:
+            typeof input.floorSizeSqm === 'number' && input.floorSizeSqm > 0
+                ? Math.round(input.floorSizeSqm)
+                : typeof input.floorSizeSqm === 'number'
+                  ? 0
+                  : area.typicalFloorSqm || 0,
         municipalValuation,
         purchasePrice,
         purchaseDate: input.purchaseDate?.trim() || base.purchaseDate,
@@ -516,39 +550,21 @@ export function buildPropertyForLocation(
 }
 
 export function buildSuburbInsightsForArea(area: AreaProfile): SuburbInsightsData {
-    const matched = AREA_PROFILES.find((a) => a.key === area.key);
-    if (matched?.suburb === 'Bryanston') {
-        return {
-            schools: [
-                { name: 'Bryanston High School', rating: 4.2, distance: '1.2 km' },
-                { name: 'St Stithians College', rating: 4.8, distance: '2.8 km' },
-            ],
-            universities: [{ name: 'Wits University', distance: '12 km' }],
-            hospitals: [{ name: 'Mediclinic Sandton', distance: '4.2 km' }],
-            shoppingCentres: [{ name: 'Nicolway Bryanston', distance: '1.8 km' }],
-            parks: [{ name: 'Bryanston Country Club', distance: '2.1 km' }],
-            publicTransport: [{ name: 'Sandton Gautrain', distance: '6 km' }],
-            crimeTrend: 'Improving — residential patrols expanded',
-            lifestyleScore: area.lifestyleScore,
-            walkabilityScore: area.walkabilityScore,
-            investmentScore: area.investmentScore,
-        };
-    }
-
+    // No schools / amenities / crime feed is connected — return empty rather than invent names.
     return {
-        schools: [
-            { name: `${area.suburb} Primary`, rating: 3.8, distance: '2 km' },
-            { name: `${area.municipality} High School`, rating: 3.6, distance: '4 km' },
-        ],
-        universities: [{ name: `Nearest university — ${area.province}`, distance: '15–25 km' }],
-        hospitals: [{ name: `${area.municipality} Hospital`, distance: '5–8 km' }],
-        shoppingCentres: [{ name: `${area.suburb} retail node`, distance: '2–4 km' }],
-        parks: [{ name: 'Municipal parks & recreation', distance: '3 km' }],
-        publicTransport: [{ name: 'Public transport — check MyCiTi / Gautrain / BRT', distance: 'Varies' }],
-        crimeTrend: area.crimeIndex < 45 ? 'Stable to improving' : 'Monitor SAPS sector statistics',
-        lifestyleScore: area.lifestyleScore,
-        walkabilityScore: area.walkabilityScore,
-        investmentScore: area.investmentScore,
+        schools: [],
+        universities: [],
+        hospitals: [],
+        shoppingCentres: [],
+        parks: [],
+        publicTransport: [],
+        crimeTrend:
+            area.dataQuality === 'verified'
+                ? 'No SAPS / crime index feed connected for this suburb.'
+                : 'Select a Property24-matched suburb for market pricing. Amenity and crime data are not available.',
+        lifestyleScore: 0,
+        walkabilityScore: 0,
+        investmentScore: 0,
     };
 }
 

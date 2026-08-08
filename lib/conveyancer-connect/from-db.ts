@@ -140,15 +140,3 @@ export function mapDbConveyancerToProfile(row: DbConveyancerRow): ConveyancerPro
         coords,
     };
 }
-
-/** Merge live DB firms ahead of optional demo catalog. */
-export function mergeLiveConveyancers(
-    live: ConveyancerProfile[],
-    catalog: ConveyancerProfile[]
-): ConveyancerProfile[] {
-    const seen = new Set(live.map((c) => c.id));
-    const catalogFiltered = catalog.filter(
-        (c) => !seen.has(c.id) && !live.some((l) => l.slug === c.slug)
-    );
-    return [...live, ...catalogFiltered];
-}

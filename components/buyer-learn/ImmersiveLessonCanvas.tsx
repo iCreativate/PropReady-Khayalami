@@ -17,8 +17,10 @@ import SectionRenderer from '@/components/buyer-learn/SectionRenderer';
 import BuyerPortalShell from '@/components/BuyerPortalShell';
 import PortalLoading from '@/components/PortalLoading';
 import PortalPageHeader from '@/components/PortalPageHeader';
+import { PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
 import LearningLandingShell from '@/components/marketing/learn/LearningLandingShell';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import type { LessonDifficulty } from '@/lib/buyer-learn/types';
 import {
     completeLessonQuiz,
     getLessonProgress,
@@ -38,6 +40,12 @@ import {
 import '@/app/home-landing.css';
 import '@/app/learning-landing.css';
 import '@/app/lesson-content.css';
+
+const DIFFICULTY_LABEL: Record<LessonDifficulty, string> = {
+    beginner: 'Beginner',
+    intermediate: 'Intermediate',
+    advanced: 'Advanced',
+};
 
 export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule }) {
     const router = useRouter();
@@ -261,6 +269,26 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
           ? 'Sellers hub'
           : 'Buyers hub';
 
+    const lessonPulseStats = useMemo(() => {
+        const chapterTotal = chapters?.length ?? lesson.sections.length;
+        return [
+            {
+                label: 'Format',
+                value: useCourse && chapters ? `${chapterTotal} chapters` : 'Immersive guide',
+            },
+            { label: 'Duration', value: `${lesson.meta.minutes} min` },
+            { label: 'Level', value: DIFFICULTY_LABEL[lesson.meta.difficulty] },
+            {
+                label: 'Progress',
+                value: `${Math.round(progressPct)}%`,
+                tone: progressPct >= 100 ? ('success' as const) : undefined,
+            },
+        ];
+    }, [useCourse, chapters, lesson.meta.difficulty, lesson.meta.minutes, lesson.sections.length, progressPct]);
+
+    /** Match portal page hero width — no nested max-width / extra gutter. */
+    const contentShell = user ? 'w-full' : LEARN_COURSE_SHELL;
+
     function chapterStatus(chapterId: string): 'open' | 'completed' | 'locked' {
         if (openChapterId === chapterId) return 'open';
         if (completedChapterIds.includes(chapterId)) return 'completed';
@@ -295,13 +323,7 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
 
     const courseContent =
         useCourse && chapters ? (
-            <div className={`${LEARN_COURSE_SHELL} relative py-4 sm:py-6`}>
-                <div className="mb-6 flex items-center justify-end">
-                    <p className="text-xs font-semibold tabular-nums text-[rgba(28,28,28,0.4)]">
-                        {completedChapterIds.length}/{chapters.length} chapters
-                    </p>
-                </div>
-
+            <div className={`${contentShell} relative py-4 sm:py-6`}>
                 <div className={LEARN_COURSE_GRID}>
                     <div className={LEARN_SIDEBAR}>
                         <CourseSidebarNav
@@ -403,7 +425,6 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
                             streakDays={streakDays}
                             totalXp={totalXp}
                             hubBasePath={hubBasePath}
-                            onOpenAi={() => setAiOpen(true)}
                             onOpenLab={
                                 showLab && courseComplete
                                     ? () =>
@@ -417,7 +438,7 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
                 </div>
             </div>
         ) : (
-            <div className={`${LEARN_COURSE_SHELL} relative py-4 sm:py-6`}>
+            <div className={`${contentShell} relative py-4 sm:py-6`}>
                 <div ref={contentRef} className="space-y-14 sm:space-y-16">
                     {lesson.sections.map((section, index) => (
                         <SectionRenderer
@@ -435,30 +456,6 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
             </div>
         );
 
-    const dock = (
-        <div className="lesson-dock fixed inset-x-0 bottom-0 z-40 safe-area-pb">
-            <div className={`${LEARN_COURSE_SHELL} flex items-center gap-3 py-3`}>
-                <div className="min-w-0 flex-1">
-                    <div className="mb-1 flex justify-between text-[11px] text-[rgba(28,28,28,0.45)]">
-                        <span className="truncate font-semibold">{lesson.meta.title}</span>
-                        <span className="tabular-nums font-semibold text-[rgba(28,28,28,0.7)]">
-                            {Math.round(progressPct)}%
-                        </span>
-                    </div>
-                    <div className="lesson-progress-track">
-                        <div
-                            className="lesson-progress-fill"
-                            style={{ width: `${Math.min(100, progressPct)}%` }}
-                        />
-                    </div>
-                </div>
-                <button type="button" onClick={handleContinue} className="lesson-dock-btn">
-                    Continue
-                </button>
-            </div>
-        </div>
-    );
-
     const tutor = (
         <AiTutorFab
             lessonTitle={lesson.meta.title}
@@ -466,6 +463,7 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
             hubBasePath={hubBasePath}
             open={aiOpen}
             onOpenChange={setAiOpen}
+            fabClassName="bottom-6 right-5"
         />
     );
 
@@ -481,34 +479,32 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        eyebrow={lesson.meta.courseLabel || hubLabel}
+                        eyebrow={lesson.meta.courseLabel || 'Learning Center'}
                         title={lesson.meta.title}
                         description={lesson.meta.subtitle}
+                        glassLabel="Learning pulse"
+                        stats={lessonPulseStats}
                         actions={
-                            <button
-                                type="button"
-                                onClick={handleContinue}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gold/90"
-                            >
-                                {progressPct > 5 ? 'Continue' : 'Start lesson'}
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Link href={hubBasePath} className={PORTAL_HERO_SECONDARY_BTN}>
+                                    <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+                                    All modules
+                                </Link>
+                                <button
+                                    type="button"
+                                    onClick={handleContinue}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gold px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gold/90"
+                                >
+                                    {progressPct > 5 ? 'Continue' : 'Start lesson'}
+                                </button>
+                            </div>
                         }
                     />
                 }
             >
-                <div className="lesson-landing relative min-h-screen pb-28">
-                    <div className={`${LEARN_COURSE_SHELL} mb-4 flex justify-end`}>
-                        <Link
-                            href={hubBasePath}
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-[rgba(28,28,28,0.5)] hover:text-[#dc2626] transition"
-                        >
-                            <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-                            {hubLabel}
-                        </Link>
-                    </div>
+                <div className="lesson-landing relative min-h-screen pb-10">
                     {courseContent}
                     {tutor}
-                    {dock}
                 </div>
             </BuyerPortalShell>
         );
@@ -519,11 +515,10 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
             backHref={hubBasePath}
             backLabel={`Back to ${hubLabel}`}
         >
-            <div className="lesson-landing relative pb-28">
+            <div className="lesson-landing relative pb-10">
                 {landingHero}
                 <section className="lc-section !pt-2 sm:!pt-4">{courseContent}</section>
                 {tutor}
-                {dock}
             </div>
         </LearningLandingShell>
     );

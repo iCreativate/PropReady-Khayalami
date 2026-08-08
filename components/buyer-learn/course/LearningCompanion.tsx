@@ -8,12 +8,10 @@ import {
     Flame,
     GraduationCap,
     NotebookPen,
-    Sparkles,
     Stars,
 } from 'lucide-react';
 import type { LessonMeta } from '@/lib/buyer-learn/types';
 import {
-    LEARN_BTN_PRIMARY,
     LEARN_CARD,
     LEARN_LABEL,
     LEARN_STICKY,
@@ -26,7 +24,6 @@ export default function LearningCompanion({
     streakDays,
     totalXp,
     hubBasePath,
-    onOpenAi,
     onOpenLab,
 }: {
     meta: LessonMeta;
@@ -35,7 +32,6 @@ export default function LearningCompanion({
     streakDays: number;
     totalXp: number;
     hubBasePath: string;
-    onOpenAi: () => void;
     onOpenLab?: () => void;
 }) {
     const [note, setNote] = useState('');
@@ -79,23 +75,10 @@ export default function LearningCompanion({
                     </div>
                 </div>
 
-                <div className={`${LEARN_CARD} p-5`}>
-                    <p className={LEARN_LABEL}>Quick tools</p>
-                    <div className="mt-3 space-y-2">
-                        <button
-                            type="button"
-                            onClick={onOpenAi}
-                            className="flex w-full items-center gap-3 rounded-2xl border border-[rgba(220,38,38,0.2)] bg-gradient-to-br from-[rgba(220,38,38,0.08)] to-white px-3.5 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm"
-                        >
-                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold text-white">
-                                <Sparkles className="h-4 w-4" />
-                            </span>
-                            <span>
-                                <span className="block text-sm font-semibold text-charcoal">AI Tutor</span>
-                                <span className="block text-xs text-charcoal/45">Ask anything</span>
-                            </span>
-                        </button>
-                        {onOpenLab ? (
+                {onOpenLab ? (
+                    <div className={`${LEARN_CARD} p-5`}>
+                        <p className={LEARN_LABEL}>Quick tools</p>
+                        <div className="mt-3 space-y-2">
                             <button
                                 type="button"
                                 onClick={onOpenLab}
@@ -111,9 +94,9 @@ export default function LearningCompanion({
                                     <span className="block text-xs text-charcoal/45">Try the numbers</span>
                                 </span>
                             </button>
-                        ) : null}
+                        </div>
                     </div>
-                </div>
+                ) : null}
 
                 <div className={`${LEARN_CARD} p-5`}>
                     <div className="flex items-center justify-between">
@@ -151,11 +134,6 @@ export default function LearningCompanion({
                         {bookmarked ? 'Bookmarked for later' : 'Not bookmarked yet'}
                     </div>
                 </div>
-
-                <button type="button" className={`${LEARN_BTN_PRIMARY} w-full`} onClick={onOpenAi}>
-                    <Sparkles className="h-4 w-4" />
-                    Ask AI Tutor
-                </button>
             </div>
         </aside>
     );

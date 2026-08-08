@@ -10,7 +10,7 @@ import { formatCurrency } from '@/lib/currency';
 import ViewingChat, { type ChatMessage } from '@/components/ViewingChat';
 import AppointmentConfirmPanel from '@/components/AppointmentConfirmPanel';
 import { readLocalViewingsForUser, refreshViewingsFromApi } from '@/lib/buyer-viewings';
-import { PORTAL_PAGE_CONTAINER, PORTAL_STAT_CARD, PORTAL_STAT_ICON } from '@/lib/portal-ui';
+import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { formatLocalYmd, todayLocalYmd, parseLocalYmd } from '@/lib/local-date';
 import PortalLoading from '@/components/PortalLoading';
@@ -209,8 +209,20 @@ export default function ViewingsPage() {
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        title="Viewing Appointments"
-                        description="Manage your property viewing appointments with agents"
+                        eyebrow="Buyer workspace"
+                        title="Viewing appointments"
+                        description="Manage your property viewing appointments with agents."
+                        glassLabel="Today's pulse"
+                        metrics={[
+                            { label: 'Upcoming', value: scheduledViewings.length + confirmedViewings.length },
+                            { label: 'Completed', value: completedViewings.length },
+                        ]}
+                        stats={[
+                            { label: 'Total viewings', value: viewings.length },
+                            { label: 'Confirmed', value: confirmedViewings.length, tone: 'success' },
+                            { label: 'Scheduled', value: scheduledViewings.length },
+                            { label: 'Cancelled', value: cancelledViewings.length },
+                        ]}
                     />
                 }
             >
@@ -225,95 +237,114 @@ export default function ViewingsPage() {
                     )}
 
                     {/* Stats Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6 mb-8 sm:mb-10">
-                        <div className={PORTAL_STAT_CARD}>
-                            <div className="flex items-start justify-between gap-4 w-full">
-                                <div>
-                                    <p className="text-charcoal/45 text-xs sm:text-[13px] font-medium mb-2">Total Viewings</p>
-                                    <p className="text-charcoal font-semibold text-3xl sm:text-[2rem] tabular-nums tracking-tight">{viewings.length}</p>
+                    <div className="biw-kpis biw-kpis--5 mb-6 sm:mb-8">
+                        {[
+                            {
+                                label: 'Total viewings',
+                                value: viewings.length,
+                                hint: 'All appointments',
+                                icon: Calendar,
+                                tone: 'text-[#e53935]',
+                                bg: 'bg-[rgba(229,57,53,0.08)]',
+                            },
+                            {
+                                label: 'Confirmed',
+                                value: confirmedViewings.length,
+                                hint: 'Ready to attend',
+                                icon: CheckCircle,
+                                tone: 'text-green-600',
+                                bg: 'bg-green-500/10',
+                            },
+                            {
+                                label: 'Scheduled',
+                                value: scheduledViewings.length,
+                                hint: 'Awaiting confirm',
+                                icon: Clock,
+                                tone: 'text-blue-600',
+                                bg: 'bg-blue-500/10',
+                            },
+                            {
+                                label: 'Completed',
+                                value: completedViewings.length,
+                                hint: 'Already viewed',
+                                icon: CheckCircle,
+                                tone: 'text-[#1b1b1b]/70',
+                                bg: 'bg-black/[0.04]',
+                            },
+                            {
+                                label: 'Cancelled',
+                                value: cancelledViewings.length,
+                                hint: 'No longer active',
+                                icon: XCircle,
+                                tone: 'text-red-600',
+                                bg: 'bg-red-500/10',
+                            },
+                        ].map((stat) => {
+                            const Icon = stat.icon;
+                            return (
+                                <div key={stat.label} className="biw-panel biw-kpi">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <p className="biw-kpi-label">{stat.label}</p>
+                                        <span
+                                            className={`grid h-9 w-9 place-items-center rounded-[11px] ${stat.bg} ${stat.tone}`}
+                                        >
+                                            <Icon className="h-4 w-4" />
+                                        </span>
+                                    </div>
+                                    <p className="biw-kpi-value">{stat.value}</p>
+                                    <p className="biw-kpi-hint">{stat.hint}</p>
                                 </div>
-                                <div className={PORTAL_STAT_ICON}>
-                                    <Calendar className="w-6 h-6 text-gold" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="premium-card rounded-xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Confirmed</p>
-                                    <p className="text-charcoal font-bold text-3xl">{confirmedViewings.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
-                                    <CheckCircle className="w-6 h-6 text-green-600" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="premium-card rounded-xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Scheduled</p>
-                                    <p className="text-charcoal font-bold text-3xl">{scheduledViewings.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                                    <Clock className="w-6 h-6 text-blue-600" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="premium-card rounded-xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Completed</p>
-                                    <p className="text-charcoal font-bold text-3xl">{completedViewings.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-gold/10 rounded-xl flex items-center justify-center">
-                                    <CheckCircle className="w-6 h-6 text-gold" />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="premium-card rounded-xl p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-charcoal/50 text-xs font-medium mb-2 uppercase tracking-wide">Cancelled</p>
-                                    <p className="text-charcoal font-bold text-3xl">{cancelledViewings.length}</p>
-                                </div>
-                                <div className="w-12 h-12 bg-gradient-to-br from-red-500/20 to-red-500/10 rounded-xl flex items-center justify-center border border-red-500/30">
-                                    <XCircle className="w-6 h-6 text-red-600" />
-                                </div>
-                            </div>
-                        </div>
+                            );
+                        })}
                     </div>
 
                     {/* Calendar Section */}
-                    <div className="rounded-3xl shadow-2xl border border-charcoal/10 bg-white/90 backdrop-blur-xl overflow-hidden mb-8">
+                    <div className="biw-panel biw-panel--static overflow-hidden mb-6 sm:mb-8">
                         {/* Calendar Header */}
-                        <div className="relative bg-gradient-to-br from-gold via-gold/90 to-gold/80 px-6 md:px-8 py-5 md:py-6 border-b border-gold/20">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
-                            <div className="relative flex items-center justify-between">
+                        <div className="relative overflow-hidden px-5 md:px-6 py-5 border-b border-white/10 bg-[linear-gradient(145deg,#1b1b1b_0%,#2a1f21_48%,#5c1d1d_100%)]">
+                            <div
+                                className="pointer-events-none absolute inset-0"
+                                style={{
+                                    background:
+                                        'radial-gradient(ellipse 55% 70% at 88% 8%, rgba(229,57,53,0.35), transparent 58%)',
+                                }}
+                            />
+                            <div className="relative flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
+                                    <div className="w-10 h-10 bg-white/10 backdrop-blur-sm rounded-[12px] flex items-center justify-center border border-white/15">
                                         <Calendar className="w-5 h-5 text-white" />
                                     </div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-white">
-                                        Viewing Calendar
-                                    </h2>
+                                    <div>
+                                        <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">
+                                            Viewing calendar
+                                        </h2>
+                                        <p className="text-xs text-white/55 mt-0.5">Tap a day with appointments to review</p>
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button
+                                        type="button"
                                         onClick={() => navigateMonth('prev')}
-                                        className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                        className="p-2 rounded-[11px] bg-white/10 border border-white/15 text-white hover:bg-white/18 transition"
+                                        aria-label="Previous month"
                                     >
                                         <ChevronLeft className="w-5 h-5" />
                                     </button>
-                                    <span className="text-white font-semibold min-w-[200px] text-center px-4">{monthName}</span>
+                                    <span className="text-white font-semibold min-w-[160px] text-center px-2 text-sm">
+                                        {monthName}
+                                    </span>
                                     <button
+                                        type="button"
                                         onClick={() => navigateMonth('next')}
-                                        className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white hover:bg-white/30 transition-all duration-200 flex items-center justify-center group hover:scale-110"
+                                        className="p-2 rounded-[11px] bg-white/10 border border-white/15 text-white hover:bg-white/18 transition"
+                                        aria-label="Next month"
                                     >
                                         <ChevronRight className="w-5 h-5" />
                                     </button>
                                     <button
+                                        type="button"
                                         onClick={() => setCurrentDate(new Date())}
-                                        className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white font-semibold hover:bg-white/30 transition-all duration-200 text-sm"
+                                        className="px-3.5 py-2 rounded-full bg-white text-[#1b1b1b] font-semibold hover:bg-white/90 transition text-xs"
                                     >
                                         Today
                                     </button>
@@ -322,10 +353,10 @@ export default function ViewingsPage() {
                         </div>
 
                         {/* Calendar Body */}
-                        <div className="px-6 md:px-8 py-6 bg-gradient-to-b from-white to-charcoal/5">
+                        <div className="px-5 md:px-6 py-5 bg-gradient-to-b from-white to-[#f7f8fa]">
                             <div className="grid grid-cols-7 gap-2 mb-3">
                                 {weekDays.map((day) => (
-                                    <div key={day} className="text-center text-charcoal/70 font-semibold text-sm py-2">
+                                    <div key={day} className="text-center text-black/40 font-semibold text-[11px] uppercase tracking-wide py-2">
                                         {day}
                                     </div>
                                 ))}

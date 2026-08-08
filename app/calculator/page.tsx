@@ -25,10 +25,20 @@ export default function BondCalculatorPage() {
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        size="compact"
                         eyebrow="Home finance"
                         title="Bond Calculator"
                         description="Model repayments, compare scenarios and export your plan — in one compact dashboard."
+                        glassLabel="Calculator pulse"
+                        metrics={[
+                            { label: 'Updates', value: 'Live' },
+                            { label: 'Market', value: 'South Africa' },
+                        ]}
+                        stats={[
+                            { label: 'Mode', value: 'Repayment' },
+                            { label: 'Assumptions', value: 'SA lending' },
+                            { label: 'Scenarios', value: 'Compare' },
+                            { label: 'Export', value: 'Available', tone: 'success' },
+                        ]}
                     />
                 }
             >

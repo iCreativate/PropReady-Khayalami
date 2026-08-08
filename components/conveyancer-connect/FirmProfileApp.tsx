@@ -94,7 +94,6 @@ export default function FirmProfileApp({
     return (
         <div className="space-y-6">
             <PortalHero
-                size="compact"
                 eyebrow="Verified conveyancer profile"
                 eyebrowIcon={<BadgeCheck className="h-3.5 w-3.5 text-gold" />}
                 title={profile.firmName}
@@ -121,6 +120,7 @@ export default function FirmProfileApp({
                     {
                         label: 'Status',
                         value: profile.verified ? 'Verified' : 'Listed',
+                        tone: profile.verified ? 'success' : 'default',
                     },
                     { label: 'Location', value: profile.city || 'South Africa' },
                     {
@@ -130,6 +130,16 @@ export default function FirmProfileApp({
                     {
                         label: 'Services',
                         value: String(profile.specialisations.length || 1),
+                    },
+                ]}
+                metrics={[
+                    {
+                        label: 'Rating',
+                        value: profile.reviewCount > 0 ? profile.rating.toFixed(1) : 'New',
+                    },
+                    {
+                        label: 'Reviews',
+                        value: profile.reviewCount,
                     },
                 ]}
             />

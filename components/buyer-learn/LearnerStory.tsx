@@ -1,14 +1,12 @@
 'use client';
 
+import { formatCurrency } from '@/lib/currency';
+
 import { useState } from 'react';
 import type { LearnerPersona, StoryDecision } from '@/lib/buyer-learn/types';
 
 function formatZar(n: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        maximumFractionDigits: 0,
-    }).format(n);
+    return formatCurrency(n);
 }
 
 export default function LearnerStory({

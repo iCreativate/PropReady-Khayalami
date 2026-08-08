@@ -19,8 +19,6 @@ import {
     type UserPortalPage,
 } from '@/lib/user-portal-nav';
 import {
-    PORTAL_PAGE_CONTAINER,
-    PORTAL_PAGE_HEADER_BAND,
     PORTAL_SECONDARY_BTN,
     PORTAL_ICON_BTN,
     PORTAL_SHELL_SIDEBAR,
@@ -43,6 +41,7 @@ import {
     PORTAL_NAV_LABEL,
 } from '@/lib/portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
+import { PortalAiCoachShell } from '@/components/PortalAiCoach';
 
 function isQuizEscapePath(pathname: string | null): boolean {
     if (!pathname) return false;
@@ -53,6 +52,11 @@ function isQuizEscapePath(pathname: string | null): boolean {
         pathname.startsWith('/sellers/quiz') ||
         pathname.startsWith('/get-started')
     );
+}
+
+function isLearningCenterPath(pathname: string | null): boolean {
+    if (!pathname) return false;
+    return pathname === '/learn' || pathname.startsWith('/learn/');
 }
 
 export interface UserPortalUser {
@@ -169,6 +173,7 @@ export default function UserPortalLayout({
     const portalLabel = getUserPortalLabel(portal);
     const { loading: onboardingLoading, required: onboardingRequired } = useOnboardingGate();
     const quizEscape = isQuizEscapePath(pathname);
+    const learningCenter = isLearningCenterPath(pathname);
     const { loading: leadGateLoading, needsQuiz } = useLeadGate({
         skip: onboardingLoading || onboardingRequired || quizEscape || !user || staffAccess,
     });
@@ -336,16 +341,27 @@ export default function UserPortalLayout({
                 </header>
 
                 <main className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${PORTAL_SHELL_CONTENT}`}>
-                    {pageHeader && (
-                        <div
-                            className={`${PORTAL_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 lg:py-7`}
-                        >
-                            <div className={PORTAL_PAGE_CONTAINER}>{pageHeader}</div>
-                        </div>
-                    )}
                     <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
                         <PortalAnnouncementBanner />
-                        {children}
+                        {portal === 'buyer' && activePage === 'dashboard' ? (
+                            children
+                        ) : learningCenter ? (
+                            <>
+                                {pageHeader ? (
+                                    <div className="mb-6 sm:mb-8">{pageHeader}</div>
+                                ) : null}
+                                {children}
+                            </>
+                        ) : (
+                            <PortalAiCoachShell
+                                role={portal}
+                                activePage={activePage}
+                                pageTitle={title ?? activeLabel}
+                                header={pageHeader}
+                            >
+                                {children}
+                            </PortalAiCoachShell>
+                        )}
                     </div>
                 </main>
             </div>

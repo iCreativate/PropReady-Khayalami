@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import UserPortalLayout from '@/components/UserPortalLayout';
 import PortalPageHeader from '@/components/PortalPageHeader';
+import type { PortalHeroStat } from '@/components/PortalHero';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
@@ -20,6 +21,8 @@ const MessagesWorkspace = dynamic(
 export default function BuyerMessagesPage() {
     const router = useRouter();
     const { user, isHydrated } = useHydratedBuyerPortalUser();
+    const [heroActions, setHeroActions] = useState<ReactNode>(null);
+    const [heroStats, setHeroStats] = useState<PortalHeroStat[] | null>(null);
 
     useEffect(() => {
         if (!isHydrated) return;
@@ -44,10 +47,12 @@ export default function BuyerMessagesPage() {
             title="Messages"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Inbox"
                     title="Messages"
                     description="Chat with your agent, bond originator, and PropReady support."
+                    glassLabel="Inbox pulse"
+                    stats={heroStats ?? undefined}
+                    actions={heroActions}
                 />
             }
         >
@@ -57,6 +62,8 @@ export default function BuyerMessagesPage() {
                     profileId={user.id || ''}
                     accountType="user"
                     displayName={user.fullName || user.email || 'You'}
+                    onHeroActionsChange={setHeroActions}
+                    onHeroStatsChange={setHeroStats}
                 />
             </div>
         </UserPortalLayout>

@@ -108,7 +108,6 @@ export default function ConveyancerMattersPage() {
             title="Matters"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Transfer pipeline"
                     title="Client matters"
                     description="Every quote, consultation and instruction becomes a matter — unlocking live messaging with the client (and their agent)."

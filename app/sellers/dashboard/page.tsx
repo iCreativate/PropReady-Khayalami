@@ -273,8 +273,26 @@ export default function SellerDashboardPage() {
                     <PortalPageHeader
                         variant="premium"
                         eyebrow={`Welcome back${portalUser?.fullName ? `, ${portalUser.fullName.split(' ')[0]}` : ''}`}
-                        title={<>Seller Dashboard <span aria-hidden="true">👋</span></>}
-                        description="Manage your property listing and connect with agents"
+                        title="Seller dashboard"
+                        description="Manage your property listing and connect with agents."
+                        glassLabel="Today's pulse"
+                        metrics={[
+                            { label: 'Properties', value: sellerProperties.length },
+                            { label: 'Viewings', value: viewingAppointments.length },
+                        ]}
+                        stats={[
+                            { label: 'Listings', value: sellerProperties.length },
+                            {
+                                label: 'Agent linked',
+                                value: selectedAgent ? 'Yes' : 'Not yet',
+                                tone: selectedAgent ? 'success' : 'default',
+                            },
+                            { label: 'Viewings', value: viewingAppointments.length },
+                            {
+                                label: 'Status',
+                                value: sellerProperties.length > 0 ? 'Active' : 'Setup',
+                            },
+                        ]}
                     />
                 }
             >

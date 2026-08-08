@@ -21,6 +21,39 @@ export const BLANK_PROPERTY: PropertyProfile = {
     conditionScore: 70,
 };
 
+/** Neutral market used when no suburb has been matched to Property24 data. */
+export const NEUTRAL_MARKET: MarketContext = {
+    avgPropertyPrice: 0,
+    avgSellingPrice: 0,
+    avgAskingPrice: 0,
+    avgDaysOnMarket: 0,
+    buyerDemand: 0,
+    sellerCompetition: 0,
+    rentalDemand: 0,
+    luxuryDemand: 0,
+    investorDemand: 0,
+    marketTemperature: 'balanced',
+    propertiesSold90d: 0,
+    activeListings: 0,
+    priceGrowthYoY: 0,
+    inventoryMonths: 0,
+    pricePerSqm: 0,
+    inflationRate: 5.2,
+    primeInterestRate: 11.75,
+    populationGrowth: 0,
+    employmentGrowth: 0,
+    historicalAppreciation: 0,
+    supplyDemandRatio: 1,
+    crimeIndex: 0,
+    schoolScore: 0,
+    transportScore: 0,
+    plannedDevelopments: [],
+    infrastructureProjects: [],
+    dataQuality: 'insufficient',
+    dataSource: 'none',
+    hasVerifiedSuburbAverage: false,
+};
+
 /** @deprecated Prefer BLANK_PROPERTY for production boot — kept for labelled example modelling */
 export const DEMO_PROPERTY: PropertyProfile = {
     id: 'pvo-demo-001',
@@ -85,6 +118,9 @@ export const DEMO_MARKET: MarketContext = {
         'Johannesburg Water bulk supply upgrade',
         'City Power grid stabilisation — northern corridor',
     ],
+    dataQuality: 'estimated',
+    dataSource: 'demo-illustrative',
+    hasVerifiedSuburbAverage: false,
 };
 
 export const SUBURB_INSIGHTS = {

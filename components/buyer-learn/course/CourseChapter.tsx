@@ -1,5 +1,7 @@
 'use client';
 
+import { formatCurrency } from '@/lib/currency';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -18,11 +20,7 @@ import SectionReveal from '@/components/buyer-learn/SectionReveal';
 import { LEARN_BTN_GHOST, LEARN_BTN_PRIMARY, LEARN_LABEL } from '@/lib/learn-course-ui';
 
 function formatZar(n: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        maximumFractionDigits: 0,
-    }).format(n);
+    return formatCurrency(n);
 }
 
 function journeyCta(hubBasePath?: string): { href: string; label: string; seller: boolean } {

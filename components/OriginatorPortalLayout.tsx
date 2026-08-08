@@ -17,7 +17,6 @@ import {
     ORIGINATOR_NAV_LINK_ACTIVE,
     ORIGINATOR_NAV_LINK_IDLE,
     ORIGINATOR_PAGE_CONTAINER,
-    ORIGINATOR_PAGE_HEADER_BAND,
     ORIGINATOR_SECONDARY_BTN,
     ORIGINATOR_SHELL_CONTENT,
     ORIGINATOR_SHELL_DIVIDER,
@@ -30,6 +29,7 @@ import {
     ORIGINATOR_SHELL_TOPBAR,
 } from '@/lib/originator-portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
+import { PortalAiCoachShell } from '@/components/PortalAiCoach';
 
 export interface OriginatorPortalUser {
     fullName: string;
@@ -197,14 +197,16 @@ export default function OriginatorPortalLayout({
                 <main
                     className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${ORIGINATOR_SHELL_CONTENT}`}
                 >
-                    {pageHeader && (
-                        <div className={`${ORIGINATOR_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
-                            <div className={ORIGINATOR_PAGE_CONTAINER}>{pageHeader}</div>
-                        </div>
-                    )}
                     <div className={`${ORIGINATOR_PAGE_CONTAINER} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6`}>
                         <PortalAnnouncementBanner />
-                        {children}
+                        <PortalAiCoachShell
+                            role="originator"
+                            activePage={activePage}
+                            pageTitle={title ?? activeLabel}
+                            header={pageHeader}
+                        >
+                            {children}
+                        </PortalAiCoachShell>
                     </div>
                 </main>
             </div>

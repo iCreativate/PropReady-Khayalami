@@ -97,6 +97,267 @@ body {
   z-index: 1;
 }
 
+/* Portal / dashboard heroes — shared charcoal → deep-red treatment */
+.biw-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse 55% 70% at 88% 8%, rgba(229, 57, 53, 0.42), transparent 58%),
+    radial-gradient(ellipse 45% 55% at 12% 92%, rgba(92, 29, 29, 0.55), transparent 55%),
+    linear-gradient(145deg, #1b1b1b 0%, #2a1f21 48%, #5c1d1d 100%);
+  color: #fff;
+  box-shadow: 0 24px 56px rgba(27, 27, 27, 0.28);
+  padding: 24px;
+}
+
+@media (min-width: 768px) {
+  .biw-hero {
+    padding: 28px 32px;
+  }
+}
+
+.biw-hero--compact {
+  padding: 20px 22px;
+}
+
+@media (min-width: 768px) {
+  .biw-hero--compact {
+    padding: 22px 26px;
+  }
+}
+
+.biw-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.08), transparent 40%);
+  pointer-events: none;
+}
+
+.biw-hero-grid {
+  display: grid;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 900px) {
+  .biw-hero-grid {
+    grid-template-columns: 1.2fr 0.8fr;
+    align-items: stretch;
+  }
+
+  .biw-hero-grid--solo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.biw-hero-title {
+  margin-top: 8px;
+  font-size: clamp(1.75rem, 3.2vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  color: #fff !important;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.biw-hero--compact .biw-hero-title {
+  font-size: clamp(1.45rem, 2.6vw, 1.85rem);
+}
+
+.biw-hero-sub {
+  margin-top: 10px;
+  max-width: 34rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.biw-hero-glass {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  padding: 20px;
+}
+
+/* Shared portal surfaces — same language as Buyer Dashboard panels */
+:root {
+  --biw-red: #e53935;
+  --biw-dark: #1b1b1b;
+  --biw-radius: 22px;
+  --biw-radius-sm: 14px;
+  --biw-shadow: 0 1px 2px rgba(27, 27, 27, 0.04), 0 10px 28px rgba(27, 27, 27, 0.05);
+  --biw-shadow-hover: 0 8px 24px rgba(27, 27, 27, 0.1), 0 0 0 1px rgba(229, 57, 53, 0.12),
+    0 18px 48px rgba(229, 57, 53, 0.08);
+}
+
+.biw-panel {
+  background: #fff;
+  border-radius: var(--biw-radius);
+  box-shadow: var(--biw-shadow);
+  border: 1px solid rgba(27, 27, 27, 0.06);
+  transition: box-shadow 250ms ease, transform 250ms ease, border-color 250ms ease;
+}
+
+.biw-panel:hover {
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: var(--biw-shadow-hover);
+  border-color: rgba(229, 57, 53, 0.14);
+}
+
+.biw-panel--static:hover {
+  transform: none;
+  box-shadow: var(--biw-shadow);
+  border-color: rgba(27, 27, 27, 0.06);
+}
+
+.biw-panel--glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.biw-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .biw-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .biw-kpis--5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.biw-kpi {
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 132px;
+}
+
+.biw-kpi-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(27, 27, 27, 0.42);
+}
+
+.biw-kpi-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--biw-dark);
+}
+
+.biw-kpi-hint {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: rgba(27, 27, 27, 0.48);
+  margin-top: auto;
+}
+
+.biw-sec-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--biw-dark);
+}
+
+.biw-sec-sub {
+  font-size: 0.8rem;
+  color: rgba(27, 27, 27, 0.48);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.biw-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  transition: transform 180ms ease, background 200ms ease, box-shadow 200ms ease;
+}
+
+.biw-cta:hover {
+  transform: translateY(-1px);
+}
+
+.biw-cta--primary {
+  background: linear-gradient(135deg, #e53935, #c62828);
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(229, 57, 53, 0.28);
+}
+
+.biw-cta--primary:hover {
+  background: linear-gradient(135deg, #ef5350, #e53935);
+}
+
+.biw-cta--ghost {
+  background: rgba(27, 27, 27, 0.04);
+  color: var(--biw-dark);
+}
+
+.biw-cta--ghost:hover {
+  background: rgba(27, 27, 27, 0.08);
+}
+
+.portal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .portal-stack {
+    gap: 20px;
+  }
+}
+
+.portal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--biw-radius-sm);
+  background: rgba(27, 27, 27, 0.025);
+  border: 1px solid rgba(27, 27, 27, 0.05);
+}
+
+/* Legacy aliases */
+.portal-hero {
+  /* styles live on .biw-hero */
+}
+
+.portal-hero-glow,
+.portal-hero-sheen {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.native-shell body {
     opacity: 1;
@@ -173,8 +434,9 @@ body {
     --shadow-focus: 0 0 0 3px rgba(220, 38, 38, 0.18);
     --shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
     --shadow-btn-hover: 0 4px 14px rgba(0, 0, 0, 0.1);
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 20px rgba(0, 0, 0, 0.05);
-    --shadow-card-hover: 0 10px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 1px 2px rgba(27, 27, 27, 0.04), 0 10px 28px rgba(27, 27, 27, 0.05);
+    --shadow-card-hover: 0 8px 24px rgba(27, 27, 27, 0.1), 0 0 0 1px rgba(229, 57, 53, 0.12),
+      0 18px 48px rgba(229, 57, 53, 0.08);
 
     /* Motion ladder — keep UI snappy, surfaces slightly slower */
     --duration-instant: 100ms;
@@ -378,34 +640,34 @@ body {
   }
 
   .premium-card {
-    /* Legacy alias — matches card-surface polish */
     background-color: var(--surface-elevated);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-2xl);
+    border: 1px solid rgba(27, 27, 27, 0.06);
+    border-radius: 22px;
     box-shadow: var(--shadow-card);
     transition:
-      border-color var(--duration-card) var(--ease-out),
-      box-shadow var(--duration-card) var(--ease-out);
+      border-color 250ms ease,
+      box-shadow 250ms ease,
+      transform 250ms ease;
   }
 
   .premium-card:hover {
-    border-color: var(--border-strong);
-    box-shadow: var(--shadow-card);
+    border-color: rgba(229, 57, 53, 0.14);
+    box-shadow: var(--shadow-card-hover);
   }
 
-  /* ── Card surface system (polish only — no layout changes) ── */
+  /* ── Card surface system (aligned with Buyer Dashboard panels) ── */
   .card-surface {
     --card-accent: var(--brand);
     position: relative;
     background-color: var(--surface-elevated);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-2xl);
+    border: 1px solid rgba(27, 27, 27, 0.06);
+    border-radius: 22px;
     box-shadow: var(--shadow-card);
     transition:
-      border-color var(--duration-card) var(--ease-out),
-      box-shadow var(--duration-card) var(--ease-out),
-      transform var(--duration-card) var(--ease-out),
-      background-size var(--duration-card) var(--ease-out);
+      border-color 250ms ease,
+      box-shadow 250ms ease,
+      transform 250ms ease,
+      background-size 250ms ease;
     backface-visibility: hidden;
   }
 
@@ -434,8 +696,8 @@ body {
   button.premium-card:hover,
   [role='button'].premium-card:hover,
   .card-interactive:hover {
-    transform: translate3d(0, var(--lift-card), 0);
-    border-color: var(--border-strong);
+    transform: translate3d(0, -2px, 0);
+    border-color: rgba(229, 57, 53, 0.14);
     box-shadow: var(--shadow-card-hover);
     background-size: 100% 2px;
   }

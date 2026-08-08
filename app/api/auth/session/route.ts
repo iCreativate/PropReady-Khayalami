@@ -5,7 +5,9 @@ import { getImpersonatorFromRequest } from '@/lib/admin-auth';
 export async function GET(request: NextRequest) {
     const session = await resolveSessionFromRequest(request);
     if (!session) {
-        return NextResponse.json({ authenticated: false }, { status: 401 });
+        // 200 (not 401) — session probes are expected when logged out / cookies expired.
+        // Returning 401 spams the browser console on every portal page load.
+        return NextResponse.json({ authenticated: false });
     }
 
     const { user } = session;

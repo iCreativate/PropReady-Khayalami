@@ -278,7 +278,6 @@ export default function AdminShell({
                         <>
                             <div className="mb-6 sm:mb-8">
                                 <PortalHero
-                                    size="compact"
                                     eyebrow={eyebrow || 'PropReady admin'}
                                     title={title || 'Staff console'}
                                     description={

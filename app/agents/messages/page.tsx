@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import AgentPortalLayout, { type AgentPortalAgent } from '@/components/AgentPortalLayout';
 import AgentPageHeader from '@/components/AgentPageHeader';
+import type { PortalHeroStat } from '@/components/PortalHero';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import {
     hydrateSessionFromCookies,
@@ -25,6 +26,8 @@ export default function AgentMessagesPage() {
     const [agent, setAgent] = useState<AgentPortalAgent | null>(null);
     const [profileId, setProfileId] = useState('');
     const [loading, setLoading] = useState(true);
+    const [heroActions, setHeroActions] = useState<ReactNode>(null);
+    const [heroStats, setHeroStats] = useState<PortalHeroStat[] | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -79,10 +82,12 @@ export default function AgentMessagesPage() {
             title="Messages"
             pageHeader={
                 <AgentPageHeader
-                    size="compact"
                     eyebrow="Inbox"
                     title="Messages"
                     description="Message buyers, sellers, and PropReady staff from one place."
+                    glassLabel="Inbox pulse"
+                    stats={heroStats ?? undefined}
+                    actions={heroActions}
                 />
             }
         >
@@ -92,6 +97,8 @@ export default function AgentMessagesPage() {
                     profileId={profileId}
                     accountType="agent"
                     displayName={agent.fullName || agent.email || 'Agent'}
+                    onHeroActionsChange={setHeroActions}
+                    onHeroStatsChange={setHeroStats}
                 />
             </div>
         </AgentPortalLayout>

@@ -101,7 +101,6 @@ export default function ConveyancerDeedsPage() {
             title="Deeds Office"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Integration layer"
                     title="Deeds Office tracking"
                     description="South Africa’s Deeds Registries have no public consumer API. PropReady syncs via a pluggable provider (simulated by default; set DEEDS_OFFICE_API_URL for a licensed gateway)."

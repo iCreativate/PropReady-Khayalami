@@ -1,0 +1,337 @@
+/* Portal AI coach rail — shared across portal layouts */
+
+.pac-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 1280px) {
+  .pac-shell {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 24px;
+  }
+}
+
+.pac-main {
+  min-width: 0;
+  width: 100%;
+}
+
+.pac-main > * {
+  max-width: 100%;
+}
+
+.pac-rail {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .pac-rail {
+    display: block;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: pac-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes pac-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pac-mark-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(229, 57, 53, 0);
+  }
+}
+
+.pac-card {
+  --pac-ink: #141414;
+  --pac-muted: rgba(20, 20, 20, 0.52);
+  --pac-red: #e53935;
+  --pac-red-deep: #c62828;
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 1.2rem 1.15rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  color: var(--pac-ink);
+  background:
+    radial-gradient(ellipse 90% 55% at 0% 0%, rgba(229, 57, 53, 0.1), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 12%, rgba(20, 20, 20, 0.04), transparent 50%),
+    linear-gradient(165deg, #fffcfa 0%, #f7f4f0 100%);
+  border: 1px solid rgba(20, 20, 20, 0.06);
+  box-shadow:
+    0 1px 2px rgba(20, 20, 20, 0.04),
+    0 16px 40px rgba(20, 20, 20, 0.06);
+}
+
+.pac-card-aura {
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(229, 57, 53, 0.14), transparent 68%);
+  pointer-events: none;
+  animation: pac-aura 7s ease-in-out infinite alternate;
+}
+
+@keyframes pac-aura {
+  from {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate(-12px, 18px) scale(1.12);
+    opacity: 1;
+  }
+}
+
+.pac-card-head {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.pac-mark {
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.85rem;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(145deg, var(--pac-red), var(--pac-red-deep));
+  animation: pac-mark-pulse 2.8s ease-out infinite;
+}
+
+.pac-mark svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.pac-card-brand {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.pac-brand-line {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pac-red);
+}
+
+.pac-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--pac-ink);
+}
+
+.pac-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--pac-muted);
+  line-height: 1.35;
+}
+
+.pac-kicker {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(20, 20, 20, 0.4);
+}
+
+.pac-kicker--accent {
+  color: var(--pac-red);
+}
+
+.pac-goal {
+  position: relative;
+  padding: 0.85rem 0.95rem 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(20, 20, 20, 0.035);
+  border: 1px solid rgba(20, 20, 20, 0.05);
+}
+
+.pac-goal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--pac-red), #c4a574);
+}
+
+.pac-goal-text {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  color: var(--pac-ink);
+}
+
+.pac-tip {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.pac-tip-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: rgba(20, 20, 20, 0.62);
+}
+
+.pac-pulse {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.7rem;
+  align-items: start;
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(20, 20, 20, 0.07);
+}
+
+.pac-pulse-mark {
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 0.65rem;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 20, 20, 0.05);
+  color: rgba(20, 20, 20, 0.55);
+}
+
+.pac-pulse-mark svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.pac-pulse-text {
+  margin: 0.3rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: rgba(20, 20, 20, 0.58);
+}
+
+.pac-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.15rem;
+}
+
+.pac-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  height: 2.55rem;
+  padding: 0 1rem;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  transition:
+    transform 180ms ease,
+    background 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.pac-cta svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.pac-cta:hover {
+  transform: translateY(-1px);
+}
+
+.pac-cta--primary {
+  background: linear-gradient(135deg, var(--pac-red), var(--pac-red-deep));
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(229, 57, 53, 0.28);
+}
+
+.pac-cta--primary:hover {
+  background: linear-gradient(135deg, #ef5350, var(--pac-red));
+}
+
+.pac-cta--ghost {
+  background: transparent;
+  color: var(--pac-ink);
+  border: 1px solid rgba(20, 20, 20, 0.1);
+}
+
+.pac-cta--ghost:hover {
+  background: rgba(20, 20, 20, 0.04);
+  border-color: rgba(20, 20, 20, 0.16);
+}
+
+.pac-disclaimer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding-top: 0.15rem;
+  font-size: 0.68rem;
+  color: rgba(20, 20, 20, 0.4);
+  letter-spacing: 0.01em;
+}
+
+.pac-disclaimer svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex-shrink: 0;
+}
+
+/* Legacy panel hooks (keep if referenced elsewhere) */
+.pac-panel {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 1px 2px rgba(27, 27, 27, 0.04), 0 10px 28px rgba(27, 27, 27, 0.05);
+  border: 1px solid rgba(27, 27, 27, 0.06);
+}
+
+.pac-panel--glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}

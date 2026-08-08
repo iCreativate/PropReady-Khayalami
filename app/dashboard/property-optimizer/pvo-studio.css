@@ -1,0 +1,157 @@
+/* Property Value Optimizer — premium studio bands (below portal hero) */
+
+.pvo-studio {
+  --pvo-ink: #1b1b1b;
+  --pvo-muted: rgba(27, 27, 27, 0.55);
+  --pvo-line: rgba(27, 27, 27, 0.08);
+  --pvo-red: #e53935;
+  --pvo-radius: 22px;
+  --pvo-shadow: 0 1px 2px rgba(27, 27, 27, 0.04), 0 14px 40px rgba(27, 27, 27, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pvo-band {
+  padding: 2rem 0;
+  border-top: 1px solid transparent;
+}
+
+.pvo-band + .pvo-band {
+  border-top-color: var(--pvo-line);
+}
+
+.pvo-band--tint {
+  margin-inline: -0.25rem;
+  padding-inline: 0.25rem;
+  padding-block: 2.25rem;
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse 70% 80% at 100% 0%, rgba(229, 57, 53, 0.06), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(247, 248, 250, 0.9));
+}
+
+.pvo-band-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pvo-band-kicker {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--pvo-red);
+  margin-bottom: 0.4rem;
+}
+
+.pvo-band-title {
+  font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--pvo-ink);
+  line-height: 1.15;
+}
+
+.pvo-band-sub {
+  margin-top: 0.4rem;
+  max-width: 38rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--pvo-muted);
+}
+
+.pvo-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--pvo-line);
+  border-radius: var(--pvo-radius);
+  box-shadow: var(--pvo-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.pvo-card--interactive {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pvo-card--interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(229, 57, 53, 0.22);
+  box-shadow: 0 8px 28px rgba(27, 27, 27, 0.08), 0 0 0 1px rgba(229, 57, 53, 0.08);
+}
+
+.pvo-card--selected {
+  border-color: rgba(229, 57, 53, 0.35);
+  box-shadow: 0 10px 32px rgba(229, 57, 53, 0.12), 0 0 0 1px rgba(229, 57, 53, 0.12);
+  background: linear-gradient(165deg, #fff, rgba(229, 57, 53, 0.03));
+}
+
+.pvo-confidence {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(27, 27, 27, 0.08);
+  overflow: hidden;
+}
+
+.pvo-confidence > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f59e0b, #e53935, #22c55e);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pvo-sticky {
+  position: sticky;
+  top: 1rem;
+}
+
+.pvo-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pvo-kpi-label {
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pvo-muted);
+}
+
+.pvo-kpi-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--pvo-ink);
+}
+
+.pvo-chip-q {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--pvo-line);
+  background: #fff;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pvo-ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.pvo-chip-q:hover {
+  border-color: rgba(229, 57, 53, 0.35);
+  background: rgba(229, 57, 53, 0.04);
+}
+
+@media (max-width: 900px) {
+  .pvo-sticky {
+    position: static;
+  }
+}

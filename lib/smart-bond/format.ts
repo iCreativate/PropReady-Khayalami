@@ -1,17 +1,12 @@
+import { formatCurrency, formatNumber as formatNumberCommas } from '@/lib/currency';
+
+/** ZAR with comma thousands — e.g. R 1,500,000 */
 export function formatZar(amount: number, digits = 0) {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    }).format(Number.isFinite(amount) ? amount : 0);
+    return formatCurrency(Number.isFinite(amount) ? amount : 0, true, digits);
 }
 
 export function formatNumber(n: number, digits = 0) {
-    return new Intl.NumberFormat('en-ZA', {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    }).format(Number.isFinite(n) ? n : 0);
+    return formatNumberCommas(Number.isFinite(n) ? n : 0, digits);
 }
 
 export function formatPct(n: number, digits = 1) {

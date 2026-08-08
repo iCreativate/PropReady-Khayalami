@@ -1,5 +1,7 @@
 'use client';
 
+import { formatPriceWithCommas } from '@/lib/currency';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -103,7 +105,7 @@ export default function PropertyDetailModal({ property, onClose }: PropertyDetai
 
                 <div className="p-6">
                     <p className="text-2xl font-bold text-gold mb-2">
-                        R {property.price.toLocaleString('en-ZA')}
+                        R {formatPriceWithCommas(property.price)}
                     </p>
                     <h2 className="text-xl font-bold text-charcoal mb-2">{property.title}</h2>
                     <p className="text-charcoal/60 text-sm flex items-center gap-1 mb-4">

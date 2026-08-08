@@ -66,7 +66,6 @@ export default function OriginatorSettingsPage() {
             title="Settings"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Staff profile"
                     title="Settings"
                     description="Your originator account details and organisation."

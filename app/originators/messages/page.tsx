@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import OriginatorPortalLayout from '@/components/OriginatorPortalLayout';
 import PortalPageHeader from '@/components/PortalPageHeader';
+import type { PortalHeroStat } from '@/components/PortalHero';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import {
     hydrateSessionFromCookies,
@@ -30,6 +31,8 @@ export default function OriginatorMessagesPage() {
     const router = useRouter();
     const [user, setUser] = useState<OriginatorUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const [heroActions, setHeroActions] = useState<ReactNode>(null);
+    const [heroStats, setHeroStats] = useState<PortalHeroStat[] | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -81,10 +84,12 @@ export default function OriginatorMessagesPage() {
             title="Messages"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Inbox"
                     title="Messages"
                     description="Coordinate with buyers and PropReady staff on prequalification cases."
+                    glassLabel="Inbox pulse"
+                    stats={heroStats ?? undefined}
+                    actions={heroActions}
                 />
             }
         >
@@ -93,6 +98,8 @@ export default function OriginatorMessagesPage() {
                 profileId={user.id}
                 accountType="originator"
                 displayName={user.fullName || user.email}
+                onHeroActionsChange={setHeroActions}
+                onHeroStatsChange={setHeroStats}
             />
         </OriginatorPortalLayout>
     );

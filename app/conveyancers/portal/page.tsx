@@ -103,10 +103,20 @@ export default function ConveyancerPortalDashboard() {
             title="Dashboard"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Conveyancer Connect"
                     title={user.firmName || 'Your firm dashboard'}
                     description="Leads, live inbox, transfer matters and quotes. Deeds Office status uses a pluggable provider (manual/simulated until a licensed gateway is configured)."
+                    glassLabel="Today's pulse"
+                    metrics={[
+                        { label: 'Open matters', value: kpis.openMatters ?? '—' },
+                        { label: 'Open quotes', value: kpis.openQuotes ?? '—' },
+                    ]}
+                    stats={[
+                        { label: 'Open matters', value: kpis.openMatters ?? '—' },
+                        { label: 'Open quotes', value: kpis.openQuotes ?? '—' },
+                        { label: 'Consultations', value: kpis.consultations ?? '—' },
+                        { label: 'Deeds active', value: kpis.deedsActive ?? '—' },
+                    ]}
                 />
             }
         >

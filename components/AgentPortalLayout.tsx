@@ -22,8 +22,6 @@ import PortalAnnouncementBanner from '@/components/PortalAnnouncementBanner';
 import PortalAppBarAlerts from '@/components/PortalAppBarAlerts';
 import { AgentProfileCompact } from '@/components/AgentProfileSummary';
 import {
-    AGENT_PAGE_CONTAINER,
-    AGENT_PAGE_HEADER_BAND,
     AGENT_SECONDARY_BTN,
     AGENT_ICON_BTN,
     AGENT_SHELL_SIDEBAR,
@@ -45,6 +43,7 @@ import {
     AGENT_NAV_LABEL,
 } from '@/lib/agent-portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
+import { PortalAiCoachShell } from '@/components/PortalAiCoach';
 
 export type AgentPortalPage =
     | 'dashboard'
@@ -276,16 +275,16 @@ export default function AgentPortalLayout({
                 <main
                     className={`flex-1 min-h-0 overflow-y-auto overscroll-contain ${AGENT_SHELL_CONTENT}`}
                 >
-                    {pageHeader && (
-                        <div
-                            className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 xl:px-10 py-5 sm:py-6 lg:py-7`}
-                        >
-                            <div className={AGENT_PAGE_CONTAINER}>{pageHeader}</div>
-                        </div>
-                    )}
                     <div className="px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8 lg:py-10">
                         <PortalAnnouncementBanner />
-                        {children}
+                        <PortalAiCoachShell
+                            role="agent"
+                            activePage={activePage}
+                            pageTitle={title ?? activeLabel}
+                            header={pageHeader}
+                        >
+                            {children}
+                        </PortalAiCoachShell>
                     </div>
                 </main>
             </div>

@@ -3,11 +3,13 @@
 import {
     useCallback,
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
     type FormEvent,
     type KeyboardEvent,
+    type ReactNode,
 } from 'react';
 import {
     ArrowLeft,
@@ -26,12 +28,17 @@ import {
 import type { AccountType } from '@/lib/auth-enterprise/config';
 import { signOutClient } from '@/lib/auth-signout';
 import { supabase } from '@/lib/supabase';
+import {
+    PORTAL_HERO_SECONDARY_BTN,
+    type PortalHeroStat,
+} from '@/components/PortalHero';
 import AppointmentCalendarCard, {
     toDatetimeLocalValue,
 } from '@/components/messages/AppointmentCalendarCard';
 import AttachmentMessage from '@/components/messages/AttachmentMessage';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import VoiceNoteRecorder from '@/components/messages/VoiceNoteRecorder';
+import { PORTAL_PRIMARY_BTN } from '@/lib/portal-ui';
 
 export type MessagesPortalRole = 'buyer' | 'seller' | 'agent' | 'originator' | 'conveyancer';
 
@@ -71,6 +78,12 @@ type Props = {
     profileId: string;
     accountType: AccountType;
     displayName: string;
+    /**
+     * When set, hide the inline title/actions/KPI chrome and push Refresh +
+     * New Message (+ pulse stats) into the portal page hero via these callbacks.
+     */
+    onHeroActionsChange?: (actions: ReactNode | null) => void;
+    onHeroStatsChange?: (stats: PortalHeroStat[] | null) => void;
 };
 
 type EligibleContact = {
@@ -81,6 +94,23 @@ type EligibleContact = {
     reason: string;
     detail?: string;
 };
+
+/** fetch() that never throws — network/extension blocks return null instead of TypeError. */
+async function safeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response | null> {
+    try {
+        return await fetch(input, init);
+    } catch {
+        return null;
+    }
+}
+
+async function readJsonSafe(res: Response): Promise<Record<string, unknown>> {
+    try {
+        return (await res.json()) as Record<string, unknown>;
+    } catch {
+        return {};
+    }
+}
 
 const PRIMARY = '#E52323';
 const BG = '#F8FAFC';
@@ -213,24 +243,18 @@ function KpiCard({
     icon: typeof MessageSquare;
 }) {
     return (
-        <div className="group rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(17,24,39,0.08)]">
+        <div className="biw-panel biw-kpi group">
             <div className="flex items-start justify-between gap-3">
-                <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6B7280]">
-                        {label}
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-[#111827] tabular-nums">
-                        {value}
-                    </p>
-                    <p className="mt-1 text-sm text-[#6B7280]">{description}</p>
-                </div>
+                <p className="biw-kpi-label">{label}</p>
                 <div
-                    className="flex h-11 w-11 items-center justify-center rounded-xl transition group-hover:text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-[11px] transition"
                     style={{ backgroundColor: `${PRIMARY}14`, color: PRIMARY }}
                 >
-                    <Icon className="h-5 w-5 group-hover:text-white" />
+                    <Icon className="h-4 w-4" />
                 </div>
             </div>
+            <p className="biw-kpi-value">{value}</p>
+            <p className="biw-kpi-hint">{description}</p>
         </div>
     );
 }
@@ -293,7 +317,15 @@ function ContactField({
     );
 }
 
-export default function MessagesWorkspace({ role, profileId, accountType, displayName }: Props) {
+export default function MessagesWorkspace({
+    role,
+    profileId,
+    accountType,
+    displayName,
+    onHeroActionsChange,
+    onHeroStatsChange,
+}: Props) {
+    const embedInHero = Boolean(onHeroActionsChange || onHeroStatsChange);
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [contacts, setContacts] = useState<EligibleContact[]>([]);
     const [contactsHint, setContactsHint] = useState<string | null>(null);
@@ -420,15 +452,20 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
 
     const loadContacts = useCallback(async () => {
         try {
-            const res = await fetch('/api/messages/contacts', { credentials: 'include' });
+            const res = await safeFetch('/api/messages/contacts', { credentials: 'include' });
+            if (!res) {
+                setContacts([]);
+                setContactsHint(EMPTY_COPY[role]);
+                return;
+            }
             if (res.status === 401) {
                 await handleUnauthorized();
                 return;
             }
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to load contacts');
-            setContacts(data.contacts || []);
-            setContactsHint(data.emptyHint || null);
+            const data = await readJsonSafe(res);
+            if (!res.ok) throw new Error(String(data.error || 'Failed to load contacts'));
+            setContacts((data.contacts as EligibleContact[]) || []);
+            setContactsHint((data.emptyHint as string) || null);
         } catch {
             setContacts([]);
             setContactsHint(EMPTY_COPY[role]);
@@ -436,15 +473,24 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [role, accountType]);
 
-    const loadConversations = useCallback(async (opts?: { silent?: boolean }) => {
+    const loadConversations = useCallback(async (opts?: { silent?: boolean; signal?: AbortSignal }) => {
         try {
-            const res = await fetch('/api/messages/conversations', { credentials: 'include' });
+            const res = await safeFetch('/api/messages/conversations', {
+                credentials: 'include',
+                signal: opts?.signal,
+            });
+            if (!res) {
+                if (!opts?.silent) {
+                    setError('Unable to reach the server. Check your connection and try again.');
+                }
+                return;
+            }
             if (res.status === 401) {
                 await handleUnauthorized();
                 return;
             }
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to load conversations');
+            const data = await readJsonSafe(res);
+            if (!res.ok) throw new Error(String(data.error || 'Failed to load conversations'));
             const next = (data.conversations || []) as Conversation[];
             setConversations((prev) =>
                 conversationFingerprint(prev) === conversationFingerprint(next) ? prev : next
@@ -456,32 +502,40 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             );
             setError('');
         } catch (e) {
+            if (opts?.signal?.aborted) return;
             if (!opts?.silent) {
                 setError(e instanceof Error ? e.message : 'Failed to load');
             }
         } finally {
-            setLoadingList(false);
+            if (!opts?.signal?.aborted) setLoadingList(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [accountType]);
 
-    const loadMessages = useCallback(async (conversationId: string, opts?: { silent?: boolean }) => {
+    const loadMessages = useCallback(async (conversationId: string, opts?: { silent?: boolean; signal?: AbortSignal }) => {
         if (!opts?.silent) setLoadingThread(true);
         try {
-            const res = await fetch(`/api/messages/conversations/${conversationId}/messages`, {
+            const res = await safeFetch(`/api/messages/conversations/${conversationId}/messages`, {
                 credentials: 'include',
+                signal: opts?.signal,
             });
+            if (!res) {
+                if (!opts?.silent) {
+                    setError('Unable to reach the server. Check your connection and try again.');
+                }
+                return;
+            }
             if (res.status === 401) {
                 await handleUnauthorized();
                 return;
             }
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to load messages');
+            const data = await readJsonSafe(res);
+            if (!res.ok) throw new Error(String(data.error || 'Failed to load messages'));
             const next = (data.messages || []) as Message[];
             setMessages((prev) =>
                 messageFingerprint(prev) === messageFingerprint(next) ? prev : next
             );
-            await fetch(`/api/messages/conversations/${conversationId}/read`, {
+            void safeFetch(`/api/messages/conversations/${conversationId}/read`, {
                 method: 'POST',
                 credentials: 'include',
             });
@@ -498,11 +552,12 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 void loadConversations({ silent: true });
             }
         } catch (e) {
+            if (opts?.signal?.aborted) return;
             if (!opts?.silent) {
                 setError(e instanceof Error ? e.message : 'Failed to load thread');
             }
         } finally {
-            if (!opts?.silent) setLoadingThread(false);
+            if (!opts?.silent && !opts?.signal?.aborted) setLoadingThread(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [accountType, loadConversations]);
@@ -515,11 +570,13 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
 
     useEffect(() => {
         if (!profileId) return;
+        const controller = new AbortController();
         const poll = window.setInterval(() => {
-            void loadConversations({ silent: true });
+            void loadConversations({ silent: true, signal: controller.signal });
         }, 10000);
 
         return () => {
+            controller.abort();
             window.clearInterval(poll);
         };
     }, [profileId, loadConversations]);
@@ -586,7 +643,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                     setMessages((prev) =>
                         prev.some((m) => m.id === next.id) ? prev : [...prev, next]
                     );
-                    void fetch(`/api/messages/conversations/${activeId}/read`, {
+                    void safeFetch(`/api/messages/conversations/${activeId}/read`, {
                         method: 'POST',
                         credentials: 'include',
                     });
@@ -594,11 +651,13 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
             )
             .subscribe();
 
+        const controller = new AbortController();
         const poll = window.setInterval(() => {
-            void loadMessages(activeId, { silent: true });
+            void loadMessages(activeId, { silent: true, signal: controller.signal });
         }, 20000);
 
         return () => {
+            controller.abort();
             void supabase.removeChannel(channel);
             window.clearInterval(poll);
         };
@@ -611,19 +670,22 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         setSending(true);
         setError('');
         try {
-            const res = await fetch(`/api/messages/conversations/${activeId}/messages`, {
+            const res = await safeFetch(`/api/messages/conversations/${activeId}/messages`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ body: draft.trim() }),
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Send failed');
+            if (!res) throw new Error('Unable to reach the server. Check your connection.');
+            const data = await readJsonSafe(res);
+            if (!res.ok) throw new Error(String(data.error || 'Send failed'));
             setDraft('');
             shouldStickToBottomRef.current = true;
             if (data.message) {
                 setMessages((prev) =>
-                    prev.some((m) => m.id === data.message.id) ? prev : [...prev, data.message]
+                    prev.some((m) => m.id === (data.message as Message).id)
+                        ? prev
+                        : [...prev, data.message as Message]
                 );
             }
             void loadConversations({ silent: true });
@@ -761,6 +823,81 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         }
     }
 
+    function openNewMessage() {
+        setError('');
+        setShowNew(true);
+        void loadContacts();
+    }
+
+    useLayoutEffect(() => {
+        if (!onHeroActionsChange && !onHeroStatsChange) return;
+        if (!profileId) {
+            onHeroActionsChange?.(null);
+            onHeroStatsChange?.(null);
+            return;
+        }
+
+        onHeroActionsChange?.(
+            <>
+                <button
+                    type="button"
+                    onClick={() => void refreshInbox()}
+                    className={PORTAL_HERO_SECONDARY_BTN}
+                    title="Refresh messages"
+                    aria-label="Refresh messages"
+                    disabled={refreshing}
+                >
+                    <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                </button>
+                <button
+                    type="button"
+                    onClick={openNewMessage}
+                    className={PORTAL_PRIMARY_BTN}
+                    disabled={contacts.length === 0}
+                    title={
+                        contacts.length === 0
+                            ? contactsHint || EMPTY_COPY[role]
+                            : 'Start a conversation'
+                    }
+                >
+                    <Plus className="h-4 w-4" />
+                    New Message
+                </button>
+            </>
+        );
+
+        onHeroStatsChange?.([
+            {
+                label: 'Unread',
+                value: unreadTotal,
+                tone: unreadTotal > 0 ? 'success' : 'default',
+            },
+            { label: 'Active threads', value: conversations.length },
+            { label: 'Eligible contacts', value: contacts.length },
+            { label: 'Active today', value: messagesTodayCount },
+        ]);
+
+        return () => {
+            onHeroActionsChange?.(null);
+            onHeroStatsChange?.(null);
+        };
+        // refreshInbox / openNewMessage close over latest state; re-sync when chrome inputs change.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional chrome sync
+    }, [
+        onHeroActionsChange,
+        onHeroStatsChange,
+        profileId,
+        refreshing,
+        contacts.length,
+        contactsHint,
+        role,
+        activeId,
+        unreadTotal,
+        conversations.length,
+        messagesTodayCount,
+    ]);
+
     async function respondAppointment(
         appointmentId: string,
         status: 'accepted' | 'declined' | 'cancelled',
@@ -806,16 +943,15 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
         contacts.find((c) => `${c.accountType}:${c.profileId}` === selectedContactKey) || null;
 
     const inputClass =
-        'w-full rounded-xl border border-[#E5E7EB] bg-white px-3.5 text-base sm:text-sm text-[#111827] placeholder:text-[#9CA3AF] outline-none transition focus:border-[#E52323]/40 focus:ring-2 focus:ring-[#E52323]/10';
+        'w-full rounded-[12px] border border-black/[0.08] bg-white px-3.5 text-base sm:text-sm text-[#1b1b1b] placeholder:text-black/35 outline-none transition focus:border-[#e53935]/40 focus:ring-2 focus:ring-[#e53935]/10';
 
-    const cardClass =
-        'rounded-2xl border border-[#E5E7EB] bg-white shadow-[0_1px_2px_rgba(17,24,39,0.04)]';
+    const cardClass = 'biw-panel biw-panel--static';
 
     const secondaryBtnClass =
-        'inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 text-sm font-medium text-[#111827] transition hover:bg-[#F8FAFC] disabled:opacity-50';
+        'inline-flex h-10 items-center justify-center gap-2 rounded-full border border-black/[0.08] bg-white px-4 text-sm font-medium text-[#1b1b1b] transition hover:bg-[#f7f8fa] disabled:opacity-50';
 
     const primaryBtnClass =
-        'inline-flex h-10 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-white transition disabled:opacity-50';
+        'inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-white transition disabled:opacity-50';
 
     // If the profile hasn't hydrated yet, show a skeleton and skip fetching —
     // otherwise an empty profileId can wipe out the fingerprinted conversation
@@ -834,49 +970,47 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 .msg-fade-in { animation: msgFadeIn 0.25s ease-out both; }
             `}</style>
 
-            {/* Header */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight text-[#111827]">
-                        Messages
-                    </h1>
-                    <p className="mt-1 max-w-2xl text-sm text-[#6B7280]">
-                        {ROLE_DESCRIPTION[role]}
-                    </p>
+            {/* Header — omitted when actions live in the portal hero */}
+            {!embedInHero ? (
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold tracking-tight text-[#111827]">
+                            Messages
+                        </h1>
+                        <p className="mt-1 max-w-2xl text-sm text-[#6B7280]">
+                            {ROLE_DESCRIPTION[role]}
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => void refreshInbox()}
+                            className={secondaryBtnClass}
+                            title="Refresh messages"
+                            aria-label="Refresh messages"
+                            disabled={refreshing}
+                        >
+                            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">Refresh</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={openNewMessage}
+                            className={primaryBtnClass}
+                            style={{ backgroundColor: PRIMARY }}
+                            disabled={contacts.length === 0}
+                            title={
+                                contacts.length === 0
+                                    ? contactsHint || EMPTY_COPY[role]
+                                    : 'Start a conversation'
+                            }
+                        >
+                            <Plus className="h-4 w-4" />
+                            New Message
+                        </button>
+                    </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => void refreshInbox()}
-                        className={secondaryBtnClass}
-                        title="Refresh messages"
-                        aria-label="Refresh messages"
-                        disabled={refreshing}
-                    >
-                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">Refresh</span>
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setError('');
-                            setShowNew(true);
-                            void loadContacts();
-                        }}
-                        className={primaryBtnClass}
-                        style={{ backgroundColor: PRIMARY }}
-                        disabled={contacts.length === 0}
-                        title={
-                            contacts.length === 0
-                                ? contactsHint || EMPTY_COPY[role]
-                                : 'Start a conversation'
-                        }
-                    >
-                        <Plus className="h-4 w-4" />
-                        New Message
-                    </button>
-                </div>
-            </div>
+            ) : null}
 
             {error ? (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -884,7 +1018,8 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                 </div>
             ) : null}
 
-            {/* KPI Cards */}
+            {/* KPI Cards — omitted when pulse stats live in the portal hero */}
+            {!embedInHero ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 <KpiCard
                     label="Unread Conversations"
@@ -925,6 +1060,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                     icon={Send}
                 />
             </div>
+            ) : null}
 
             {/* New Message Modal */}
             {showNew ? (
@@ -1080,11 +1216,18 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                 const unread = c.unreadCount || 0;
                                 const isUnread = unread > 0;
                                 return (
-                                    <button
+                                    <div
                                         key={c.id}
-                                        type="button"
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => setActiveId(c.id)}
-                                        className={`group relative flex w-full gap-3 border-b border-[#F3F4F6] px-4 py-3.5 text-left transition hover:bg-[#F8FAFC] ${
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                setActiveId(c.id);
+                                            }
+                                        }}
+                                        className={`group relative flex w-full cursor-pointer gap-3 border-b border-[#F3F4F6] px-4 py-3.5 text-left transition hover:bg-[#F8FAFC] ${
                                             isSelected
                                                 ? 'bg-[#E52323]/[0.06] ring-1 ring-inset ring-[#E52323]/20'
                                                 : ''
@@ -1147,7 +1290,7 @@ export default function MessagesWorkspace({ role, profileId, accountType, displa
                                                 className={`h-3.5 w-3.5 ${isPinned ? 'fill-current' : ''}`}
                                             />
                                         </button>
-                                    </button>
+                                    </div>
                                 );
                             })
                         )}

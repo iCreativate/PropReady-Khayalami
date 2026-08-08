@@ -19,7 +19,6 @@ import {
     AGENT_NAV_LINK_ACTIVE,
     AGENT_NAV_LINK_IDLE,
     AGENT_PAGE_CONTAINER,
-    AGENT_PAGE_HEADER_BAND,
     AGENT_SECONDARY_BTN,
     AGENT_SHELL_CONTENT,
     AGENT_SHELL_DIVIDER,
@@ -32,6 +31,7 @@ import {
     AGENT_SHELL_TOPBAR,
 } from '@/lib/agent-portal-ui';
 import { signOutClient } from '@/lib/auth-signout';
+import { PortalAiCoachShell } from '@/components/PortalAiCoach';
 
 export interface ConveyancerPortalUser {
     id?: string;
@@ -183,14 +183,16 @@ export default function ConveyancerPortalLayout({
                 </header>
 
                 <main className={`flex-1 ${AGENT_SHELL_CONTENT}`}>
-                    {pageHeader ? (
-                        <div className={`${AGENT_PAGE_HEADER_BAND} px-4 sm:px-6 lg:px-8 py-5`}>
-                            <div className={AGENT_PAGE_CONTAINER}>{pageHeader}</div>
-                        </div>
-                    ) : null}
                     <div className={`${AGENT_PAGE_CONTAINER} px-4 sm:px-6 lg:px-8 py-6`}>
                         <PortalAnnouncementBanner />
-                        {children}
+                        <PortalAiCoachShell
+                            role="conveyancer"
+                            activePage={activePage}
+                            pageTitle={title || activeLabel}
+                            header={pageHeader}
+                        >
+                            {children}
+                        </PortalAiCoachShell>
                     </div>
                 </main>
             </div>

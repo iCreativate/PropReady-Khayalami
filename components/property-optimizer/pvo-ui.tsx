@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { formatPriceWithCommas } from '@/lib/currency';
+
 export function AnimatedCounter({
     value,
-    format = (v) => v.toLocaleString('en-ZA'),
+    format = (v) => formatPriceWithCommas(v),
     duration = 700,
     className = '',
 }: {

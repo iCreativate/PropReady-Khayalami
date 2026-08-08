@@ -1,5 +1,7 @@
 'use client';
 
+import { formatPriceWithCommas } from '@/lib/currency';
+
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -211,11 +213,31 @@ export default function BuyerPrequalPage() {
                     eyebrow="Bond originator"
                     title="Your prequalification"
                     description="Message your originator, respond to document requests, and see when your full prequal result is ready."
+                    glassLabel="Case pulse"
+                    metrics={[
+                        { label: 'Cases', value: cases.length },
+                        {
+                            label: 'Status',
+                            value: cases.length === 0 ? 'Not started' : 'In progress',
+                        },
+                    ]}
+                    stats={[
+                        { label: 'Open cases', value: cases.length },
+                        {
+                            label: 'Docs',
+                            value: 'Manage in Documents',
+                        },
+                        {
+                            label: 'Next step',
+                            value: cases.length === 0 ? 'Choose originator' : 'Respond to requests',
+                        },
+                    ]}
                 />
             }
         >
-            <div className={`${PORTAL_PAGE_CONTAINER} px-4 py-8 space-y-6`}>
-                <div className="flex flex-wrap gap-3">
+            <div className={`${PORTAL_PAGE_CONTAINER} portal-stack`}>
+                <div className="portal-toolbar">
+                    <p className="biw-sec-sub m-0">Cases, document requests, and originator chat</p>
                     <Link href="/dashboard/documents" className={PORTAL_SECONDARY_BTN}>
                         Upload / send FICA docs
                     </Link>
@@ -224,9 +246,9 @@ export default function BuyerPrequalPage() {
                 {loading ? (
                     <p className={PORTAL_TEXT_SECONDARY}>Loading…</p>
                 ) : cases.length === 0 ? (
-                    <div className={`${PORTAL_CARD} p-8`}>
-                        <p className="font-semibold text-charcoal">No prequal cases yet</p>
-                        <p className={`mt-2 ${PORTAL_TEXT_SECONDARY}`}>
+                    <div className={`${PORTAL_CARD} p-6 sm:p-8`}>
+                        <p className="biw-sec-title">No prequal cases yet</p>
+                        <p className="biw-sec-sub">
                             Choose a bond originator and send your FICA documents to start a case.
                         </p>
                         <Link href="/dashboard/documents" className={`${PORTAL_PRIMARY_BTN} mt-4 inline-flex`}>
@@ -234,24 +256,26 @@ export default function BuyerPrequalPage() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                         <div className="space-y-2">
                             {cases.map((c) => (
                                 <button
                                     key={c.id}
                                     type="button"
                                     onClick={() => setActiveId(c.id)}
-                                    className={`${PORTAL_CARD} w-full p-4 text-left ${
-                                        activeId === c.id ? 'border-gold/40' : ''
+                                    className={`${PORTAL_CARD} w-full p-4 text-left transition ${
+                                        activeId === c.id
+                                            ? '!border-[rgba(229,57,53,0.35)] shadow-[0_8px_24px_rgba(229,57,53,0.1)]'
+                                            : ''
                                     }`}
                                 >
-                                    <p className="font-semibold text-charcoal">
+                                    <p className="font-semibold text-charcoal tracking-tight">
                                         {bondOriginatorLabel(c.organizationId)}
                                     </p>
                                     <p className={`text-sm mt-1 ${PORTAL_TEXT_SECONDARY}`}>
                                         {PREQUAL_STATUS_LABELS[c.status]}
                                         {c.officialAmount
-                                            ? ` · R${Number(c.officialAmount).toLocaleString('en-ZA')}`
+                                            ? ` · R ${formatPriceWithCommas(Number(c.officialAmount))}`
                                             : ''}
                                     </p>
                                 </button>
@@ -265,8 +289,8 @@ export default function BuyerPrequalPage() {
                                         0 && (
                                         <div className={PORTAL_CARD}>
                                             <div className={PORTAL_CARD_HEADER}>
-                                                <h2 className="font-semibold text-charcoal flex items-center gap-2">
-                                                    <Upload className="w-5 h-5 text-gold" />
+                                                <h2 className="biw-sec-title flex items-center gap-2">
+                                                    <Upload className="w-5 h-5 text-[#e53935]" />
                                                     Documents requested
                                                 </h2>
                                             </div>

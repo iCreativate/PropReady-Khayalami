@@ -66,6 +66,17 @@ export default function PropertyValueOptimizerPage() {
                     eyebrow="Seller planning"
                     title="Property Value Optimizer"
                     description="Enter location, purchase price, and improvements already made — then see a rough estimate of what the property could sell for, after typical deductions. Always confirm with a professional valuation."
+                    glassLabel="Optimizer pulse"
+                    metrics={[
+                        { label: 'Mode', value: isSeller ? 'Seller' : 'Buyer' },
+                        { label: 'Output', value: 'Estimate' },
+                    ]}
+                    stats={[
+                        { label: 'Inputs', value: 'Price · upgrades' },
+                        { label: 'Deductions', value: 'Typical costs' },
+                        { label: 'Result', value: 'Indicative value' },
+                        { label: 'Note', value: 'Not a formal valuation' },
+                    ]}
                 />
             }
         >

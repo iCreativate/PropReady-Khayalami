@@ -141,15 +141,17 @@ export function findSuburbMarketRecord(input: {
     city?: string;
     province?: string;
 }): SuburbMarketRecord | null {
-    const suburbKey = normalizeKey(input.suburb);
+    const suburbKey = normalizeKey(input.suburb || '');
+    if (!suburbKey || suburbKey.length < 2) return null;
+
     const candidates = byNormalizedSuburb.get(suburbKey) ?? [];
 
     if (!candidates.length) {
-        const partial = SUBURB_INDEX.filter(
-            (r) =>
-                normalizeKey(r.suburb).includes(suburbKey) ||
-                suburbKey.includes(normalizeKey(r.suburb))
-        );
+        const partial = SUBURB_INDEX.filter((r) => {
+            const key = normalizeKey(r.suburb);
+            if (!key) return false;
+            return key.includes(suburbKey) || suburbKey.includes(key);
+        });
         if (!partial.length) return null;
         return pickBestCandidate(partial, input);
     }
@@ -182,30 +184,35 @@ function pickBestCandidate(
 export function suburbMarketToAreaProfile(record: SuburbMarketRecord): AreaProfile {
     const floor = typicalFloorSqm(record.avgPropertyPrice);
     const land = typicalLandSqm(record.avgPropertyPrice, record.province);
-    const scores = deriveScores(record.avgPropertyPrice, record.province);
 
     return {
         key: record.key,
         suburb: record.suburb,
         municipality: record.municipality,
         province: record.province,
+        // R/m² derived from suburb average ÷ typical floor — labelled estimated in UI when shown.
         pricePerSqm: Math.round(record.avgPropertyPrice / floor),
         avgPropertyPrice: record.avgPropertyPrice,
-        historicalAppreciation: scores.historicalAppreciation,
-        buyerDemand: scores.buyerDemand,
-        rentalDemand: scores.rentalDemand,
-        luxuryDemand: scores.luxuryDemand,
-        schoolScore: scores.schoolScore,
-        transportScore: scores.transportScore,
-        crimeIndex: scores.crimeIndex,
-        marketTemperature: scores.marketTemperature,
-        lifestyleScore: scores.lifestyleScore,
-        walkabilityScore: scores.walkabilityScore,
-        investmentScore: scores.investmentScore,
-        plannedDevelopments: [`${record.suburb} — ${record.city} municipal development framework`],
-        infrastructureProjects: [`Provincial infrastructure investment — ${record.province}`],
+        // No multi-year P24 series in JSON — do not invent YoY appreciation.
+        historicalAppreciation: 0,
+        buyerDemand: 0,
+        rentalDemand: 0,
+        luxuryDemand: 0,
+        schoolScore: 0,
+        transportScore: 0,
+        crimeIndex: 0,
+        marketTemperature: 'balanced',
+        lifestyleScore: 0,
+        walkabilityScore: 0,
+        investmentScore: 0,
+        plannedDevelopments: [],
+        infrastructureProjects: [],
         typicalFloorSqm: floor,
         typicalLandSqm: land,
+        dataQuality: record.dataQuality,
+        dataSource: record.source,
+        priceYear: record.priceYear,
+        city: record.city,
     };
 }
 

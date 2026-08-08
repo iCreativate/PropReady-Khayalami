@@ -10,9 +10,15 @@ import {
     USER_PORTAL_ALWAYS_FOOTER_ROUTES,
 } from '@/lib/user-portal-paths';
 
+function DualRouteFooter() {
+    const { user, isHydrated } = useHydratedBuyerPortalUser();
+    if (!isHydrated) return null;
+    if (user) return null;
+    return <Footer />;
+}
+
 export default function SiteFooter() {
     const pathname = usePathname();
-    const { user, isHydrated } = useHydratedBuyerPortalUser();
 
     const inAgentPortal = isAgentPortalRoute(pathname);
     const inAgentAuth =
@@ -21,12 +27,11 @@ export default function SiteFooter() {
         Boolean(pathname?.startsWith('/agents/verification'));
     const inOriginatorPortal = Boolean(pathname?.startsWith('/originators/'));
     const inAdminPortal = Boolean(pathname?.startsWith('/admin'));
+    const inConveyancerPortal = Boolean(pathname?.startsWith('/conveyancers/portal'));
 
     // Dual public/portal tools (e.g. bond calculator): footer for guests only
     if (isUserPortalPublicDualRoute(pathname)) {
-        if (!isHydrated) return null;
-        if (user) return null;
-        return <Footer />;
+        return <DualRouteFooter />;
     }
 
     const inUserPortal =
@@ -35,7 +40,14 @@ export default function SiteFooter() {
         Boolean(pathname?.startsWith('/dashboard/')) ||
         Boolean(pathname?.startsWith('/sellers/'));
 
-    if (inAgentPortal || inAgentAuth || inUserPortal || inOriginatorPortal || inAdminPortal) {
+    if (
+        inAgentPortal ||
+        inAgentAuth ||
+        inUserPortal ||
+        inOriginatorPortal ||
+        inAdminPortal ||
+        inConveyancerPortal
+    ) {
         return null;
     }
 

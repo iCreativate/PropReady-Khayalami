@@ -102,7 +102,6 @@ export default function ConveyancerSettingsPage() {
             title="Profile"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Public presence"
                     title={user.firmName || 'Firm profile'}
                     description="Keep your marketplace profile current so buyers, sellers and agents can reach you with confidence."

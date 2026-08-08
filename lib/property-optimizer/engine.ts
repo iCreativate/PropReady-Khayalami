@@ -1,4 +1,4 @@
-import { COMPARABLE_BENCHMARKS, BLANK_PROPERTY, DEMO_MARKET, DEMO_PROPERTY, SUBURB_INSIGHTS } from './demo-data';
+import { BLANK_PROPERTY, DEMO_MARKET, DEMO_PROPERTY, NEUTRAL_MARKET } from './demo-data';
 import { IMPROVEMENT_TEMPLATES, templateToRecommendation } from './improvements';
 import type {
     AcquisitionType,
@@ -18,16 +18,24 @@ import type {
     SellSuggestion,
     SimulatorMetrics,
     SmartAlert,
+    ValuationBasis,
     ValuationBreakdownItem,
     ValuationEngineWeights,
 } from './types';
 import { DEFAULT_VALUATION_WEIGHTS } from './weights';
+import { formatCurrency } from '@/lib/currency';
 import {
     buildMarketFromArea,
     buildPropertyForLocation,
     resolveAreaProfile,
     type LocationInput,
 } from './locations';
+
+/**
+ * Long-run SA residential appreciation used only when no suburb YoY series exists.
+ * Not a Property24 suburb fact — always disclosed in valuationDisclaimer.
+ */
+export const SA_MODEL_APPRECIATION_PCT = 5;
 
 function clamp(n: number, min: number, max: number) {
     return Math.min(max, Math.max(min, n));
@@ -38,10 +46,10 @@ function ageYears(property: PropertyProfile) {
 }
 
 function locationMultiplier(property: PropertyProfile, market: MarketContext) {
-    const suburbPremium = property.suburb.toLowerCase().includes('bryanston') ? 1.12 : 1.04;
     const schoolBoost = 1 + (market.schoolScore / 100) * 0.08;
     const transportBoost = 1 + (market.transportScore / 100) * 0.04;
-    return suburbPremium * schoolBoost * transportBoost;
+    const demandBoost = 1 + ((market.buyerDemand - 50) / 100) * 0.06;
+    return schoolBoost * transportBoost * demandBoost;
 }
 
 function demandMultiplier(market: MarketContext) {
@@ -56,15 +64,49 @@ function labourMultiplier(market: MarketContext) {
     return 1 + market.inflationRate / 100 + 0.03;
 }
 
+/** Beds / baths / parking relative to a typical SA family home. */
+function specsMultiplier(property: PropertyProfile) {
+    const bedFactor = 1 + (property.bedrooms - 3) * 0.055;
+    const bathFactor = 1 + (property.bathrooms - 2) * 0.035;
+    const garageFactor = 1 + (property.garages - 1) * 0.028;
+    const typeBoost = /apartment|flat/i.test(property.propertyType)
+        ? 0.92
+        : /townhouse|cluster/i.test(property.propertyType)
+          ? 0.96
+          : /smallholding/i.test(property.propertyType)
+            ? 1.05
+            : 1;
+    return clamp(bedFactor * bathFactor * garageFactor * typeBoost, 0.72, 1.45);
+}
+
+/**
+ * Size + location comps only — never hard-coded Bryanston demo benchmarks.
+ * Anchors to suburb/province avg when floor/land are sparse.
+ */
 function computeComparableBase(property: PropertyProfile, market: MarketContext) {
-    const sqmRate = market.pricePerSqm * locationMultiplier(property, market);
-    const buildingComponent = property.floorSizeSqm * sqmRate * 0.72;
-    const landComponent = property.landSizeSqm * (sqmRate * 0.35);
-    const compBlend =
-        COMPARABLE_BENCHMARKS.similarHomes * 0.4 +
-        COMPARABLE_BENCHMARKS.suburbAverage * 0.35 +
-        COMPARABLE_BENCHMARKS.recentlySold * 0.25;
-    return buildingComponent * 0.45 + landComponent * 0.25 + compBlend * 0.3;
+    const loc = locationMultiplier(property, market);
+    const specs = specsMultiplier(property);
+    const sqmRate = market.pricePerSqm * loc;
+    const floor = Math.max(0, property.floorSizeSqm);
+    const land = Math.max(0, property.landSizeSqm);
+
+    const buildingComponent = floor * sqmRate * 0.72;
+    const landComponent = land * (sqmRate * 0.35);
+    const sizeBased = (buildingComponent * 0.65 + landComponent * 0.35) * specs;
+
+    const suburbAnchor =
+        market.avgPropertyPrice > 0
+            ? market.avgPropertyPrice * specs * (floor > 0 ? clamp(floor / 280, 0.55, 1.55) : 1)
+            : sizeBased;
+
+    if (floor <= 0 && land <= 0) {
+        return Math.max(0, Math.round(suburbAnchor));
+    }
+    if (market.avgPropertyPrice <= 0) {
+        return Math.max(0, Math.round(sizeBased));
+    }
+    // Prefer the user's size inputs; lightly blend suburb average for area context.
+    return Math.max(0, Math.round(sizeBased * 0.78 + suburbAnchor * 0.22));
 }
 
 export function computeHybridMarketValue(
@@ -154,77 +196,52 @@ export function buildValuationBreakdown(
     bondBalance: number
 ): ValuationBreakdownItem[] {
     const loc = locationMultiplier(property, market);
-    const land = Math.round(property.landSizeSqm * market.pricePerSqm * 0.38 * loc);
+    const land = Math.round(property.landSizeSqm * Math.max(market.pricePerSqm, 0) * 0.38 * loc);
     const building = Math.round(totalValue * 0.42);
     const improvements = Math.round(
         property.existingFeatures.length * 42_000 + property.conditionScore * 2_800
     );
     const locationPrem = Math.round(totalValue * 0.11);
-    const marketPrem = Math.round(totalValue * (market.priceGrowthYoY / 100) * 0.35);
-    const demandPrem = Math.round(totalValue * ((market.buyerDemand - 50) / 100) * 0.12);
-    const growthPot = Math.round(totalValue * (market.historicalAppreciation / 100) * 0.25);
     const equity = Math.max(0, totalValue - bondBalance);
+    const place = property.suburb?.trim() || 'your property';
+    const sourceNote = market.hasVerifiedSuburbAverage
+        ? `Anchored to Property24 suburb average for ${place}${market.priceYear ? ` (${market.priceYear})` : ''}.`
+        : 'No Property24 suburb average matched — amounts are model splits from your inputs only.';
 
     const items: Omit<ValuationBreakdownItem, 'percentage'>[] = [
         {
             id: 'land',
-            label: 'Land Value',
+            label: 'Land Value (model)',
             amount: land,
-            explanation:
-                'Derived from land size, suburb land rate and location premium relative to municipal valuation.',
+            explanation: `Model estimate from land size × derived area rate. ${sourceNote}`,
             color: '#004D40',
         },
         {
             id: 'building',
-            label: 'Building Value',
+            label: 'Building Value (model)',
             amount: building,
-            explanation:
-                'Replacement cost adjusted for age, floor area and overall condition score.',
+            explanation: 'Model share of headline estimate allocated to improvements / structure.',
             color: '#00796B',
         },
         {
             id: 'improvements',
-            label: 'Improvements',
+            label: 'Recorded upgrades (model)',
             amount: improvements,
-            explanation:
-                'Existing upgrades (solar, security, borehole, etc.) valued against buyer preference data.',
+            explanation: 'Illustrative allowance from features you marked — not a registered valuer appraisal.',
             color: '#DC2626',
         },
         {
             id: 'location',
-            label: 'Location Premium',
+            label: 'Location component (model)',
             amount: locationPrem,
-            explanation:
-                'Schools, Sandton proximity, and Bryanston lifestyle score vs municipality average.',
+            explanation: `Model location share for ${place}. Not a street-level comparable sale.`,
             color: '#B45309',
-        },
-        {
-            id: 'market',
-            label: 'Market Premium',
-            amount: marketPrem,
-            explanation: `Current ${market.priceGrowthYoY}% YoY price growth and warm market conditions.`,
-            color: '#7C3AED',
-        },
-        {
-            id: 'demand',
-            label: 'Demand Premium',
-            amount: demandPrem,
-            explanation: `Buyer demand at ${market.buyerDemand}/100 with ${market.inventoryMonths} months inventory.`,
-            color: '#2563EB',
-        },
-        {
-            id: 'growth',
-            label: 'Future Growth Potential',
-            amount: growthPot,
-            explanation:
-                'Infrastructure projects, population growth and planned developments in the corridor.',
-            color: '#059669',
         },
         {
             id: 'equity',
             label: 'Estimated Equity',
             amount: equity,
-            explanation: `Market value minus outstanding bond of ${formatZAR(bondBalance)}.`,
+            explanation: `Headline estimate minus outstanding bond of ${formatZAR(bondBalance)}.`,
             color: '#0D9488',
         },
     ];
@@ -250,122 +267,129 @@ export function buildCategoryScores(
     property: PropertyProfile,
     market: MarketContext
 ): CategoryScore[] {
-    const categories: Omit<CategoryScore, 'score' | 'benchmark'>[] = [
+    const place = property.suburb?.trim() || 'this property';
+    const verified = market.hasVerifiedSuburbAverage;
+    const securityFeatures = property.existingFeatures.filter((f) =>
+        /fence|cctv|alarm|security/i.test(f)
+    ).length;
+    const energyFeatures = property.existingFeatures.filter((f) =>
+        /solar|geyser|battery|energy/i.test(f)
+    ).length;
+    const waterFeatures = property.existingFeatures.filter((f) =>
+        /borehole|water|rain/i.test(f)
+    ).length;
+    const smartFeatures = property.existingFeatures.filter((f) =>
+        /fibre|smart|automation/i.test(f)
+    ).length;
+
+    const familyScore = clamp(
+        55 + property.bedrooms * 6 + property.bathrooms * 4 + property.garages * 3,
+        40,
+        92
+    );
+
+    const categories: CategoryScore[] = [
         {
-            id: 'investment',
-            label: 'Investment Potential',
-            explanation: 'Rental yield, appreciation history and investor demand in Bryanston.',
-            suggestions: ['Consider flatlet for dual income', 'Monitor Sandton Gateway impact'],
+            id: 'suburb-data',
+            label: 'Suburb market data',
+            score: verified ? 88 : 28,
+            benchmark: 70,
+            explanation: verified
+                ? `Property24 suburb average available for ${place}${market.priceYear ? ` (${market.priceYear})` : ''}: ${formatZAR(market.avgPropertyPrice)}.`
+                : `No Property24 suburb average matched for ${place || 'your search'}. Search and select a SA suburb to anchor pricing.`,
+            suggestions: verified
+                ? ['Use floor/land size so the model can scale vs the suburb average']
+                : ['Search suburb or address until a Property24 match fills municipality / province'],
         },
         {
-            id: 'location',
-            label: 'Location',
-            explanation: 'Proximity to Sandton CBD, schools and arterial access.',
-            suggestions: ['Highlight Nicolway and Sandton access in marketing'],
+            id: 'ownership',
+            label: 'Ownership inputs',
+            score: property.purchasePrice > 0 ? 82 : 35,
+            benchmark: 70,
+            explanation:
+                property.purchasePrice > 0
+                    ? `Purchase price of ${formatZAR(property.purchasePrice)} is included in the growth model.`
+                    : 'Add purchase price and date for a purchase-growth estimate.',
+            suggestions: ['Enter purchase price and purchase date from your offer / transfer docs'],
         },
         {
-            id: 'security',
-            label: 'Security',
-            explanation: 'Existing electric fence and crime trend improvements.',
-            suggestions: ['Add CCTV integration', 'Upgrade to smart security hub'],
-        },
-        {
-            id: 'energy',
-            label: 'Energy Efficiency',
-            explanation: 'Solar geyser present — full solar + battery would maximise score.',
-            suggestions: ['Install hybrid inverter system', 'Add ceiling insulation'],
-        },
-        {
-            id: 'schools',
-            label: 'Schools',
-            explanation: `School quality score ${market.schoolScore}/100 for catchment area.`,
-            suggestions: ['Document school proximity in listing'],
-        },
-        {
-            id: 'transport',
-            label: 'Public Transport',
-            explanation: 'Gautrain access via Sandton — car-dependent suburb otherwise.',
-            suggestions: ['Note Gautrain park-and-ride options for commuters'],
-        },
-        {
-            id: 'lifestyle',
-            label: 'Lifestyle',
-            explanation: `Lifestyle score ${SUBURB_INSIGHTS.lifestyleScore}/100 — country clubs, dining, parks.`,
-            suggestions: ['Upgrade entertainment area for indoor-outdoor living'],
+            id: 'specs',
+            label: 'Property specs',
+            score: clamp(
+                40 +
+                    (property.floorSizeSqm > 0 ? 20 : 0) +
+                    (property.landSizeSqm > 0 ? 15 : 0) +
+                    (property.bedrooms > 0 ? 10 : 0),
+                30,
+                90
+            ),
+            benchmark: 70,
+            explanation: `${property.bedrooms} bed · ${property.bathrooms} bath · ${property.floorSizeSqm || '—'} m² floor · ${property.landSizeSqm || '—'} m² land.`,
+            suggestions: ['Confirm floor and land size from plans or municipal records'],
         },
         {
             id: 'condition',
-            label: 'Condition',
-            explanation: `Overall condition ${property.conditionScore}/100 — roof maintenance due.`,
-            suggestions: ['Schedule roof inspection', 'Refresh exterior paint'],
+            label: 'Condition (user model)',
+            score: property.conditionScore,
+            benchmark: 70,
+            explanation: `Condition score ${property.conditionScore}/100 is a model input from your profile — not an inspection report.`,
+            suggestions: ['Update after a professional inspection or COC findings'],
         },
         {
-            id: 'luxury',
-            label: 'Luxury Appeal',
-            explanation: `Luxury demand at ${market.luxuryDemand}/100 in this price segment.`,
-            suggestions: ['Kitchen and bathroom refresh for premium positioning'],
+            id: 'security',
+            label: 'Security features',
+            score: clamp(45 + securityFeatures * 14, 40, 92),
+            benchmark: 70,
+            explanation:
+                securityFeatures > 0
+                    ? `${securityFeatures} security-related feature(s) recorded on this property.`
+                    : 'No security features recorded yet.',
+            suggestions: ['Mark electric fence, alarm, CCTV if already installed'],
         },
         {
-            id: 'rental',
-            label: 'Rental Demand',
-            explanation: `Rental demand ${market.rentalDemand}/100 — strong for 4-bed family homes.`,
-            suggestions: ['Obtain rental appraisal if considering let'],
+            id: 'energy',
+            label: 'Energy features',
+            score: clamp(45 + energyFeatures * 16, 40, 92),
+            benchmark: 70,
+            explanation:
+                energyFeatures > 0
+                    ? `${energyFeatures} energy-related feature(s) recorded.`
+                    : 'No solar / battery features recorded yet.',
+            suggestions: ['Toggle solar / battery under Value Builders if completed'],
+        },
+        {
+            id: 'water',
+            label: 'Water resilience',
+            score: clamp(45 + waterFeatures * 18, 40, 90),
+            benchmark: 70,
+            explanation:
+                waterFeatures > 0
+                    ? `${waterFeatures} water-security feature(s) recorded.`
+                    : 'No borehole / water features recorded.',
+            suggestions: ['Record borehole or rainwater systems if present'],
         },
         {
             id: 'family',
-            label: 'Family Appeal',
-            explanation: '4 bedrooms, pool and garden align with family buyer profile.',
-            suggestions: ['Maintain garden for show days', 'Highlight staff quarters'],
-        },
-        {
-            id: 'future',
-            label: 'Future Growth',
-            explanation: 'Planned BRT and mixed-use developments support medium-term growth.',
-            suggestions: ['Track municipal rezoning announcements'],
-        },
-        {
-            id: 'walkability',
-            label: 'Walkability',
-            explanation: `Walk score ${SUBURB_INSIGHTS.walkabilityScore}/100 — typical for northern suburbs.`,
-            suggestions: ['Emphasise security estate-style living instead'],
-        },
-        {
-            id: 'sustainability',
-            label: 'Sustainability',
-            explanation: 'Borehole and solar geyser provide resilience advantages.',
-            suggestions: ['Add rainwater harvesting', 'Install EV charger'],
+            label: 'Family configuration',
+            score: familyScore,
+            benchmark: 70,
+            explanation: 'Score from beds, baths and parking you entered — not a buyer survey.',
+            suggestions: ['Keep specs aligned with the actual dwelling'],
         },
         {
             id: 'smart',
-            label: 'Smart Home Readiness',
-            explanation: 'Fibre-ready but no integrated automation yet.',
-            suggestions: ['Install smart home hub', 'Ensure fibre is active not just ready'],
+            label: 'Connectivity / smart',
+            score: clamp(42 + smartFeatures * 16, 40, 88),
+            benchmark: 70,
+            explanation:
+                smartFeatures > 0
+                    ? `${smartFeatures} connectivity / smart feature(s) recorded.`
+                    : 'No fibre / smart-home features recorded.',
+            suggestions: ['Mark fibre if the property is connected'],
         },
     ];
 
-    const baseScores: Record<string, number> = {
-        investment: 82,
-        location: 88,
-        security: 74,
-        energy: 68,
-        schools: market.schoolScore,
-        transport: market.transportScore,
-        lifestyle: SUBURB_INSIGHTS.lifestyleScore,
-        condition: property.conditionScore,
-        luxury: market.luxuryDemand,
-        rental: market.rentalDemand,
-        family: 85,
-        future: SUBURB_INSIGHTS.investmentScore,
-        walkability: SUBURB_INSIGHTS.walkabilityScore,
-        sustainability: 76,
-        smart: 58,
-    };
-
-    return categories.map((c) => ({
-        ...c,
-        score: Math.round(clamp(baseScores[c.id] ?? 70, 35, 98)),
-        benchmark: 72,
-    }));
+    return categories;
 }
 
 export function buildImprovementRecommendations(
@@ -522,45 +546,119 @@ export function buildPropertyHealth(property: PropertyProfile): PropertyHealthIt
 
 export function buildSmartAlerts(market: MarketContext, property: PropertyProfile): SmartAlert[] {
     const now = new Date().toISOString();
-    return [
-        { id: 'a1', type: 'demand', title: 'Buyer demand rising', message: `Buyer demand up to ${market.buyerDemand}/100 in ${property.suburb} — favourable selling window.`, severity: 'opportunity', timestamp: now },
-        { id: 'a2', type: 'development', title: 'Municipal development approved', message: 'Sandton Gateway mixed-use precinct rezoning approved — monitor comparable sales.', severity: 'info', timestamp: now },
-        { id: 'a3', type: 'rates', title: 'Interest rate watch', message: `Prime at ${market.primeInterestRate}% — renovation finance costs remain elevated.`, severity: 'warning', timestamp: now },
-        { id: 'a4', type: 'sale', title: 'Comparable sold nearby', message: 'Similar 4-bed on Jacaranda sold 4.2% above asking within 38 days.', severity: 'opportunity', timestamp: now },
-        { id: 'a5', type: 'trend', title: 'Solar renovation trend', message: 'Solar + battery combos showing 42% avg ROI in northern Johannesburg this quarter.', severity: 'info', timestamp: now },
-    ];
+    const place = property.suburb?.trim() || 'your area';
+    const alerts: SmartAlert[] = [];
+
+    if (market.hasVerifiedSuburbAverage && market.avgPropertyPrice > 0) {
+        alerts.push({
+            id: 'p24-avg',
+            type: 'trend',
+            title: 'Property24 suburb average',
+            message: `${place}: ${formatZAR(market.avgPropertyPrice)}${
+                market.priceYear ? ` (${market.priceYear})` : ''
+            }. Source: Property24 suburb values extract.`,
+            severity: 'info',
+            timestamp: now,
+        });
+    } else {
+        alerts.push({
+            id: 'no-suburb',
+            type: 'trend',
+            title: 'Suburb average unavailable',
+            message:
+                'No Property24 suburb average matched yet. Search and select a South African suburb to anchor the estimate.',
+            severity: 'warning',
+            timestamp: now,
+        });
+    }
+
+    if (property.purchasePrice > 0) {
+        alerts.push({
+            id: 'purchase-model',
+            type: 'sale',
+            title: 'Purchase-growth model active',
+            message: `Using your purchase price of ${formatZAR(property.purchasePrice)} with a disclosed SA model appreciation rate where suburb YoY data is unavailable.`,
+            severity: 'info',
+            timestamp: now,
+        });
+    }
+
+    alerts.push({
+        id: 'not-valuation',
+        type: 'rates',
+        title: 'Not a formal valuation',
+        message:
+            'PropReady estimates are decision-support only — not a bank, municipal, or professional valuer appraisal.',
+        severity: 'warning',
+        timestamp: now,
+    });
+
+    return alerts;
 }
 
 export function buildComparisons(property: PropertyProfile, snapshot: OptimizerSnapshot) {
     const val = snapshot.estimatedMarketValue;
+    const suburbAvg = snapshot.market.hasVerifiedSuburbAverage
+        ? snapshot.market.avgPropertyPrice
+        : 0;
+
     return {
-        street: [
-            { label: 'Price', subject: val, benchmark: COMPARABLE_BENCHMARKS.streetAverage, unit: 'ZAR', higherIsBetter: true },
-            { label: 'Land Size', subject: property.landSizeSqm, benchmark: 820, unit: 'm²', higherIsBetter: true },
-            { label: 'Floor Size', subject: property.floorSizeSqm, benchmark: 300, unit: 'm²', higherIsBetter: true },
-            { label: 'Condition', subject: property.conditionScore, benchmark: 70, unit: '/100', higherIsBetter: true },
-        ],
-        suburb: [
-            { label: 'Price', subject: val, benchmark: COMPARABLE_BENCHMARKS.suburbAverage, unit: 'ZAR', higherIsBetter: true },
-            { label: 'Appreciation', subject: snapshot.avgAnnualAppreciation, benchmark: 6.2, unit: '%', higherIsBetter: true },
-            { label: 'Luxury Score', subject: snapshot.market.luxuryDemand, benchmark: 75, unit: '/100', higherIsBetter: true },
-            { label: 'Rental Yield', subject: 5.8, benchmark: 5.2, unit: '%', higherIsBetter: true },
-        ],
+        suburb: suburbAvg > 0
+            ? [
+                  {
+                      label: 'Your estimate vs Property24 suburb average',
+                      subject: val,
+                      benchmark: suburbAvg,
+                      unit: 'ZAR',
+                      higherIsBetter: true,
+                  },
+                  {
+                      label: 'Floor size (your input)',
+                      subject: property.floorSizeSqm,
+                      benchmark: property.floorSizeSqm,
+                      unit: 'm²',
+                      higherIsBetter: true,
+                  },
+                  {
+                      label: 'Land size (your input)',
+                      subject: property.landSizeSqm,
+                      benchmark: property.landSizeSqm,
+                      unit: 'm²',
+                      higherIsBetter: true,
+                  },
+              ]
+            : [
+                  {
+                      label: 'Suburb average',
+                      subject: 0,
+                      benchmark: 0,
+                      unit: 'ZAR',
+                      higherIsBetter: true,
+                  },
+              ],
         similar: [
-            { label: 'Price', subject: val, benchmark: COMPARABLE_BENCHMARKS.similarHomes, unit: 'ZAR', higherIsBetter: true },
-            { label: 'Investment Potential', subject: snapshot.overallAiScore, benchmark: 74, unit: '/100', higherIsBetter: true },
-            { label: 'Market Demand', subject: snapshot.market.buyerDemand, benchmark: 70, unit: '/100', higherIsBetter: true },
-            { label: 'Days on Market', subject: snapshot.market.avgDaysOnMarket, benchmark: 52, unit: 'days', higherIsBetter: false },
+            {
+                label: 'Insufficient street / similar-home comps',
+                subject: val,
+                benchmark: 0,
+                unit: 'ZAR',
+                higherIsBetter: true,
+            },
+        ],
+        street: [
+            {
+                label: 'Insufficient street-level sales feed',
+                subject: val,
+                benchmark: 0,
+                unit: 'ZAR',
+                higherIsBetter: true,
+            },
         ],
     };
 }
 
 export function formatZAR(amount: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        maximumFractionDigits: 0,
-    }).format(amount);
+    return formatCurrency(amount);
 }
 
 /** Years (fractional) between purchase date and now */
@@ -915,6 +1013,8 @@ export function estimateSellSuggestion(params: {
     purchaseDate: string;
     annualAppreciationPct: number;
     suburbAverage: number;
+    /** Size/spec hybrid for this property — preferred over raw suburb average */
+    sizeBasedValue?: number;
     completedImprovementIds: string[];
     improvements: ImprovementRecommendation[];
     renovationSpend?: number;
@@ -974,7 +1074,17 @@ export function estimateSellSuggestion(params: {
     }
 
     const withImprovements = compoundedPurchaseValue + improvementContribution;
-    const suggestedSellPrice = Math.round(withImprovements * 0.7 + params.suburbAverage * 0.3);
+    const sizeBasedAnchor =
+        typeof params.sizeBasedValue === 'number' && params.sizeBasedValue > 0
+            ? Math.round(params.sizeBasedValue)
+            : params.suburbAverage > 0
+              ? Math.round(params.suburbAverage)
+              : withImprovements;
+    const suggestedSellPrice = Math.round(
+        params.purchasePrice > 0
+            ? withImprovements * 0.78 + sizeBasedAnchor * 0.22
+            : sizeBasedAnchor + improvementContribution
+    );
     const otherLabels = (params.otherImprovementLabels ?? []).filter(Boolean);
 
     const acquisitionCost = noPurchaseCost ? 0 : Math.max(0, params.purchasePrice);
@@ -1088,20 +1198,34 @@ export function buildSnapshotForLocation(
     const property = buildPropertyForLocation(baseProperty, input, area);
     const completedIds = input.completedImprovementIds ?? [];
     const allForArea = buildImprovementRecommendations(property, market);
+    const sizeBasedValue = computeHybridMarketValue(
+        property,
+        market,
+        DEFAULT_VALUATION_WEIGHTS,
+        completedIds,
+        allForArea
+    );
 
     const resolvedType =
         input.acquisitionType ??
-        (input.inherited ? ('inherited' as const) : ('bought_cash' as const));
+        (input.inherited ? ('inherited' as const) : ('purchased' as const));
     const noPurchaseRequired =
         resolvedType === 'inherited' || resolvedType === 'family_home';
 
+    const hasPurchase = typeof input.purchasePrice === 'number' && input.purchasePrice > 0;
+    const modelAppreciation =
+        market.historicalAppreciation > 0
+            ? market.historicalAppreciation
+            : SA_MODEL_APPRECIATION_PCT;
+
     const sellSuggestion =
-        (typeof input.purchasePrice === 'number' && input.purchasePrice > 0) || noPurchaseRequired
+        hasPurchase || noPurchaseRequired
             ? estimateSellSuggestion({
                   purchasePrice: input.purchasePrice ?? 0,
                   purchaseDate: input.purchaseDate || property.purchaseDate,
-                  annualAppreciationPct: market.historicalAppreciation,
+                  annualAppreciationPct: modelAppreciation,
                   suburbAverage: market.avgPropertyPrice,
+                  sizeBasedValue,
                   completedImprovementIds: completedIds,
                   improvements: allForArea,
                   renovationSpend: input.renovationSpend,
@@ -1124,85 +1248,166 @@ export function buildSnapshotForLocation(
     return buildOptimizerSnapshot(property, market, {
         completedImprovementIds: completedIds,
         sellSuggestion,
+        sizeBasedValue,
+        modelAppreciationPct: modelAppreciation,
+        inputCompleteness: {
+            hasSuburb: Boolean(input.suburb?.trim()),
+            hasPurchase,
+            hasSizes: Boolean(
+                (input.floorSizeSqm && input.floorSizeSqm > 0) ||
+                    (input.landSizeSqm && input.landSizeSqm > 0)
+            ),
+            hasVerifiedSuburb: market.hasVerifiedSuburbAverage,
+        },
     });
 }
 
 export function buildOptimizerSnapshot(
     property: PropertyProfile = BLANK_PROPERTY,
-    market: MarketContext = DEMO_MARKET,
+    market: MarketContext = NEUTRAL_MARKET,
     options?: {
         completedImprovementIds?: string[];
         sellSuggestion?: SellSuggestion;
+        sizeBasedValue?: number;
+        modelAppreciationPct?: number;
+        inputCompleteness?: {
+            hasSuburb: boolean;
+            hasPurchase: boolean;
+            hasSizes: boolean;
+            hasVerifiedSuburb?: boolean;
+        };
     }
 ): OptimizerSnapshot {
     const completedIds = options?.completedImprovementIds ?? [];
     const sellSuggestion = options?.sellSuggestion;
+    const appr =
+        options?.modelAppreciationPct ??
+        (market.historicalAppreciation > 0
+            ? market.historicalAppreciation
+            : SA_MODEL_APPRECIATION_PCT);
 
-    const hybridValue = computeHybridMarketValue(
-        property,
-        market,
-        DEFAULT_VALUATION_WEIGHTS,
-        completedIds
-    );
-    const estimatedMarketValue = sellSuggestion?.suggestedSellPrice ?? hybridValue;
+    const hybridValue =
+        options?.sizeBasedValue ??
+        computeHybridMarketValue(property, market, DEFAULT_VALUATION_WEIGHTS, completedIds);
+
+    let estimatedMarketValue = sellSuggestion?.suggestedSellPrice ?? 0;
+    let valuationBasis: ValuationBasis = 'insufficient';
+    if (sellSuggestion && property.purchasePrice > 0) {
+        valuationBasis = market.hasVerifiedSuburbAverage
+            ? 'property24-suburb-average'
+            : 'purchase-growth-model';
+        estimatedMarketValue = sellSuggestion.suggestedSellPrice;
+    } else if (market.hasVerifiedSuburbAverage && hybridValue > 0) {
+        // Size / spec model only when anchored to a verified suburb average.
+        valuationBasis = 'property24-suburb-average';
+        estimatedMarketValue = hybridValue;
+    } else if (property.purchasePrice > 0) {
+        valuationBasis = 'purchase-growth-model';
+        estimatedMarketValue = sellSuggestion?.suggestedSellPrice ?? property.purchasePrice;
+    } else {
+        estimatedMarketValue = 0;
+        valuationBasis = 'insufficient';
+    }
+
+    const valuationDisclaimer = (() => {
+        const bits: string[] = [];
+        if (market.hasVerifiedSuburbAverage) {
+            bits.push(
+                `Suburb average from Property24${market.priceYear ? ` (${market.priceYear})` : ''}: ${formatZAR(market.avgPropertyPrice)}.`
+            );
+        } else {
+            bits.push('No Property24 suburb average matched for this location.');
+        }
+        bits.push(
+            `Growth / scenario maths use a disclosed SA model rate of ${appr}% p.a. where suburb YoY series are unavailable.`
+        );
+        bits.push(
+            'Improvement cost/uplift figures are illustrative industry models, not deed-office comps.'
+        );
+        bits.push('Not a formal valuation for lending, insurance, or SARS.');
+        return bits.join(' ');
+    })();
+
     const growthSincePurchase =
-        property.purchasePrice > 0
+        property.purchasePrice > 0 && estimatedMarketValue > 0
             ? ((estimatedMarketValue - property.purchasePrice) / property.purchasePrice) * 100
             : 0;
     const equity = estimatedMarketValue - property.bondBalance;
     const categoryScores = buildCategoryScores(property, market);
     const overallAiScore = Math.round(
-        categoryScores.reduce((s, c) => s + c.score, 0) / categoryScores.length
+        categoryScores.reduce((s, c) => s + c.score, 0) / Math.max(1, categoryScores.length)
     );
     const allImprovements = buildImprovementRecommendations(property, market);
     const improvements = completedIds.length
         ? allImprovements.filter((i) => !completedIds.includes(i.id))
         : allImprovements;
 
+    const marketForForecasts: MarketContext = {
+        ...market,
+        historicalAppreciation: appr,
+    };
+
     const futureValues = {
-        1: Math.round(estimatedMarketValue * (1 + market.historicalAppreciation / 100)),
-        3: Math.round(estimatedMarketValue * Math.pow(1 + market.historicalAppreciation / 100, 3)),
-        5: Math.round(estimatedMarketValue * Math.pow(1 + market.historicalAppreciation / 100, 5)),
-        10: Math.round(estimatedMarketValue * Math.pow(1 + market.historicalAppreciation / 100, 10)),
-        20: Math.round(estimatedMarketValue * Math.pow(1 + market.historicalAppreciation / 100, 20)),
+        1: Math.round(estimatedMarketValue * (1 + appr / 100)),
+        3: Math.round(estimatedMarketValue * Math.pow(1 + appr / 100, 3)),
+        5: Math.round(estimatedMarketValue * Math.pow(1 + appr / 100, 5)),
+        10: Math.round(estimatedMarketValue * Math.pow(1 + appr / 100, 10)),
+        20: Math.round(estimatedMarketValue * Math.pow(1 + appr / 100, 20)),
     } as Record<1 | 3 | 5 | 10 | 20, number>;
 
-    const estimatedRentalValue = Math.round(estimatedMarketValue * 0.0048);
+    const estimatedRentalValue =
+        estimatedMarketValue > 0 ? Math.round(estimatedMarketValue * 0.0048) : 0;
+
+    const completeness = options?.inputCompleteness;
+    let confidenceScore = 22;
+    if (completeness?.hasVerifiedSuburb) confidenceScore += 28;
+    else if (completeness?.hasSuburb) confidenceScore += 8;
+    if (completeness?.hasPurchase) confidenceScore += 18;
+    if (completeness?.hasSizes) confidenceScore += 12;
+    if (completedIds.length) confidenceScore += Math.min(10, completedIds.length * 2);
+    if (property.address?.trim()) confidenceScore += 4;
+    confidenceScore = clamp(confidenceScore, 18, 92);
+
+    const marketStatus = market.hasVerifiedSuburbAverage
+        ? `Property24 suburb average${market.priceYear ? ` · ${market.priceYear}` : ''}`
+        : 'Insufficient suburb market data';
 
     const snapshotBase: OptimizerSnapshot = {
         property,
         market,
         estimatedMarketValue,
         estimatedRentalValue,
-        confidenceScore: sellSuggestion ? 82 : 87,
+        confidenceScore,
         growthSincePurchase: Math.round(growthSincePurchase * 10) / 10,
         investmentGrade: gradeFromScore(overallAiScore),
-        avgAnnualAppreciation: market.historicalAppreciation,
+        avgAnnualAppreciation: appr,
         equity,
         netWorthContribution: Math.round(equity * 0.94),
-        monthlyAppreciation: Math.round(
-            (estimatedMarketValue * (market.historicalAppreciation / 100)) / 12
-        ),
-        annualAppreciation: Math.round(estimatedMarketValue * (market.historicalAppreciation / 100)),
+        monthlyAppreciation: Math.round((estimatedMarketValue * (appr / 100)) / 12),
+        annualAppreciation: Math.round(estimatedMarketValue * (appr / 100)),
         futureValues,
-        breakdown: buildValuationBreakdown(property, market, estimatedMarketValue, property.bondBalance),
+        breakdown: buildValuationBreakdown(
+            property,
+            market,
+            estimatedMarketValue,
+            property.bondBalance
+        ),
         categoryScores,
         overallAiScore,
         improvements,
         forecasts: {
-            conservative: buildForecasts(estimatedMarketValue, equity, market, 'conservative'),
-            expected: buildForecasts(estimatedMarketValue, equity, market, 'expected'),
-            optimistic: buildForecasts(estimatedMarketValue, equity, market, 'optimistic'),
+            conservative: buildForecasts(estimatedMarketValue, equity, marketForForecasts, 'conservative'),
+            expected: buildForecasts(estimatedMarketValue, equity, marketForForecasts, 'expected'),
+            optimistic: buildForecasts(estimatedMarketValue, equity, marketForForecasts, 'optimistic'),
         },
         comparisons: {},
         healthItems: buildPropertyHealth(property),
         alerts: buildSmartAlerts(market, property),
         lastUpdated: new Date().toISOString(),
-        marketStatus:
-            market.marketTemperature.charAt(0).toUpperCase() +
-            market.marketTemperature.slice(1) +
-            ' market',
+        marketStatus,
         sellSuggestion,
+        valuationBasis,
+        valuationDisclaimer,
     };
 
     return {
@@ -1212,9 +1417,8 @@ export function buildOptimizerSnapshot(
 }
 
 export {
-    COMPARABLE_BENCHMARKS,
     BLANK_PROPERTY,
     DEMO_MARKET,
     DEMO_PROPERTY,
-    SUBURB_INSIGHTS,
+    NEUTRAL_MARKET,
 };

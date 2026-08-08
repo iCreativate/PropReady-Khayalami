@@ -209,17 +209,22 @@ export default function LearnPage() {
                         eyebrow="Buyer education"
                         title="Learning Center"
                         description="Guides on bonds, costs, agents, and first-time buying — so you can move with confidence."
+                        glassLabel="Learning pulse"
+                        metrics={[
+                            { label: 'Modules', value: LEARN_MODULES.length },
+                            { label: 'Format', value: 'Immersive' },
+                        ]}
+                        stats={[
+                            { label: 'Guides available', value: LEARN_MODULES.length },
+                            { label: 'Path', value: 'Buyer journey' },
+                            { label: 'Pace', value: 'Self-paced' },
+                            { label: 'Next', value: 'Pick a module', tone: 'success' },
+                        ]}
                     />
                 }
             >
                 <div className={`${PORTAL_PAGE_CONTAINER} space-y-10`}>
                     {moduleGrid}
-                    <LearningHubCta
-                        title="Ready to start your journey?"
-                        description="Take our quick quiz to get pre-qualified, then keep learning as you move."
-                    >
-                        {crossLinks}
-                    </LearningHubCta>
                 </div>
             </BuyerPortalShell>
         );

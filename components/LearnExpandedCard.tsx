@@ -1,4 +1,8 @@
 import type { LucideIcon } from 'lucide-react';
+import LearnHeroPulse, {
+    DEFAULT_LEARN_PULSE_STATS,
+    type LearnHeroPulseStat,
+} from '@/components/buyer-learn/LearnHeroPulse';
 import {
     PORTAL_LEARN_EXPANDED_BODY,
     PORTAL_LEARN_EXPANDED_CARD,
@@ -12,6 +16,8 @@ type LearnExpandedCardProps = {
     icon?: LucideIcon;
     children: React.ReactNode;
     footer?: React.ReactNode;
+    pulseLabel?: string;
+    pulseStats?: LearnHeroPulseStat[];
 };
 
 /**
@@ -24,6 +30,8 @@ export default function LearnExpandedCard({
     icon: Icon,
     children,
     footer,
+    pulseLabel = 'Learning pulse',
+    pulseStats = DEFAULT_LEARN_PULSE_STATS,
 }: LearnExpandedCardProps) {
     return (
         <div className={PORTAL_LEARN_EXPANDED_CARD}>
@@ -37,22 +45,31 @@ export default function LearnExpandedCard({
                     aria-hidden
                 />
                 <div className="relative px-6 md:px-10 py-6 md:py-8">
-                    <div className="flex items-start gap-4">
-                        {Icon ? (
-                            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
-                                <Icon className="w-6 h-6 md:w-7 md:h-7 text-[#FECACA]" strokeWidth={2} />
+                    <div className="biw-hero-grid">
+                        <div className="min-w-0">
+                            <div className="flex items-start gap-4">
+                                {Icon ? (
+                                    <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+                                        <Icon
+                                            className="w-6 h-6 md:w-7 md:h-7 text-[#FECACA]"
+                                            strokeWidth={2}
+                                        />
+                                    </div>
+                                ) : null}
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight tracking-tight">
+                                        {title}
+                                    </h1>
+                                    {subtitle ? (
+                                        <p className="mt-2 text-white/65 text-sm md:text-base max-w-xl leading-relaxed">
+                                            {subtitle}
+                                        </p>
+                                    ) : null}
+                                </div>
                             </div>
-                        ) : null}
-                        <div>
-                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight tracking-tight">
-                                {title}
-                            </h1>
-                            {subtitle ? (
-                                <p className="mt-2 text-white/65 text-sm md:text-base max-w-xl leading-relaxed">
-                                    {subtitle}
-                                </p>
-                            ) : null}
                         </div>
+
+                        <LearnHeroPulse label={pulseLabel} stats={pulseStats} />
                     </div>
                 </div>
             </div>

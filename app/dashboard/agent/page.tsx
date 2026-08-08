@@ -176,16 +176,50 @@ export default function MyAgentPage() {
                     eyebrow="Working with an agent"
                     title="My Agent"
                     description="See who you’re working with after an appointment is booked, plus practical guidance for choosing the right agent."
+                    glassLabel="Today's pulse"
+                    metrics={[
+                        {
+                            label: 'Agent',
+                            value: agent ? agent.name.split(' ')[0] : 'Not linked',
+                        },
+                        {
+                            label: 'Verified',
+                            value: agent?.verified ? 'Yes' : '—',
+                        },
+                    ]}
+                    stats={[
+                        {
+                            label: 'Working agent',
+                            value: agent ? 'Linked' : 'Not yet',
+                            tone: agent ? 'success' : 'default',
+                        },
+                        {
+                            label: 'Source',
+                            value: agent
+                                ? agent.source === 'appointment'
+                                    ? 'Appointment'
+                                    : 'Selected'
+                                : '—',
+                        },
+                        {
+                            label: 'Doc access',
+                            value: grant ? 'Granted' : 'Not granted',
+                        },
+                        {
+                            label: 'Portal',
+                            value: isSeller ? 'Seller' : 'Buyer',
+                        },
+                    ]}
                 />
             }
         >
-            <div className={`${PORTAL_PAGE_CONTAINER} relative z-10 space-y-8`}>
+            <div className={`${PORTAL_PAGE_CONTAINER} relative z-10 portal-stack`}>
                 {/* Working agent from appointment / selection */}
                 {agent ? (
-                    <section className={`${PORTAL_CARD} p-6 sm:p-8`}>
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-6">
-                            <div className={`${PORTAL_STAT_ICON} w-16 h-16 shrink-0`}>
-                                <Users className="w-8 h-8 text-gold" />
+                    <section className={`${PORTAL_CARD} p-5 sm:p-6`}>
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+                            <div className={`${PORTAL_STAT_ICON} w-14 h-14 shrink-0`}>
+                                <Users className="w-7 h-7" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">

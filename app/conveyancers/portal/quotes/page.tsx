@@ -90,7 +90,6 @@ export default function ConveyancerQuotesPage() {
             title="Quotes"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Lead inbox"
                     title="Quote requests"
                     description="Respond to marketplace quote requests. Accepting a quote keeps the client matter open for messaging."

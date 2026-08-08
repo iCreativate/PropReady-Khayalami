@@ -3,6 +3,14 @@ export type MarketTemperature = 'cold' | 'cool' | 'balanced' | 'warm' | 'hot';
 export type InvestmentGrade = 'A+' | 'A' | 'B+' | 'B' | 'C' | 'D';
 export type DifficultyLevel = 'Easy' | 'Moderate' | 'Complex' | 'Major Project';
 export type PriorityLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'Optional';
+/** How trustworthy suburb market inputs are for this snapshot. */
+export type MarketDataQuality = 'verified' | 'estimated' | 'insufficient';
+/** What the headline value is primarily based on. */
+export type ValuationBasis =
+    | 'property24-suburb-average'
+    | 'purchase-growth-model'
+    | 'size-model'
+    | 'insufficient';
 
 export interface PropertyProfile {
     id: string;
@@ -52,6 +60,12 @@ export interface MarketContext {
     transportScore: number;
     plannedDevelopments: string[];
     infrastructureProjects: string[];
+    /** verified = Property24 suburb average; estimated = model; insufficient = no suburb match */
+    dataQuality: MarketDataQuality;
+    dataSource: string;
+    priceYear?: number;
+    /** True when avgPropertyPrice comes from Property24 (JSON or live). */
+    hasVerifiedSuburbAverage: boolean;
 }
 
 export interface ValuationBreakdownItem {
@@ -275,6 +289,9 @@ export interface OptimizerSnapshot {
     marketStatus: string;
     /** Present when user entered purchase price / completed upgrades */
     sellSuggestion?: SellSuggestion;
+    /** What the headline estimate is based on — never silent demo fiction. */
+    valuationBasis: ValuationBasis;
+    valuationDisclaimer: string;
 }
 
 export interface ValuationEngineWeights {

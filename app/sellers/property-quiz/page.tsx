@@ -259,10 +259,27 @@ export default function PropertyQuizPage() {
             publicChrome={propertyQuizPublicHeader}
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Seller onboarding"
                     title="List Your Property"
                     description="Share a few details so we can match you with the right valuation and listing support."
+                    glassLabel="Listing pulse"
+                    metrics={[
+                        { label: 'Step', value: `${currentStep} of ${totalSteps}` },
+                        {
+                            label: 'Progress',
+                            value: `${Math.round((currentStep / totalSteps) * 100)}%`,
+                        },
+                    ]}
+                    stats={[
+                        { label: 'Current step', value: currentStep },
+                        { label: 'Steps total', value: totalSteps },
+                        {
+                            label: 'Progress',
+                            value: `${Math.round((currentStep / totalSteps) * 100)}%`,
+                            tone: 'success',
+                        },
+                        { label: 'Goal', value: 'List & match' },
+                    ]}
                 />
             }
         >

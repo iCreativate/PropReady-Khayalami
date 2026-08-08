@@ -124,14 +124,17 @@ export default function PortalAppBarAlerts({
         }
         let cancelled = false;
         void fetch('/api/messages/conversations?unread=1', { credentials: 'include' })
-            .then((r) => r.json())
+            .then(async (r) => {
+                if (!r.ok) return null;
+                return r.json().catch(() => null);
+            })
             .then((data) => {
-                if (!cancelled && typeof data.unreadTotal === 'number') {
+                if (!cancelled && data && typeof data.unreadTotal === 'number') {
                     setMessageCount(data.unreadTotal);
                 }
             })
             .catch(() => {
-                /* ignore */
+                /* ignore — logged-out / network */
             });
         return () => {
             cancelled = true;

@@ -120,17 +120,25 @@ function TrackerInner() {
     return (
         <div className="space-y-6">
             <PortalHero
-                size="compact"
                 eyebrow="Transfer Tracker"
                 title={tracker.propertyLabel}
                 description="Milestones update from your live conveyancer matter status — from inquiry through registration."
-                stats={[
+                glassLabel="Transfer pulse"
+                metrics={[
                     { label: 'Progress', value: `${pct}%` },
+                    {
+                        label: 'Stage',
+                        value: TRANSFER_STAGE_META[tracker.currentStageIndex]?.label || '—',
+                    },
+                ]}
+                stats={[
+                    { label: 'Progress', value: `${pct}%`, tone: 'success' },
                     {
                         label: 'Current stage',
                         value: TRANSFER_STAGE_META[tracker.currentStageIndex]?.label || '—',
                     },
                     { label: 'Firm', value: firm?.firmName || 'Assigned' },
+                    { label: 'Matter', value: matterId || 'Live' },
                 ]}
             />
 

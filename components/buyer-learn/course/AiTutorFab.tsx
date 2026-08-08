@@ -90,7 +90,7 @@ export default function AiTutorFab({
                 {
                     role: 'tutor',
                     text: isAssistant
-                        ? `Hi ${stored} — I’m the PropReady AI Assistant. Ask anything about PropReady, buying, selling, bonds, valuations, insurance, or investing in South Africa. Educational only — not formal advice.`
+                        ? `Hi ${stored} — I’m the PropReady AI Assistant. Ask about PropReady, Property Companion™, bonds, repo vs prime, valuations, insurance, or investing in South Africa. Educational only — not formal advice.`
                         : `Hi ${stored} — I’m your PropReady tutor for “${lessonTitle}”. Ask anything property-related — valuations, bonds, OTPs, transfer costs, insurance, selling, investing, or what PropReady is. Educational only — not formal advice.`,
                 },
             ]);
@@ -135,7 +135,7 @@ export default function AiTutorFab({
                     {
                         role: 'tutor',
                         text: isAssistant
-                            ? `Great to meet you, ${parsed}. I’m the PropReady AI Assistant — ask me about PropReady, valuations, bonds, OTPs, transfer costs, insurance, selling, or investing.\n\nWhat would you like to know first?`
+                            ? `Great to meet you, ${parsed}. I’m the PropReady AI Assistant — ask me about Property Companion™, live repo/prime, bonds, OTPs, transfer costs, insurance, selling, or investing.\n\nWhat would you like to know first?`
                             : `Great to meet you, ${parsed}. I’m your PropReady tutor for “${lessonTitle}”. Ask me anything property-related whenever you’re ready.\n\nWhat would you like to clear up first?`,
                     },
                 ]);

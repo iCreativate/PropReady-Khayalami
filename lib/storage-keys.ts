@@ -32,5 +32,7 @@ export const STORAGE_KEYS = {
     buyerLearn: 'propReady_buyerLearn_v1',
     /** Saved bond calculator scenarios (local + account-linked label) */
     bondCalculatorSaves: 'propReady_bondCalculatorSaves_v1',
+    /** Property Companion™ portfolio workspace */
+    propertyCompanion: 'propReady_propertyCompanion_v1',
     selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
 } as const;

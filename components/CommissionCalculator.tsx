@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { formatCurrency } from '@/lib/currency';
 import { Calculator } from 'lucide-react';
 
 export default function CommissionCalculator() {
@@ -33,14 +34,7 @@ export default function CommissionCalculator() {
     const totalCommission = commissionAmount + vatAmount;
     const netProceeds = price - totalCommission;
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-ZA', {
-            style: 'currency',
-            currency: 'ZAR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
-    };
+    
 
     return (
         <div className="space-y-6">

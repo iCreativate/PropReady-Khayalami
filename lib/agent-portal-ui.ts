@@ -49,7 +49,7 @@ export const AGENT_LOGO_MARK =
 export const AGENT_LOGO_MARK_SM =
     'w-9 h-9 bg-gold rounded-lg flex items-center justify-center shrink-0';
 
-export const AGENT_PAGE_CONTAINER = 'max-w-[1400px] w-full mx-auto pb-8 sm:pb-12';
+export const AGENT_PAGE_CONTAINER = 'w-full pb-8 sm:pb-12';
 
 /** Portal chrome — charcoal nav against a light content canvas */
 // No `relative` here: desktop asides also use Tailwind `fixed`, and in production
@@ -59,7 +59,7 @@ export const AGENT_SHELL_SIDEBAR =
     'overflow-hidden bg-charcoal brand-dark-panel border-r border-white/[0.06] shadow-[4px_0_24px_rgba(0,0,0,0.18)]';
 export const AGENT_SHELL_SIDEBAR_MOBILE =
     'relative overflow-hidden bg-charcoal brand-dark-panel shadow-2xl border-r border-white/[0.06]';
-export const AGENT_SHELL_CONTENT = 'bg-[#F8FAFC]';
+export const AGENT_SHELL_CONTENT = 'bg-[#F7F8FA]';
 export const AGENT_SHELL_TOPBAR =
     'bg-white/95 backdrop-blur-md border-b border-charcoal/[0.07] shadow-[0_1px_0_rgba(44,44,44,0.04)]';
 export const AGENT_SHELL_DIVIDER = 'border-white/[0.08]';
@@ -91,48 +91,42 @@ export const AGENT_NAV_ICON =
 export const AGENT_NAV_ICON_ACTIVE = 'w-[1.25rem] h-[1.25rem] shrink-0 text-gold';
 export const AGENT_NAV_LABEL = 'flex-1 truncate leading-none tracking-[-0.01em]';
 
-/** Soft band behind the global dark PortalHero — no white strip. */
-export const AGENT_PAGE_HEADER_BAND = 'bg-[#F8FAFC]';
+/** Page heroes sit inside content padding (same as Buyer Dashboard). */
+export const AGENT_PAGE_HEADER_BAND = '';
 
 export const AGENT_CARD =
-    `${UI_CARD_SURFACE} rounded-3xl bg-white overflow-hidden`;
+    `biw-panel biw-panel--static overflow-hidden`;
 
 export const AGENT_CARD_SOFT =
-    `${UI_CARD_SURFACE} rounded-3xl bg-white`;
+    `biw-panel biw-panel--static`;
 
 export const AGENT_STAT_CARD =
-    `group ${UI_CARD_SURFACE} ${UI_CARD_INTERACTIVE} flex flex-col justify-between h-full min-h-[160px] rounded-3xl bg-white p-6 sm:p-7 text-left`;
+    `group biw-panel biw-kpi text-left`;
 
 export const AGENT_STAT_ICON =
-    `w-12 h-12 rounded-2xl bg-charcoal/[0.03] border border-charcoal/[0.08] flex items-center justify-center shrink-0 group-hover:bg-gold/[0.06] group-hover:border-gold/10 ${UI_TRANSITION_MODERATE}`;
+    `w-10 h-10 rounded-[12px] bg-[rgba(229,57,53,0.08)] border border-[rgba(229,57,53,0.12)] flex items-center justify-center shrink-0 text-[#e53935] ${UI_TRANSITION_MODERATE}`;
 
 /** Dashboard rhythm & hierarchy — polish only; widgets stay put */
-export const AGENT_DASH_STACK = 'flex flex-col gap-10 sm:gap-12';
-export const AGENT_DASH_SECTION = 'mb-10 sm:mb-12';
-export const AGENT_DASH_SECTION_TITLE =
-    'text-xl sm:text-2xl font-semibold text-charcoal tracking-tight';
-export const AGENT_DASH_SECTION_SUB =
-    'text-sm text-charcoal/45 mt-1.5 leading-relaxed';
-export const AGENT_DASH_WIDGET = `${UI_CARD_SURFACE} rounded-3xl bg-white p-6 sm:p-7`;
-export const AGENT_DASH_WIDGET_LG = `${UI_CARD_SURFACE} rounded-3xl bg-white p-6 sm:p-8`;
-export const AGENT_DASH_STAT_LABEL =
-    'text-[11px] sm:text-xs font-semibold uppercase tracking-[0.1em] text-charcoal/45 mb-2.5';
-export const AGENT_DASH_STAT_VALUE =
-    'text-charcoal font-bold text-[2rem] sm:text-4xl tabular-nums tracking-tight leading-none';
-export const AGENT_DASH_STAT_VALUE_MD =
-    'text-charcoal font-bold text-2xl sm:text-3xl tabular-nums tracking-tight leading-none';
-export const AGENT_DASH_STAT_HINT =
-    'text-charcoal/40 text-xs mt-2.5 leading-snug';
+export const AGENT_DASH_STACK = 'portal-stack';
+export const AGENT_DASH_SECTION = 'mb-6 sm:mb-8';
+export const AGENT_DASH_SECTION_TITLE = 'biw-sec-title';
+export const AGENT_DASH_SECTION_SUB = 'biw-sec-sub';
+export const AGENT_DASH_WIDGET = `biw-panel biw-panel--static p-5 sm:p-6`;
+export const AGENT_DASH_WIDGET_LG = `biw-panel biw-panel--static p-5 sm:p-7`;
+export const AGENT_DASH_STAT_LABEL = 'biw-kpi-label mb-2';
+export const AGENT_DASH_STAT_VALUE = 'biw-kpi-value text-[1.75rem] sm:text-[2rem]';
+export const AGENT_DASH_STAT_VALUE_MD = 'biw-kpi-value text-2xl sm:text-[1.75rem]';
+export const AGENT_DASH_STAT_HINT = 'biw-kpi-hint';
 export const AGENT_DASH_EMPTY =
     'text-center py-14 sm:py-16 px-4';
 export const AGENT_DASH_EMPTY_ICON =
-    'w-14 h-14 rounded-2xl bg-charcoal/[0.04] border border-charcoal/[0.08] flex items-center justify-center mx-auto mb-4';
+    'w-14 h-14 rounded-2xl bg-[rgba(229,57,53,0.08)] border border-[rgba(229,57,53,0.12)] flex items-center justify-center mx-auto mb-4 text-[#e53935]';
 export const AGENT_DASH_EMPTY_TITLE =
-    'text-charcoal font-semibold text-base sm:text-lg tracking-tight';
+    'biw-sec-title text-base sm:text-lg';
 export const AGENT_DASH_EMPTY_DESC =
-    'text-charcoal/45 text-sm mt-2 max-w-sm mx-auto leading-relaxed';
+    'biw-sec-sub max-w-sm mx-auto';
 export const AGENT_DASH_QUICK_ACTION =
-    `${UI_CARD_SURFACE} ${UI_CARD_INTERACTIVE} rounded-3xl bg-white p-5 sm:p-6 text-center group`;
+    `biw-panel p-5 sm:p-6 text-center group`;
 export const AGENT_DASH_ACTIVITY_ROW =
     'text-sm pb-4 mb-4 border-b border-charcoal/[0.08] last:border-0 last:pb-0 last:mb-0';
 export const AGENT_DASH_LINK =
@@ -328,4 +322,4 @@ export const AGENT_PANEL_HEADER =
 export const AGENT_PANEL_BODY = 'px-6 sm:px-8 py-6 bg-white';
 
 export const AGENT_CALLOUT =
-    'rounded-2xl border border-gold/15 bg-gold/[0.04] p-5 sm:p-6 shadow-card';
+    'biw-panel biw-panel--static p-5 sm:p-6 border border-[rgba(229,57,53,0.12)] bg-[linear-gradient(160deg,#fff_0%,rgba(229,57,53,0.04)_100%)]';

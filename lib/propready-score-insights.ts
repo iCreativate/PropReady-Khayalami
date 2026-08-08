@@ -1,3 +1,4 @@
+import { formatPriceWithCommas } from '@/lib/currency';
 import {
     calculateMonthlyBondBudget,
     getPropReadyScoreLabel,
@@ -196,7 +197,7 @@ export function buildPropReadyScoreInsights(
             status: factorStatus(incomePts, 30),
             detail:
                 income > 0
-                    ? `Declared income supports a modelled pre-qualification of about R${preQual.toLocaleString('en-ZA')}.`
+                    ? `Declared income supports a modelled pre-qualification of about R ${formatPriceWithCommas(preQual)}.`
                     : 'Add your monthly income so we can model a realistic bond amount.',
         },
         {
@@ -229,8 +230,8 @@ export function buildPropReadyScoreInsights(
             detail:
                 deposit > 0
                     ? depositPct != null
-                        ? `R${deposit.toLocaleString('en-ZA')} saved (~${depositPct}% of pre-qual). 10%+ usually unlocks better bond options.`
-                        : `R${deposit.toLocaleString('en-ZA')} saved toward a deposit.`
+                        ? `R ${formatPriceWithCommas(deposit)} saved (~${depositPct}% of pre-qual). 10%+ usually unlocks better bond options.`
+                        : `R ${formatPriceWithCommas(deposit)} saved toward a deposit.`
                     : 'No deposit captured yet — even R25k–R50k improves lender comfort.',
         },
         {
@@ -264,7 +265,7 @@ export function buildPropReadyScoreInsights(
                 id: 'offer-with-letter',
                 priority: 'high',
                 title: 'Make offers within your full prequal',
-                body: `Your originator prequal of R${preQual.toLocaleString('en-ZA')} is what agents and sellers will take seriously. Keep offers inside this band unless you top up cash.`,
+                body: `Your originator prequal of R ${formatPriceWithCommas(preQual)} is what agents and sellers will take seriously. Keep offers inside this band unless you top up cash.`,
                 href: '/dashboard/agent',
                 cta: 'Talk to your agent',
                 feature: 'Offer coach',
@@ -360,7 +361,7 @@ export function buildPropReadyScoreInsights(
                 id: 'boost-deposit',
                 priority: 'high',
                 title: 'Grow your deposit buffer',
-                body: `Aim for about R${target.toLocaleString('en-ZA')} (≈10% of your soft pre-qual). A larger deposit can lower the bond amount and improve approval odds.`,
+                body: `Aim for about R ${formatPriceWithCommas(target)} (≈10% of your soft pre-qual). A larger deposit can lower the bond amount and improve approval odds.`,
                 href: '/calculator',
                 cta: 'Run bond calculator',
                 feature: 'Deposit coach',
@@ -428,7 +429,7 @@ export function buildPropReadyScoreInsights(
                 id: 'start-viewings',
                 priority: 'medium',
                 title: 'Tour homes in your budget band',
-                body: `Work with your agent around ${monthlyBudget > 0 ? `R${monthlyBudget.toLocaleString('en-ZA')}/month bond` : 'your soft pre-qual'} and book a viewing so PropReady can match you with a working agent.`,
+                body: `Work with your agent around ${monthlyBudget > 0 ? `R ${formatPriceWithCommas(monthlyBudget)}/month bond` : 'your soft pre-qual'} and book a viewing so PropReady can match you with a working agent.`,
                 href: '/dashboard/agent',
                 cta: 'Find an agent',
                 feature: 'Match engine',
@@ -488,9 +489,9 @@ export function buildPropReadyScoreInsights(
                 : 'Complete your assessment to unlock a soft PropReady Score, then a full originator prequal.';
 
     const narrative = prequal.isFull
-        ? `Your displayed purchasing power of R${preQual.toLocaleString('en-ZA')} comes from your full bond-originator pre-qualification (soft quiz estimate was R${prequal.softAmount.toLocaleString('en-ZA')}). Estimated bond repayment is about R${monthlyBudget.toLocaleString('en-ZA')} / month (illustrative 20-year, 10%).`
+        ? `Your displayed purchasing power of R ${formatPriceWithCommas(preQual)} comes from your full bond-originator pre-qualification (soft quiz estimate was R ${formatPriceWithCommas(prequal.softAmount)}). Estimated bond repayment is about R ${formatPriceWithCommas(monthlyBudget)} / month (illustrative 20-year, 10%).`
         : preQual > 0
-          ? `Based on your quiz answers, PropReady models a soft pre-qualification of about R${preQual.toLocaleString('en-ZA')} with an estimated bond near R${monthlyBudget.toLocaleString('en-ZA')} / month (20-year, illustrative 10% rate). This is not a bank or originator approval.`
+          ? `Based on your quiz answers, PropReady models a soft pre-qualification of about R ${formatPriceWithCommas(preQual)} with an estimated bond near R ${formatPriceWithCommas(monthlyBudget)} / month (20-year, illustrative 10% rate). This is not a bank or originator approval.`
           : 'Once we have your income and expenses, we’ll estimate a soft purchasing power, monthly bond, and a prioritised action plan.';
 
     const disclaimer = prequal.isFull

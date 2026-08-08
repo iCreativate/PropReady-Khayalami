@@ -1,5 +1,7 @@
 'use client';
 
+import { formatPriceWithCommas } from '@/lib/currency';
+
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -284,7 +286,6 @@ export default function OriginatorCasePage() {
             title={buyerDisplayName}
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Prequalification case"
                     title={buyerDisplayName}
                     description={
@@ -347,13 +348,13 @@ export default function OriginatorCasePage() {
                                 {caseData.softAmount != null ? (
                                     <InfoRow
                                         label="Soft amount"
-                                        value={`R${Number(caseData.softAmount).toLocaleString('en-ZA')}`}
+                                        value={`R ${formatPriceWithCommas(Number(caseData.softAmount))}`}
                                     />
                                 ) : null}
                                 {caseData.officialAmount != null ? (
                                     <InfoRow
                                         label="Official amount"
-                                        value={`R${Number(caseData.officialAmount).toLocaleString('en-ZA')}`}
+                                        value={`R ${formatPriceWithCommas(Number(caseData.officialAmount))}`}
                                     />
                                 ) : null}
                             </div>

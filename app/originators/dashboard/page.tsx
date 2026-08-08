@@ -1,5 +1,7 @@
 'use client';
 
+import { formatPriceWithCommas } from '@/lib/currency';
+
 import {
     useCallback,
     useEffect,
@@ -85,7 +87,7 @@ function formatRelative(iso: string) {
 
 function formatMoney(n: number | null) {
     if (n == null) return null;
-    return `R${Number(n).toLocaleString('en-ZA')}`;
+    return `R ${formatPriceWithCommas(Number(n))}`;
 }
 
 function initials(name: string, email: string) {
@@ -111,16 +113,22 @@ function statusTone(status: PrequalCaseStatus) {
 function PageHeader({
     title,
     subtitle,
+    stats,
+    metrics,
 }: {
     title: string;
     subtitle: string;
+    stats?: { label: string; value: string | number; tone?: 'default' | 'success' }[];
+    metrics?: { label: string; value: string | number }[];
 }) {
     return (
         <PortalPageHeader
-            size="compact"
             eyebrow="Bond originator workspace"
             title={title}
             description={subtitle}
+            glassLabel="Case pulse"
+            stats={stats}
+            metrics={metrics}
         />
     );
 }
@@ -538,6 +546,20 @@ export default function OriginatorDashboardPage() {
                 <PageHeader
                     title="Buyer Prequalification Cases"
                     subtitle="Respond to buyers, request supporting documents, upload results, and track case progress."
+                    metrics={[
+                        { label: 'Open cases', value: kpis.open },
+                        { label: 'Avg turnaround', value: kpis.avgHours },
+                    ]}
+                    stats={[
+                        { label: 'Open cases', value: kpis.open },
+                        { label: 'Awaiting buyer', value: kpis.awaitingBuyer },
+                        { label: 'Docs received', value: kpis.docsReceived },
+                        {
+                            label: 'Completed today',
+                            value: kpis.completedToday,
+                            tone: 'success',
+                        },
+                    ]}
                 />
             }
         >

@@ -114,7 +114,7 @@ export default function LearnArticleShell({
     return (
         <BuyerPortalShell activePage="learn" title="Learning Center" publicChrome={publicChrome}>
             {user ? (
-                <div className={`${PORTAL_PAGE_CONTAINER} max-w-4xl`}>
+                <div className={PORTAL_PAGE_CONTAINER}>
                     <div className="mb-4">
                         <Link
                             href={hubHref}

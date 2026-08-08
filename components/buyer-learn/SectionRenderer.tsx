@@ -1,5 +1,7 @@
 'use client';
 
+import { formatCurrency } from '@/lib/currency';
+
 import type { LessonSection } from '@/lib/buyer-learn/types';
 import AffordabilityLab from '@/components/buyer-learn/AffordabilityLab';
 import AchievementPanel from '@/components/buyer-learn/AchievementPanel';
@@ -11,11 +13,7 @@ import NextLessonCard from '@/components/buyer-learn/NextLessonCard';
 import SectionReveal from '@/components/buyer-learn/SectionReveal';
 
 function formatZar(n: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        maximumFractionDigits: 0,
-    }).format(n);
+    return formatCurrency(n);
 }
 
 export default function SectionRenderer({

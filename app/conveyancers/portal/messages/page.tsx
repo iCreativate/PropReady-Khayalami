@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import ConveyancerPortalLayout from '@/components/conveyancer-connect/ConveyancerPortalLayout';
 import PortalPageHeader from '@/components/PortalPageHeader';
+import type { PortalHeroStat } from '@/components/PortalHero';
 import MessagesWorkspaceSkeleton from '@/components/messages/MessagesWorkspaceSkeleton';
 import {
     hydrateSessionFromCookies,
@@ -27,6 +28,8 @@ export default function ConveyancerMessagesPage() {
         email: string;
         firmName?: string;
     } | null>(null);
+    const [heroActions, setHeroActions] = useState<ReactNode>(null);
+    const [heroStats, setHeroStats] = useState<PortalHeroStat[] | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -73,10 +76,12 @@ export default function ConveyancerMessagesPage() {
             title="Messages"
             pageHeader={
                 <PortalPageHeader
-                    size="compact"
                     eyebrow="Live inbox"
                     title="Client & agent messages"
                     description="Secure PropReady messaging with buyers, sellers and referring estate agents on your matters."
+                    glassLabel="Inbox pulse"
+                    stats={heroStats ?? undefined}
+                    actions={heroActions}
                 />
             }
         >
@@ -85,6 +90,8 @@ export default function ConveyancerMessagesPage() {
                 profileId={user.id}
                 accountType="conveyancer"
                 displayName={user.firmName || user.fullName}
+                onHeroActionsChange={setHeroActions}
+                onHeroStatsChange={setHeroStats}
             />
         </ConveyancerPortalLayout>
     );

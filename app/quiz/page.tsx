@@ -6,7 +6,7 @@ import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
 import { getLocationFromBrowser } from '@/lib/geolocation';
-import { formatCurrency, parseAmountForDisplay } from '@/lib/currency';
+import { formatCurrency, parseAmountForDisplay, formatPriceWithCommas } from '@/lib/currency';
 import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
 import BondOriginatorSlider from '@/components/BondOriginatorSlider';
 import BuyerPreQualificationPanel from '@/components/BuyerPreQualificationPanel';
@@ -1250,6 +1250,42 @@ export default function QuizPage() {
                             eyebrow="Your PropReady assessment"
                             title="Pre-Qualification"
                             description="Review your score, documents, and bond originator options"
+                            glassLabel="Score pulse"
+                            metrics={[
+                                {
+                                    label: 'PropReady score',
+                                    value: `${savedResult.score ?? 0}`,
+                                },
+                                {
+                                    label: 'Pre-qual amount',
+                                    value:
+                                        savedResult.preQualAmount != null
+                                            ? `R ${formatPriceWithCommas(Number(savedResult.preQualAmount))}`
+                                            : '—',
+                                },
+                            ]}
+                            stats={[
+                                {
+                                    label: 'Score',
+                                    value: savedResult.score ?? 0,
+                                    tone: 'success',
+                                },
+                                {
+                                    label: 'Pre-qual',
+                                    value:
+                                        savedResult.preQualAmount != null
+                                            ? `R ${formatPriceWithCommas(Number(savedResult.preQualAmount))}`
+                                            : '—',
+                                },
+                                {
+                                    label: 'Employment',
+                                    value: savedResult.employmentStatus || '—',
+                                },
+                                {
+                                    label: 'Credit band',
+                                    value: savedResult.creditScore || '—',
+                                },
+                            ]}
                         />
                     }
                 >

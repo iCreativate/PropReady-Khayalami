@@ -17,9 +17,9 @@ const sans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-    title: 'Property IQ™ | PropReady',
+    title: 'Property Companion™ | PropReady',
     description:
-        'Build, track and grow property wealth — portfolio KPIs, bond optimisation, equity unlock, renovations, rental performance and AI insights on one premium dashboard.',
+        'Your intelligent property portfolio companion — worth, debt, income, improvements and what to do next.',
 };
 
 export default function PropertyIqLayout({ children }: { children: React.ReactNode }) {

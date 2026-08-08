@@ -48,6 +48,7 @@ import {
     readSavedBondCalculations,
     saveBondCalculation,
 } from '@/lib/bond-calculator-storage';
+import PortalHero from '@/components/PortalHero';
 
 type Mode = 'repayment' | 'affordability' | 'cash';
 type WhatIfTab = 'rate' | 'extra' | 'term' | 'deposit';
@@ -472,97 +473,40 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
         <div
             className={`home-landing bc-dash ${embedded ? 'bc-dash--embedded calc-portal-wrap' : ''}`}
         >
-            {/* §1 Hero + summary */}
-            <section className="hl-surface-dark calc-hero relative">
-                <div className="bc-shell relative z-10">
-                    <div className="calc-hero-grid">
-                        <div>
-                            <p className="hl-eyebrow hl-eyebrow--light">Financial planning</p>
-                            <h1 className="hl-display text-[clamp(2.1rem,4.5vw,3.35rem)] text-white tracking-tight leading-[1.08] max-w-[18ch]">
-                                Calculate your home loan in seconds.
-                            </h1>
-                            <p className="hl-lede hl-lede--light !max-w-xl !mt-4">
-                                Adjust the values below to instantly understand your repayments,
-                                affordability and lifetime borrowing costs.
-                            </p>
-                            <div className="bc-trust-row">
-                                <span className="bc-trust-badge bc-trust-badge--light">
-                                    <Zap className="w-3 h-3" /> Live calculations
-                                </span>
-                                <span className="bc-trust-badge bc-trust-badge--light">
-                                    SA lending assumptions
-                                </span>
-                                <span className="bc-trust-badge bc-trust-badge--light">
-                                    Instant updates
-                                </span>
-                            </div>
-                        </div>
-                        <div className="calc-panel calc-panel--dark">
-                            <div className="calc-panel-body space-y-4">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-                                    Live snapshot
-                                </p>
-                                <div>
-                                    <p className="text-sm text-white/55">Monthly repayment</p>
-                                    <p className="text-3xl font-semibold tabular-nums tracking-tight text-white mt-1">
-                                        <AnimatedZar value={repayment.monthlyRepayment} />
-                                    </p>
-                                </div>
-                                <div className="calc-split-track" aria-hidden>
-                                    <span
-                                        className="bg-white"
-                                        style={{ width: `${100 - interestShare}%` }}
-                                    />
-                                    <span
-                                        className="bg-[#F87171]"
-                                        style={{ width: `${interestShare}%` }}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
-                                            Loan
-                                        </p>
-                                        <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
-                                            <AnimatedZar value={repayment.loanAmount} />
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
-                                            Deposit
-                                        </p>
-                                        <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
-                                            <AnimatedZar value={deposit} />
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
-                                            Rate · Term
-                                        </p>
-                                        <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
-                                            {interestRate.toFixed(2)}% · {loanTerm} yrs
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[11px] text-white/40 uppercase tracking-wide">
-                                            Affordability
-                                        </p>
-                                        <p className="text-sm font-semibold tabular-nums text-white/90 mt-0.5">
-                                            {affordStatus.label}
-                                        </p>
-                                    </div>
-                                </div>
-                                {extras.interestSaved > 0 ? (
-                                    <p className="text-xs font-semibold text-emerald-300/90">
-                                        Save ~{formatZar(extras.interestSaved)} · {extras.monthsSaved}{' '}
-                                        mo sooner
-                                    </p>
-                                ) : null}
-                            </div>
-                        </div>
-                    </div>
+            {/* Public hero — portal embed uses PortalPageHeader instead */}
+            {!embedded ? (
+                <div className="bc-shell relative z-10 pt-6 sm:pt-8">
+                    <PortalHero
+                        eyebrow="Financial planning"
+                        eyebrowIcon={<Zap className="h-3.5 w-3.5 text-gold" />}
+                        title="Calculate your home loan in seconds."
+                        description="Adjust the values below to instantly understand your repayments, affordability and lifetime borrowing costs."
+                        glassLabel="Live snapshot"
+                        metrics={[
+                            {
+                                label: 'Monthly repayment',
+                                value: formatZar(repayment.monthlyRepayment),
+                            },
+                            {
+                                label: 'Affordability',
+                                value: affordStatus.label,
+                            },
+                        ]}
+                        stats={[
+                            { label: 'Loan', value: formatZar(repayment.loanAmount) },
+                            { label: 'Deposit', value: formatZar(deposit) },
+                            {
+                                label: 'Rate · Term',
+                                value: `${interestRate.toFixed(2)}% · ${loanTerm} yrs`,
+                            },
+                            {
+                                label: 'Interest share',
+                                value: `${Math.round(interestShare)}%`,
+                            },
+                        ]}
+                    />
                 </div>
-            </section>
+            ) : null}
 
             {/* §2 Calculator */}
             <section className="bc-spacer-section">

@@ -408,27 +408,17 @@ success(
                 pageHeader={
                     <PortalPageHeader
                         variant="premium"
-                        eyebrow="Optional platform prequalification"
-                        title="Bond Originators & Documents"
+                        eyebrow="Bond readiness"
+                        title="Bond originators & documents"
                         description="Upload FICA documents and optionally prequalify with a PropReady bond originator — free for you. You can skip this and use your agent’s originator instead."
-                    >
-                        <div className="mt-6 flex flex-wrap gap-3">
-                            <div className="px-4 py-2 rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
-                                    Uploaded
-                                </p>
-                                <p className="text-lg font-bold text-white tabular-nums">{documents.length}</p>
-                            </div>
-                            <div className="px-4 py-2 rounded-2xl bg-white/[0.06] ring-1 ring-white/10">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
-                                    Originator
-                                </p>
-                                <p className="text-sm font-bold text-white truncate max-w-[12rem]">
-                                    {selectedOriginatorName || 'Not selected'}
-                                </p>
-                            </div>
-                        </div>
-                    </PortalPageHeader>
+                        stats={[
+                            { label: 'Uploaded', value: documents.length },
+                            {
+                                label: 'Originator',
+                                value: selectedOriginatorName || 'Not selected',
+                            },
+                        ]}
+                    />
                 }
             >
                 <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
@@ -505,7 +495,7 @@ success(
                                 </div>
                             </div>
 
-                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10">
+                            <div className="biw-panel biw-panel--static overflow-hidden">
                                 <div className="px-6 py-5 border-b border-charcoal/10">
                                     <h2 className="text-2xl font-extrabold text-charcoal flex items-center gap-3">
                                         <Upload className="w-6 h-6 text-gold" />
@@ -623,7 +613,7 @@ success(
                         </div>
 
                         <div className="lg:col-span-5 space-y-6">
-                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10">
+                            <div className="biw-panel biw-panel--static overflow-hidden">
                                 <div className="px-6 py-5 border-b border-charcoal/10">
                                     <h2 className="text-2xl font-extrabold text-charcoal flex items-center gap-3">
                                         <FileText className="w-6 h-6 text-gold" />
@@ -770,7 +760,7 @@ success(
                                 </div>
                             </div>
 
-                            <div className="premium-card rounded-2xl overflow-hidden border border-charcoal/10">
+                            <div className="biw-panel biw-panel--static overflow-hidden">
                                 <div className="px-6 py-5 border-b border-charcoal/10 bg-gradient-to-r from-blue-500/10 via-blue-500/5 to-transparent">
                                     <div className="flex items-start gap-3">
                                         <Building2 className="w-6 h-6 text-blue-500 flex-shrink-0 mt-1" />

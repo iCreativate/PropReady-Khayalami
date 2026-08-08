@@ -163,10 +163,24 @@ export default function ValuationBookingPage() {
                 publicChrome={valuationPublicHeader}
                 pageHeader={
                     <PortalPageHeader
-                        size="compact"
                         eyebrow="Seller tools"
                         title="Property Valuation"
                         description="Connect with a verified agent to arrange a professional property valuation."
+                        glassLabel="Valuation pulse"
+                        metrics={[
+                            { label: 'Service', value: 'Agent-led' },
+                            { label: 'Coverage', value: 'South Africa' },
+                        ]}
+                        stats={[
+                            { label: 'Next step', value: hasAccount ? 'Dashboard' : 'Request valuation' },
+                            { label: 'Partner', value: 'Verified agents' },
+                            { label: 'Outcome', value: 'Professional report' },
+                            {
+                                label: 'Account',
+                                value: hasAccount ? 'Linked' : 'Guest',
+                                tone: hasAccount ? 'success' : 'default',
+                            },
+                        ]}
                     />
                 }
             >
@@ -174,7 +188,7 @@ export default function ValuationBookingPage() {
                     <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
                     {/* Thank You Message (if user has account) */}
                     {hasAccount ? (
-                        <div className="max-w-3xl mx-auto">
+                        <div className="w-full">
                             <div className="premium-card rounded-2xl p-12 text-center">
                                 <div className="w-20 h-20 bg-gold rounded-full flex items-center justify-center mx-auto mb-6">
                                     <CheckCircle className="w-10 h-10 text-white" />

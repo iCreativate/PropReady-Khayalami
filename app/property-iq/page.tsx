@@ -13,7 +13,7 @@ const PropertyIQDashboard = dynamic(
     () => import('@/components/property-iq/PropertyIQDashboard'),
     {
         ssr: false,
-        loading: () => <PortalLoading message="Loading Property IQ™…" variant="dashboard" />,
+        loading: () => <PortalLoading message="Loading Property Companion™…" variant="dashboard" />,
     }
 );
 
@@ -27,20 +27,36 @@ export default function PropertyIqPage() {
         }
     }, [isHydrated, user, router]);
 
-    if (!isHydrated || !user) {
-        return <PortalLoading message="Loading Property IQ™…" variant="dashboard" />;
+    // Wait for session check. Keep showing loader only until we know auth state.
+    if (!isHydrated) {
+        return <PortalLoading message="Loading Property Companion™…" variant="dashboard" />;
+    }
+
+    if (!user) {
+        return <PortalLoading message="Redirecting to sign in…" variant="dashboard" />;
     }
 
     return (
         <BuyerPortalShell
             activePage="property-iq"
-            title="Property IQ™"
+            title="Property Companion™"
             pageHeader={
                 <PortalPageHeader
                     variant="premium"
                     eyebrow="Wealth intelligence"
-                    title="Property IQ™"
-                    description="Build. Track. Grow your property wealth — on one premium dashboard."
+                    title="Property Companion™"
+                    description="Your personal property portfolio companion — understand, grow wealth, reduce debt, and know what to do next."
+                    glassLabel="Wealth pulse"
+                    metrics={[
+                        { label: 'Focus', value: 'Portfolio' },
+                        { label: 'Horizon', value: '10-year view' },
+                    ]}
+                    stats={[
+                        { label: 'Track', value: 'Equity & cash flow' },
+                        { label: 'Model', value: 'LTV · ROI' },
+                        { label: 'Projections', value: 'Educational' },
+                        { label: 'Status', value: 'Live workspace', tone: 'success' },
+                    ]}
                 />
             }
         >

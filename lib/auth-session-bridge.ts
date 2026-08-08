@@ -153,16 +153,31 @@ export function syncLegacySession(
     }
 }
 
+const SESSION_FETCH_TIMEOUT_MS = 12_000;
+
 async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
+    // Do not use AbortController / AbortSignal.timeout here — Turbopack's dev overlay
+    // still surfaces AbortError ("signal is aborted without reason") even when caught.
+    // Race against a plain timeout instead; the in-flight fetch may finish later harmlessly.
     try {
-        const res = await fetch('/api/auth/session', { credentials: 'include' });
-        if (res.status === 401) {
-            clearLegacyAuthStorage();
+        const res = await Promise.race([
+            fetch('/api/auth/session', { credentials: 'include' }),
+            new Promise<never>((_, reject) => {
+                setTimeout(
+                    () => reject(new Error('Session fetch timed out')),
+                    SESSION_FETCH_TIMEOUT_MS
+                );
+            }),
+        ]);
+        if (!res.ok) {
+            if (res.status === 401) clearLegacyAuthStorage();
             return null;
         }
-        if (!res.ok) return null;
         const data = await res.json();
-        if (!data?.authenticated || !data.user) return null;
+        if (!data?.authenticated || !data.user) {
+            // Soft miss — do not wipe optimistic local session here (avoids portal load races).
+            return null;
+        }
 
         const rawType = data.user.accountType;
         const accountType: AccountType =
@@ -186,6 +201,7 @@ async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
         syncLegacySession(bridged, accountType);
         return bridged;
     } catch {
+        // Timeout / network — keep optimistic local session; never rethrow.
         return null;
     }
 }

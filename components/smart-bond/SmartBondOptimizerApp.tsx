@@ -93,7 +93,7 @@ import {
     formatChipZar,
 } from '@/components/smart-bond/sbo-ui';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
-import PortalHero, { PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
+import PortalHero, { PORTAL_HERO_BLEED, PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
 
 const TABS: Array<{ id: SboTab; label: string; icon: React.ComponentType<{ className?: string }> }> = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid },
@@ -332,6 +332,7 @@ export default function SmartBondOptimizerApp() {
             <div className="space-y-6 print:space-y-4">
                 {/* Hero */}
                 <PortalHero
+                    className={PORTAL_HERO_BLEED}
                     eyebrow="Flagship · PropReady Intelligence"
                     eyebrowIcon={<Sparkles className="h-3.5 w-3.5 text-gold" />}
                     title="Smart Bond Optimizer"
@@ -374,6 +375,21 @@ export default function SmartBondOptimizerApp() {
                         {
                             label: 'Est. settlement',
                             value: formatDate(settlement),
+                        },
+                        {
+                            label: 'Time saved',
+                            value: formatMonthsAsYears(comparison.monthsSaved),
+                            tone: 'success',
+                        },
+                    ]}
+                    metrics={[
+                        {
+                            label: 'Interest saved',
+                            value: formatZar(comparison.interestSaved),
+                        },
+                        {
+                            label: 'Wealth score',
+                            value: `${wealth.score}/100`,
                         },
                     ]}
                 />

@@ -613,6 +613,21 @@ export default function AgentsDashboardPage() {
                     eyebrow={`Welcome back${currentAgent?.fullName ? `, ${currentAgent.fullName.split(' ')[0]}` : ''}`}
                     title={<>Agent Dashboard <span aria-hidden="true">👋</span></>}
                     description="Manage your properties, leads, and appointments"
+                    glassLabel="Today's pulse"
+                    metrics={[
+                        { label: 'Listings', value: stats.totalProperties },
+                        { label: 'Viewings', value: stats.totalViewings },
+                    ]}
+                    stats={[
+                        { label: 'Successful leads', value: stats.totalBuyers },
+                        { label: 'New buyers', value: stats.newBuyers },
+                        { label: 'Sellers', value: stats.totalSellers },
+                        {
+                            label: 'Verified buyers',
+                            value: stats.verifiedBuyers,
+                            tone: 'success',
+                        },
+                    ]}
                 />
             }
         >

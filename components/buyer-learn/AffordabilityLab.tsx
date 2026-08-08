@@ -1,5 +1,7 @@
 'use client';
 
+import { formatCurrency } from '@/lib/currency';
+
 import { useMemo, useState } from 'react';
 
 function estimateMonthly(principal: number, annualRatePct: number, years: number): number {
@@ -11,11 +13,7 @@ function estimateMonthly(principal: number, annualRatePct: number, years: number
 }
 
 function formatZar(n: number): string {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        maximumFractionDigits: 0,
-    }).format(n);
+    return formatCurrency(n);
 }
 
 export default function AffordabilityLab() {

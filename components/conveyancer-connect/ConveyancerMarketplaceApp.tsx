@@ -2,41 +2,39 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import {
-    LayoutGrid,
-    Map as MapIcon,
-    Moon,
-    Scale,
-    Sparkles,
-    Sun,
-} from 'lucide-react';
-import PortalHero, { PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
-import ConveyancerCard from '@/components/conveyancer-connect/ConveyancerCard';
-import FilterPanel, { QUICK_SPECIALTIES } from '@/components/conveyancer-connect/FilterPanel';
+import { LayoutGrid, Map as MapIcon, Scale } from 'lucide-react';
+import FilterPanel from '@/components/conveyancer-connect/FilterPanel';
 import MapView from '@/components/conveyancer-connect/MapView';
-import StatsStrip from '@/components/conveyancer-connect/StatsStrip';
 import {
     BookModal,
     QuoteModal,
 } from '@/components/conveyancer-connect/EngagementModals';
-import { CC_CHIP, CC_CHIP_ACTIVE, CC_CARD_FLAT } from '@/components/conveyancer-connect/cc-ui';
+import CcDiscoveryBar from '@/components/conveyancer-connect/marketplace/CcDiscoveryBar';
+import CcRecommendationsSection from '@/components/conveyancer-connect/marketplace/CcRecommendationsSection';
+import CcMarketplaceSummary from '@/components/conveyancer-connect/marketplace/CcMarketplaceSummary';
+import ConveyancerResultCard from '@/components/conveyancer-connect/marketplace/ConveyancerResultCard';
+import CcCompareTray from '@/components/conveyancer-connect/marketplace/CcCompareTray';
+import CcSmartInsight from '@/components/conveyancer-connect/marketplace/CcSmartInsight';
+import CcTrustSection, {
+    CcHowItWorks,
+    CcFinalCta,
+} from '@/components/conveyancer-connect/marketplace/CcMarketplaceSections';
 import {
     DEFAULT_FILTERS,
-    demoCatalogEnabled,
     filterConveyancers,
     fetchDirectoryProfiles,
-    haversineKm,
     loadCcState,
+    haversineKm,
     pushRecentSearch,
-    setDarkMode,
     toggleCompare,
     toggleSaved,
     type BrowseFilters,
     type ConveyancerProfile,
     type ProvinceSlug,
-    type Specialty,
 } from '@/lib/conveyancer-connect';
 import { PORTAL_PRIMARY_BTN } from '@/lib/portal-ui';
+import '@/app/conveyancers/cc-marketplace.css';
+import '@/app/conveyancers/cc-content.css';
 
 const DEFAULT_ORIGIN = { lat: -26.2041, lng: 28.0473 };
 
@@ -58,7 +56,6 @@ export default function ConveyancerMarketplaceApp({
     const [view, setView] = useState<'list' | 'map'>('list');
     const [savedIds, setSavedIds] = useState<string[]>([]);
     const [compareIds, setCompareIds] = useState<string[]>([]);
-    const [dark, setDark] = useState(false);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [quoteFirm, setQuoteFirm] = useState<ConveyancerProfile | null>(null);
     const [bookFirm, setBookFirm] = useState<ConveyancerProfile | null>(null);
@@ -71,7 +68,6 @@ export default function ConveyancerMarketplaceApp({
         const s = loadCcState();
         setSavedIds(s.savedIds);
         setCompareIds(s.compareIds);
-        setDark(s.darkMode);
     }, []);
 
     useEffect(() => {
@@ -104,10 +100,6 @@ export default function ConveyancerMarketplaceApp({
         () => filterConveyancers(catalog, filters, DEFAULT_ORIGIN),
         [catalog, filters]
     );
-    const featured = useMemo(
-        () => catalog.filter((c) => c.featured).slice(0, 4),
-        [catalog]
-    );
 
     function notify(msg: string) {
         setToast(msg);
@@ -118,6 +110,13 @@ export default function ConveyancerMarketplaceApp({
         e.preventDefault();
         pushRecentSearch(filters.query);
         document.getElementById('cc-results')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function scrollToAdvanced() {
+        document.getElementById('cc-results')?.scrollIntoView({ behavior: 'smooth' });
+        if (window.matchMedia('(max-width: 1023px)').matches) {
+            setFiltersOpen(true);
+        }
     }
 
     function handleSave(id: string) {
@@ -131,188 +130,112 @@ export default function ConveyancerMarketplaceApp({
         if (error) notify(error);
     }
 
-    function toggleQuick(s: Specialty) {
-        setFilters((f) => ({
-            ...f,
-            specialities: f.specialities.includes(s)
-                ? f.specialities.filter((x) => x !== s)
-                : [...f.specialities, s],
-        }));
+    function clearFilters() {
+        setFilters({ ...DEFAULT_FILTERS, verifiedOnly: false });
     }
 
     return (
-        <div className={dark ? 'cc-dark rounded-[1.5rem] bg-slate-950 p-3 sm:p-4 text-white' : ''}>
-            <div className={`space-y-6 ${dark ? '[&_.text-charcoal]:text-white [&_.text-charcoal\\/55]:text-white/60 [&_.text-charcoal\\/50]:text-white/50 [&_.text-charcoal\\/45]:text-white/45 [&_.bg-white]:bg-white/[0.06] [&_.border-charcoal\\/\\[0\\.08\\]]:border-white/10' : ''}`}>
-                {showHero ? (
-                    <PortalHero
-                        eyebrow="Conveyancer Connect · PropReady"
-                        eyebrowIcon={<Scale className="h-3.5 w-3.5 text-gold" />}
-                        title="Find the right conveyancer for your property transfer."
-                        description="Browse PropReady-verified conveyancing firms, request quotes, book consultations, and message attorneys from one place."
-                        actions={
-                            <a href="#cc-results" className={PORTAL_PRIMARY_BTN}>
-                                Find Conveyancers
-                            </a>
-                        }
-                        stats={[
-                            { label: 'Directory', value: loadingDirectory ? '…' : `${catalog.length} firms` },
-                            { label: 'Coverage', value: 'South Africa' },
-                            { label: 'Access', value: 'Quotes · Chat · Track' },
-                        ]}
-                    />
-                ) : null}
+        <div className="cc-marketplace">
+            {showHero ? (
+                <header className="cc-content-hero cc-content-hero--soft">
+                    <p className="cc-content-kicker">
+                        <Scale className="mr-1.5 inline h-3.5 w-3.5 align-[-2px]" aria-hidden />
+                        Conveyancer Connect
+                    </p>
+                    <h1 className="cc-content-title">
+                        Find the right conveyancer for your property transfer
+                    </h1>
+                    <p>
+                        PropReady-verified firms — request quotes, book a consult, or message an
+                        attorney.
+                    </p>
+                </header>
+            ) : null}
 
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex flex-wrap gap-2">
-                        <Link href="/conveyancers/match" className={`${PORTAL_PRIMARY_BTN} !h-10 !text-sm`}>
-                            <Sparkles className="h-4 w-4" />
-                            AI Matching
-                        </Link>
-                        <Link href="/conveyancers/compare" className={PORTAL_HERO_SECONDARY_BTN}>
-                            Compare ({compareIds.length}/4)
-                        </Link>
-                        <Link href="/conveyancers/tracker" className={PORTAL_HERO_SECONDARY_BTN}>
-                            Transfer Tracker
-                        </Link>
-                        <Link href="/conveyancers/learn" className={PORTAL_HERO_SECONDARY_BTN}>
-                            Education
-                        </Link>
-                        <Link href="/conveyancers/dashboard" className={PORTAL_HERO_SECONDARY_BTN}>
-                            My dashboard
-                        </Link>
-                    </div>
-                    <button
-                        type="button"
-                        className={PORTAL_HERO_SECONDARY_BTN}
-                        onClick={() => {
-                            const next = !dark;
-                            setDark(next);
-                            setDarkMode(next);
-                        }}
-                        aria-label="Toggle dark mode"
-                    >
-                        {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                        {dark ? 'Light' : 'Dark'}
-                    </button>
+            <div className="cc-mp-browse">
+                <CcDiscoveryBar
+                    filters={filters}
+                    onChange={setFilters}
+                    onSearch={onSearchSubmit}
+                    onAdvanced={scrollToAdvanced}
+                />
+
+                <CcRecommendationsSection
+                    catalog={catalog}
+                    savedIds={savedIds}
+                    onSave={handleSave}
+                    onQuote={setQuoteFirm}
+                />
+
+                <CcMarketplaceSummary catalog={catalog} resultsCount={results.length} />
+
+                <div id="cc-results" className="cc-mp-layout">
+                <div className="hidden lg:block">
+                    <FilterPanel
+                        filters={filters}
+                        onChange={setFilters}
+                        variant="marketplace"
+                        catalog={catalog}
+                    />
                 </div>
 
-                <form
-                    onSubmit={onSearchSubmit}
-                    className={`${CC_CARD_FLAT} flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5`}
-                >
-                    <input
-                        className="min-w-0 flex-1 rounded-xl border border-charcoal/[0.12] bg-white px-4 py-3 text-base text-charcoal outline-none focus:border-gold/40 focus:ring-2 focus:ring-gold/20"
-                        placeholder="Search firm, attorney, province, city, suburb…"
-                        value={filters.query}
-                        onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
-                        aria-label="Search conveyancers"
-                    />
-                    <button type="submit" className={PORTAL_PRIMARY_BTN}>
-                        Find Conveyancers
-                    </button>
-                </form>
-
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                    {QUICK_SPECIALTIES.map((s) => (
-                        <button
-                            key={s}
-                            type="button"
-                            className={filters.specialities.includes(s) ? CC_CHIP_ACTIVE : CC_CHIP}
-                            onClick={() => toggleQuick(s)}
-                        >
-                            {s.replace(/-/g, ' ')}
-                        </button>
-                    ))}
-                </div>
-
-                <StatsStrip firmCount={catalog.length} />
-
-                {featured.length > 0 ? (
-                <section>
-                    <div className="mb-4 flex items-end justify-between gap-3">
-                        <div>
-                            <h2 className="text-xl font-semibold text-charcoal">Featured conveyancers</h2>
-                            <p className="text-sm text-charcoal/50">
-                                Verified firms ready to take on new transfer instructions.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        {featured.slice(0, 4).map((p) => (
-                            <ConveyancerCard
-                                key={p.id}
-                                profile={p}
-                                saved={savedIds.includes(p.id)}
-                                compared={compareIds.includes(p.id)}
-                                onSave={() => handleSave(p.id)}
-                                onCompare={() => handleCompare(p.id)}
-                                onQuote={() => setQuoteFirm(p)}
-                                onBook={() => setBookFirm(p)}
-                                distanceKm={
-                                    p.coords.lat || p.coords.lng
-                                        ? haversineKm(DEFAULT_ORIGIN, p.coords)
-                                        : undefined
-                                }
-                            />
-                        ))}
-                    </div>
-                </section>
-                ) : null}
-
-                <div id="cc-results" className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-                    <div className="hidden lg:block">
-                        <FilterPanel filters={filters} onChange={setFilters} />
-                    </div>
-
-                    <div className="space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="text-sm text-charcoal/55">
-                                <span className="font-semibold text-charcoal">{results.length}</span> conveyancers
-                            </p>
-                            <div className="flex flex-wrap gap-2">
+                <div>
+                    <div className="cc-mp-results-head">
+                        <p className="cc-mp-results-count">
+                            {loadingDirectory ? (
+                                'Loading results…'
+                            ) : (
+                                <>
+                                    <strong>{results.length}</strong> conveyancers match your search
+                                </>
+                            )}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                className="lg:hidden cc-mp-btn-secondary !h-9 !px-3 !text-xs"
+                                onClick={() => setFiltersOpen(true)}
+                            >
+                                Filters
+                            </button>
+                            <div className="cc-mp-view-toggle">
                                 <button
                                     type="button"
-                                    className="lg:hidden rounded-xl border border-charcoal/10 px-3 py-2 text-sm font-semibold"
-                                    onClick={() => setFiltersOpen(true)}
+                                    className={view === 'list' ? 'is-active' : ''}
+                                    onClick={() => setView('list')}
                                 >
-                                    Filters
+                                    <LayoutGrid className="h-3.5 w-3.5" />
+                                    List
                                 </button>
-                                <div className="inline-flex rounded-xl border border-charcoal/10 p-1">
-                                    <button
-                                        type="button"
-                                        className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                                            view === 'list' ? 'bg-charcoal text-white' : 'text-charcoal/60'
-                                        }`}
-                                        onClick={() => setView('list')}
-                                    >
-                                        <LayoutGrid className="h-3.5 w-3.5" />
-                                        List
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold ${
-                                            view === 'map' ? 'bg-charcoal text-white' : 'text-charcoal/60'
-                                        }`}
-                                        onClick={() => setView('map')}
-                                    >
-                                        <MapIcon className="h-3.5 w-3.5" />
-                                        Map
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    className={view === 'map' ? 'is-active' : ''}
+                                    onClick={() => setView('map')}
+                                >
+                                    <MapIcon className="h-3.5 w-3.5" />
+                                    Map
+                                </button>
                             </div>
                         </div>
+                    </div>
 
-                        {view === 'map' ? (
-                            <MapView
-                                profiles={results}
-                                origin={DEFAULT_ORIGIN}
-                                selectedId={selectedMapId}
-                                onSelect={setSelectedMapId}
-                            />
-                        ) : (
-                            <div className="grid gap-4">
-                                {results.map((p) => (
-                                    <ConveyancerCard
+                    {view === 'map' ? (
+                        <MapView
+                            profiles={results}
+                            origin={DEFAULT_ORIGIN}
+                            selectedId={selectedMapId}
+                            onSelect={setSelectedMapId}
+                        />
+                    ) : (
+                        <div className="cc-mp-results-list">
+                            {loadingDirectory ? (
+                                <div className="cc-mp-empty">
+                                    <h3>Loading verified firms…</h3>
+                                    <p>Fetching PropReady-approved conveyancers.</p>
+                                </div>
+                            ) : results.length ? (
+                                results.map((p) => (
+                                    <ConveyancerResultCard
                                         key={p.id}
                                         profile={p}
                                         saved={savedIds.includes(p.id)}
@@ -320,33 +243,45 @@ export default function ConveyancerMarketplaceApp({
                                         onSave={() => handleSave(p.id)}
                                         onCompare={() => handleCompare(p.id)}
                                         onQuote={() => setQuoteFirm(p)}
-                                        onBook={() => setBookFirm(p)}
-                                        distanceKm={
-                                            p.coords.lat || p.coords.lng
-                                                ? haversineKm(DEFAULT_ORIGIN, p.coords)
-                                                : undefined
-                                        }
                                     />
-                                ))}
-                                {loadingDirectory ? (
-                                    <div className={`${CC_CARD_FLAT} p-8 text-center text-sm text-charcoal/55`}>
-                                        Loading verified firms…
-                                    </div>
-                                ) : !results.length ? (
-                                    <div className={`${CC_CARD_FLAT} space-y-4 p-8 text-center`}>
-                                        <p className="text-sm text-charcoal/55">
-                                            {catalog.length === 0
-                                                ? demoCatalogEnabled()
-                                                    ? 'No conveyancers match these filters.'
-                                                    : 'No verified conveyancers are listed yet. Check back soon — firms appear here after PropReady approval.'
-                                                : 'No conveyancers match these filters. Try widening your search.'}
-                                        </p>
-                                    </div>
-                                ) : null}
-                            </div>
-                        )}
-                    </div>
+                                ))
+                            ) : (
+                                <div className="cc-mp-empty">
+                                    <h3>No conveyancers match your search.</h3>
+                                    <p>
+                                        {catalog.length === 0
+                                            ? 'No verified conveyancers are listed yet. Check back soon — firms appear here after PropReady approval.'
+                                            : 'Try widening your location or adjusting your filters.'}
+                                    </p>
+                                    {catalog.length > 0 ? (
+                                        <button
+                                            type="button"
+                                            className="cc-mp-btn-primary"
+                                            onClick={clearFilters}
+                                        >
+                                            Clear filters
+                                        </button>
+                                    ) : null}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
+            </div>
+            </div>
+
+            <div className="cc-mp-trust-zone">
+                <CcTrustSection />
+            </div>
+
+            <div className="cc-mp-guides">
+                <CcHowItWorks />
+                <CcSmartInsight
+                    filters={filters}
+                    onApplyFilters={setFilters}
+                    onNotify={notify}
+                />
+                <CcFinalCta />
             </div>
 
             {filtersOpen ? (
@@ -357,13 +292,13 @@ export default function ConveyancerMarketplaceApp({
                         aria-label="Close filters"
                         onClick={() => setFiltersOpen(false)}
                     />
-                    <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-[1.5rem] bg-[#F8FAFC] p-4">
+                    <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-[1.5rem] bg-[#F7F4EF] p-4">
                         <FilterPanel
                             filters={filters}
-                            onChange={(f) => {
-                                setFilters(f);
-                            }}
+                            onChange={setFilters}
                             compact
+                            variant="marketplace"
+                            catalog={catalog}
                         />
                         <button
                             type="button"
@@ -397,19 +332,31 @@ export default function ConveyancerMarketplaceApp({
                 </div>
             ) : null}
 
-            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-charcoal/10 bg-white/95 p-3 backdrop-blur sm:hidden">
+            <CcCompareTray
+                compareIds={compareIds}
+                catalog={catalog}
+                onRemove={handleCompare}
+            />
+
+            <nav
+                className="fixed inset-x-0 bottom-0 z-40 border-t border-charcoal/10 bg-white/95 p-3 backdrop-blur sm:hidden"
+                aria-label="Quick links"
+            >
                 <div className="flex gap-2">
                     <a href="#cc-results" className={`${PORTAL_PRIMARY_BTN} flex-1 !h-11`}>
                         Find
                     </a>
-                    <Link href="/conveyancers/match" className={`${PORTAL_HERO_SECONDARY_BTN} !text-charcoal !bg-charcoal/[0.04]`}>
+                    <Link
+                        href="/conveyancers/match"
+                        className="cc-mp-btn-secondary flex-1 !h-11"
+                    >
                         Match
                     </Link>
-                    <Link href="/conveyancers/compare" className={`${PORTAL_HERO_SECONDARY_BTN} !text-charcoal !bg-charcoal/[0.04]`}>
+                    <Link href="/conveyancers/compare" className="cc-mp-btn-secondary flex-1 !h-11">
                         Compare
                     </Link>
                 </div>
-            </div>
+            </nav>
         </div>
     );
 }

@@ -1,17 +1,13 @@
 import { monthlyPayment, runAmortisation } from '@/lib/smart-bond/engine';
 import { estimateFees } from '@/lib/conveyancer-connect/fees';
+import { formatCurrency, formatNumber as formatNumberCommas } from '@/lib/currency';
 
 export function formatZar(amount: number) {
-    return new Intl.NumberFormat('en-ZA', {
-        style: 'currency',
-        currency: 'ZAR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(Math.max(0, Math.round(amount)));
+    return formatCurrency(Math.max(0, Math.round(amount)));
 }
 
 export function formatNumber(num: number) {
-    return new Intl.NumberFormat('en-ZA').format(Math.max(0, Math.round(num)));
+    return formatNumberCommas(Math.max(0, Math.round(num)));
 }
 
 export function parseMoneyInput(raw: string): number {

@@ -62,10 +62,24 @@ export default function ComparePage() {
         <CcPageShell title="Compare conveyancers">
             <div className="space-y-6">
                 <PortalHero
-                    size="compact"
                     eyebrow="Compare up to four"
                     title="Side-by-side conveyancer comparison"
                     description="Rating, experience, fees, response times and services — choose with confidence."
+                    glassLabel="Compare pulse"
+                    metrics={[
+                        { label: 'Selected', value: `${profiles.length} / 4` },
+                        { label: 'Max', value: '4 firms' },
+                    ]}
+                    stats={[
+                        { label: 'In tray', value: profiles.length },
+                        { label: 'Capacity', value: '4' },
+                        {
+                            label: 'Status',
+                            value: profiles.length ? 'Ready' : 'Empty',
+                            tone: profiles.length ? 'success' : 'default',
+                        },
+                        { label: 'Metrics', value: ROWS.length },
+                    ]}
                 />
 
                 {!profiles.length ? (

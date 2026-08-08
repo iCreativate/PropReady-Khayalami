@@ -262,6 +262,35 @@ Each hub has immersive lessons with chapters, South African case studies, quizze
         keywords: uniqueTokens('ikhayalami your home ready brand name meaning south africa'),
         body: `PropReady · iKhayalami pairs “PropReady” with “iKhayalami” — signalling home and readiness in a South African context. The product line “Your Home. Ready.” means arriving at bonds, offers, and transfer prepared through learning and tools, not guessing.`,
     },
+    {
+        id: 'pr-companion',
+        hub: 'propready',
+        title: 'Property Companion™',
+        keywords: uniqueTokens(
+            'property companion property iq portfolio wealth equity cash flow bond tracker renovations spreadsheet owner dashboard'
+        ),
+        body: `Property Companion™ (/property-iq) is PropReady’s owner portfolio workspace. Add properties you own (or intend to own) and track:
+
+• Identity & Property24-style features — type (house, vacant land, self-built on land, etc.), beds/baths/garages, erf & floor sizes, amenities (pool, solar, security, fibre, and more)
+• Purchase funding — cash purchase vs bond/financed
+• Bond maths — deposit, term, interest, outstanding balance and instalment (derived for financed properties)
+• Current value — auto-estimated with compound appreciation from purchase date, adjusted by property condition and renovation value-add (or override manually)
+• Renovations — log improvements with spend, value added, photos, ROI
+• Rental, expenses, documents, timeline, spreadsheet ledgers, and Property IQ™ tips
+
+Data stays on your device (IndexedDB) unless you delete a property. Educational modelling only — not a bank valuation or investment advice.`,
+    },
+    {
+        id: 'pr-repo-banner',
+        hub: 'propready',
+        title: 'Live repo & prime on PropReady',
+        keywords: uniqueTokens(
+            'repo rate banner prime rate live sarb market pulse api ninjas dashboard companion'
+        ),
+        body: `PropReady shows a live SARB repo and commercial prime strip on the buyer dashboard and Property Companion™ hero. Repo is the Reserve Bank policy rate; prime is conventionally repo + 3.5 percentage points and is the reference many home loans are priced against (“prime ± margin”).
+
+The feed prefers a market data API, then official SARB sources, then a safe fallback so the banner never blanks. Rates are educational market context — your bond rate is whatever your credit agreement says.`,
+    },
 ];
 
 const PROPERTY_GLOSSARY: Array<{ id: string; title: string; aliases: string; body: string }> = [
@@ -292,6 +321,46 @@ Educational only — confirm figures with agents, valuers, or lenders.`,
         title: 'Home loan (bond)',
         aliases: 'bond home loan mortgage home loan bond registration mortgagee',
         body: `A home loan (bond) is credit used to buy property, secured by a mortgage bond registered over that property at the Deeds Office until the debt is settled. You own the home subject to the bank’s registered security. Affordability is assessed under the National Credit Act. Confirm live rates and approval with lenders or a bond originator.`,
+    },
+    {
+        id: 'gloss-repo',
+        title: 'Repo rate (SARB)',
+        aliases:
+            'repo rate repurchase rate sarb policy rate spr monetary policy committee mpc central bank rate interest rate decision',
+        body: `The repo rate (repurchase rate) is the South African Reserve Bank’s (SARB) key monetary policy rate. It is the rate at which the SARB lends to commercial banks in its refinancing operations. When the Monetary Policy Committee changes the repo rate, bank funding costs usually move soon after.
+
+Why homeowners care: most SA variable home loans are linked to prime, and prime conventionally moves with the repo cycle (often by the same step). A higher repo often means higher instalments on variable bonds; a cut can ease them — subject to your specific credit agreement and bank timing.
+
+PropReady’s dashboard and Property Companion™ show a live repo (and derived prime) banner for context. That is educational market data, not a promise of your personal bond rate.`,
+    },
+    {
+        id: 'gloss-prime',
+        title: 'Prime lending rate',
+        aliases: 'prime rate prime lending rate prime plus prime minus bank prime home loan rate',
+        body: `Prime is a reference lending rate published by commercial banks. In South Africa it is conventionally set at about repo + 3.5 percentage points and tends to move when the SARB moves the repo rate.
+
+Home loans are often priced as “prime minus X” or “prime plus Y” (your margin). Your contractual rate = prime ± margin, and variable products usually reprice when prime changes. Fixed-rate products behave differently for the fixed period.
+
+Always read your facility letter — educational tools use illustrative prime; banks decide your margin and product.`,
+    },
+    {
+        id: 'gloss-cash-vs-bond',
+        title: 'Cash purchase vs bond finance',
+        aliases: 'cash purchase paid cash bond financed home loan funded deposit funded',
+        body: `A cash purchase means you pay the full price without a home loan — no monthly bond instalment, and equity is typically the full current value (less any other debt). A bond/financed purchase uses a bank loan for part of the price after a deposit; you then owe outstanding capital and pay interest plus instalments until settled.
+
+In Property Companion™ you can mark a property as cash or bond/financed so bond maths and the Bond tab stay accurate.`,
+    },
+    {
+        id: 'gloss-companion-value',
+        title: 'Auto property current value',
+        aliases:
+            'current value appreciation compound growth property condition renovation value add auto estimate',
+        body: `Property Companion™ can auto-estimate current value by compounding purchase price from the purchase date at an annual appreciation rate (default ~5% SA model, or your custom %), then adjusting for property condition and adding completed renovation value-uplift. You can override the figure manually.
+
+For vacant land, the estimate is land-only. If you built on the stand, PropReady asks whether a dwelling was built, then captures spend across foundation & earthworks, structure & roof, and finishes & fittings. Those stages sum to build cost; you also record whether construction was bank/loan financed or self financed. Auto value compounds land and dwelling separately (plus condition and renovations) so you are not valued on the stand alone.
+
+This is an educational estimate — not a bank, municipal, or formal valuer’s appraisal.`,
     },
     {
         id: 'gloss-deposit',
@@ -572,6 +641,10 @@ function findGlossaryDefinition(message: string): TutorKnowledgeEntry | null {
         }
         // Common synonym: valuation / property valuation
         if (/valuat/.test(subject) && /valuat/.test(title)) score += 20;
+        if (/repo/.test(subject) && /repo/.test(title)) score += 24;
+        if (/prime/.test(subject) && /prime lending|prime rate/.test(title)) score += 22;
+        if (/companion|property iq/.test(subject) && /companion|current value|cash purchase/.test(title))
+            score += 18;
         if (best === null || score > best.score) best = { entry, score };
     }
 
@@ -599,6 +672,19 @@ function propReadyFocusId(q: string): string | null {
     if (/how (do i |to )?start|get started/.test(lower)) return 'pr-start';
     if (/not a |isn'?t a |replace|listing site/.test(lower)) return 'pr-not';
     if (/learning hub|modules|buyers hub|sellers hub|investors hub/.test(lower)) return 'pr-hubs';
+    if (
+        /property companion|property iq|\/property-iq|portfolio companion|wealth pulse|renovation tab|bond tracker/.test(
+            lower
+        )
+    ) {
+        return 'pr-companion';
+    }
+    if (
+        (/repo|prime/.test(lower) && /banner|dashboard|companion|live|propready/.test(lower)) ||
+        /market pulse|rate pulse/.test(lower)
+    ) {
+        return 'pr-repo-banner';
+    }
     return null;
 }
 

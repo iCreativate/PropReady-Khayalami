@@ -1,55 +1,73 @@
 'use client';
 
-import { useMemo } from 'react';
-import {
-    CC_CHIP,
-    CC_CHIP_ACTIVE,
-    CC_INPUT,
-    CC_LABEL,
-    CC_CARD_FLAT,
-} from '@/components/conveyancer-connect/cc-ui';
+import { useMemo, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import {
     listCities,
     listSuburbs,
     PROVINCE_LABELS,
-    SORT_LABELS,
     SPECIALTY_LABELS,
+    DEFAULT_FILTERS,
     type BrowseFilters,
+    type ConveyancerProfile,
     type ProvinceSlug,
-    type SortMode,
     type Specialty,
 } from '@/lib/conveyancer-connect';
 
-const QUICK: Specialty[] = [
+const SERVICE_OPTIONS: Specialty[] = [
     'residential',
-    'commercial',
     'bond-registration',
     'bond-cancellation',
     'estate-transfers',
-    'developments',
     'sectional-title',
+    'commercial',
     'deceased-estates',
-    'investment-property',
     'family-transfers',
+];
+
+const RATING_PRESETS = [
+    { label: '4.5+', value: 4.5 },
+    { label: '4.0+', value: 4 },
+    { label: 'Any rating', value: 0 },
 ];
 
 export default function FilterPanel({
     filters,
     onChange,
     compact = false,
+    variant = 'marketplace',
+    catalog = [],
 }: {
     filters: BrowseFilters;
     onChange: (next: BrowseFilters) => void;
     compact?: boolean;
+    variant?: 'marketplace' | 'legacy';
+    catalog?: ConveyancerProfile[];
 }) {
-    const cities = useMemo(() => listCities(filters.province || undefined), [filters.province]);
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+        location: true,
+        experience: true,
+        rating: false,
+        availability: false,
+        services: false,
+        fees: false,
+    });
+
+    const cities = useMemo(
+        () => listCities(filters.province || undefined, catalog),
+        [filters.province, catalog]
+    );
     const suburbs = useMemo(
-        () => listSuburbs(filters.province || undefined, filters.city || undefined),
-        [filters.province, filters.city]
+        () => listSuburbs(filters.province || undefined, filters.city || undefined, catalog),
+        [filters.province, filters.city, catalog]
     );
 
     function patch(partial: Partial<BrowseFilters>) {
         onChange({ ...filters, ...partial });
+    }
+
+    function toggleGroup(id: string) {
+        setOpenGroups((g) => ({ ...g, [id]: !g[id] }));
     }
 
     function toggleSpecialty(s: Specialty) {
@@ -61,241 +79,273 @@ export default function FilterPanel({
         });
     }
 
+    const shellClass =
+        variant === 'marketplace'
+            ? `cc-mp-filters${compact ? '' : ''}`
+            : 'rounded-[1.25rem] border border-charcoal/[0.08] bg-white p-5 shadow-[0_1px_2px_rgba(17,24,39,0.04)]';
+
     return (
-        <aside className={`${CC_CARD_FLAT} p-5 ${compact ? '' : 'sticky top-24'}`}>
-            <h2 className="text-sm font-semibold text-charcoal">Filters</h2>
-            <p className="mt-1 text-xs text-charcoal/45">Refine by location, performance and fees.</p>
+        <aside className={shellClass}>
+            <h2 className={variant === 'marketplace' ? 'cc-mp-filters-title' : 'text-sm font-semibold text-charcoal'}>
+                Filters
+            </h2>
+            {variant === 'marketplace' ? (
+                <button
+                    type="button"
+                    className="cc-mp-filters-clear"
+                    onClick={() => onChange({ ...DEFAULT_FILTERS, verifiedOnly: false })}
+                >
+                    Clear filters
+                </button>
+            ) : (
+                <p className="mt-1 text-xs text-charcoal/45">Refine by location, performance and fees.</p>
+            )}
 
-            <div className="mt-5 space-y-4">
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-search">
-                        Search
-                    </label>
-                    <input
-                        id="cc-search"
-                        className={CC_INPUT}
-                        placeholder="Firm, attorney, suburb…"
-                        value={filters.query}
-                        onChange={(e) => patch({ query: e.target.value })}
-                    />
-                </div>
+            <FilterGroup
+                id="location"
+                label="Location"
+                open={openGroups.location}
+                onToggle={() => toggleGroup('location')}
+                variant={variant}
+            >
+                <label htmlFor="cc-province">Province</label>
+                <select
+                    id="cc-province"
+                    value={filters.province}
+                    onChange={(e) =>
+                        patch({
+                            province: e.target.value as ProvinceSlug | '',
+                            city: '',
+                            suburb: '',
+                        })
+                    }
+                >
+                    <option value="">All provinces</option>
+                    {Object.entries(PROVINCE_LABELS).map(([slug, label]) => (
+                        <option key={slug} value={slug}>
+                            {label}
+                        </option>
+                    ))}
+                </select>
+                <label htmlFor="cc-city">City</label>
+                <select
+                    id="cc-city"
+                    value={filters.city}
+                    onChange={(e) => patch({ city: e.target.value, suburb: '' })}
+                >
+                    <option value="">All cities</option>
+                    {cities.map((c) => (
+                        <option key={c} value={c}>
+                            {c}
+                        </option>
+                    ))}
+                </select>
+                <label htmlFor="cc-suburb">Suburb</label>
+                <select
+                    id="cc-suburb"
+                    value={filters.suburb}
+                    onChange={(e) => patch({ suburb: e.target.value })}
+                >
+                    <option value="">All suburbs</option>
+                    {suburbs.map((s) => (
+                        <option key={s} value={s}>
+                            {s}
+                        </option>
+                    ))}
+                </select>
+            </FilterGroup>
 
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-province">
-                        Province
-                    </label>
-                    <select
-                        id="cc-province"
-                        className={CC_INPUT}
-                        value={filters.province}
-                        onChange={(e) =>
-                            patch({
-                                province: e.target.value as ProvinceSlug | '',
-                                city: '',
-                                suburb: '',
-                            })
-                        }
-                    >
-                        <option value="">All provinces</option>
-                        {Object.entries(PROVINCE_LABELS).map(([slug, label]) => (
-                            <option key={slug} value={slug}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+            <FilterGroup
+                id="experience"
+                label="Experience"
+                open={openGroups.experience}
+                onToggle={() => toggleGroup('experience')}
+                variant={variant}
+            >
+                <label htmlFor="cc-exp">Years practising ({filters.minExperience || 0}+)</label>
+                <input
+                    id="cc-exp"
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={1}
+                    value={filters.minExperience}
+                    onChange={(e) => patch({ minExperience: Number(e.target.value) })}
+                />
+                <label htmlFor="cc-transfers">
+                    Transfers completed ({filters.minTransfers || 0}+)
+                </label>
+                <input
+                    id="cc-transfers"
+                    type="range"
+                    min={0}
+                    max={1500}
+                    step={50}
+                    value={filters.minTransfers}
+                    onChange={(e) => patch({ minTransfers: Number(e.target.value) })}
+                />
+            </FilterGroup>
 
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-city">
-                        City
-                    </label>
-                    <select
-                        id="cc-city"
-                        className={CC_INPUT}
-                        value={filters.city}
-                        onChange={(e) => patch({ city: e.target.value, suburb: '' })}
-                    >
-                        <option value="">All cities</option>
-                        {cities.map((c) => (
-                            <option key={c} value={c}>
-                                {c}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-suburb">
-                        Suburb
-                    </label>
-                    <select
-                        id="cc-suburb"
-                        className={CC_INPUT}
-                        value={filters.suburb}
-                        onChange={(e) => patch({ suburb: e.target.value })}
-                    >
-                        <option value="">All suburbs</option>
-                        {suburbs.map((s) => (
-                            <option key={s} value={s}>
-                                {s}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-rating">
-                        Min rating ({filters.minRating || 'Any'})
-                    </label>
-                    <input
-                        id="cc-rating"
-                        type="range"
-                        min={0}
-                        max={5}
-                        step={0.5}
-                        value={filters.minRating}
-                        onChange={(e) => patch({ minRating: Number(e.target.value) })}
-                        className="w-full accent-gold"
-                    />
-                </div>
-
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-exp">
-                        Min experience ({filters.minExperience || 0}+ yrs)
-                    </label>
-                    <input
-                        id="cc-exp"
-                        type="range"
-                        min={0}
-                        max={20}
-                        step={1}
-                        value={filters.minExperience}
-                        onChange={(e) => patch({ minExperience: Number(e.target.value) })}
-                        className="w-full accent-gold"
-                    />
-                </div>
-
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-transfers">
-                        Min transfers ({filters.minTransfers || 0}+)
-                    </label>
-                    <input
-                        id="cc-transfers"
-                        type="range"
-                        min={0}
-                        max={1500}
-                        step={50}
-                        value={filters.minTransfers}
-                        onChange={(e) => patch({ minTransfers: Number(e.target.value) })}
-                        className="w-full accent-gold"
-                    />
-                </div>
-
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-price">
-                        Max fee band
-                    </label>
-                    <select
-                        id="cc-price"
-                        className={CC_INPUT}
-                        value={filters.maxPriceBand || ''}
-                        onChange={(e) =>
-                            patch({
-                                maxPriceBand: e.target.value
-                                    ? (Number(e.target.value) as 1 | 2 | 3 | 4)
-                                    : 0,
-                            })
-                        }
-                    >
-                        <option value="">Any</option>
-                        <option value="1">R</option>
-                        <option value="2">RR</option>
-                        <option value="3">RRR</option>
-                        <option value="4">RRRR</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className={CC_LABEL} htmlFor="cc-sort">
-                        Sort
-                    </label>
-                    <select
-                        id="cc-sort"
-                        className={CC_INPUT}
-                        value={filters.sort}
-                        onChange={(e) => patch({ sort: e.target.value as SortMode })}
-                    >
-                        {Object.entries(SORT_LABELS).map(([k, v]) => (
-                            <option key={k} value={k}>
-                                {v}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm text-charcoal/70">
-                        <input
-                            type="checkbox"
-                            checked={filters.verifiedOnly}
-                            onChange={(e) => patch({ verifiedOnly: e.target.checked })}
-                            className="accent-gold"
-                        />
-                        Verified only
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-charcoal/70">
-                        <input
-                            type="checkbox"
-                            checked={filters.openToday}
-                            onChange={(e) => patch({ openToday: e.target.checked })}
-                            className="accent-gold"
-                        />
-                        Open today
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-charcoal/70">
-                        <input
-                            type="checkbox"
-                            checked={filters.acceptingNewClients}
-                            onChange={(e) => patch({ acceptingNewClients: e.target.checked })}
-                            className="accent-gold"
-                        />
-                        Accepting new clients
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-charcoal/70">
-                        <input
-                            type="checkbox"
-                            checked={filters.consultationTypes.includes('virtual')}
-                            onChange={(e) =>
-                                patch({
-                                    consultationTypes: e.target.checked ? ['virtual'] : [],
-                                })
+            <FilterGroup
+                id="rating"
+                label="Rating"
+                open={openGroups.rating}
+                onToggle={() => toggleGroup('rating')}
+                variant={variant}
+            >
+                <div className={variant === 'marketplace' ? 'cc-mp-filter-chip-row' : 'flex flex-wrap gap-1.5'}>
+                    {RATING_PRESETS.map((p) => (
+                        <button
+                            key={p.label}
+                            type="button"
+                            className={
+                                variant === 'marketplace'
+                                    ? `cc-mp-filter-chip${filters.minRating === p.value ? ' is-active' : ''}`
+                                    : ''
                             }
-                            className="accent-gold"
-                        />
-                        Online consultation
-                    </label>
+                            onClick={() => patch({ minRating: p.value })}
+                        >
+                            {p.label}
+                        </button>
+                    ))}
                 </div>
+            </FilterGroup>
 
-                <div>
-                    <p className={CC_LABEL}>Specialisations</p>
-                    <div className="flex flex-wrap gap-1.5">
-                        {QUICK.map((s) => (
-                            <button
-                                key={s}
-                                type="button"
-                                className={
-                                    filters.specialities.includes(s) ? CC_CHIP_ACTIVE : CC_CHIP
-                                }
-                                onClick={() => toggleSpecialty(s)}
-                            >
-                                {SPECIALTY_LABELS[s]}
-                            </button>
-                        ))}
-                    </div>
+            <FilterGroup
+                id="availability"
+                label="Availability"
+                open={openGroups.availability}
+                onToggle={() => toggleGroup('availability')}
+                variant={variant}
+            >
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={filters.openToday}
+                        onChange={(e) => patch({ openToday: e.target.checked })}
+                    />
+                    Open today
+                </label>
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={filters.acceptingNewClients}
+                        onChange={(e) => patch({ acceptingNewClients: e.target.checked })}
+                    />
+                    Accepting clients
+                </label>
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={filters.consultationTypes.includes('virtual')}
+                        onChange={(e) =>
+                            patch({
+                                consultationTypes: e.target.checked ? ['virtual'] : [],
+                            })
+                        }
+                    />
+                    Online consultation
+                </label>
+            </FilterGroup>
+
+            <FilterGroup
+                id="services"
+                label="Services"
+                open={openGroups.services}
+                onToggle={() => toggleGroup('services')}
+                variant={variant}
+            >
+                <div className={variant === 'marketplace' ? 'cc-mp-filter-chip-row' : 'flex flex-wrap gap-1.5'}>
+                    {SERVICE_OPTIONS.map((s) => (
+                        <button
+                            key={s}
+                            type="button"
+                            className={
+                                variant === 'marketplace'
+                                    ? `cc-mp-filter-chip${filters.specialities.includes(s) ? ' is-active' : ''}`
+                                    : ''
+                            }
+                            onClick={() => toggleSpecialty(s)}
+                        >
+                            {SPECIALTY_LABELS[s]}
+                        </button>
+                    ))}
                 </div>
-            </div>
+            </FilterGroup>
+
+            <FilterGroup
+                id="fees"
+                label="Fees"
+                open={openGroups.fees}
+                onToggle={() => toggleGroup('fees')}
+                variant={variant}
+            >
+                <label htmlFor="cc-price">Fee range</label>
+                <select
+                    id="cc-price"
+                    value={filters.maxPriceBand || ''}
+                    onChange={(e) =>
+                        patch({
+                            maxPriceBand: e.target.value
+                                ? (Number(e.target.value) as 1 | 2 | 3 | 4)
+                                : 0,
+                        })
+                    }
+                >
+                    <option value="">Any fee band</option>
+                    <option value="1">R — Budget</option>
+                    <option value="2">RR — Moderate</option>
+                    <option value="3">RRR — Premium</option>
+                    <option value="4">RRRR — Top tier</option>
+                </select>
+            </FilterGroup>
         </aside>
     );
 }
 
-export { QUICK as QUICK_SPECIALTIES };
+function FilterGroup({
+    id,
+    label,
+    open,
+    onToggle,
+    children,
+    variant,
+}: {
+    id: string;
+    label: string;
+    open: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+    variant: 'marketplace' | 'legacy';
+}) {
+    if (variant !== 'marketplace') {
+        return (
+            <div className="mt-5 space-y-4">
+                <p className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-charcoal/45">
+                    {label}
+                </p>
+                <div className="space-y-3">{children}</div>
+            </div>
+        );
+    }
+
+    return (
+        <div className={`cc-mp-filter-group${open ? ' is-open' : ''}`}>
+            <button
+                type="button"
+                className="cc-mp-filter-toggle"
+                aria-expanded={open}
+                aria-controls={`filter-${id}`}
+                onClick={onToggle}
+            >
+                {label}
+                <ChevronDown aria-hidden />
+            </button>
+            <div id={`filter-${id}`} className="cc-mp-filter-body">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+export { SERVICE_OPTIONS as QUICK_SPECIALTIES };
