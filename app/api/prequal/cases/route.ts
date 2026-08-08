@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BOND_ORIGINATORS } from '@/lib/bond-originators';
+import { isLiveBondOriginatorBrand } from '@/lib/bond-originators-directory';
 import { resolvePrequalActor } from '@/lib/prequal-auth';
 import {
     serializePrequalCase,
@@ -73,7 +73,13 @@ export async function POST(request: NextRequest) {
         if (!buyerUserId) {
             return NextResponse.json({ success: false, error: 'Sign in required' }, { status: 401 });
         }
-        if (!BOND_ORIGINATORS.some((o) => o.id === organizationId)) {
+
+        const supabase = createServiceClient();
+        if (!supabase) {
+            return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
+        }
+
+        if (!(await isLiveBondOriginatorBrand(supabase, organizationId))) {
             return NextResponse.json({ success: false, error: 'Invalid originator' }, { status: 400 });
         }
         if (documentIds.length === 0) {
@@ -81,11 +87,6 @@ export async function POST(request: NextRequest) {
                 { success: false, error: 'Upload at least one document before sending' },
                 { status: 400 }
             );
-        }
-
-        const supabase = createServiceClient();
-        if (!supabase) {
-            return NextResponse.json({ success: false, error: 'Database not configured' }, { status: 503 });
         }
 
         const { data: buyer } = await supabase

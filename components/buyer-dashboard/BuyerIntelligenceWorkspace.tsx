@@ -38,7 +38,8 @@ import BuyerDocumentPreviewModal from '@/components/BuyerDocumentPreviewModal';
 import RepoRateBanner from '@/components/market/RepoRateBanner';
 import dynamic from 'next/dynamic';
 import { formatCurrency } from '@/lib/currency';
-import { BOND_ORIGINATORS, type BondOriginator } from '@/lib/bond-originators';
+import { useLiveBondOriginators } from '@/hooks/useLiveBondOriginators';
+import type { BondOriginator } from '@/lib/bond-originators';
 import {
     BUYER_DOCUMENT_SLOTS,
     type BuyerDocument,
@@ -297,6 +298,7 @@ export default function BuyerIntelligenceWorkspace({
     const [selectedOriginator, setSelectedOriginator] = useState<BondOriginator | null>(null);
     const [aiOpen, setAiOpen] = useState(false);
     const [chatMounted, setChatMounted] = useState(false);
+    const { originators: liveOriginators, loading: liveOriginatorsLoading } = useLiveBondOriginators();
 
     const insights = useMemo(
         () =>
@@ -1204,7 +1206,16 @@ export default function BuyerIntelligenceWorkspace({
                             </Link>
                         </div>
                         <div className="biw-originator-scroll">
-                            {BOND_ORIGINATORS.map((o, index) => {
+                            {liveOriginatorsLoading ? (
+                                <p className="text-sm text-charcoal/55 px-1">Loading bond originators…</p>
+                            ) : liveOriginators.length === 0 ? (
+                                <p className="text-sm leading-relaxed text-charcoal/55 px-1">
+                                    Verified bond originators appear here once their staff are approved on
+                                    PropReady. You can still upload documents or use your agent&apos;s
+                                    originator.
+                                </p>
+                            ) : (
+                                liveOriginators.map((o, index) => {
                                 const meta = ORIGINATOR_META[o.id] || ORIGINATOR_META.betterbond;
                                 const initials = o.name
                                     .split(/\s+/)
@@ -1315,7 +1326,8 @@ export default function BuyerIntelligenceWorkspace({
                                         </div>
                                     </article>
                                 );
-                            })}
+                            })
+                            )}
                         </div>
                     </section>
 

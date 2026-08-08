@@ -86,6 +86,7 @@ function documentStatusBadge(status: LeadDocument['status']) {
         verified: { bg: 'bg-green-500/15', text: 'text-green-700', icon: CheckCircle, label: 'Verified' },
         uploaded: { bg: 'bg-blue-500/15', text: 'text-blue-700', icon: Upload, label: 'Uploaded' },
         pending: { bg: 'bg-amber-500/15', text: 'text-amber-700', icon: AlertCircle, label: 'Pending' },
+        rejected: { bg: 'bg-red-500/15', text: 'text-red-700', icon: AlertCircle, label: 'Wrong type' },
     };
     const badge = styles[status] ?? styles.uploaded;
     const Icon = badge.icon;

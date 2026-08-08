@@ -15,6 +15,7 @@ import { resolvePrequalMode } from '@/lib/buyer-full-prequal';
 import type { ListedProperty } from '@/lib/listed-property';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import { useBuyerPrequalStatus } from '@/hooks/useBuyerPrequalStatus';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
@@ -177,6 +178,8 @@ export default function DashboardPage() {
         user: onboardingUser,
         completeOnboarding,
     } = useOnboardingGate();
+    const { buyerPrequalComplete, loading: prequalStatusLoading } =
+        useBuyerPrequalStatus(currentUser);
     const [quizResult, setQuizResult] = useState<ReturnType<typeof readQuizSummary> | null>(null);
     const [sellerInfo, setSellerInfo] = useState<{
         currentValue?: string | number;
@@ -223,6 +226,26 @@ export default function DashboardPage() {
         ]);
     }, [router, isHydrated, currentUser, onboardingLoading, onboardingIntent, onboardingRequired]);
 
+    useEffect(() => {
+        if (
+            !onboardingRequired ||
+            onboardingLoading ||
+            prequalStatusLoading ||
+            onboardingIntent === 'seller' ||
+            !buyerPrequalComplete
+        ) {
+            return;
+        }
+        void completeOnboarding();
+    }, [
+        onboardingRequired,
+        onboardingLoading,
+        prequalStatusLoading,
+        onboardingIntent,
+        buyerPrequalComplete,
+        completeOnboarding,
+    ]);
+
     const handleBuyerOnboardingComplete = async () => {
         await completeOnboarding();
         if (currentUser) {
@@ -264,7 +287,12 @@ export default function DashboardPage() {
             </UserPortalLayout>
 
             <OnboardingGateModal
-                open={!onboardingLoading && onboardingRequired && onboardingIntent !== 'seller'}
+                open={
+                    !onboardingLoading &&
+                    onboardingRequired &&
+                    onboardingIntent !== 'seller' &&
+                    !buyerPrequalComplete
+                }
                 title="Finish buyer prequalification"
                 subtitle="A few details unlock your PropReady score, affordability estimate, and document checklist."
             >

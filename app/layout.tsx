@@ -42,6 +42,11 @@ export const metadata: Metadata = {
         index: true,
         follow: true,
     },
+    icons: {
+        icon: '/icon',
+        shortcut: '/icon',
+        apple: '/icon',
+    },
 };
 
 /** Required for Capacitor SystemBars safe-area CSS vars on Android edge-to-edge. */

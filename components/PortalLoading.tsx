@@ -1,7 +1,6 @@
 'use client';
 
-import { Loader2 } from 'lucide-react';
-import { PORTAL_TEXT_SECONDARY } from '@/lib/portal-ui';
+import BrandLogoLoader from '@/components/BrandLogoLoader';
 
 type PortalLoadingVariant = 'page' | 'inline' | 'overlay' | 'dashboard';
 
@@ -26,9 +25,8 @@ export default function PortalLoading({
                 aria-busy="true"
             >
                 <div className="max-w-[1400px] mx-auto space-y-8 sm:space-y-10">
-                    <div className="flex items-center gap-3 mb-2">
-                        <Loader2 className="w-5 h-5 text-gold animate-spin shrink-0" aria-hidden />
-                        <p className={`text-sm font-medium ${PORTAL_TEXT_SECONDARY}`}>{message}</p>
+                    <div className="mb-2">
+                        <BrandLogoLoader message={message} size="sm" showWordmark={false} />
                     </div>
                     <div className="h-28 rounded-3xl bg-white border border-charcoal/[0.08] shadow-card animate-pulse" />
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
@@ -61,17 +59,8 @@ export default function PortalLoading({
               : 'flex items-center justify-center py-16 px-4';
 
     return (
-        <div
-            className={`portal-loading-shell ${shell} ${className}`}
-            role="status"
-            aria-live="polite"
-        >
-            <div className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-white border border-charcoal/[0.08] shadow-card flex items-center justify-center mx-auto mb-4">
-                    <Loader2 className="w-6 h-6 text-gold animate-spin" aria-hidden />
-                </div>
-                <p className={`text-sm font-medium ${PORTAL_TEXT_SECONDARY}`}>{message}</p>
-            </div>
+        <div className={`portal-loading-shell ${shell} ${className}`}>
+            <BrandLogoLoader message={message} size={variant === 'inline' ? 'sm' : 'md'} />
         </div>
     );
 }

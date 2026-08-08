@@ -11,6 +11,7 @@ import LeadRequiredGate from '@/components/onboarding/LeadRequiredGate';
 import ImpersonationBanner from '@/components/ImpersonationBanner';
 import PortalAnnouncementBanner from '@/components/PortalAnnouncementBanner';
 import { useLeadGate } from '@/hooks/useLeadGate';
+import { useBuyerPrequalStatus } from '@/hooks/useBuyerPrequalStatus';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import {
     getUserPortalLabel,
@@ -90,10 +91,12 @@ function NavLinks({
     portal,
     activePage,
     onNavigate,
+    suppressPrequalAlert = false,
 }: {
     portal: UserPortalKind;
     activePage: UserPortalPage;
     onNavigate?: () => void;
+    suppressPrequalAlert?: boolean;
 }) {
     const links = getUserPortalLinks(portal);
     const groups = portal === 'buyer' ? BUYER_NAV_GROUPS : SELLER_NAV_GROUPS;
@@ -113,7 +116,9 @@ function NavLinks({
                         <div className="flex flex-col gap-0.5">
                             {groupLinks.map(({ page, href, label, icon: Icon, emphasize }) => {
                                 const isActive = activePage === page;
-                                const isAlert = emphasize === 'alert';
+                                const isAlert =
+                                    emphasize === 'alert' &&
+                                    !(suppressPrequalAlert && page === 'documents');
                                 return (
                                     <Link
                                         key={page}
@@ -174,6 +179,7 @@ export default function UserPortalLayout({
     const { loading: onboardingLoading, required: onboardingRequired } = useOnboardingGate();
     const quizEscape = isQuizEscapePath(pathname);
     const learningCenter = isLearningCenterPath(pathname);
+    const { originatorPrequalComplete } = useBuyerPrequalStatus(user ?? undefined);
     const { loading: leadGateLoading, needsQuiz } = useLeadGate({
         skip: onboardingLoading || onboardingRequired || quizEscape || !user || staffAccess,
     });
@@ -232,7 +238,11 @@ export default function UserPortalLayout({
                     <p className={PORTAL_SHELL_SUBTITLE}>{portalLabel}</p>
                 </div>
                 <div className={PORTAL_SHELL_NAV_SCROLL}>
-                    <NavLinks portal={portal} activePage={activePage} />
+                    <NavLinks
+                        portal={portal}
+                        activePage={activePage}
+                        suppressPrequalAlert={portal === 'buyer' && originatorPrequalComplete}
+                    />
                 </div>
                 <div className={`px-5 py-4 border-t ${PORTAL_SHELL_DIVIDER} shrink-0`}>
                     <Link
@@ -283,6 +293,7 @@ export default function UserPortalLayout({
                             portal={portal}
                             activePage={activePage}
                             onNavigate={() => setMobileOpen(false)}
+                            suppressPrequalAlert={portal === 'buyer' && originatorPrequalComplete}
                         />
                     </div>
                     <div className={`px-5 py-4 border-t ${PORTAL_SHELL_DIVIDER} shrink-0`}>

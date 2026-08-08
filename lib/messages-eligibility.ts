@@ -1,6 +1,7 @@
 import type { AccountType } from '@/lib/auth-enterprise/config';
 import type { SessionUser } from '@/lib/auth-enterprise/types';
 import { messagesDb } from '@/lib/messages';
+import { isDemoOriginator } from '@/lib/originator-exclusions';
 
 export type EligibleContact = {
     accountType: AccountType;
@@ -167,6 +168,7 @@ export async function listOriginatorsForBuyer(buyerUserId: string): Promise<Elig
             .in('id', [...assignedIds]);
 
         for (const o of assigned || []) {
+            if (isDemoOriginator(o)) continue;
             if (o.status && o.status !== 'active') continue;
             const id = String(o.id);
             if (seen.has(id)) continue;
@@ -194,6 +196,7 @@ export async function listOriginatorsForBuyer(buyerUserId: string): Promise<Elig
             .in('organization_id', orgsNeedingStaff);
 
         for (const o of staff || []) {
+            if (isDemoOriginator(o)) continue;
             if (o.status && o.status !== 'active') continue;
             const id = String(o.id);
             if (seen.has(id)) continue;

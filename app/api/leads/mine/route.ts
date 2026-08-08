@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBuyerPrequalStatus } from '@/lib/buyer-prequal-status-server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
 import { createServiceClient } from '@/lib/supabase-admin';
 
 /**
- * Returns buyer/seller lead presence for the signed-in consumer.
+ * Returns buyer/seller lead presence and prequal completion for the signed-in consumer.
  */
 export async function GET(request: NextRequest) {
     const session = await resolveSessionFromRequest(request);
@@ -18,36 +19,42 @@ export async function GET(request: NextRequest) {
                 hasBuyerLead: true,
                 hasSellerLead: true,
                 hasAnyLead: true,
+                hasBuyerQuiz: true,
+                hasPrequalCase: false,
+                fullPrequalified: false,
+                buyerPrequalComplete: true,
+                originatorPrequalComplete: false,
             },
             session
         );
     }
 
-    const email = session.user.email?.toLowerCase().trim();
-    let hasBuyerLead = false;
-    let hasSellerLead = false;
-
     const supabase = createServiceClient();
-    if (supabase && email) {
-        const { data, error } = await supabase
-            .from('leads')
-            .select('id, lead_type')
-            .eq('email', email)
-            .limit(20);
-        if (!error && Array.isArray(data)) {
-            hasBuyerLead = data.some((row) => (row.lead_type || 'buyer') === 'buyer');
-            hasSellerLead = data.some(
-                (row) => row.lead_type === 'seller' || row.lead_type === 'investor'
-            );
-        }
-    }
+    const status = supabase
+        ? await getBuyerPrequalStatus(supabase, {
+              profileId: session.user.profileId,
+              email: session.user.email,
+          })
+        : {
+              hasBuyerLead: false,
+              hasSellerLead: false,
+              hasBuyerQuiz: false,
+              hasPrequalCase: false,
+              fullPrequalified: false,
+              buyerPrequalComplete: false,
+          };
 
     return jsonWithSession(
         {
             authenticated: true,
-            hasBuyerLead,
-            hasSellerLead,
-            hasAnyLead: hasBuyerLead || hasSellerLead,
+            hasBuyerLead: status.hasBuyerLead,
+            hasSellerLead: status.hasSellerLead,
+            hasAnyLead: status.hasBuyerLead || status.hasSellerLead,
+            hasBuyerQuiz: status.hasBuyerQuiz,
+            hasPrequalCase: status.hasPrequalCase,
+            fullPrequalified: status.fullPrequalified,
+            buyerPrequalComplete: status.buyerPrequalComplete,
+            originatorPrequalComplete: status.hasPrequalCase || status.fullPrequalified,
         },
         session
     );

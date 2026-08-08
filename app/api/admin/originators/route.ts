@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { assertAdminRequest } from '@/lib/admin-auth';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { bondOriginatorLabel } from '@/lib/bond-originators';
+import { filterDemoOriginators } from '@/lib/originator-exclusions';
 
 function mapOriginator(row: Record<string, unknown>) {
     const orgId = String(row.organization_id ?? '');
@@ -46,7 +47,9 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    let applications = (data || []).map((row) => mapOriginator(row as Record<string, unknown>));
+    let applications = filterDemoOriginators(data || []).map((row) =>
+        mapOriginator(row as Record<string, unknown>)
+    );
     if (q) {
         applications = applications.filter(
             (a) =>

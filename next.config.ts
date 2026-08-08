@@ -20,6 +20,10 @@ const nextConfig = {
   async rewrites() {
     return [
       {
+        source: '/favicon.ico',
+        destination: '/icon',
+      },
+      {
         source: '/agents/:path*',
         destination: '/agents/:path*',
       },

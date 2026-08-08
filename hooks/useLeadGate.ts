@@ -75,9 +75,10 @@ export function useLeadGate(options?: { skip?: boolean }) {
             const data = await res.json();
             const apiBuyer = Boolean(data.hasBuyerLead);
             const apiSeller = Boolean(data.hasSellerLead);
+            const apiBuyerQuiz = Boolean(data.hasBuyerQuiz || data.buyerPrequalComplete);
             const localBuyer = hasLocalBuyerQuiz();
             const localSeller = hasLocalSellerInfo();
-            const hasBuyerLead = apiBuyer || localBuyer;
+            const hasBuyerLead = apiBuyer || localBuyer || apiBuyerQuiz;
             const hasSellerLead = apiSeller || localSeller;
             setState({
                 loading: false,

@@ -15,7 +15,8 @@ import {
     Trophy,
     type LucideIcon,
 } from 'lucide-react';
-import { BOND_ORIGINATORS, type BondOriginator } from '@/lib/bond-originators';
+import { useLiveBondOriginators } from '@/hooks/useLiveBondOriginators';
+import type { BondOriginator } from '@/lib/bond-originators';
 
 const ORIGINATOR_ICONS: Record<BondOriginator['id'], LucideIcon> = {
     'sa-home-loans': Building2,
@@ -42,10 +43,11 @@ export default function BondOriginatorSlider({
     onContact,
     className = '',
 }: BondOriginatorSliderProps) {
+    const { originators, loading, error } = useLiveBondOriginators();
     const trackRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState(0);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
-    const [canScrollRight, setCanScrollRight] = useState(true);
+    const [canScrollRight, setCanScrollRight] = useState(false);
 
     const updateScrollState = useCallback(() => {
         const track = trackRef.current;
@@ -58,12 +60,17 @@ export default function BondOriginatorSlider({
         const cardWidth = track.firstElementChild?.clientWidth ?? 1;
         const gap = 16;
         const index = Math.round(scrollLeft / (cardWidth + gap));
-        setActiveIndex(Math.min(Math.max(index, 0), BOND_ORIGINATORS.length - 1));
-    }, []);
+        setActiveIndex(Math.min(Math.max(index, 0), Math.max(originators.length - 1, 0)));
+    }, [originators.length]);
 
     useEffect(() => {
         const track = trackRef.current;
-        if (!track) return;
+        if (!track || originators.length === 0) {
+            setCanScrollLeft(false);
+            setCanScrollRight(false);
+            setActiveIndex(0);
+            return;
+        }
 
         updateScrollState();
         track.addEventListener('scroll', updateScrollState, { passive: true });
@@ -72,7 +79,7 @@ export default function BondOriginatorSlider({
             track.removeEventListener('scroll', updateScrollState);
             window.removeEventListener('resize', updateScrollState);
         };
-    }, [updateScrollState]);
+    }, [updateScrollState, originators.length]);
 
     const scrollByPage = (direction: -1 | 1) => {
         const track = trackRef.current;
@@ -88,32 +95,63 @@ export default function BondOriginatorSlider({
         card?.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
     };
 
+    if (loading) {
+        return (
+            <div className={`rounded-2xl border border-charcoal/10 bg-charcoal/[0.02] px-5 py-8 text-center ${className}`}>
+                <p className="text-sm text-charcoal/55">Loading bond originators…</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className={`rounded-2xl border border-red-200 bg-red-50 px-5 py-6 text-center ${className}`}>
+                <p className="text-sm text-red-700">{error}</p>
+            </div>
+        );
+    }
+
+    if (originators.length === 0) {
+        return (
+            <div className={`rounded-2xl border border-dashed border-charcoal/15 bg-charcoal/[0.02] px-5 py-8 text-center ${className}`}>
+                <p className="text-sm font-medium text-charcoal">No bond originators listed yet</p>
+                <p className="mt-2 text-sm leading-relaxed text-charcoal/55">
+                    PropReady partners appear here once their staff are approved. You can still upload
+                    documents, use your agent&apos;s originator, or skip prequal for now.
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className={`relative ${className}`}>
             <div className="mb-4 flex items-center justify-between gap-3">
                 <p className="text-sm text-charcoal/55">
-                    Swipe or use arrows to compare all {BOND_ORIGINATORS.length} originators
+                    Swipe or use arrows to compare {originators.length} verified originator
+                    {originators.length === 1 ? '' : 's'}
                 </p>
-                <div className="hidden sm:flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => scrollByPage(-1)}
-                        disabled={!canScrollLeft}
-                        aria-label="Previous originators"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal transition hover:border-gold/30 hover:bg-gold/5 disabled:pointer-events-none disabled:opacity-35"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => scrollByPage(1)}
-                        disabled={!canScrollRight}
-                        aria-label="Next originators"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal transition hover:border-gold/30 hover:bg-gold/5 disabled:pointer-events-none disabled:opacity-35"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
-                </div>
+                {originators.length > 1 ? (
+                    <div className="hidden sm:flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => scrollByPage(-1)}
+                            disabled={!canScrollLeft}
+                            aria-label="Previous originators"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal transition hover:border-gold/30 hover:bg-gold/5 disabled:pointer-events-none disabled:opacity-35"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => scrollByPage(1)}
+                            disabled={!canScrollRight}
+                            aria-label="Next originators"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal transition hover:border-gold/30 hover:bg-gold/5 disabled:pointer-events-none disabled:opacity-35"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
+                ) : null}
             </div>
 
             <div
@@ -122,8 +160,8 @@ export default function BondOriginatorSlider({
                 role="list"
                 aria-label="Bond originators"
             >
-                {BOND_ORIGINATORS.map((originator) => {
-                    const Icon = ORIGINATOR_ICONS[originator.id];
+                {originators.map((originator) => {
+                    const Icon = ORIGINATOR_ICONS[originator.id] ?? Building2;
                     const isSelected = mode === 'select' && selectedId === originator.id;
 
                     if (mode === 'select') {
@@ -181,21 +219,23 @@ export default function BondOriginatorSlider({
                 })}
             </div>
 
-            <div className="mt-4 flex items-center justify-center gap-2">
-                {BOND_ORIGINATORS.map((originator, index) => (
-                    <button
-                        key={originator.id}
-                        type="button"
-                        aria-label={`Go to ${originator.name}`}
-                        onClick={() => scrollToIndex(index)}
-                        className={`h-2 rounded-full transition-all ${
-                            index === activeIndex
-                                ? 'w-6 bg-gold'
-                                : 'w-2 bg-charcoal/20 hover:bg-charcoal/35'
-                        }`}
-                    />
-                ))}
-            </div>
+            {originators.length > 1 ? (
+                <div className="mt-4 flex items-center justify-center gap-2">
+                    {originators.map((originator, index) => (
+                        <button
+                            key={originator.id}
+                            type="button"
+                            aria-label={`Go to ${originator.name}`}
+                            onClick={() => scrollToIndex(index)}
+                            className={`h-2 rounded-full transition-all ${
+                                index === activeIndex
+                                    ? 'w-6 bg-gold'
+                                    : 'w-2 bg-charcoal/20 hover:bg-charcoal/35'
+                            }`}
+                        />
+                    ))}
+                </div>
+            ) : null}
         </div>
     );
 }

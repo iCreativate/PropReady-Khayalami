@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
     AlertCircle,
@@ -19,7 +20,9 @@ import BondOriginatorSlider from '@/components/BondOriginatorSlider';
 import BuyerDocumentPreviewModal from '@/components/BuyerDocumentPreviewModal';
 import { useToast } from '@/components/providers/ToastProvider';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import { useBuyerPrequalStatus } from '@/hooks/useBuyerPrequalStatus';
 import { logActivity } from '@/lib/activity';
+import { useLiveBondOriginators } from '@/hooks/useLiveBondOriginators';
 import { bondOriginatorLabel, type BondOriginator } from '@/lib/bond-originators';
 import {
     BUYER_DOCUMENT_ACCEPT,
@@ -85,7 +88,13 @@ function getStatusBadge(status: BuyerDocument['status']) {
             bg: 'bg-yellow-500/15',
             text: 'text-yellow-700',
             icon: AlertCircle,
-            label: 'Pending Review',
+            label: 'Checking…',
+        },
+        rejected: {
+            bg: 'bg-red-500/15',
+            text: 'text-red-700',
+            icon: AlertCircle,
+            label: 'Wrong document',
         },
     };
 
@@ -119,6 +128,12 @@ export default function DocumentsPageContent() {
     const [sendError, setSendError] = useState('');
     const [previewDoc, setPreviewDoc] = useState<BuyerDocument | null>(null);
     const [prequalSkipped, setPrequalSkipped] = useState(false);
+    const { originators: liveOriginators, loading: liveOriginatorsLoading } = useLiveBondOriginators();
+    const {
+        originatorPrequalComplete,
+        fullPrequalified,
+        loading: prequalStatusLoading,
+    } = useBuyerPrequalStatus(user);
 
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -145,6 +160,19 @@ export default function DocumentsPageContent() {
         }
         setPrequalSkipped(localStorage.getItem(STORAGE_KEYS.prequalSkipped) === '1');
     }, [isHydrated, user, router]);
+
+    useEffect(() => {
+        if (!originatorPrequalComplete) return;
+        setPrequalSkipped(true);
+    }, [originatorPrequalComplete]);
+
+    useEffect(() => {
+        if (liveOriginatorsLoading) return;
+        if (!selectedOriginator) return;
+        if (liveOriginators.some((originator) => originator.id === selectedOriginator)) return;
+        setSelectedOriginator('');
+        localStorage.removeItem(STORAGE_KEYS.selectedOriginator);
+    }, [liveOriginators, liveOriginatorsLoading, selectedOriginator]);
 
     const uploadSingleFile = useCallback(
         async (
@@ -190,7 +218,12 @@ export default function DocumentsPageContent() {
 
             if (!res.ok || !data.success) {
                 await deleteDocumentBlob(documentId);
-                throw new Error(data.error || 'Upload failed');
+                const detail =
+                    data.verification?.summary ||
+                    (Array.isArray(data.verification?.issues) && data.verification.issues[0]) ||
+                    data.error ||
+                    'Upload failed';
+                throw new Error(detail);
             }
 
             return (data.document as BuyerDocument) ?? optimisticDoc;
@@ -217,7 +250,11 @@ export default function DocumentsPageContent() {
             setDocuments(updatedDocs);
             persistBuyerDocuments(user.id, updatedDocs);
             logActivity(`Uploaded ${doc.name}`, user.id);
-            success(`${doc.name} uploaded`);
+            if (doc.status === 'verified') {
+                success(`${doc.name} verified`);
+            } else {
+                success(`${doc.name} uploaded — please confirm it is the correct document`);
+            }
         } catch (err) {
             const message = err instanceof Error ? err.message : `Failed to upload ${file.name}`;
             setUploadError(message);
@@ -320,6 +357,12 @@ export default function DocumentsPageContent() {
             return;
         }
 
+        const rejected = documents.filter((d) => d.status === 'rejected');
+        if (rejected.length > 0) {
+            setSendError('Replace documents flagged as the wrong type before sending to an originator.');
+            return;
+        }
+
         if (!user?.id) return;
 
         setIsSending(true);
@@ -410,7 +453,11 @@ success(
                         variant="premium"
                         eyebrow="Bond readiness"
                         title="Bond originators & documents"
-                        description="Upload FICA documents and optionally prequalify with a PropReady bond originator — free for you. You can skip this and use your agent’s originator instead."
+                        description={
+                            originatorPrequalComplete
+                                ? 'Your prequalification is on file. Manage FICA documents here and follow up with your originator in My Prequal.'
+                                : 'Upload FICA documents and optionally prequalify with a PropReady bond originator — free for you. You can skip this and use your agent’s originator instead.'
+                        }
                         stats={[
                             { label: 'Uploaded', value: documents.length },
                             {
@@ -422,6 +469,35 @@ success(
                 }
             >
                 <div className={`${PORTAL_PAGE_CONTAINER} relative z-10`}>
+                    {!prequalStatusLoading && originatorPrequalComplete ? (
+                        <div className={`${PORTAL_CALLOUT} mb-6 border-green-500/20 bg-green-500/5`}>
+                            <div className="flex items-start gap-4">
+                                <div className={PORTAL_STAT_ICON}>
+                                    <CheckCircle className="w-6 h-6 text-green-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-charcoal font-bold text-lg mb-1">
+                                        {fullPrequalified
+                                            ? 'Full prequalification on file'
+                                            : 'Originator prequalification in progress'}
+                                    </h3>
+                                    <p className="text-charcoal/70 leading-relaxed text-sm sm:text-base">
+                                        {fullPrequalified
+                                            ? 'You do not need to submit again. Keep documents current and follow up in My Prequal — you can still compare originators below.'
+                                            : 'Your case is already with an originator. Track progress in My Prequal — you can still browse partners below.'}
+                                    </p>
+                                    <Link
+                                        href="/dashboard/prequal"
+                                        className={`${PORTAL_PRIMARY_BTN} mt-4 inline-flex items-center gap-2 !h-11`}
+                                    >
+                                        Open My Prequal
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    {!originatorPrequalComplete ? (
                     <div className={`${PORTAL_CALLOUT} mb-8 sm:mb-10`}>
                         <div className="flex items-start gap-4">
                             <div className={PORTAL_STAT_ICON}>
@@ -457,6 +533,7 @@ success(
                             </div>
                         </div>
                     </div>
+                    ) : null}
 
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         <div className="lg:col-span-7 space-y-6">
@@ -466,7 +543,11 @@ success(
                                         variant="section"
                                         eyebrow="Compare & select"
                                         title="Choose Your Bond Originator"
-                                        description="Optional — select a PropReady bond originator to send documents for prequalification, or skip and use your agent’s preferred originator."
+                                        description={
+                                            originatorPrequalComplete
+                                                ? 'Browse verified bond originators on PropReady. Your active prequal is in My Prequal — selecting here is for comparison only unless you start a new case with your agent.'
+                                                : 'Optional — select a PropReady bond originator to send documents for prequalification, or skip and use your agent’s preferred originator.'
+                                        }
                                     />
                                 </div>
 
@@ -487,8 +568,9 @@ success(
                                                 </p>
                                             </div>
                                             <p className="text-charcoal/70 text-sm mt-2 ml-7">
-                                                Use the send button after uploading to share documents with your
-                                                selected originator.
+                                                {originatorPrequalComplete
+                                                    ? 'Prequalification is already on file. Use My Prequal to message your originator or update documents.'
+                                                    : 'Use the send button after uploading to share documents with your selected originator.'}
                                             </p>
                                         </div>
                                     )}
@@ -576,7 +658,7 @@ success(
                                                             }`}
                                                         >
                                                             {isThisUploading
-                                                                ? 'Uploading…'
+                                                                ? 'Checking…'
                                                                 : uploaded
                                                                   ? 'Replace'
                                                                   : 'Upload'}
@@ -606,7 +688,8 @@ success(
                                         })}
                                     </div>
                                     <p className="text-charcoal/50 text-sm mt-4">
-                                        Supported formats: PDF, JPG, PNG (Max 3MB per file)
+                                        Supported formats: PDF, JPG, PNG (Max 3MB per file). Files are auto-checked
+                                        to match the document type — e.g. ID vs bank statement.
                                     </p>
                                 </div>
                             </div>
@@ -667,6 +750,18 @@ success(
                                                                             {new Date(doc.uploadedAt).toLocaleDateString()}
                                                                         </span>
                                                                     </div>
+                                                                    {doc.verificationMeta?.summary &&
+                                                                    doc.status !== 'verified' ? (
+                                                                        <p className="mt-2 text-xs text-charcoal/55 leading-relaxed">
+                                                                            {doc.verificationMeta.summary}
+                                                                        </p>
+                                                                    ) : null}
+                                                                    {doc.status === 'verified' &&
+                                                                    doc.verificationMeta?.summary ? (
+                                                                        <p className="mt-2 text-xs text-green-700/80 leading-relaxed">
+                                                                            {doc.verificationMeta.summary}
+                                                                        </p>
+                                                                    ) : null}
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-center gap-2 flex-shrink-0">
@@ -707,6 +802,7 @@ success(
                                                 })}
                                             </div>
 
+                                            {!originatorPrequalComplete ? (
                                             <div className="pt-6 border-t border-charcoal/10">
                                                 {sendSuccess && (
                                                     <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
@@ -755,6 +851,7 @@ success(
                                                     files will be securely shared for prequalification.
                                                 </p>
                                             </div>
+                                            ) : null}
                                         </>
                                     )}
                                 </div>

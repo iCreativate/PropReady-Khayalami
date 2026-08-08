@@ -13,10 +13,18 @@ export interface BuyerDocument {
     id: string;
     name: string;
     type: BuyerDocumentType;
-    status: 'uploaded' | 'pending' | 'verified';
+    status: 'uploaded' | 'pending' | 'verified' | 'rejected';
     uploadedAt: string;
     size?: string;
     url?: string | null;
+    verificationMeta?: {
+        detectedType?: string;
+        expectedType?: string;
+        confidence?: number;
+        issues?: string[];
+        summary?: string;
+        method?: string;
+    };
 }
 
 export const BUYER_DOCUMENT_ACCEPT = '.pdf,.jpg,.jpeg,.png';

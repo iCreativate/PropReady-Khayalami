@@ -33,7 +33,7 @@ export async function GET(
 
     const { data, error } = await supabase
         .from('documents')
-        .select('id, name, type, status, size, uploaded_at, storage_path')
+        .select('id, name, type, status, size, uploaded_at, storage_path, verification_meta')
         .eq('user_id', leadId)
         .order('uploaded_at', { ascending: false });
 
@@ -49,6 +49,7 @@ export async function GET(
         status: row.status ?? 'uploaded',
         size: row.size ?? undefined,
         uploadedAt: row.uploaded_at,
+        verificationMeta: row.verification_meta ?? undefined,
         // Never expose raw storage paths to agents without going through signed download.
         url: null,
     }));

@@ -8,8 +8,11 @@ import {
     buyerDocumentTypeLabel,
     type BuyerDocumentType,
 } from '@/lib/buyer-documents';
+import { toVerificationMeta, verifyBuyerDocument } from '@/lib/document-verification';
 
 const BUCKET = 'buyer-documents';
+
+export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
     try {
@@ -51,6 +54,26 @@ export async function POST(request: NextRequest) {
         const safeName = fileName.replace(/[^a-zA-Z0-9._\- ]/g, '_').slice(0, 120);
         const storagePath = `${userId}/${documentId}/${safeName}`;
 
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        const verification = await verifyBuyerDocument({
+            expectedType: type,
+            fileName: file.name,
+            buffer,
+            mime,
+        });
+
+        if (verification.status === 'rejected') {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: verification.summary,
+                    verification: toVerificationMeta(verification),
+                },
+                { status: 422 }
+            );
+        }
+
         const supabase = createServiceClient();
         if (!supabase) {
             return NextResponse.json(
@@ -59,7 +82,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, file, {
+        const { error: uploadError } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
             contentType: mime,
             upsert: true,
         });
@@ -75,21 +98,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const verificationMeta = toVerificationMeta(verification);
+        const now = new Date().toISOString();
+
         const row = {
             id: documentId,
             user_id: userId,
             name: displayName,
             type,
-            status: 'uploaded',
+            status: verification.status,
             size: `${Math.round((file.size / 1024) * 10) / 10} KB`,
             storage_path: storagePath,
-            uploaded_at: new Date().toISOString(),
+            uploaded_at: now,
+            verified_at: verification.status === 'verified' ? verification.verifiedAt : null,
+            verification_meta: verificationMeta,
         };
 
         const { error: dbError } = await supabase.from('documents').upsert(row, { onConflict: 'id' });
 
         if (dbError) {
             console.error('Buyer document metadata save error:', dbError);
+            await supabase.storage.from(BUCKET).remove([storagePath]);
             return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
         }
 
@@ -99,11 +128,13 @@ export async function POST(request: NextRequest) {
                 id: documentId,
                 name: displayName,
                 type,
-                status: 'uploaded',
+                status: verification.status,
                 size: row.size,
                 uploadedAt: row.uploaded_at,
                 url: storagePath,
+                verificationMeta,
             },
+            verification: verificationMeta,
         });
     } catch (err) {
         console.error('Document upload error:', err);

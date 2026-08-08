@@ -14,7 +14,7 @@ export interface LeadDocument {
     id: string;
     name: string;
     type: LeadDocumentType;
-    status: 'uploaded' | 'pending' | 'verified';
+    status: 'uploaded' | 'pending' | 'verified' | 'rejected';
     uploadedAt: string;
     size?: string;
     url?: string | null;

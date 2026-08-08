@@ -19,6 +19,7 @@ import {
     duplicateEmailConflictResponse,
     findExistingAccountsByEmail,
 } from '@/lib/email-availability';
+import { filterDemoOriginators } from '@/lib/originator-exclusions';
 
 export async function GET(request: NextRequest) {
     const auth = await assertAdminRequest(request);
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
             if (status !== 'all') query = query.eq('status', status);
             if (q) query = query.or(`email.ilike.%${q}%,full_name.ilike.%${q}%`);
             const { data } = await query;
-            for (const row of data || []) {
+            for (const row of filterDemoOriginators(data || [])) {
                 accounts.push({
                     id: String(row.id),
                     accountType: 'originator',
