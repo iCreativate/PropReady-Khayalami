@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase-admin';
 import { agentHasDocumentAccess } from '@/lib/document-grants-server';
+import { fetchDocumentsForUser } from '@/lib/documents-db';
 
 export async function GET(
     request: NextRequest,
@@ -31,23 +32,19 @@ export async function GET(
         return NextResponse.json({ documents: [], accessGranted: !agentId });
     }
 
-    const { data, error } = await supabase
-        .from('documents')
-        .select('id, name, type, status, size, uploaded_at, storage_path, verification_meta')
-        .eq('user_id', leadId)
-        .order('uploaded_at', { ascending: false });
+    const { data, error } = await fetchDocumentsForUser(supabase, leadId);
 
     if (error) {
-        console.warn('Lead documents fetch failed:', error.message);
+        console.warn('Lead documents fetch failed:', error);
         return NextResponse.json({ documents: [], accessGranted: Boolean(agentId) || !agentId });
     }
 
-    const documents = (data ?? []).map((row) => ({
-        id: row.id,
-        name: row.name,
+    const documents = data.map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
         type: row.type,
-        status: row.status ?? 'uploaded',
-        size: row.size ?? undefined,
+        status: (row.status as string) ?? 'uploaded',
+        size: row.size != null ? String(row.size) : undefined,
         uploadedAt: row.uploaded_at,
         verificationMeta: row.verification_meta ?? undefined,
         // Never expose raw storage paths to agents without going through signed download.

@@ -9,6 +9,7 @@ import {
     type BuyerDocumentType,
 } from '@/lib/buyer-documents';
 import { toVerificationMeta, verifyBuyerDocument } from '@/lib/document-verification';
+import { upsertDocumentRow } from '@/lib/documents-db';
 
 const BUCKET = 'buyer-documents';
 
@@ -114,12 +115,22 @@ export async function POST(request: NextRequest) {
             verification_meta: verificationMeta,
         };
 
-        const { error: dbError } = await supabase.from('documents').upsert(row, { onConflict: 'id' });
+        const upsert = await upsertDocumentRow(supabase, row);
 
-        if (dbError) {
-            console.error('Buyer document metadata save error:', dbError);
+        if (!upsert.ok) {
+            console.error('Buyer document metadata save error:', upsert.error);
             await supabase.storage.from(BUCKET).remove([storagePath]);
-            return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
+            const hint = /verification_meta|verified_at/i.test(upsert.error)
+                ? ' Apply supabase/migrations/20260809_document_verification.sql in Supabase.'
+                : '';
+            return NextResponse.json(
+                { success: false, error: upsert.error + hint },
+                { status: 500 }
+            );
+        }
+
+        if (upsert.stripped.length) {
+            console.warn('Document saved without columns:', upsert.stripped.join(', '));
         }
 
         return NextResponse.json({

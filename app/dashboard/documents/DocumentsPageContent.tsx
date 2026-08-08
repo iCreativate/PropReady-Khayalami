@@ -70,6 +70,17 @@ function persistBuyerDocuments(userId: string, docs: BuyerDocument[]) {
     saveLeadDocumentsLocally(userId, docs);
 }
 
+type SlotCorrection = {
+    message: string;
+    issues: string[];
+};
+
+type UploadFailure = Error & {
+    docType?: BuyerDocumentType;
+    verificationFailed?: boolean;
+    issues?: string[];
+};
+
 function getStatusBadge(status: BuyerDocument['status']) {
     const badges = {
         verified: {
@@ -119,6 +130,9 @@ export default function DocumentsPageContent() {
 
     const [documents, setDocuments] = useState<BuyerDocument[]>([]);
     const [uploadError, setUploadError] = useState('');
+    const [slotCorrections, setSlotCorrections] = useState<
+        Partial<Record<BuyerDocumentType, SlotCorrection>>
+    >({});
     const [isUploading, setIsUploading] = useState(false);
     const [uploadingType, setUploadingType] = useState<BuyerDocumentType | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -218,12 +232,30 @@ export default function DocumentsPageContent() {
 
             if (!res.ok || !data.success) {
                 await deleteDocumentBlob(documentId);
+                const issues = Array.isArray(data.verification?.issues)
+                    ? (data.verification.issues as string[])
+                    : [];
+                const expectedLabel = buyerDocumentTypeLabel(docType);
                 const detail =
                     data.verification?.summary ||
-                    (Array.isArray(data.verification?.issues) && data.verification.issues[0]) ||
+                    issues[0] ||
                     data.error ||
                     'Upload failed';
-                throw new Error(detail);
+                const failure: UploadFailure = Object.assign(
+                    new Error(
+                        res.status === 422
+                            ? detail.includes(expectedLabel)
+                                ? detail
+                                : `Please upload the correct document: ${expectedLabel}. ${detail}`
+                            : detail
+                    ),
+                    {
+                        docType,
+                        verificationFailed: res.status === 422,
+                        issues,
+                    }
+                );
+                throw failure;
             }
 
             return (data.document as BuyerDocument) ?? optimisticDoc;
@@ -243,6 +275,12 @@ export default function DocumentsPageContent() {
         try {
             const existing = documents.find((d) => d.type === docType) ?? null;
             const doc = await uploadSingleFile(file, user.id, docType, existing);
+            setSlotCorrections((prev) => {
+                if (!prev[docType]) return prev;
+                const next = { ...prev };
+                delete next[docType];
+                return next;
+            });
             const updatedDocs = [
                 ...documents.filter((d) => d.type !== docType && d.id !== doc.id),
                 doc,
@@ -252,13 +290,41 @@ export default function DocumentsPageContent() {
             logActivity(`Uploaded ${doc.name}`, user.id);
             if (doc.status === 'verified') {
                 success(`${doc.name} verified`);
+            } else if (doc.status === 'rejected') {
+                setSlotCorrections((prev) => ({
+                    ...prev,
+                    [docType]: {
+                        message:
+                            doc.verificationMeta?.summary ||
+                            `Please upload the correct document: ${buyerDocumentTypeLabel(docType)}.`,
+                        issues: doc.verificationMeta?.issues ?? [],
+                    },
+                }));
+                toastError(
+                    doc.verificationMeta?.summary ||
+                        `Please upload the correct document: ${buyerDocumentTypeLabel(docType)}.`
+                );
             } else {
                 success(`${doc.name} uploaded — please confirm it is the correct document`);
             }
         } catch (err) {
-            const message = err instanceof Error ? err.message : `Failed to upload ${file.name}`;
-            setUploadError(message);
-            toastError(message);
+            const failure = err as UploadFailure;
+            const message = failure instanceof Error ? failure.message : `Failed to upload ${file.name}`;
+
+            if (failure.verificationFailed && failure.docType) {
+                setSlotCorrections((prev) => ({
+                    ...prev,
+                    [failure.docType!]: {
+                        message,
+                        issues: failure.issues ?? [],
+                    },
+                }));
+                setUploadTypeHint(failure.docType);
+                toastError(message);
+            } else {
+                setUploadError(message);
+                toastError(message);
+            }
         }
 
         setUploadingType(null);
@@ -295,6 +361,12 @@ export default function DocumentsPageContent() {
             const updatedDocs = documents.filter((doc) => doc.id !== docId);
             setDocuments(updatedDocs);
             persistBuyerDocuments(user.id, updatedDocs);
+            setSlotCorrections((prev) => {
+                if (!target.type || !prev[target.type]) return prev;
+                const next = { ...prev };
+                delete next[target.type];
+                return next;
+            });
             await deleteDocumentBlob(docId);
             logActivity(`Removed ${target.name}`, user.id);
             success(`${target.name} removed`);
@@ -358,8 +430,17 @@ export default function DocumentsPageContent() {
         }
 
         const rejected = documents.filter((d) => d.status === 'rejected');
-        if (rejected.length > 0) {
-            setSendError('Replace documents flagged as the wrong type before sending to an originator.');
+        const correctionSlots = Object.keys(slotCorrections) as BuyerDocumentType[];
+        if (rejected.length > 0 || correctionSlots.length > 0) {
+            const labels = [
+                ...rejected.map((d) => buyerDocumentTypeLabel(d.type)),
+                ...correctionSlots
+                    .filter((type) => !rejected.some((d) => d.type === type))
+                    .map((type) => buyerDocumentTypeLabel(type)),
+            ];
+            setSendError(
+                `Upload the correct document for: ${labels.join(', ')}.`
+            );
             return;
         }
 
@@ -602,27 +683,44 @@ success(
                                     <div className="space-y-3">
                                         {BUYER_DOCUMENT_SLOTS.map(({ type, label, hint }) => {
                                             const uploaded = documents.find((d) => d.type === type);
-                                            const isActive = uploadTypeHint === type;
+                                            const correction = slotCorrections[type];
+                                            const needsCorrection =
+                                                !!correction || uploaded?.status === 'rejected';
+                                            const correctionMessage =
+                                                correction?.message ||
+                                                uploaded?.verificationMeta?.summary ||
+                                                `Please upload the correct document: ${label}.`;
+                                            const correctionIssues =
+                                                correction?.issues ||
+                                                uploaded?.verificationMeta?.issues ||
+                                                [];
+                                            const isActive = uploadTypeHint === type || needsCorrection;
                                             const isThisUploading = uploadingType === type;
 
                                             return (
                                                 <div
                                                     key={type}
                                                     className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-2xl border p-4 transition ${
-                                                        isActive
-                                                            ? 'border-gold/40 bg-gold/[0.04]'
-                                                            : 'border-charcoal/[0.08] bg-white'
+                                                        needsCorrection
+                                                            ? 'border-red-500/35 bg-red-500/[0.04]'
+                                                            : isActive
+                                                              ? 'border-gold/40 bg-gold/[0.04]'
+                                                              : 'border-charcoal/[0.08] bg-white'
                                                     }`}
                                                 >
                                                     <div className="flex items-start gap-3 min-w-0 flex-1">
                                                         <div
                                                             className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                                                                uploaded
-                                                                    ? 'bg-green-500/10 border-green-500/20 text-green-600'
-                                                                    : 'bg-charcoal/[0.04] border-charcoal/10 text-charcoal/40'
+                                                                needsCorrection
+                                                                    ? 'bg-red-500/10 border-red-500/20 text-red-600'
+                                                                    : uploaded
+                                                                      ? 'bg-green-500/10 border-green-500/20 text-green-600'
+                                                                      : 'bg-charcoal/[0.04] border-charcoal/10 text-charcoal/40'
                                                             }`}
                                                         >
-                                                            {uploaded ? (
+                                                            {needsCorrection ? (
+                                                                <AlertCircle className="w-5 h-5" />
+                                                            ) : uploaded ? (
                                                                 <CheckCircle className="w-5 h-5" />
                                                             ) : (
                                                                 <FileText className="w-5 h-5" />
@@ -635,9 +733,34 @@ success(
                                                                     {hint}
                                                                 </p>
                                                             ) : null}
-                                                            {uploaded?.size ? (
+                                                            {needsCorrection ? (
+                                                                <div className="mt-2 p-3 rounded-xl bg-red-500/[0.06] border border-red-500/20">
+                                                                    <p className="text-sm font-semibold text-red-700">
+                                                                        Wrong document — please upload the correct one
+                                                                    </p>
+                                                                    <p className="text-sm text-red-600/90 mt-1 leading-relaxed">
+                                                                        {correctionMessage}
+                                                                    </p>
+                                                                    {correctionIssues.length > 0 ? (
+                                                                        <ul className="mt-2 space-y-1 text-xs text-red-600/80 list-disc list-inside">
+                                                                            {correctionIssues.map((issue) => (
+                                                                                <li key={issue}>{issue}</li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    ) : null}
+                                                                </div>
+                                                            ) : null}
+                                                            {uploaded?.size && !needsCorrection ? (
                                                                 <p className="text-xs text-charcoal/45 mt-1">
                                                                     {uploaded.size} ·{' '}
+                                                                    {new Date(
+                                                                        uploaded.uploadedAt
+                                                                    ).toLocaleDateString()}
+                                                                </p>
+                                                            ) : null}
+                                                            {uploaded?.size && needsCorrection ? (
+                                                                <p className="text-xs text-charcoal/45 mt-2">
+                                                                    Current file on file: {uploaded.size} ·{' '}
                                                                     {new Date(
                                                                         uploaded.uploadedAt
                                                                     ).toLocaleDateString()}
@@ -648,9 +771,11 @@ success(
                                                     <div className="flex items-center gap-2 shrink-0">
                                                         <label
                                                             className={`${
-                                                                uploaded
-                                                                    ? PORTAL_SECONDARY_BTN
-                                                                    : PORTAL_PRIMARY_BTN
+                                                                needsCorrection
+                                                                    ? 'rounded-xl border border-red-500/30 bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition !h-auto !py-2.5 !px-4 cursor-pointer inline-flex items-center justify-center'
+                                                                    : uploaded
+                                                                      ? PORTAL_SECONDARY_BTN
+                                                                      : PORTAL_PRIMARY_BTN
                                                             } !h-auto !py-2.5 !px-4 cursor-pointer justify-center ${
                                                                 isUploading || deletingId
                                                                     ? 'opacity-60 pointer-events-none'
@@ -659,9 +784,11 @@ success(
                                                         >
                                                             {isThisUploading
                                                                 ? 'Checking…'
-                                                                : uploaded
-                                                                  ? 'Replace'
-                                                                  : 'Upload'}
+                                                                : needsCorrection
+                                                                  ? 'Upload correct document'
+                                                                  : uploaded
+                                                                    ? 'Replace'
+                                                                    : 'Upload'}
                                                             <input
                                                                 type="file"
                                                                 accept={BUYER_DOCUMENT_ACCEPT}
@@ -726,7 +853,11 @@ success(
                                                     return (
                                                     <div
                                                         key={doc.id}
-                                                        className="bg-white rounded-2xl p-5 border border-charcoal/10 hover:border-gold/40 transition-all shadow-sm"
+                                                        className={`bg-white rounded-2xl p-5 border transition-all shadow-sm ${
+                                                            doc.status === 'rejected'
+                                                                ? 'border-red-500/30 hover:border-red-500/45'
+                                                                : 'border-charcoal/10 hover:border-gold/40'
+                                                        }`}
                                                     >
                                                         <div className="flex items-start justify-between gap-4">
                                                             <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -752,8 +883,16 @@ success(
                                                                     </div>
                                                                     {doc.verificationMeta?.summary &&
                                                                     doc.status !== 'verified' ? (
-                                                                        <p className="mt-2 text-xs text-charcoal/55 leading-relaxed">
-                                                                            {doc.verificationMeta.summary}
+                                                                        <p
+                                                                            className={`mt-2 text-xs leading-relaxed ${
+                                                                                doc.status === 'rejected'
+                                                                                    ? 'text-red-600 font-medium'
+                                                                                    : 'text-charcoal/55'
+                                                                            }`}
+                                                                        >
+                                                                            {doc.status === 'rejected'
+                                                                                ? `Please upload the correct document. ${doc.verificationMeta.summary}`
+                                                                                : doc.verificationMeta.summary}
                                                                         </p>
                                                                     ) : null}
                                                                     {doc.status === 'verified' &&
