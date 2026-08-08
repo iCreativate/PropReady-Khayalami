@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { clearLegacyAuthStorage } from '@/lib/auth-session-bridge';
 import { loginPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 
 /** Clear cookie session + legacy localStorage, then hard-navigate to login. */
@@ -19,10 +19,7 @@ export async function signOutClient(options?: {
     }
 
     if (typeof window !== 'undefined') {
-        localStorage.removeItem(STORAGE_KEYS.currentUser);
-        localStorage.removeItem(STORAGE_KEYS.currentAgent);
-        localStorage.removeItem('propReady_currentOriginator');
-        localStorage.removeItem('propReady_currentConveyancer');
+        clearLegacyAuthStorage();
         window.location.href = redirectTo;
     }
 }

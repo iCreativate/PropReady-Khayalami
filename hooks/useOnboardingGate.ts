@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { fetchAuthSession, invalidateSessionCache } from '@/lib/auth-session-bridge';
 
 export type OnboardingIntent = 'buyer' | 'seller';
 
@@ -25,31 +26,28 @@ export function useOnboardingGate(expectedIntent?: OnboardingIntent) {
 
     const refresh = useCallback(async () => {
         try {
-            const res = await fetch('/api/auth/session', { credentials: 'include' });
-            if (!res.ok) {
+            const data = await fetchAuthSession();
+            if (!data?.authenticated || !data.user) {
                 setState({ loading: false, required: false, intent: null, user: null });
                 return;
             }
-            const data = await res.json();
             const intent =
-                data.user?.onboardingIntent === 'seller' || data.user?.onboardingIntent === 'buyer'
-                    ? (data.user.onboardingIntent as OnboardingIntent)
+                data.user.onboardingIntent === 'seller' || data.user.onboardingIntent === 'buyer'
+                    ? data.user.onboardingIntent
                     : null;
-            const required = Boolean(data.user?.onboardingRequired) && Boolean(intent);
+            const required = Boolean(data.user.onboardingRequired) && Boolean(intent);
             const matches = !expectedIntent || intent === expectedIntent;
 
             setState({
                 loading: false,
                 required: required && matches,
                 intent,
-                user: data.user
-                    ? {
-                          id: data.user.profileId || data.user.accountId,
-                          fullName: data.user.fullName,
-                          email: data.user.email,
-                          phone: data.user.phone,
-                      }
-                    : null,
+                user: {
+                    id: data.user.profileId || data.user.accountId,
+                    fullName: data.user.fullName,
+                    email: data.user.email,
+                    phone: data.user.phone,
+                },
             });
         } catch {
             setState({ loading: false, required: false, intent: null, user: null });
@@ -65,6 +63,7 @@ export function useOnboardingGate(expectedIntent?: OnboardingIntent) {
             method: 'POST',
             credentials: 'include',
         });
+        invalidateSessionCache();
         setState((prev) => ({ ...prev, required: false }));
     }, []);
 

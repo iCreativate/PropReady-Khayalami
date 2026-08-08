@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { BondOriginator } from '@/lib/bond-originators';
+import { fetchLiveBondOriginators } from '@/lib/bond-originators-client';
 
 export function useLiveBondOriginators() {
     const [originators, setOriginators] = useState<BondOriginator[]>([]);
@@ -11,28 +12,22 @@ export function useLiveBondOriginators() {
     useEffect(() => {
         let cancelled = false;
 
-        void (async () => {
-            try {
-                const res = await fetch('/api/bond-originators', { credentials: 'include' });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(
-                        typeof data.error === 'string' ? data.error : 'Failed to load bond originators'
-                    );
-                }
+        void fetchLiveBondOriginators()
+            .then((rows) => {
                 if (!cancelled) {
-                    setOriginators(Array.isArray(data.originators) ? data.originators : []);
+                    setOriginators(rows);
                     setError(null);
                 }
-            } catch (err) {
+            })
+            .catch((err) => {
                 if (!cancelled) {
                     setOriginators([]);
                     setError(err instanceof Error ? err.message : 'Failed to load bond originators');
                 }
-            } finally {
+            })
+            .finally(() => {
                 if (!cancelled) setLoading(false);
-            }
-        })();
+            });
 
         return () => {
             cancelled = true;

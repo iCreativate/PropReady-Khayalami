@@ -14,7 +14,13 @@ const nextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion', 'recharts'],
+    optimizePackageImports: [
+      'lucide-react',
+      'framer-motion',
+      'recharts',
+      'date-fns',
+      '@vis.gl/react-google-maps',
+    ],
   },
   // Enable subdomain routing for agents portal
   async rewrites() {

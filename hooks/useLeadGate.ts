@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import { fetchLeadsMine } from '@/lib/leads-mine-client';
 
 type LeadGateState = {
     loading: boolean;
@@ -35,18 +36,32 @@ function hasLocalSellerInfo(): boolean {
     }
 }
 
+function initialLeadGateState(skip: boolean): LeadGateState {
+    if (skip) {
+        return {
+            loading: false,
+            needsQuiz: false,
+            hasBuyerLead: true,
+            hasSellerLead: true,
+        };
+    }
+    const localBuyer = hasLocalBuyerQuiz();
+    const localSeller = hasLocalSellerInfo();
+    return {
+        loading: !localBuyer && !localSeller,
+        needsQuiz: !localBuyer && !localSeller,
+        hasBuyerLead: localBuyer,
+        hasSellerLead: localSeller,
+    };
+}
+
 /**
  * Compulsory quiz gate: signed-in consumers without buyer/seller lead (and without
  * local quiz data) must complete Get Started before using the portal.
  */
 export function useLeadGate(options?: { skip?: boolean }) {
     const skip = Boolean(options?.skip);
-    const [state, setState] = useState<LeadGateState>({
-        loading: true,
-        needsQuiz: false,
-        hasBuyerLead: false,
-        hasSellerLead: false,
-    });
+    const [state, setState] = useState<LeadGateState>(() => initialLeadGateState(skip));
 
     const refresh = useCallback(async () => {
         if (skip) {
@@ -59,11 +74,12 @@ export function useLeadGate(options?: { skip?: boolean }) {
             return;
         }
 
+        const localBuyer = hasLocalBuyerQuiz();
+        const localSeller = hasLocalSellerInfo();
+
         try {
-            const res = await fetch('/api/leads/mine', { credentials: 'include' });
-            if (!res.ok) {
-                const localBuyer = hasLocalBuyerQuiz();
-                const localSeller = hasLocalSellerInfo();
+            const data = await fetchLeadsMine();
+            if (!data) {
                 setState({
                     loading: false,
                     needsQuiz: !localBuyer && !localSeller,
@@ -72,12 +88,9 @@ export function useLeadGate(options?: { skip?: boolean }) {
                 });
                 return;
             }
-            const data = await res.json();
             const apiBuyer = Boolean(data.hasBuyerLead);
             const apiSeller = Boolean(data.hasSellerLead);
             const apiBuyerQuiz = Boolean(data.hasBuyerQuiz || data.buyerPrequalComplete);
-            const localBuyer = hasLocalBuyerQuiz();
-            const localSeller = hasLocalSellerInfo();
             const hasBuyerLead = apiBuyer || localBuyer || apiBuyerQuiz;
             const hasSellerLead = apiSeller || localSeller;
             setState({
@@ -87,8 +100,6 @@ export function useLeadGate(options?: { skip?: boolean }) {
                 hasSellerLead,
             });
         } catch {
-            const localBuyer = hasLocalBuyerQuiz();
-            const localSeller = hasLocalSellerInfo();
             setState({
                 loading: false,
                 needsQuiz: !localBuyer && !localSeller,

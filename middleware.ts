@@ -47,6 +47,13 @@ const AUTH_PAGES = [
 ];
 
 export async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
+
+    // API routes resolve auth in-route; skip Supabase session refresh on every call.
+    if (pathname.startsWith('/api/')) {
+        return NextResponse.next({ request });
+    }
+
     // Never let middleware take down the whole site on Netlify Edge.
     let supabaseResponse: NextResponse;
     try {

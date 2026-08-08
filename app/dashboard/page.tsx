@@ -21,6 +21,7 @@ import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 import PortalLoading from '@/components/PortalLoading';
 import { PUBLIC_PROPERTIES_ENABLED } from '@/lib/public-properties';
+import { fetchPublishedProperties } from '@/lib/properties-client';
 
 const BuyerIntelligenceWorkspace = dynamic(
     () => import('@/components/buyer-dashboard/BuyerIntelligenceWorkspace'),
@@ -68,13 +69,10 @@ function normalizeListedProperty(p: Record<string, unknown>): ListedProperty | n
 async function loadPublishedListings(): Promise<ListedProperty[]> {
     let apiProperties: ListedProperty[] = [];
     try {
-        const res = await fetch('/api/properties', { cache: 'force-cache' });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && Array.isArray(data.properties)) {
-            apiProperties = data.properties
-                .map((p: Record<string, unknown>) => normalizeListedProperty(p))
-                .filter(Boolean) as ListedProperty[];
-        }
+        const raw = await fetchPublishedProperties();
+        apiProperties = raw
+            .map((p) => normalizeListedProperty(p as unknown as Record<string, unknown>))
+            .filter(Boolean) as ListedProperty[];
     } catch {
         /* fall back to local */
     }

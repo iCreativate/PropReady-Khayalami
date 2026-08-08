@@ -13,6 +13,7 @@ import PortalAnnouncementBanner from '@/components/PortalAnnouncementBanner';
 import { useLeadGate } from '@/hooks/useLeadGate';
 import { useBuyerPrequalStatus } from '@/hooks/useBuyerPrequalStatus';
 import { useOnboardingGate } from '@/hooks/useOnboardingGate';
+import { fetchAuthSession } from '@/lib/auth-session-bridge';
 import {
     getUserPortalLabel,
     getUserPortalLinks,
@@ -195,15 +196,9 @@ export default function UserPortalLayout({
 
     useEffect(() => {
         let cancelled = false;
-        void (async () => {
-            try {
-                const res = await fetch('/api/auth/session', { credentials: 'include' });
-                const data = await res.json().catch(() => ({}));
-                if (!cancelled) setStaffAccess(Boolean(data?.user?.impersonatedBy));
-            } catch {
-                /* ignore */
-            }
-        })();
+        void fetchAuthSession().then((data) => {
+            if (!cancelled) setStaffAccess(Boolean(data?.user?.impersonatedBy));
+        });
         return () => {
             cancelled = true;
         };

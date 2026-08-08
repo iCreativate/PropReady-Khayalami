@@ -6,6 +6,7 @@ import {
     readLocalBuyerPrequalStatus,
     type BuyerPrequalStatusSnapshot,
 } from '@/lib/buyer-prequal-status';
+import { fetchLeadsMine } from '@/lib/leads-mine-client';
 import type { PortalUser } from '@/lib/quiz-result';
 
 type RemotePrequalPayload = {
@@ -37,7 +38,11 @@ export function useBuyerPrequalStatus(user?: PortalUser | null) {
     const [status, setStatus] = useState<BuyerPrequalStatusSnapshot>(() =>
         readLocalBuyerPrequalStatus(user)
     );
-    const [loading, setLoading] = useState(Boolean(user));
+    const [loading, setLoading] = useState(() => {
+        if (!user) return false;
+        const local = readLocalBuyerPrequalStatus(user);
+        return !local.buyerPrequalComplete && !local.originatorPrequalComplete;
+    });
 
     const refresh = useCallback(async () => {
         const local = readLocalBuyerPrequalStatus(user);
@@ -47,14 +52,15 @@ export function useBuyerPrequalStatus(user?: PortalUser | null) {
             return local;
         }
 
-        setLoading(true);
+        if (!local.buyerPrequalComplete && !local.originatorPrequalComplete) {
+            setLoading(true);
+        }
         try {
-            const res = await fetch('/api/leads/mine', { credentials: 'include' });
-            if (!res.ok) {
+            const data = await fetchLeadsMine();
+            if (!data) {
                 setStatus(local);
                 return local;
             }
-            const data = (await res.json()) as RemotePrequalPayload;
             const merged = mergeBuyerPrequalStatus(local, mapRemote(data));
             setStatus(merged);
             return merged;

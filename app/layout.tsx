@@ -6,7 +6,7 @@ import AppProviders from '@/components/providers/AppProviders';
 import NativeShellInit from '@/components/NativeShellInit';
 import { getSiteUrl } from '@/lib/site-url';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 const siteUrl = getSiteUrl();
 const siteTitle = 'PropReady | Your Home. Ready.';

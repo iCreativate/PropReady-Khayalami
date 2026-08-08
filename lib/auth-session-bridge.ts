@@ -1,4 +1,5 @@
 import { hydrateDemoUserSession } from '@/lib/demo-user-session';
+import { invalidateLeadsMineCache } from '@/lib/leads-mine-client';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import type { AccountType } from '@/lib/auth-enterprise/config';
 
@@ -17,10 +18,35 @@ export type BridgedSessionUser = {
     accountType?: AccountType;
 };
 
+export type AuthSessionResponse = {
+    authenticated: boolean;
+    user?: {
+        accountId: string;
+        profileId: string;
+        email: string;
+        fullName?: string;
+        phone?: string;
+        accountType?: AccountType | string;
+        company?: string;
+        organizationId?: string;
+        plan?: string;
+        sellerPlan?: string;
+        planStatus?: string;
+        trialStartedAt?: string | null;
+        trialEndsAt?: string | null;
+        planActivatedAt?: string | null;
+        onboardingIntent?: 'buyer' | 'seller' | null;
+        onboardingRequired?: boolean;
+        impersonatedBy?: string | null;
+    };
+};
+
 const SESSION_CACHE_TTL_MS = 30_000;
 
 let sessionCache: { value: BridgedSessionUser | null; at: number } | null = null;
 let sessionInflight: Promise<BridgedSessionUser | null> | null = null;
+let authSessionCache: { value: AuthSessionResponse | null; at: number } | null = null;
+let authSessionInflight: Promise<AuthSessionResponse | null> | null = null;
 
 export function clearLegacyAuthStorage() {
     if (typeof window === 'undefined') return;
@@ -30,11 +56,17 @@ export function clearLegacyAuthStorage() {
     localStorage.removeItem('propReady_currentConveyancer');
     sessionCache = null;
     sessionInflight = null;
+    authSessionCache = null;
+    authSessionInflight = null;
+    invalidateLeadsMineCache();
 }
 
 export function invalidateSessionCache() {
     sessionCache = null;
     sessionInflight = null;
+    authSessionCache = null;
+    authSessionInflight = null;
+    invalidateLeadsMineCache();
 }
 
 /** Instant paint from localStorage while cookie session verifies in the background. */
@@ -153,12 +185,11 @@ export function syncLegacySession(
     }
 }
 
-const SESSION_FETCH_TIMEOUT_MS = 12_000;
+const SESSION_FETCH_TIMEOUT_MS = 8_000;
 
-async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
+async function fetchAuthSessionRaw(): Promise<AuthSessionResponse | null> {
     // Do not use AbortController / AbortSignal.timeout here — Turbopack's dev overlay
     // still surfaces AbortError ("signal is aborted without reason") even when caught.
-    // Race against a plain timeout instead; the in-flight fetch may finish later harmlessly.
     try {
         const res = await Promise.race([
             fetch('/api/auth/session', { credentials: 'include' }),
@@ -171,39 +202,63 @@ async function fetchSessionFromCookies(): Promise<BridgedSessionUser | null> {
         ]);
         if (!res.ok) {
             if (res.status === 401) clearLegacyAuthStorage();
-            return null;
+            return { authenticated: false };
         }
-        const data = await res.json();
-        if (!data?.authenticated || !data.user) {
-            // Soft miss — do not wipe optimistic local session here (avoids portal load races).
-            return null;
-        }
-
-        const rawType = data.user.accountType;
-        const accountType: AccountType =
-            rawType === 'agent' || rawType === 'originator' || rawType === 'conveyancer'
-                ? rawType
-                : 'user';
-        const bridged: BridgedSessionUser = {
-            id: data.user.profileId || data.user.accountId,
-            fullName: data.user.fullName,
-            email: data.user.email,
-            company: data.user.company,
-            organizationId: data.user.organizationId,
-            plan: data.user.plan,
-            sellerPlan: data.user.sellerPlan,
-            planStatus: data.user.planStatus,
-            trialStartedAt: data.user.trialStartedAt ?? null,
-            trialEndsAt: data.user.trialEndsAt ?? null,
-            planActivatedAt: data.user.planActivatedAt ?? null,
-            accountType,
-        };
-        syncLegacySession(bridged, accountType);
-        return bridged;
+        return (await res.json()) as AuthSessionResponse;
     } catch {
-        // Timeout / network — keep optimistic local session; never rethrow.
         return null;
     }
+}
+
+function bridgedUserFromSession(data: AuthSessionResponse | null): BridgedSessionUser | null {
+    if (!data?.authenticated || !data.user) return null;
+
+    const rawType = data.user.accountType;
+    const accountType: AccountType =
+        rawType === 'agent' || rawType === 'originator' || rawType === 'conveyancer'
+            ? rawType
+            : 'user';
+    const bridged: BridgedSessionUser = {
+        id: data.user.profileId || data.user.accountId,
+        fullName: data.user.fullName,
+        email: data.user.email,
+        company: data.user.company,
+        organizationId: data.user.organizationId,
+        plan: data.user.plan,
+        sellerPlan: data.user.sellerPlan,
+        planStatus: data.user.planStatus,
+        trialStartedAt: data.user.trialStartedAt ?? null,
+        trialEndsAt: data.user.trialEndsAt ?? null,
+        planActivatedAt: data.user.planActivatedAt ?? null,
+        accountType,
+    };
+    syncLegacySession(bridged, accountType);
+    return bridged;
+}
+
+/** Full session payload — shared by portal hooks (deduped + cached). */
+export async function fetchAuthSession(
+    options?: { force?: boolean }
+): Promise<AuthSessionResponse | null> {
+    const force = options?.force === true;
+    const now = Date.now();
+    if (!force && authSessionCache && now - authSessionCache.at < SESSION_CACHE_TTL_MS) {
+        return authSessionCache.value;
+    }
+    if (!force && authSessionInflight) {
+        return authSessionInflight;
+    }
+
+    authSessionInflight = fetchAuthSessionRaw()
+        .then((value) => {
+            authSessionCache = { value, at: Date.now() };
+            return value;
+        })
+        .finally(() => {
+            authSessionInflight = null;
+        });
+
+    return authSessionInflight;
 }
 
 /** Hydrate localStorage from cookie session API. Dedupes in-flight requests and caches briefly. */
@@ -219,8 +274,9 @@ export async function hydrateSessionFromCookies(
         return sessionInflight;
     }
 
-    sessionInflight = fetchSessionFromCookies()
-        .then((value) => {
+    sessionInflight = fetchAuthSession({ force })
+        .then((data) => {
+            const value = bridgedUserFromSession(data);
             sessionCache = { value, at: Date.now() };
             return value;
         })
