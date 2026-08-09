@@ -85,13 +85,13 @@ export default function AuthLoginClient() {
             router.replace(loginPathForAccountType(requestedRole));
             return;
         }
-        if (requestedRole === 'buyer' || requestedRole === 'seller' || requestedRole === 'learner') {
+        if (requestedRole === 'buyer' || requestedRole === 'seller') {
             setRole(requestedRole);
             persistLoginRole(requestedRole);
             return;
         }
         const stored = readPersistedLoginRole();
-        if (stored === 'buyer' || stored === 'seller' || stored === 'learner') {
+        if (stored === 'buyer' || stored === 'seller') {
             setRole(stored);
         }
     }, [isProfessionals, requestedType, requestedRole, router]);
@@ -219,12 +219,7 @@ export default function AuthLoginClient() {
     }
 
     const roleMeta = role ? getLoginRoleOption(role) : null;
-    const roleDefaultRedirect =
-        role === 'seller'
-            ? '/sellers/dashboard'
-            : role === 'learner'
-              ? '/learning-center'
-              : '/dashboard';
+    const roleDefaultRedirect = role === 'seller' ? '/sellers/dashboard' : '/dashboard';
     const postLoginRedirect =
         nextParam && isSafePostLoginPath(nextParam) ? nextParam : roleDefaultRedirect;
     const confirmPasswordHref = `/auth/confirm-password?type=user&next=${encodeURIComponent(postLoginRedirect)}`;
@@ -273,7 +268,7 @@ export default function AuthLoginClient() {
                 subtitle={
                     isProfessionals
                         ? 'Choose your professional role to continue to the right portal.'
-                        : 'Choose buyer, seller, or learning to continue to your PropReady account.'
+                        : 'Choose buyer or seller to continue to your PropReady account.'
                 }
                 accountType="user"
                 variant="roles"
@@ -316,9 +311,7 @@ export default function AuthLoginClient() {
             subtitle={
                 role === 'seller'
                     ? 'Access your seller dashboard, listings and messages'
-                    : role === 'learner'
-                      ? 'Access the Learning Center — explore buyers, sellers and investors'
-                      : 'Access your buyer dashboard, prequal and learning'
+                    : 'Access your buyer dashboard, prequal and learning'
             }
             accountType="user"
         >

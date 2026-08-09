@@ -4,7 +4,6 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     AlertCircle,
-    BookOpen,
     Building2,
     Eye,
     EyeOff,
@@ -40,7 +39,7 @@ function CompleteProfileInner() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [intent, setIntent] = useState<'buyer' | 'seller' | 'learner' | ''>('');
+    const [intent, setIntent] = useState<'buyer' | 'seller' | ''>('');
     const [email, setEmail] = useState('');
     const [needsPassword, setNeedsPassword] = useState(true);
     const [error, setError] = useState('');
@@ -118,7 +117,7 @@ function CompleteProfileInner() {
                 return;
             }
             if (accountType === 'user' && !intent) {
-                setError('Please choose whether you are buying, selling, or just learning');
+                setError('Please choose whether you are buying or selling');
                 return;
             }
         }
@@ -193,7 +192,7 @@ function CompleteProfileInner() {
                         ? 'Confirm your details and create a password to open the conveyancer portal.'
                         : accountType === 'agent' || accountType === 'originator'
                           ? 'Confirm your professional details and create a password to open your portal.'
-                          : 'Create a password, confirm who you are, then choose your path. Buyers and sellers get a short quiz; learners go straight to the Learning Center.'
+                          : 'Create a password, confirm who you are, then choose whether you are buying or selling.'
                     : accountType === 'conveyancer'
                       ? 'Confirm your firm contact details before accessing the conveyancer portal.'
                       : 'We need your real details before you can access the portal.'
@@ -385,7 +384,7 @@ function CompleteProfileInner() {
                         {accountType === 'user' && (
                             <div>
                                 <p className="auth-label mb-2">I want to</p>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <button
                                         type="button"
                                         onClick={() => setIntent('buyer')}
@@ -424,25 +423,6 @@ function CompleteProfileInner() {
                                             </span>
                                         </span>
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIntent('learner')}
-                                        className={`flex items-start gap-3 rounded-xl border p-4 text-left transition ${
-                                            intent === 'learner'
-                                                ? 'border-gold bg-gold/5 shadow-sm'
-                                                : 'border-charcoal/10 hover:border-charcoal/20'
-                                        }`}
-                                    >
-                                        <BookOpen className="w-5 h-5 text-gold shrink-0 mt-0.5" />
-                                        <span>
-                                            <span className="block text-sm font-semibold text-charcoal">
-                                                Just learning
-                                            </span>
-                                            <span className="block text-xs text-charcoal/55 mt-1">
-                                                Learning Center only
-                                            </span>
-                                        </span>
-                                    </button>
                                 </div>
                             </div>
                         )}
@@ -456,9 +436,7 @@ function CompleteProfileInner() {
                           ? 'Continue to seller path'
                           : needsPassword && intent === 'buyer'
                             ? 'Continue to buyer path'
-                            : needsPassword && intent === 'learner'
-                              ? 'Open Learning Center'
-                              : 'Continue'}
+                            : 'Continue'}
                 </button>
             </form>
         </AuthShell>

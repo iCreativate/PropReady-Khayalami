@@ -30,12 +30,6 @@ export const LOGIN_ROLE_OPTIONS: LoginRoleOption[] = [
         accountType: 'user',
     },
     {
-        id: 'learner',
-        label: 'Just learning',
-        description: 'Learning Center — no quiz required',
-        accountType: 'user',
-    },
-    {
         id: 'agent',
         label: 'Agent',
         description: 'PPRA-verified agent portal',
@@ -61,8 +55,8 @@ export const LOGIN_ROLE_OPTIONS: LoginRoleOption[] = [
 export type LoginAudience = 'consumer' | 'professionals';
 
 export const CONSUMER_LOGIN_ROLES = LOGIN_ROLE_OPTIONS.filter(
-    (r): r is LoginRoleOption & { id: 'buyer' | 'seller' | 'learner' } =>
-        r.id === 'buyer' || r.id === 'seller' || r.id === 'learner'
+    (r): r is LoginRoleOption & { id: 'buyer' | 'seller' } =>
+        r.id === 'buyer' || r.id === 'seller'
 );
 
 export const PROFESSIONAL_LOGIN_ROLES = LOGIN_ROLE_OPTIONS.filter(
