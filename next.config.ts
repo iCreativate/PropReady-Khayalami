@@ -27,7 +27,7 @@ const nextConfig = {
     return [
       {
         source: '/favicon.ico',
-        destination: '/icon',
+        destination: '/favicon.svg',
       },
       {
         source: '/agents/:path*',
