@@ -5,6 +5,7 @@ import LearningLandingShell, {
     LearningHubCta,
     LearningHubHero,
 } from '@/components/marketing/learn/LearningLandingShell';
+import GuestLearningHubBanner from '@/components/learning/GuestLearningHubBanner';
 
 const INVESTOR_MODULES: {
     href: string;
@@ -145,6 +146,7 @@ export default function InvestorsLearnPage() {
             />
             <section className="lc-section">
                 <div className="hl-shell">
+                    <GuestLearningHubBanner />
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
                         {INVESTOR_MODULES.map((module, index) => (
                             <LearnHubModuleCard

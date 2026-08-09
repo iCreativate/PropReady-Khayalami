@@ -361,8 +361,27 @@ export default function MessagesWorkspace({
     const emojiRef = useRef<HTMLDivElement>(null);
     const messageCountRef = useRef(0);
     const shouldStickToBottomRef = useRef(true);
+    const staffAccessRef = useRef(false);
 
     const pinKey = `propReady_${role}_messages_pinned`;
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const res = await fetch('/api/auth/session', { credentials: 'include' });
+                const data = await res.json().catch(() => ({}));
+                if (!cancelled) {
+                    staffAccessRef.current = Boolean(data?.user?.impersonatedBy);
+                }
+            } catch {
+                /* ignore */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     useEffect(() => {
         setPinnedIds(readJson<string[]>(pinKey, []));
@@ -535,19 +554,23 @@ export default function MessagesWorkspace({
             setMessages((prev) =>
                 messageFingerprint(prev) === messageFingerprint(next) ? prev : next
             );
-            void safeFetch(`/api/messages/conversations/${conversationId}/read`, {
-                method: 'POST',
-                credentials: 'include',
-            });
+            if (!staffAccessRef.current) {
+                void safeFetch(`/api/messages/conversations/${conversationId}/read`, {
+                    method: 'POST',
+                    credentials: 'include',
+                });
+            }
             let hadUnread = false;
-            setConversations((prev) => {
-                const target = prev.find((c) => c.id === conversationId);
-                if (!target || target.unreadCount === 0) return prev;
-                hadUnread = true;
-                return prev.map((c) =>
-                    c.id === conversationId ? { ...c, unreadCount: 0 } : c
-                );
-            });
+            if (!staffAccessRef.current) {
+                setConversations((prev) => {
+                    const target = prev.find((c) => c.id === conversationId);
+                    if (!target || target.unreadCount === 0) return prev;
+                    hadUnread = true;
+                    return prev.map((c) =>
+                        c.id === conversationId ? { ...c, unreadCount: 0 } : c
+                    );
+                });
+            }
             if (hadUnread) {
                 void loadConversations({ silent: true });
             }
@@ -643,10 +666,12 @@ export default function MessagesWorkspace({
                     setMessages((prev) =>
                         prev.some((m) => m.id === next.id) ? prev : [...prev, next]
                     );
-                    void safeFetch(`/api/messages/conversations/${activeId}/read`, {
-                        method: 'POST',
-                        credentials: 'include',
-                    });
+                    if (!staffAccessRef.current) {
+                        void safeFetch(`/api/messages/conversations/${activeId}/read`, {
+                            method: 'POST',
+                            credentials: 'include',
+                        });
+                    }
                 }
             )
             .subscribe();

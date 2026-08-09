@@ -1084,11 +1084,18 @@ export default function AdminMessagesPage() {
                                     const unread = c.unreadCount || 0;
                                     const isUnread = unread > 0;
                                     return (
-                                        <button
+                                        <div
                                             key={c.id}
-                                            type="button"
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => void loadThread(c.id)}
-                                            className={`group relative flex w-full gap-3 border-b border-[#F3F4F6] px-4 py-3.5 text-left transition hover:bg-[#F8FAFC] ${
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    void loadThread(c.id);
+                                                }
+                                            }}
+                                            className={`group relative flex w-full gap-3 border-b border-[#F3F4F6] px-4 py-3.5 text-left transition hover:bg-[#F8FAFC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#E52323]/40 ${
                                                 isSelected
                                                     ? 'bg-[#E52323]/[0.06] ring-1 ring-inset ring-[#E52323]/20'
                                                     : ''
@@ -1151,7 +1158,7 @@ export default function AdminMessagesPage() {
                                                     className={`h-3.5 w-3.5 ${isPinned ? 'fill-current' : ''}`}
                                                 />
                                             </button>
-                                        </button>
+                                        </div>
                                     );
                                 })
                             )}

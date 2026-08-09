@@ -26,12 +26,12 @@ interface PublicSiteHeaderProps {
 }
 
 const DEFAULT_MOBILE: PublicNavLink[] = [
-    { href: '/get-started', label: 'Get Started', isButton: true },
-    { href: '/auth/login', label: 'Sign in' },
-    { href: '/learning-center', label: 'Learning Center' },
+    { href: '/learning-center', label: 'Learning Center', isButton: true },
+    { href: '/auth/login', label: 'Sign in or register' },
     { href: '/learn', label: 'Learning Center — Buyers' },
     { href: '/sellers', label: 'Learning Center — Sellers' },
     { href: '/learn/investors', label: 'Learning Center — Investors' },
+    { href: '/get-started', label: 'Take the free quiz' },
     { href: '/calculator', label: 'Bond Calculator' },
     { href: '/dashboard', label: 'Dashboard' },
     { href: PROFESSIONALS_LOGIN_HREF, label: 'Professionals' },
@@ -61,20 +61,20 @@ export default function PublicSiteHeader({
                     {showDesktopNav ? (
                         <div className="hidden md:flex items-center gap-6 lg:gap-8">
                             <LearningCenterDropdown />
-                            <Link href="/get-started" className={PORTAL_PRIMARY_BTN}>
-                                Get Started
+                            <Link href="/learning-center" className={PORTAL_PRIMARY_BTN}>
+                                Learning Center
+                            </Link>
+                            <Link
+                                href="/auth/login"
+                                className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
+                            >
+                                Sign in or register
                             </Link>
                             <Link
                                 href="/calculator"
                                 className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
                             >
                                 Bond Calculator
-                            </Link>
-                            <Link
-                                href="/auth/login"
-                                className="text-sm font-medium text-charcoal/70 hover:text-charcoal transition"
-                            >
-                                Sign in
                             </Link>
                             <Link href={PROFESSIONALS_LOGIN_HREF} className={PORTAL_SECONDARY_BTN}>
                                 Professionals

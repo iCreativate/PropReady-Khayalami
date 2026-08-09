@@ -4,15 +4,12 @@ import {
     findAccountById,
     setAuthCookies,
 } from '@/lib/auth-enterprise';
-import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { resolveSessionFromRequest } from '@/lib/auth-enterprise/server-session';
-
-function redirectForIntent(accountType: string, intent?: 'buyer' | 'seller') {
-    if (accountType === 'originator') return '/originators/dashboard';
-    if (accountType === 'agent') return '/agents/dashboard';
-    if (intent === 'seller') return '/sellers/dashboard';
-    return '/dashboard';
-}
+import {
+    parsePostLoginRole,
+    resolvePostLoginDestination,
+} from '@/lib/post-login-routing';
+import { createServiceClient } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
     try {
@@ -29,7 +26,13 @@ export async function POST(request: NextRequest) {
         const wasFirstTime = !account.password_hash;
         const body = await request.json();
         const intent =
-            body.intent === 'seller' ? 'seller' : body.intent === 'buyer' ? 'buyer' : undefined;
+            body.intent === 'seller'
+                ? 'seller'
+                : body.intent === 'buyer'
+                  ? 'buyer'
+                  : body.intent === 'learner'
+                    ? 'learner'
+                    : undefined;
 
         const result = await completeVerifiedProfile(account, {
             fullName: String(body.fullName || ''),
@@ -41,10 +44,15 @@ export async function POST(request: NextRequest) {
             intent,
         });
 
-        const redirectTo = redirectForIntent(
-            result.user.accountType,
-            wasFirstTime ? result.intent : undefined
-        );
+        const supabase = createServiceClient();
+        const redirectTo = await resolvePostLoginDestination(supabase, {
+            accountType: result.user.accountType,
+            profileId: result.user.profileId,
+            email: result.user.email,
+            onboardingIntent:
+                result.intent === 'buyer' || result.intent === 'seller' ? result.intent : null,
+            preferredRole: wasFirstTime ? parsePostLoginRole(result.intent) : null,
+        });
 
         const response = NextResponse.json({
             success: true,
@@ -68,7 +76,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Could not save profile';
         const status =
-            /full legal name|phone number|company|organisation|organization|password|buying or selling/i.test(
+            /full legal name|phone number|company|organisation|organization|password|buying or selling|just learning/i.test(
                 message
             )
                 ? 400

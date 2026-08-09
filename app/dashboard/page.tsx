@@ -20,6 +20,7 @@ import { useOnboardingGate } from '@/hooks/useOnboardingGate';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import BuyerPrequalOnboardingForm from '@/components/onboarding/BuyerPrequalOnboardingForm';
 import PortalLoading from '@/components/PortalLoading';
+import LearningContinueCard from '@/components/learning/LearningContinueCard';
 import { PUBLIC_PROPERTIES_ENABLED } from '@/lib/public-properties';
 import { fetchPublishedProperties } from '@/lib/properties-client';
 
@@ -271,6 +272,7 @@ export default function DashboardPage() {
     return (
         <>
             <UserPortalLayout portal="buyer" activePage="dashboard" user={currentUser} title="Dashboard">
+                <LearningContinueCard />
                 <BuyerIntelligenceWorkspace
                     user={currentUser}
                     quizResult={quizResult}

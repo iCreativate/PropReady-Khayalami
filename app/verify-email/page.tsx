@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Home, Mail, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { parseAccountType } from '@/lib/auth-enterprise/account-profile';
+import {
+    applyClientPostLoginDestination,
+    readStoredPostLoginNext,
+} from '@/lib/post-login-routing-client';
 
 function VerifyEmailForm() {
     const router = useRouter();
@@ -29,6 +33,14 @@ function VerifyEmailForm() {
               : typeParam === 'conveyancer'
                 ? '/conveyancers/login'
                 : '/auth/login';
+
+    function loginPathWithReturn(): string {
+        const stored = readStoredPostLoginNext();
+        if (stored) {
+            return `/auth/login?next=${encodeURIComponent(stored)}`;
+        }
+        return loginPath;
+    }
 
     const markLocalVerified = () => {
         if (typeof window === 'undefined' || !email) return;
@@ -71,7 +83,7 @@ function VerifyEmailForm() {
 
             markLocalVerified();
             setSuccess(true);
-            setTimeout(() => router.push(loginPath), 2500);
+            setTimeout(() => router.push(loginPathWithReturn()), 2500);
         } catch {
             setError('Something went wrong. Please try again.');
         } finally {

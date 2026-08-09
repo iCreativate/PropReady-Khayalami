@@ -20,6 +20,10 @@ import {
     type LoginRole,
     type LoginRoleOption,
 } from '@/lib/auth-login-roles';
+import {
+    isSafePostLoginPath,
+    storePostLoginNext,
+} from '@/lib/post-login-routing-client';
 
 type AuthMode = 'password' | 'magic';
 
@@ -30,6 +34,7 @@ export default function AuthLoginClient() {
     const isProfessionals = audience === 'professionals';
     const requestedType = parseAccountType(searchParams.get('type'));
     const requestedRole = parseLoginRole(searchParams.get('role'));
+    const nextParam = searchParams.get('next');
     const errorParam = searchParams.get('error');
 
     const [role, setRole] = useState<LoginRole | null>(null);
@@ -55,6 +60,12 @@ export default function AuthLoginClient() {
     } | null>(null);
 
     useEffect(() => {
+        if (nextParam && isSafePostLoginPath(nextParam)) {
+            storePostLoginNext(nextParam);
+        }
+    }, [nextParam]);
+
+    useEffect(() => {
         if (isProfessionals) {
             setRole(null);
             if (requestedRole === 'agent' || requestedRole === 'originator' || requestedRole === 'conveyancer') {
@@ -74,13 +85,13 @@ export default function AuthLoginClient() {
             router.replace(loginPathForAccountType(requestedRole));
             return;
         }
-        if (requestedRole === 'buyer' || requestedRole === 'seller') {
+        if (requestedRole === 'buyer' || requestedRole === 'seller' || requestedRole === 'learner') {
             setRole(requestedRole);
             persistLoginRole(requestedRole);
             return;
         }
         const stored = readPersistedLoginRole();
-        if (stored === 'buyer' || stored === 'seller') {
+        if (stored === 'buyer' || stored === 'seller' || stored === 'learner') {
             setRole(stored);
         }
     }, [isProfessionals, requestedType, requestedRole, router]);
@@ -208,8 +219,15 @@ export default function AuthLoginClient() {
     }
 
     const roleMeta = role ? getLoginRoleOption(role) : null;
+    const roleDefaultRedirect =
+        role === 'seller'
+            ? '/sellers/dashboard'
+            : role === 'learner'
+              ? '/learning-center'
+              : '/dashboard';
     const postLoginRedirect =
-        role === 'seller' ? '/sellers/dashboard' : '/dashboard';
+        nextParam && isSafePostLoginPath(nextParam) ? nextParam : roleDefaultRedirect;
+    const confirmPasswordHref = `/auth/confirm-password?type=user&next=${encodeURIComponent(postLoginRedirect)}`;
 
     if (otpChallenge) {
         return (
@@ -229,7 +247,9 @@ export default function AuthLoginClient() {
                         syncLegacySession(data.user as Parameters<typeof syncLegacySession>[0], 'user');
                         const next =
                             data.redirectTo ||
-                            `/auth/confirm-password?type=user&next=${encodeURIComponent(postLoginRedirect)}`;
+                            (nextParam && isSafePostLoginPath(nextParam)
+                                ? `/auth/confirm-password?type=user&next=${encodeURIComponent(nextParam)}`
+                                : confirmPasswordHref);
                         window.location.assign(next);
                     }}
                     onBack={() => {
@@ -253,7 +273,7 @@ export default function AuthLoginClient() {
                 subtitle={
                     isProfessionals
                         ? 'Choose your professional role to continue to the right portal.'
-                        : 'Choose buyer or seller to continue to your PropReady account.'
+                        : 'Choose buyer, seller, or learning to continue to your PropReady account.'
                 }
                 accountType="user"
                 variant="roles"
@@ -296,7 +316,9 @@ export default function AuthLoginClient() {
             subtitle={
                 role === 'seller'
                     ? 'Access your seller dashboard, listings and messages'
-                    : 'Access your buyer dashboard, prequal and learning'
+                    : role === 'learner'
+                      ? 'Access the Learning Center — explore buyers, sellers and investors'
+                      : 'Access your buyer dashboard, prequal and learning'
             }
             accountType="user"
         >
@@ -378,7 +400,7 @@ export default function AuthLoginClient() {
             <div className="auth-divider mb-6">
                 <span>or continue with</span>
             </div>
-            <OAuthButtons accountType="user" />
+            <OAuthButtons accountType="user" returnPath={postLoginRedirect} />
             <p className="text-center text-sm text-charcoal/55 mt-8">
                 New here?{' '}
                 <Link href="/get-started" className="text-gold font-medium hover:underline">

@@ -206,6 +206,35 @@
   border-color: rgba(220, 38, 38, 0.2);
 }
 
+.lc-module-card--locked {
+  opacity: 0.52;
+  filter: grayscale(0.9);
+  background: rgba(248, 250, 252, 0.92);
+  border-color: rgba(28, 28, 28, 0.06);
+  box-shadow: none;
+}
+
+.lc-module-link--locked {
+  cursor: pointer;
+}
+
+.lc-module-link--locked:hover .lc-module-card--locked {
+  transform: none;
+  box-shadow: none;
+  border-color: rgba(28, 28, 28, 0.08);
+}
+
+.lc-module-badge--locked {
+  background: rgba(28, 28, 28, 0.06);
+  color: rgba(28, 28, 28, 0.45);
+}
+
+.lc-module-card--locked .lc-module-title,
+.lc-module-card--locked .lc-module-body,
+.lc-module-card--locked .lc-module-cta {
+  color: rgba(28, 28, 28, 0.42);
+}
+
 .lc-cta-band {
   margin-top: clamp(2.5rem, 5vw, 4rem);
   border-radius: var(--hl-radius-xl);

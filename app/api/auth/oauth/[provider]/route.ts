@@ -10,6 +10,15 @@ import {
     type AccountType,
 } from '@/lib/auth-enterprise';
 
+function isSafePostLoginPath(path: string): boolean {
+    const trimmed = path.trim();
+    if (!trimmed.startsWith('/')) return false;
+    if (trimmed.startsWith('//')) return false;
+    if (trimmed.includes('://')) return false;
+    if (trimmed.includes('\\')) return false;
+    return true;
+}
+
 const providers: OAuthProvider[] = ['google', 'apple'];
 
 export async function GET(
@@ -36,6 +45,9 @@ export async function GET(
         const accountType: AccountType = parseAccountType(
             request.nextUrl.searchParams.get('type')
         );
+        const nextParam = request.nextUrl.searchParams.get('next');
+        const oauthNext =
+            nextParam && isSafePostLoginPath(nextParam) ? nextParam : null;
         const state = createOAuthState(accountType);
         const appUrl = getAppUrl(request.nextUrl.origin);
         const url = getOAuthAuthorizationUrl(provider, accountType, state, appUrl);
@@ -62,6 +74,15 @@ export async function GET(
             path: '/',
             maxAge: AUTH_CONFIG.oauthStateTtlSeconds,
         });
+        if (oauthNext) {
+            response.cookies.set('pr_oauth_next', oauthNext, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                path: '/',
+                maxAge: AUTH_CONFIG.oauthStateTtlSeconds,
+            });
+        }
         return response;
     } catch (err) {
         console.error('oauth/start:', err);

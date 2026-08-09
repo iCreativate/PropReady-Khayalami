@@ -462,9 +462,9 @@ export async function completeVerifiedProfile(
         organizationId?: string;
         eaabNumber?: string;
         password?: string;
-        intent?: 'buyer' | 'seller';
+        intent?: 'buyer' | 'seller' | 'learner';
     }
-): Promise<LoginResult & { intent?: 'buyer' | 'seller' }> {
+): Promise<LoginResult & { intent?: 'buyer' | 'seller' | 'learner' }> {
     const fullName = input.fullName.trim();
     const phone = input.phone.trim();
     const company = input.company?.trim();
@@ -497,7 +497,7 @@ export async function completeVerifiedProfile(
         }
     }
     if (needsPassword && account.account_type === 'user' && !input.intent) {
-        throw new Error('Please choose whether you are buying or selling');
+        throw new Error('Please choose whether you are buying, selling, or just learning');
     }
 
     const table = profileTableForAccountType(account.account_type);
@@ -529,9 +529,14 @@ export async function completeVerifiedProfile(
         updated_at: new Date().toISOString(),
     };
 
-    // Only first-time passwordless users get a forced buyer/seller onboarding gate.
-    // Learner-hub / existing password users never set this and are not blocked.
-    if (needsPassword && account.account_type === 'user' && input.intent) {
+    // Only first-time passwordless buyers/sellers get a forced onboarding gate.
+    // Learner intent skips quiz onboarding — same as learner-hub signups.
+    if (
+        needsPassword &&
+        account.account_type === 'user' &&
+        input.intent &&
+        input.intent !== 'learner'
+    ) {
         accountPatch.onboarding_intent = input.intent;
         accountPatch.onboarding_completed_at = null;
     }

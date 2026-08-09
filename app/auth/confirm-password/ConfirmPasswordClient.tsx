@@ -10,11 +10,14 @@ import {
     loginPathForAccountType,
     parseAccountType,
 } from '@/lib/auth-enterprise/account-profile';
+import { readPersistedLoginRole } from '@/lib/auth-login-roles';
+import { applyClientPostLoginDestination } from '@/lib/post-login-routing-client';
 
 function ConfirmPasswordInner() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const accountType = parseAccountType(searchParams.get('type'));
+    const nextParam = searchParams.get('next');
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -43,7 +46,12 @@ function ConfirmPasswordInner() {
                 }
 
                 if (data.user.passwordOk !== false && data.user.profileComplete) {
-                    router.replace(dashboardPathForAccountType(data.user.accountType || accountType));
+                    router.replace(
+                        applyClientPostLoginDestination(
+                            dashboardPathForAccountType(data.user.accountType || accountType),
+                            { explicitNext: nextParam }
+                        )
+                    );
                     return;
                 }
 
@@ -74,15 +82,26 @@ function ConfirmPasswordInner() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ password }),
+                body: JSON.stringify({
+                    password,
+                    preferredRole: readPersistedLoginRole(),
+                }),
             });
             const data = await res.json();
             if (!res.ok) {
                 setError(data.error || 'Incorrect password');
-                if (data.redirectTo) router.replace(data.redirectTo);
+                if (data.redirectTo) {
+                    router.replace(
+                        applyClientPostLoginDestination(data.redirectTo, { explicitNext: nextParam })
+                    );
+                }
                 return;
             }
-            router.replace(data.redirectTo || '/dashboard');
+            router.replace(
+                applyClientPostLoginDestination(data.redirectTo || '/dashboard', {
+                    explicitNext: nextParam,
+                })
+            );
         } catch {
             setError('Could not confirm password. Please try again.');
         } finally {

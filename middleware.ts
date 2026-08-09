@@ -84,6 +84,11 @@ export async function middleware(request: NextRequest) {
         }
 
         // Staff console uses pr_admin — keep separate from user/agent sessions
+        if (pathname !== pathname.toLowerCase() && pathname.toLowerCase().startsWith('/admin')) {
+            const normalized = `${pathname.toLowerCase()}${request.nextUrl.search}`;
+            return NextResponse.redirect(new URL(normalized, request.url));
+        }
+
         if (pathname === '/admin/login' || pathname.startsWith('/admin/login/')) {
             return supabaseResponse;
         }
@@ -96,7 +101,12 @@ export async function middleware(request: NextRequest) {
                 console.error('middleware admin verify:', err);
             }
             if (!session) {
-                return NextResponse.redirect(new URL('/admin/login', request.url));
+                const loginUrl = new URL('/admin/login', request.url);
+                const redirect = NextResponse.redirect(loginUrl);
+                supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+                    redirect.cookies.set(name, value, options);
+                });
+                return redirect;
             }
             return supabaseResponse;
         }

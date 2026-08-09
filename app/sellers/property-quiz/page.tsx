@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
-import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, MapPin, Square, FileText, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
+import { MapPin, Square, FileText, AlertCircle } from 'lucide-react';
 import SellerPortalShell from '@/components/SellerPortalShell';
 import PortalPageHeader from '@/components/PortalPageHeader';
-import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
+import QuizWizardShell from '@/components/quiz/QuizWizardShell';
+import { QuizPublicHeader, QuizStepHeader } from '@/components/quiz/quiz-ui';
 
 export default function PropertyQuizPage() {
     const router = useRouter();
@@ -120,13 +119,13 @@ export default function PropertyQuizPage() {
         switch (currentStep) {
             case 1:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Property Address</h2>
-                        <p className="text-charcoal/60 mb-6 text-center">
-                            Let&apos;s start with your property location
-                        </p>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader
+                            title="Property Address"
+                            subtitle="Let's start with your property location"
+                        />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Property Address <span className="text-red-600">*</span>
                             </label>
@@ -153,10 +152,10 @@ export default function PropertyQuizPage() {
                 );
             case 2:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Property Details</h2>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader title="Property Details" />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Property Size (m²) <span className="text-red-600">*</span>
                             </label>
@@ -182,7 +181,7 @@ export default function PropertyQuizPage() {
                             )}
                         </div>
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Property Condition <span className="text-red-600">*</span>
                             </label>
@@ -211,13 +210,13 @@ export default function PropertyQuizPage() {
                 );
             case 3:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Property Description</h2>
-                        <p className="text-charcoal/60 mb-6 text-center">
-                            Tell us more about your property (optional but recommended)
-                        </p>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader
+                            title="Property Description"
+                            subtitle="Tell us more about your property (optional but recommended)"
+                        />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Property Description <span className="text-charcoal/50 text-sm">(Optional)</span>
                             </label>
@@ -241,15 +240,7 @@ export default function PropertyQuizPage() {
     };
 
     const propertyQuizPublicHeader = (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-            <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-                <BrandLogo />
-                <Link href="/sellers" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                    <ArrowLeft className="w-5 h-5" />
-                    <span>Back to Sellers Hub</span>
-                </Link>
-            </nav>
-        </header>
+        <QuizPublicHeader backHref="/sellers" backLabel="Back to Sellers Hub" />
     );
 
     return (
@@ -283,74 +274,18 @@ export default function PropertyQuizPage() {
                 />
             }
         >
-            <div className="relative min-h-[calc(100vh-4.25rem)] flex items-center justify-center">
-                <div className={`${PORTAL_PAGE_CONTAINER} relative z-10 w-full`}>
-                    {/* Progress Badge */}
-                    <div className="text-center mb-8">
-                        <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30">
-                            <span className="text-gold font-semibold">Step {currentStep} of {totalSteps}</span>
-                        </div>
-                        {/* Progress Bar */}
-                        <div className="w-full max-w-md mx-auto h-2 bg-white/10 rounded-full mt-4 overflow-hidden">
-                            <div
-                                className="h-full bg-gold transition-all duration-500 ease-out"
-                                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-                            ></div>
-                        </div>
-                    </div>
-
-                    {/* Quiz Card */}
-                    <div className="premium-card rounded-2xl p-8 md:p-12 min-h-[500px] flex flex-col">
-                        <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2 text-center">
-                            Tell Us About Your Property
-                        </h1>
-
-                        <p className="text-charcoal/60 mb-8 text-center">
-                            Help us understand your property better to provide you with an accurate valuation.
-                        </p>
-
-                        {/* Dynamic Step Content */}
-                        <div className="flex-grow">
-                            {renderStepContent()}
-                        </div>
-
-                        {/* Navigation Buttons */}
-                        <div className="flex items-center justify-between mt-12 pt-6 border-t border-charcoal/10">
-                            <button
-                                onClick={handlePrevious}
-                                disabled={currentStep === 1}
-                                className={`px-6 py-3 rounded-lg border border-charcoal/20 text-charcoal font-semibold transition-all ${currentStep === 1
-                                        ? 'opacity-50 cursor-not-allowed'
-                                        : 'hover:bg-charcoal/5'
-                                    }`}
-                            >
-                                Previous
-                            </button>
-
-                            <button
-                                onClick={handleNext}
-                                className="inline-flex items-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
-                            >
-                                <span>{currentStep === totalSteps ? 'Continue to Valuation' : 'Next Step'}</span>
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Trust Message */}
-                    <div className="text-center mt-8">
-                        <p className="text-charcoal/70 text-sm flex items-center justify-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Your information is secure and encrypted
-                        </p>
-                    </div>
-                </div>
-
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float"></div>
-                    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
-                </div>
-            </div>
+            <QuizWizardShell
+                title="Tell Us About Your Property"
+                subtitle="Help us understand your property better to provide you with an accurate valuation."
+                currentStep={currentStep}
+                totalSteps={totalSteps}
+                onPrevious={handlePrevious}
+                onNext={handleNext}
+                previousDisabled={currentStep === 1}
+                nextLabel={currentStep === totalSteps ? 'Continue to Valuation' : 'Next Step'}
+            >
+                {renderStepContent()}
+            </QuizWizardShell>
         </SellerPortalShell>
     );
 }

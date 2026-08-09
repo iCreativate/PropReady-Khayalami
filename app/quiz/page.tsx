@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import BrandLogo from '@/components/BrandLogo';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
+import { ArrowRight, Home, CheckCircle, AlertCircle, Building2, Phone, ExternalLink, Mail, User, X, Lock, Eye, EyeOff, MapPin } from 'lucide-react';
 import { getLocationFromBrowser } from '@/lib/geolocation';
 import { formatCurrency, parseAmountForDisplay, formatPriceWithCommas } from '@/lib/currency';
 import { validatePassword, formatPasswordErrors, getPasswordRequirementsText } from '@/lib/password';
@@ -20,9 +18,12 @@ import {
     type BuyerQuizResult,
     type PortalUser,
 } from '@/lib/quiz-result';
+import { capturePostLoginNextFromLocation } from '@/lib/post-login-routing-client';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 import PortalLoading from '@/components/PortalLoading';
+import QuizWizardShell from '@/components/quiz/QuizWizardShell';
+import { QuizPublicHeader, QuizStepHeader, quizChoiceClass } from '@/components/quiz/quiz-ui';
 
 type QuizView = 'results' | 'wizard';
 
@@ -68,6 +69,10 @@ export default function QuizPage() {
 
     const isLoggedIn = Boolean(currentUser?.id || currentUser?.email);
     const totalSteps = isLoggedIn ? 8 : 9;
+
+    useEffect(() => {
+        capturePostLoginNextFromLocation();
+    }, []);
 
     useEffect(() => {
         const user = readPortalUser();
@@ -546,13 +551,13 @@ export default function QuizPage() {
         switch (currentStep) {
             case 1:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Let&apos;s Get Started</h2>
-                        <p className="text-charcoal/60 mb-6 text-center">
-                            We need some basic information to personalize your experience
-                        </p>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader
+                            title="Let's Get Started"
+                            subtitle="We need some basic information to personalize your experience"
+                        />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Full Name <span className="text-red-600">*</span>
                             </label>
@@ -576,7 +581,7 @@ export default function QuizPage() {
                             )}
                         </div>
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Email Address <span className="text-red-600">*</span>
                             </label>
@@ -600,7 +605,7 @@ export default function QuizPage() {
                             )}
                         </div>
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Phone Number <span className="text-red-600">*</span>
                             </label>
@@ -624,7 +629,7 @@ export default function QuizPage() {
                             )}
                         </div>
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 City or area <span className="text-red-600">*</span>
                             </label>
@@ -677,12 +682,9 @@ export default function QuizPage() {
                 );
             case 2:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Property Search</h2>
-                        <p className="text-charcoal/60 mb-6 text-center">
-                            Help us tailor your experience
-                        </p>
-                        <div className="premium-card rounded-xl p-6">
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader title="Property Search" subtitle="Help us tailor your experience" />
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Are you in the market for a new property? <span className="text-red-600">*</span>
                             </label>
@@ -690,24 +692,14 @@ export default function QuizPage() {
                                 <button
                                     type="button"
                                     onClick={() => handleInMarketSelection(true)}
-                                    className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.inMarketForProperty === true
-                                            ? 'bg-gold text-white border-gold'
-                                            : errors.inMarketForProperty
-                                            ? 'bg-white border-2 border-red-500 text-charcoal hover:bg-red-500/10'
-                                            : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
-                                        }`}
+                                    className={`px-6 py-3 transition-all ${quizChoiceClass(formData.inMarketForProperty === true, !!errors.inMarketForProperty)}`}
                                 >
                                     Yes
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => handleInMarketSelection(false)}
-                                    className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.inMarketForProperty === false
-                                            ? 'bg-gold text-white border-gold'
-                                            : errors.inMarketForProperty
-                                            ? 'bg-white border-2 border-red-500 text-charcoal hover:bg-red-500/10'
-                                            : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
-                                        }`}
+                                    className={`px-6 py-3 transition-all ${quizChoiceClass(formData.inMarketForProperty === false, !!errors.inMarketForProperty)}`}
                                 >
                                     No
                                 </button>
@@ -723,10 +715,10 @@ export default function QuizPage() {
                 );
             case 3:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Financial Overview</h2>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader title="Financial Overview" />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 What&apos;s your total monthly household income (before tax)? <span className="text-red-600">*</span>
                             </label>
@@ -751,7 +743,7 @@ export default function QuizPage() {
                             )}
                         </div>
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 What is your employment status? <span className="text-red-600">*</span>
                             </label>
@@ -779,10 +771,10 @@ export default function QuizPage() {
                 );
             case 4:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Expenses & Debt</h2>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader title="Expenses & Debt" />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Do you have any existing debt obligations? <span className="text-red-600">*</span>
                             </label>
@@ -790,24 +782,14 @@ export default function QuizPage() {
                                 <button
                                     type="button"
                                     onClick={() => handleDebtSelection(true)}
-                                    className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.hasDebt === true
-                                            ? 'bg-gold text-white border-gold'
-                                            : errors.hasDebt 
-                                            ? 'bg-white border-2 border-red-500 text-charcoal hover:bg-red-500/10'
-                                            : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
-                                        }`}
+                                    className={`px-6 py-3 transition-all ${quizChoiceClass(formData.hasDebt === true, !!errors.hasDebt)}`}
                                 >
                                     Yes
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => handleDebtSelection(false)}
-                                    className={`px-6 py-3 rounded-lg border transition-all font-semibold ${formData.hasDebt === false
-                                            ? 'bg-gold text-white border-gold'
-                                            : errors.hasDebt 
-                                            ? 'bg-white border-2 border-red-500 text-charcoal hover:bg-red-500/10'
-                                            : 'bg-white border border-charcoal/20 text-charcoal hover:bg-charcoal/5'
-                                        }`}
+                                    className={`px-6 py-3 transition-all ${quizChoiceClass(formData.hasDebt === false, !!errors.hasDebt)}`}
                                 >
                                     No
                                 </button>
@@ -821,7 +803,7 @@ export default function QuizPage() {
                         </div>
 
                         {formData.hasDebt && (
-                            <div className="premium-card rounded-xl p-6 animate-in fade-in slide-in-from-top-2">
+                            <div className="quiz-field-card animate-in fade-in slide-in-from-top-2">
                                 <label className="block text-charcoal font-semibold text-lg mb-4">
                                     Total monthly debt repayments? <span className="text-red-600">*</span>
                                 </label>
@@ -851,10 +833,10 @@ export default function QuizPage() {
                 );
             case 5:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Savings & Deposit</h2>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader title="Savings & Deposit" />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 How much do you have saved for a deposit? <span className="text-red-600">*</span>
                             </label>
@@ -886,10 +868,10 @@ export default function QuizPage() {
                 );
             case 6:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                        <h2 className="text-2xl font-bold text-charcoal mb-6">Credit Profile</h2>
+                    <div className="space-y-5 quiz-step-enter">
+                        <QuizStepHeader title="Credit Profile" />
 
-                        <div className="premium-card rounded-xl p-6">
+                        <div className="quiz-field-card">
                             <label className="block text-charcoal font-semibold text-lg mb-4">
                                 Do you know your current credit score? (Optional)
                             </label>
@@ -907,7 +889,7 @@ export default function QuizPage() {
                             </select>
                         </div>
 
-                        <div className="premium-card rounded-xl p-6 bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <div className="quiz-callout">
                             <div className="flex items-center space-x-3 mb-2">
                                 <CheckCircle className="text-gold w-6 h-6" />
                                 <h3 className="text-charcoal font-bold text-lg">We&apos;ll do a soft check</h3>
@@ -920,7 +902,7 @@ export default function QuizPage() {
                 );
             case 7:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
+                    <div className="space-y-5 quiz-step-enter text-center">
                         <div className="w-20 h-20 bg-gold rounded-full flex items-center justify-center mx-auto mb-6">
                             <CheckCircle className="w-10 h-10 text-white" />
                         </div>
@@ -931,7 +913,7 @@ export default function QuizPage() {
                             Set a password, then verify your email and sign in to track your home buying journey.
                         </p>
 
-                        <div className="premium-card rounded-xl p-6 text-left max-w-md mx-auto">
+                        <div className="quiz-field-card text-left max-w-md mx-auto">
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-charcoal font-semibold text-lg mb-4">
@@ -1001,7 +983,7 @@ export default function QuizPage() {
                 );
             case 8:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 text-center">
+                    <div className="space-y-5 quiz-step-enter text-center">
                         <div className="w-20 h-20 bg-gold rounded-full flex items-center justify-center mx-auto mb-6">
                             <CheckCircle className="w-10 h-10 text-white" />
                         </div>
@@ -1012,7 +994,7 @@ export default function QuizPage() {
                             We have everything we need to calculate your PropReady score and pre-qualification amount.
                         </p>
 
-                        <div className="premium-card rounded-xl p-6 text-left max-w-md mx-auto bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
+                        <div className="quiz-field-card text-left max-w-md mx-auto bg-gradient-to-br from-gold/5 to-gold/10 border border-gold/20">
                             <h3 className="text-charcoal font-bold mb-4 border-b border-charcoal/20 pb-2">Summary</h3>
                             <div className="space-y-2 text-charcoal/70">
                                 <div className="flex items-start justify-between gap-4">
@@ -1041,18 +1023,18 @@ export default function QuizPage() {
                 );
             case 9:
                 return (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="space-y-5 quiz-step-enter">
                         <div className="text-center mb-6">
                             <Building2 className="w-12 h-12 text-gold mx-auto mb-4" />
-                            <h2 className="text-2xl font-bold text-charcoal mb-2">Recommended Bond Originators</h2>
-                            <p className="text-charcoal/60">
-                                Connect with trusted bond originators to help secure your home loan
-                            </p>
+                            <QuizStepHeader
+                                title="Recommended Bond Originators"
+                                subtitle="Connect with trusted bond originators to help secure your home loan"
+                            />
                         </div>
 
                         <BondOriginatorSlider onContact={setSelectedOriginator} />
 
-                        <div className="premium-card rounded-xl p-4 bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/20">
+                        <div className="quiz-callout text-center">
                             <p className="text-charcoal/70 text-sm text-center">
                                 <CheckCircle className="w-4 h-4 inline mr-2 text-gold" />
                                 Bond originators work for free - banks pay their commission, not you!
@@ -1066,81 +1048,28 @@ export default function QuizPage() {
     };
 
     const renderWizard = () => (
-        <div className="relative min-h-[calc(100vh-4.25rem)] flex items-center justify-center">
-            <div className="container mx-auto max-w-4xl relative z-10 w-full">
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gold/20 border border-gold/30">
-                        <span className="text-gold font-semibold">
-                            Step {isLoggedIn && currentStep >= 8 ? 7 : currentStep} of {totalSteps}
-                        </span>
-                    </div>
-                    <div className="w-full max-w-md mx-auto h-2 bg-charcoal/10 rounded-full mt-4 overflow-hidden">
-                        <div
-                            className="h-full bg-gold transition-all duration-500 ease-out"
-                            style={{
-                                width: `${((isLoggedIn && currentStep >= 8 ? 7 : currentStep) / totalSteps) * 100}%`,
-                            }}
-                        />
-                    </div>
-                </div>
-
-                <div className="premium-card rounded-2xl p-8 md:p-12 min-h-[500px] flex flex-col">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gold mb-2 text-center">
-                        {isLoggedIn ? 'Update Your Pre-Qualification' : "Let's Get You PropReady!"}
-                    </h1>
-                    <p className="text-charcoal/60 mb-8 text-center">
-                        {isLoggedIn
-                            ? 'Update your answers to refresh your PropReady score and pre-qualification amount.'
-                            : 'Answer a few questions to unlock your home buying power.'}
-                    </p>
-
-                    <div className="flex-grow">{renderStepContent()}</div>
-
-                    <div className="flex items-center justify-between mt-12 pt-6 border-t border-charcoal/10">
-                        <button
-                            type="button"
-                            onClick={handlePrevious}
-                            disabled={currentStep === 1}
-                            className={`px-6 py-3 rounded-lg border border-charcoal/20 text-charcoal font-semibold transition-all ${
-                                currentStep === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-charcoal/5'
-                            }`}
-                        >
-                            Previous
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleNext}
-                            className="inline-flex items-center gap-2 h-11 px-7 rounded-full bg-gold text-white text-sm font-semibold hover:bg-gold-600 transition-all duration-200 shadow-[0_1px_3px_rgba(220,38,38,0.2)]"
-                        >
-                            <span>
-                                {currentStep === totalSteps
-                                    ? isLoggedIn
-                                        ? 'Save Pre-Qualification'
-                                        : 'Complete & View Dashboard'
-                                    : 'Next Step'}
-                            </span>
-                            <ArrowRight className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="text-center mt-8">
-                    <p className="text-charcoal/70 text-sm flex items-center justify-center gap-2">
-                        <CheckCircle className="w-4 h-4" />
-                        Your information is secure and encrypted
-                    </p>
-                </div>
-            </div>
-
-            <div className="absolute inset-0 opacity-10 pointer-events-none">
-                <div className="absolute top-20 left-10 w-72 h-72 bg-gold rounded-full blur-3xl animate-float" />
-                <div
-                    className="absolute bottom-20 right-10 w-96 h-96 bg-gold/20 rounded-full blur-3xl animate-float"
-                    style={{ animationDelay: '2s' }}
-                />
-            </div>
-        </div>
+        <QuizWizardShell
+            title={isLoggedIn ? 'Update Your Pre-Qualification' : "Let's Get You PropReady!"}
+            subtitle={
+                isLoggedIn
+                    ? 'Update your answers to refresh your PropReady score and pre-qualification amount.'
+                    : 'Answer a few questions to unlock your home buying power.'
+            }
+            currentStep={isLoggedIn && currentStep >= 8 ? 7 : currentStep}
+            totalSteps={totalSteps}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+            previousDisabled={currentStep === 1}
+            nextLabel={
+                currentStep === totalSteps
+                    ? isLoggedIn
+                        ? 'Save Pre-Qualification'
+                        : 'Complete & View Dashboard'
+                    : 'Next Step'
+            }
+        >
+            {renderStepContent()}
+        </QuizWizardShell>
     );
 
     const renderContactModal = () =>
@@ -1324,21 +1253,9 @@ export default function QuizPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-charcoal/10">
-                <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
-                    <BrandLogo />
-                    <Link href="/" className="flex items-center space-x-2 text-charcoal hover:text-charcoal/90 transition">
-                        <ArrowLeft className="w-5 h-5" />
-                        <span>Back to Home</span>
-                    </Link>
-                </nav>
-            </header>
-
-            <main className="relative min-h-screen flex items-center justify-center px-4 pt-24 pb-12">
-                {renderWizard()}
-            </main>
-
+        <div className="min-h-screen bg-[#F8FAFC]">
+            <QuizPublicHeader backHref="/" backLabel="Back to Home" />
+            <main className="pt-[4.5rem]">{renderWizard()}</main>
             {renderContactModal()}
         </div>
     );

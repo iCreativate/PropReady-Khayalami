@@ -19,9 +19,12 @@ import PortalLoading from '@/components/PortalLoading';
 import PortalPageHeader from '@/components/PortalPageHeader';
 import { PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
 import LearningLandingShell from '@/components/marketing/learn/LearningLandingShell';
+import LearningSignupGateModal from '@/components/buyer-learn/LearningSignupGateModal';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import type { LessonDifficulty } from '@/lib/buyer-learn/types';
 import {
+    canAccessLessonAnonymously,
+    canCompleteLessonAnonymously,
     completeLessonQuiz,
     getLessonProgress,
     readBuyerLearnStore,
@@ -29,6 +32,7 @@ import {
     updateLessonProgress,
     type LessonModule,
 } from '@/lib/buyer-learn';
+import { BUYER_LEARN_CHANGED_EVENT } from '@/lib/buyer-learn/progress';
 import {
     LEARN_COURSE_GRID,
     LEARN_COURSE_SHELL,
@@ -65,6 +69,9 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
     const [completedChapterIds, setCompletedChapterIds] = useState<string[]>([]);
     const [openChapterId, setOpenChapterId] = useState<string | null>(null);
     const [aiOpen, setAiOpen] = useState(false);
+    const [signupGateOpen, setSignupGateOpen] = useState(false);
+    const [signupGateCompleting, setSignupGateCompleting] = useState(false);
+    const [guestAccessTick, setGuestAccessTick] = useState(0);
 
     const showLab =
         lesson.meta.slug === 'home-loans' ||
@@ -104,6 +111,24 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
             setProgressPct(p.percent);
         }
     }, [progressId, useCourse, chapters]);
+
+    useEffect(() => {
+        if (!isHydrated || user) return;
+        if (!canAccessLessonAnonymously(progressId)) {
+            setSignupGateCompleting(false);
+            setSignupGateOpen(true);
+        }
+    }, [isHydrated, user, progressId, guestAccessTick]);
+
+    useEffect(() => {
+        const bump = () => setGuestAccessTick((v) => v + 1);
+        window.addEventListener(BUYER_LEARN_CHANGED_EVENT, bump);
+        window.addEventListener('focus', bump);
+        return () => {
+            window.removeEventListener(BUYER_LEARN_CHANGED_EVENT, bump);
+            window.removeEventListener('focus', bump);
+        };
+    }, []);
 
     useEffect(() => {
         if (useCourse) return;
@@ -160,6 +185,22 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
         const pct = chapterProgressPercent(nextDone);
         const nextChapter = chapters.find((c) => !nextDone.includes(c.id));
         const allDone = nextDone.length >= chapters.length;
+
+        if (allDone && !user && !canCompleteLessonAnonymously(progressId)) {
+            setCompletedChapterIds(nextDone);
+            setProgressPct(pct);
+            setOpenChapterId(null);
+            setActiveChapterId('achievement');
+            updateLessonProgress(progressId, {
+                completedChapterIds: nextDone,
+                lastSectionId: chapterId,
+                percent: pct,
+                completed: false,
+            });
+            setSignupGateCompleting(true);
+            setSignupGateOpen(true);
+            return;
+        }
 
         setCompletedChapterIds(nextDone);
         setProgressPct(pct);
@@ -249,6 +290,11 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
     }
 
     function handleQuizComplete(scorePct: number) {
+        if (!user && !canCompleteLessonAnonymously(progressId)) {
+            setSignupGateCompleting(true);
+            setSignupGateOpen(true);
+            return;
+        }
         const store = completeLessonQuiz(progressId, scorePct, lesson.meta.xp);
         setProgressPct(100);
         setKnowledgeScore(scorePct);
@@ -467,13 +513,19 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
         />
     );
 
+    const gateModal = (
+        <LearningSignupGateModal open={signupGateOpen} completing={signupGateCompleting} />
+    );
+
     if (!isHydrated) {
         return <PortalLoading message="Loading lesson…" variant="dashboard" />;
     }
 
     if (user) {
         return (
-            <BuyerPortalShell
+            <>
+                {gateModal}
+                <BuyerPortalShell
                 activePage="learn"
                 title={lesson.meta.title}
                 pageHeader={
@@ -507,11 +559,14 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
                     {tutor}
                 </div>
             </BuyerPortalShell>
+            </>
         );
     }
 
     return (
-        <LearningLandingShell
+        <>
+            {gateModal}
+            <LearningLandingShell
             backHref={hubBasePath}
             backLabel={`Back to ${hubLabel}`}
         >
@@ -521,5 +576,6 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
                 {tutor}
             </div>
         </LearningLandingShell>
+        </>
     );
 }

@@ -173,7 +173,7 @@ const FAQS = [
     },
     {
         q: 'How do I start?',
-        a: 'Tap Start Learning Free to begin Get Started, or open the Learning Center to choose the Buyers, Sellers or Investors hub.',
+        a: 'Open the Learning Center to browse free lessons, or sign in to save progress. Ready to buy or sell? Take the free quiz from Get Started.',
     },
 ];
 
@@ -237,19 +237,36 @@ export default function HomeLanding() {
                             </motion.p>
 
                             <motion.div
-                                className="mt-10 flex flex-col sm:flex-row gap-3"
+                                className="mt-10 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3"
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.7, delay: 0.26 }}
                             >
-                                <Link href="/get-started" className="hl-btn hl-btn--primary">
-                                    <span>Start Learning Free</span>
-                                    <ArrowRight className="w-5 h-5" strokeWidth={1.75} />
+                                <Link href="/learning-center" className="hl-btn hl-btn--primary">
+                                    <BookOpen className="h-5 w-5" strokeWidth={1.75} />
+                                    <span>Open Learning Center</span>
+                                    <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
                                 </Link>
-                                <Link href="/learning-center" className="hl-btn hl-btn--ghost">
-                                    Explore the Platform
+                                <Link href="/auth/login" className="hl-btn hl-btn--ghost">
+                                    <span>Sign in or register</span>
+                                    <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
                                 </Link>
                             </motion.div>
+
+                            <motion.p
+                                className="mt-4 text-sm text-white/50"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.34, duration: 0.6 }}
+                            >
+                                Ready to buy or sell?{' '}
+                                <Link
+                                    href="/get-started"
+                                    className="font-semibold text-gold/90 hover:text-gold transition-colors"
+                                >
+                                    Take the free quiz
+                                </Link>
+                            </motion.p>
 
                             <motion.div
                                 className="mt-11 flex flex-wrap items-center gap-x-6 gap-y-3"
@@ -749,15 +766,26 @@ export default function HomeLanding() {
                                     Start free. Learn at your pace. Use the tools. Connect with professionals when
                                     you are ready.
                                 </p>
-                                <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-                                    <Link href="/get-started" className="hl-btn hl-btn--primary">
-                                        <span>Start Learning Free</span>
-                                        <ArrowRight className="w-5 h-5" strokeWidth={1.75} />
+                                <div className="mx-auto mt-10 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center gap-3">
+                                    <Link href="/learning-center" className="hl-btn hl-btn--primary">
+                                        <BookOpen className="h-5 w-5" strokeWidth={1.75} />
+                                        <span>Open Learning Center</span>
+                                        <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
                                     </Link>
-                                    <Link href="/learning-center" className="hl-btn hl-btn--ghost">
-                                        Explore Learning Center
+                                    <Link href="/auth/login" className="hl-btn hl-btn--ghost">
+                                        <span>Sign in or register</span>
+                                        <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
                                     </Link>
                                 </div>
+                                <p className="mx-auto mt-5 max-w-md text-sm text-white/55">
+                                    Ready to buy or sell?{' '}
+                                    <Link
+                                        href="/get-started"
+                                        className="font-semibold text-gold/90 hover:text-gold transition-colors"
+                                    >
+                                        Take the free quiz
+                                    </Link>
+                                </p>
                             </div>
                         </div>
                     </Reveal>

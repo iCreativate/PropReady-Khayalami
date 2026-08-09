@@ -16,6 +16,30 @@ import { dashboardPathForAccountType, profileTableForAccountType } from '@/lib/a
 import { parsePortalAccountType } from '@/lib/admin-accounts';
 import { getRequestMeta } from '@/lib/auth-enterprise/request-meta';
 
+function impersonationErrorMessage(err: unknown): string {
+    const message =
+        err instanceof Error
+            ? err.message
+            : typeof err === 'object' &&
+                err !== null &&
+                'message' in err &&
+                typeof (err as { message?: unknown }).message === 'string'
+              ? (err as { message: string }).message
+              : 'Server error';
+    const code =
+        typeof err === 'object' && err !== null && 'code' in err
+            ? String((err as { code?: unknown }).code || '')
+            : '';
+
+    if (/impersonation_log|does not exist/i.test(message)) {
+        return 'Run supabase/migrations/20260728_admin_announcements_impersonation.sql in Supabase.';
+    }
+    if (code === '22P02' || /invalid input syntax for type uuid/i.test(message)) {
+        return 'Auth profile link mismatch. Run supabase/migrations/20260811_auth_accounts_profile_id_text.sql in Supabase, then retry.';
+    }
+    return message;
+}
+
 /** Open a portal session as another account (staff support access). */
 export async function POST(request: NextRequest) {
     const auth = await assertAdminRequest(request);
@@ -70,7 +94,7 @@ export async function POST(request: NextRequest) {
             trustedDevice: false,
         });
 
-        await supabase.from('admin_impersonation_log').insert({
+        const { error: logError } = await supabase.from('admin_impersonation_log').insert({
             admin_email: auth.email,
             target_account_type: accountType,
             target_profile_id: String(profile.id),
@@ -78,6 +102,9 @@ export async function POST(request: NextRequest) {
             target_name: profile.full_name ? String(profile.full_name) : null,
             notes,
         });
+        if (logError) {
+            console.warn('admin impersonate log (non-fatal):', logError);
+        }
 
         const redirectTo = dashboardPathForAccountType(accountType);
         const response = NextResponse.json({
@@ -96,17 +123,7 @@ export async function POST(request: NextRequest) {
         return response;
     } catch (err) {
         console.error('admin impersonate:', err);
-        return NextResponse.json(
-            {
-                error:
-                    err instanceof Error && /impersonation_log|does not exist/i.test(err.message)
-                        ? 'Run supabase/migrations/20260728_admin_announcements_impersonation.sql in Supabase.'
-                        : err instanceof Error
-                          ? err.message
-                          : 'Server error',
-            },
-            { status: 500 }
-        );
+        return NextResponse.json({ error: impersonationErrorMessage(err) }, { status: 500 });
     }
 }
 

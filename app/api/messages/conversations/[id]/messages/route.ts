@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
 import {
     displayNameForUser,
+    markConversationReadForUser,
     messagesDb,
     requireParticipant,
     serializeMessage,
@@ -87,12 +88,7 @@ export async function POST(
         if (error || !data) throw error || new Error('Could not send message');
 
         await touchConversationPreview(id, text, now);
-        await messagesDb()
-            .from('message_participants')
-            .update({ last_read_at: now })
-            .eq('conversation_id', id)
-            .eq('account_type', session.user.accountType)
-            .eq('profile_id', session.user.profileId);
+        await markConversationReadForUser(id, session.user, now);
 
         return jsonWithSession({ success: true, message: serializeMessage(data as MessageItemRow) }, session);
     } catch (err) {

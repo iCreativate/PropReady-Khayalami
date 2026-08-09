@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import PublicSiteHeader from '@/components/PublicSiteHeader';
+import '@/app/home-landing.css';
+import '@/app/learning-landing.css';
 
 type LearningLandingShellProps = {
     children: ReactNode;

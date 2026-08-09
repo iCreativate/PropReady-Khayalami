@@ -3,6 +3,7 @@
 import {
     ArrowRight,
     Briefcase,
+    BookOpen,
     Home,
     KeyRound,
     Landmark,
@@ -17,9 +18,10 @@ import {
     type LoginRoleOption,
 } from '@/lib/auth-login-roles';
 
-const CONSUMER_ICONS: Record<'buyer' | 'seller', LucideIcon> = {
+const CONSUMER_ICONS: Record<'buyer' | 'seller' | 'learner', LucideIcon> = {
     buyer: KeyRound,
     seller: Home,
+    learner: BookOpen,
 };
 
 const PROFESSIONAL_ICONS: Record<'agent' | 'originator' | 'conveyancer', LucideIcon> = {
@@ -87,9 +89,9 @@ export default function LoginRolePicker({
                     <p className="auth-role-kicker">Sign in as</p>
                 </div>
                 <div
-                    className="auth-role-featured"
+                    className="auth-role-featured auth-role-featured--three"
                     role="listbox"
-                    aria-label="Choose buyer or seller"
+                    aria-label="Choose buyer, seller, or learning"
                 >
                     {CONSUMER_LOGIN_ROLES.map((role) => {
                         const Icon = CONSUMER_ICONS[role.id];
@@ -102,7 +104,11 @@ export default function LoginRolePicker({
                                 aria-selected={isActive}
                                 onClick={() => onSelect(role)}
                                 className={`auth-role-hero ${
-                                    role.id === 'seller' ? 'auth-role-hero--seller' : ''
+                                    role.id === 'seller'
+                                        ? 'auth-role-hero--seller'
+                                        : role.id === 'learner'
+                                          ? 'auth-role-hero--learner'
+                                          : ''
                                 } ${isActive ? 'auth-role-hero--active' : ''}`}
                             >
                                 <span className="auth-role-hero-glow" aria-hidden />

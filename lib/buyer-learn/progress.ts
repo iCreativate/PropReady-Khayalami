@@ -3,12 +3,19 @@ import type { BuyerLearnStore, LessonProgressState } from '@/lib/buyer-learn/typ
 
 const KEY = STORAGE_KEYS.buyerLearn;
 
+export const BUYER_LEARN_CHANGED_EVENT = 'propready-buyer-learn-changed';
+
 function emptyStore(): BuyerLearnStore {
     return { lessons: {}, totalXp: 0, streakDays: 0, lastActiveDate: null };
 }
 
 function todayKey(): string {
     return new Date().toISOString().slice(0, 10);
+}
+
+export function notifyBuyerLearnStoreChanged(): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new Event(BUYER_LEARN_CHANGED_EVENT));
 }
 
 export function readBuyerLearnStore(): BuyerLearnStore {
@@ -32,6 +39,7 @@ export function writeBuyerLearnStore(store: BuyerLearnStore): void {
     if (typeof window === 'undefined') return;
     try {
         localStorage.setItem(KEY, JSON.stringify(store));
+        notifyBuyerLearnStoreChanged();
     } catch {
         /* ignore quota */
     }

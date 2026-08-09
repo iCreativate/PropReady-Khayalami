@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Home, KeyRound } from 'lucide-react';
+import { ArrowRight, BookOpen, Home, KeyRound } from 'lucide-react';
 import OnboardingGateModal from '@/components/onboarding/OnboardingGateModal';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
@@ -33,6 +33,21 @@ export default function LeadRequiredGate({ open }: LeadRequiredGateProps) {
                     <Home className="w-4 h-4" />
                     I&apos;m selling
                     <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                    href="/learning-center"
+                    onClick={() => {
+                        try {
+                            sessionStorage.setItem('propReady_loginRole', 'learner');
+                            localStorage.setItem('propReady_consumerMode', 'learner');
+                        } catch {
+                            /* ignore */
+                        }
+                    }}
+                    className="w-full justify-center inline-flex items-center gap-2 rounded-xl border border-charcoal/10 px-4 py-3 text-sm font-medium text-charcoal/70 hover:border-gold/30 hover:text-charcoal transition"
+                >
+                    <BookOpen className="w-4 h-4" />
+                    Just learning — skip quiz
                 </Link>
             </div>
         </OnboardingGateModal>

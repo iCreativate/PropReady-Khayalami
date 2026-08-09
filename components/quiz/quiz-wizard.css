@@ -1,0 +1,39 @@
+.quiz-wizard {
+  --quiz-accent: #e53935;
+}
+
+.quiz-wizard .quiz-field-card {
+  background: #fff;
+  border: 1px solid rgba(27, 27, 27, 0.08);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 2px rgba(27, 27, 27, 0.04);
+}
+
+@media (min-width: 640px) {
+  .quiz-wizard .quiz-field-card {
+    padding: 1.5rem;
+  }
+}
+
+.quiz-wizard .quiz-step-enter {
+  animation: quiz-step-enter 0.28s ease-out both;
+}
+
+@keyframes quiz-step-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.quiz-wizard .quiz-callout {
+  border-radius: 1rem;
+  border: 1px solid rgba(229, 57, 53, 0.16);
+  background: linear-gradient(135deg, rgba(229, 57, 53, 0.06), rgba(255, 255, 255, 0.9));
+  padding: 1.25rem 1.5rem;
+}

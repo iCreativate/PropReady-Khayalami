@@ -10,6 +10,7 @@ import LearningLandingShell, {
     LearningHubCta,
     LearningHubHero,
 } from '@/components/marketing/learn/LearningLandingShell';
+import GuestLearningHubBanner from '@/components/learning/GuestLearningHubBanner';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 
@@ -174,6 +175,7 @@ export default function LearnPage() {
                     progressSlug={module.slug}
                     badgeLabel="Immersive"
                     variant={user ? 'portal' : 'landing'}
+                    authenticated={Boolean(user)}
                 />
             ))}
         </div>
@@ -239,6 +241,7 @@ export default function LearnPage() {
             />
             <section className="lc-section">
                 <div className="hl-shell">
+                    <GuestLearningHubBanner />
                     {moduleGrid}
                     <LearningHubCta
                         title="Ready to start your journey?"

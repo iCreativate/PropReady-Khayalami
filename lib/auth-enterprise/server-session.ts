@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getImpersonatorFromRequest } from '@/lib/admin-auth';
 import { verifyAccessToken } from './tokens';
 import { getTokensFromRequest } from './cookies';
 import { rotateRefreshToken, touchSession, findAccountById, loadSessionUser } from './sessions';
@@ -25,6 +26,10 @@ export async function resolveSessionFromRequest(
                 if (payload.impersonatedBy) {
                     user.impersonatedBy = payload.impersonatedBy;
                 }
+                const impersonator = getImpersonatorFromRequest(request);
+                if (impersonator) {
+                    user.impersonatedBy = impersonator;
+                }
                 return { user, accessToken: access };
             }
         }
@@ -36,6 +41,10 @@ export async function resolveSessionFromRequest(
             trustedDevice: trusted,
         });
         if (rotated) {
+            const impersonator = getImpersonatorFromRequest(request);
+            if (impersonator) {
+                rotated.user.impersonatedBy = impersonator;
+            }
             return {
                 user: rotated.user,
                 accessToken: rotated.accessToken,

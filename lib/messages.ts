@@ -119,6 +119,31 @@ export function messagesDb() {
     return client;
 }
 
+/** PropReady staff viewing a member portal via impersonation — do not mutate read state. */
+export function isStaffPortalAccess(user: SessionUser): boolean {
+    return Boolean(user.impersonatedBy?.trim());
+}
+
+export async function markConversationReadForUser(
+    conversationId: string,
+    user: SessionUser,
+    now = new Date().toISOString()
+): Promise<{ marked: boolean }> {
+    if (isStaffPortalAccess(user)) {
+        return { marked: false };
+    }
+
+    const { error } = await messagesDb()
+        .from('message_participants')
+        .update({ last_read_at: now })
+        .eq('conversation_id', conversationId)
+        .eq('account_type', user.accountType)
+        .eq('profile_id', user.profileId);
+
+    if (error) throw error;
+    return { marked: true };
+}
+
 export function displayNameForUser(user: SessionUser): string {
     return user.fullName?.trim() || user.email.split('@')[0] || 'User';
 }

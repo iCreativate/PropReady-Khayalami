@@ -53,10 +53,16 @@ export async function GET(
             : accountType === 'originator'
               ? '?type=originator'
               : '';
-    const redirectTo = `/auth/complete${typeQ}`;
+    const oauthNext = request.cookies.get('pr_oauth_next')?.value;
+    const nextQ =
+        oauthNext && oauthNext.startsWith('/') && !oauthNext.startsWith('//')
+            ? `${typeQ ? '&' : '?'}next=${encodeURIComponent(oauthNext)}`
+            : '';
+    const redirectTo = `/auth/complete${typeQ}${nextQ}`;
     const response = NextResponse.redirect(`${appUrl}${redirectTo}`);
     setAuthCookies(response, session.accessToken, session.refreshToken, true);
     response.cookies.delete(AUTH_CONFIG.cookieNames.oauthState);
     response.cookies.delete('pr_oauth_type');
+    response.cookies.delete('pr_oauth_next');
     return response;
 }

@@ -1,7 +1,11 @@
 'use client';
 
+import { storePostLoginNext } from '@/lib/post-login-routing-client';
+
 interface OAuthButtonsProps {
     accountType?: 'user' | 'agent' | 'originator' | 'conveyancer';
+    /** Stored in session before OAuth redirect for post-login return. */
+    returnPath?: string;
 }
 
 const providers = [{ id: 'google', label: 'Google' }] as const;
@@ -17,7 +21,7 @@ function GoogleIcon() {
     );
 }
 
-export default function OAuthButtons({ accountType = 'user' }: OAuthButtonsProps) {
+export default function OAuthButtons({ accountType = 'user', returnPath }: OAuthButtonsProps) {
     const type =
         accountType === 'agent'
             ? 'agent'
@@ -30,8 +34,13 @@ export default function OAuthButtons({ accountType = 'user' }: OAuthButtonsProps
             {providers.map((p) => (
                 <a
                     key={p.id}
-                    href={`/api/auth/oauth/${p.id}?type=${type}`}
+                    href={`/api/auth/oauth/${p.id}?type=${type}${
+                        returnPath ? `&next=${encodeURIComponent(returnPath)}` : ''
+                    }`}
                     className="auth-oauth-btn"
+                    onClick={() => {
+                        if (returnPath) storePostLoginNext(returnPath);
+                    }}
                 >
                     <span className="auth-oauth-icon" aria-hidden>
                         <GoogleIcon />

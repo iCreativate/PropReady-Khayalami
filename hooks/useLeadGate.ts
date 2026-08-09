@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import { fetchLeadsMine } from '@/lib/leads-mine-client';
+import { isLearnerConsumerMode } from '@/lib/auth-login-roles';
 
 type LeadGateState = {
     loading: boolean;
@@ -60,7 +61,7 @@ function initialLeadGateState(skip: boolean): LeadGateState {
  * local quiz data) must complete Get Started before using the portal.
  */
 export function useLeadGate(options?: { skip?: boolean }) {
-    const skip = Boolean(options?.skip);
+    const skip = Boolean(options?.skip) || isLearnerConsumerMode();
     const [state, setState] = useState<LeadGateState>(() => initialLeadGateState(skip));
 
     const refresh = useCallback(async () => {

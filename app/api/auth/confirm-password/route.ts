@@ -4,9 +4,13 @@ import {
     findAccountById,
     setAuthCookies,
 } from '@/lib/auth-enterprise';
-import { dashboardPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 import { getRequestMeta } from '@/lib/auth-enterprise/request-meta';
 import { resolveSessionFromRequest } from '@/lib/auth-enterprise/server-session';
+import {
+    parsePostLoginRole,
+    resolvePostLoginDestination,
+} from '@/lib/post-login-routing';
+import { createServiceClient } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
     try {
@@ -56,9 +60,17 @@ export async function POST(request: NextRequest) {
                 : result.user.accountType === 'originator'
                   ? '?type=originator'
                   : '';
+        const preferredRole = parsePostLoginRole(body.preferredRole);
+        const supabase = createServiceClient();
         const redirectTo = needsProfile
             ? `/auth/complete-profile${typeQ}`
-            : dashboardPathForAccountType(result.user.accountType);
+            : await resolvePostLoginDestination(supabase, {
+                  accountType: result.user.accountType,
+                  profileId: result.user.profileId,
+                  email: result.user.email,
+                  onboardingIntent: result.user.onboardingIntent,
+                  preferredRole,
+              });
 
         const response = NextResponse.json({
             success: true,

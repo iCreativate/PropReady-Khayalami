@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { AlertCircle, Mail } from 'lucide-react';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
 
@@ -10,7 +9,6 @@ import LoginOtpStep from '@/components/auth/LoginOtpStep';
  * Access requires email on ADMIN_EMAILS + OTP.
  */
 export default function AdminLoginPage() {
-    const router = useRouter();
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -69,7 +67,9 @@ export default function AdminLoginPage() {
                         onChallengeTokenChange={(token) =>
                             setOtpChallenge((prev) => (prev ? { ...prev, token } : prev))
                         }
-                        onVerified={() => router.replace('/admin')}
+                        onVerified={() => {
+                            window.location.assign('/admin');
+                        }}
                         onBack={() => setOtpChallenge(null)}
                         onExpired={() => {
                             setOtpChallenge(null);

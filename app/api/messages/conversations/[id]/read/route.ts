@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterprise/server-session';
-import { messagesDb, requireParticipant } from '@/lib/messages';
+import { markConversationReadForUser, requireParticipant } from '@/lib/messages';
 
 export async function POST(
     request: NextRequest,
@@ -16,16 +16,16 @@ export async function POST(
         await requireParticipant(id, session.user);
 
         const now = new Date().toISOString();
-        const { error } = await messagesDb()
-            .from('message_participants')
-            .update({ last_read_at: now })
-            .eq('conversation_id', id)
-            .eq('account_type', session.user.accountType)
-            .eq('profile_id', session.user.profileId);
+        const { marked } = await markConversationReadForUser(id, session.user, now);
 
-        if (error) throw error;
-
-        return jsonWithSession({ success: true, lastReadAt: now }, session);
+        return jsonWithSession(
+            {
+                success: true,
+                lastReadAt: marked ? now : null,
+                skipped: !marked,
+            },
+            session
+        );
     } catch (err) {
         const status = (err as { status?: number })?.status || 500;
         const message = err instanceof Error ? err.message : 'Server error';

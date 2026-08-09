@@ -3,6 +3,7 @@ import { resolveSessionFromRequest, jsonWithSession } from '@/lib/auth-enterpris
 import type { AccountType } from '@/lib/auth-enterprise/config';
 import {
     displayNameForUser,
+    isStaffPortalAccess,
     listConversationIdsForUser,
     messagesDb,
     resolveProfileByEmail,
@@ -208,7 +209,11 @@ export async function POST(request: NextRequest) {
             account_type: p.accountType,
             profile_id: p.profileId,
             display_name: p.displayName || null,
-            last_read_at: p.profileId === session.user.profileId ? now : null,
+            last_read_at:
+                !isStaffPortalAccess(session.user) &&
+                p.profileId === session.user.profileId
+                    ? now
+                    : null,
         }));
 
         const { data: parts, error: partErr } = await messagesDb()
@@ -237,7 +242,7 @@ export async function POST(request: NextRequest) {
                 conversation: serializeConversation(conversation as ConversationRow, {
                     participants: (parts || []) as ParticipantRow[],
                     unreadCount: 0,
-                    myLastReadAt: now,
+                    myLastReadAt: isStaffPortalAccess(session.user) ? null : now,
                 }),
             },
             session,

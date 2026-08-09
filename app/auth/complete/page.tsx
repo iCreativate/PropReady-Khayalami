@@ -8,6 +8,17 @@ import {
     loginPathForAccountType,
     parseAccountType,
 } from '@/lib/auth-enterprise/account-profile';
+import { readPersistedLoginRole } from '@/lib/auth-login-roles';
+import {
+    applyClientPostLoginDestination,
+    readStoredPostLoginNext,
+} from '@/lib/post-login-routing-client';
+
+function appendNextQuery(path: string, next: string | null): string {
+    if (!next) return path;
+    const sep = path.includes('?') ? '&' : '?';
+    return `${path}${sep}next=${encodeURIComponent(next)}`;
+}
 
 function AuthCompleteInner() {
     const router = useRouter();
@@ -19,7 +30,7 @@ function AuthCompleteInner() {
 
         async function run() {
             const type = parseAccountType(searchParams.get('type'));
-            const next = searchParams.get('next');
+            const next = searchParams.get('next') || readStoredPostLoginNext();
 
             const user = await hydrateSessionFromCookies();
             if (cancelled) return;
@@ -30,35 +41,72 @@ function AuthCompleteInner() {
                 return;
             }
 
+            const resolvedType = parseAccountType(user.accountType || type);
+
             try {
                 const res = await fetch('/api/auth/session', { credentials: 'include' });
                 const data = await res.json().catch(() => ({}));
                 if (cancelled) return;
 
                 const u = data?.user;
-                const resolvedType = parseAccountType(u?.accountType || type);
                 if (u?.passwordOk === false) {
                     setMessage('Confirming your password…');
+                    const returnNext = next || readStoredPostLoginNext();
                     router.replace(
-                        u.hasPassword === false
-                            ? `/auth/complete-profile?type=${resolvedType}`
-                            : `/auth/confirm-password?type=${resolvedType}`
+                        appendNextQuery(
+                            u.hasPassword === false
+                                ? `/auth/complete-profile?type=${resolvedType}`
+                                : `/auth/confirm-password?type=${resolvedType}`,
+                            returnNext
+                        )
                     );
                     return;
                 }
 
                 if (u && u.profileComplete === false) {
                     setMessage('Confirming your identity…');
-                    router.replace(`/auth/complete-profile?type=${resolvedType}`);
+                    router.replace(
+                        appendNextQuery(
+                            `/auth/complete-profile?type=${resolvedType}`,
+                            next || readStoredPostLoginNext()
+                        )
+                    );
                     return;
                 }
             } catch {
                 /* fall through */
             }
 
-            const destination =
-                next || dashboardPathForAccountType(user.accountType || type);
-            router.replace(destination);
+            if (next) {
+                router.replace(applyClientPostLoginDestination(next, { explicitNext: next }));
+                return;
+            }
+
+            setMessage('Finding your workspace…');
+            const role = readPersistedLoginRole();
+            const roleQ = role ? `?role=${encodeURIComponent(role)}` : '';
+            try {
+                const destRes = await fetch(`/api/auth/post-login-destination${roleQ}`, {
+                    credentials: 'include',
+                });
+                const destData = await destRes.json().catch(() => ({}));
+                if (cancelled) return;
+                const serverPath =
+                    destData?.redirectTo || dashboardPathForAccountType(resolvedType);
+                router.replace(
+                    applyClientPostLoginDestination(serverPath, {
+                        explicitNext: readStoredPostLoginNext(),
+                    })
+                );
+            } catch {
+                if (!cancelled) {
+                    router.replace(
+                        applyClientPostLoginDestination(
+                            dashboardPathForAccountType(resolvedType)
+                        )
+                    );
+                }
+            }
         }
 
         void run();

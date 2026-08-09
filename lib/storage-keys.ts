@@ -30,6 +30,8 @@ export const STORAGE_KEYS = {
     conveyancerConnect: 'propReady_conveyancerConnect_v1',
     /** Buyer immersive Learning Hub progress / XP / bookmarks */
     buyerLearn: 'propReady_buyerLearn_v1',
+    /** Return path after quiz registration from a gated lesson */
+    postQuizNext: 'propReady_postQuizNext',
     /** Saved bond calculator scenarios (local + account-linked label) */
     bondCalculatorSaves: 'propReady_bondCalculatorSaves_v1',
     /** Property Companion™ portfolio workspace */

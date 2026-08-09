@@ -2675,6 +2675,16 @@ body {
   .auth-role-featured {
     grid-template-columns: 1fr 1fr;
   }
+
+  .auth-role-featured--three {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 640px) {
+  .auth-role-featured--three {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .auth-role-hero {
@@ -2704,6 +2714,12 @@ body {
   background:
     radial-gradient(ellipse 80% 60% at 100% 0%, rgba(220, 38, 38, 0.28), transparent 55%),
     linear-gradient(160deg, #222 0%, #2c2c2c 50%, #1a1515 100%);
+}
+
+.auth-role-hero--learner {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(220, 38, 38, 0.22), transparent 55%),
+    linear-gradient(160deg, #1a1a1a 0%, #262626 50%, #141010 100%);
 }
 
 .auth-role-hero:hover {

@@ -45,5 +45,6 @@ export const BUYER_LEARN_ORDER = [
 
 export * from '@/lib/buyer-learn/types';
 export * from '@/lib/buyer-learn/progress';
+export * from '@/lib/buyer-learn/anonymous-lesson-limit';
 export { getInvestorLesson, INVESTOR_LEARN_ORDER } from '@/lib/buyer-learn/modules/investors';
 export { getSellerLesson, SELLER_LEARN_ORDER } from '@/lib/buyer-learn/modules/sellers';

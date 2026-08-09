@@ -55,7 +55,8 @@ export default function ImpersonationBanner() {
                         <span className="font-semibold text-white">Staff access</span>
                         {' — '}
                         viewing {info.targetName || info.targetEmail} as {info.adminEmail}. Changes
-                        affect this real account.
+                        affect this real account; opening messages will not mark them read for the
+                        member.
                     </p>
                 </div>
                 <button

@@ -1,8 +1,10 @@
 import type { AccountType } from '@/lib/auth-enterprise/config';
 import { loginPathForAccountType } from '@/lib/auth-enterprise/account-profile';
 
-/** UI roles for conditional login — buyers/sellers share consumer `user` accounts. */
-export type LoginRole = 'buyer' | 'seller' | 'agent' | 'originator' | 'conveyancer';
+/** UI roles for conditional login — buyers/sellers/learners share consumer `user` accounts. */
+export type LoginRole = 'buyer' | 'seller' | 'learner' | 'agent' | 'originator' | 'conveyancer';
+
+export type ConsumerMode = 'buyer' | 'seller' | 'learner';
 
 export type LoginRoleOption = {
     id: LoginRole;
@@ -25,6 +27,12 @@ export const LOGIN_ROLE_OPTIONS: LoginRoleOption[] = [
         id: 'seller',
         label: 'Seller',
         description: 'Listings, valuation and agents',
+        accountType: 'user',
+    },
+    {
+        id: 'learner',
+        label: 'Just learning',
+        description: 'Learning Center — no quiz required',
         accountType: 'user',
     },
     {
@@ -53,8 +61,8 @@ export const LOGIN_ROLE_OPTIONS: LoginRoleOption[] = [
 export type LoginAudience = 'consumer' | 'professionals';
 
 export const CONSUMER_LOGIN_ROLES = LOGIN_ROLE_OPTIONS.filter(
-    (r): r is LoginRoleOption & { id: 'buyer' | 'seller' } =>
-        r.id === 'buyer' || r.id === 'seller'
+    (r): r is LoginRoleOption & { id: 'buyer' | 'seller' | 'learner' } =>
+        r.id === 'buyer' || r.id === 'seller' || r.id === 'learner'
 );
 
 export const PROFESSIONAL_LOGIN_ROLES = LOGIN_ROLE_OPTIONS.filter(
@@ -69,17 +77,24 @@ export function parseLoginAudience(value: unknown): LoginAudience {
 }
 
 export const LOGIN_ROLE_STORAGE_KEY = 'propReady_loginRole';
+export const CONSUMER_MODE_STORAGE_KEY = 'propReady_consumerMode';
 
 export function parseLoginRole(value: unknown): LoginRole | null {
     if (
         value === 'buyer' ||
         value === 'seller' ||
+        value === 'learner' ||
         value === 'agent' ||
         value === 'originator' ||
         value === 'conveyancer'
     ) {
         return value;
     }
+    return null;
+}
+
+export function parseConsumerMode(value: unknown): ConsumerMode | null {
+    if (value === 'buyer' || value === 'seller' || value === 'learner') return value;
     return null;
 }
 
@@ -91,6 +106,9 @@ export function persistLoginRole(role: LoginRole) {
     if (typeof window === 'undefined') return;
     try {
         sessionStorage.setItem(LOGIN_ROLE_STORAGE_KEY, role);
+        if (role === 'buyer' || role === 'seller' || role === 'learner') {
+            localStorage.setItem(CONSUMER_MODE_STORAGE_KEY, role);
+        }
     } catch {
         /* ignore */
     }
@@ -99,8 +117,27 @@ export function persistLoginRole(role: LoginRole) {
 export function readPersistedLoginRole(): LoginRole | null {
     if (typeof window === 'undefined') return null;
     try {
-        return parseLoginRole(sessionStorage.getItem(LOGIN_ROLE_STORAGE_KEY));
+        return (
+            parseLoginRole(sessionStorage.getItem(LOGIN_ROLE_STORAGE_KEY)) ||
+            parseLoginRole(localStorage.getItem(CONSUMER_MODE_STORAGE_KEY))
+        );
     } catch {
         return null;
     }
+}
+
+export function readPersistedConsumerMode(): ConsumerMode | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        return (
+            parseConsumerMode(sessionStorage.getItem(LOGIN_ROLE_STORAGE_KEY)) ||
+            parseConsumerMode(localStorage.getItem(CONSUMER_MODE_STORAGE_KEY))
+        );
+    } catch {
+        return null;
+    }
+}
+
+export function isLearnerConsumerMode(): boolean {
+    return readPersistedConsumerMode() === 'learner';
 }
