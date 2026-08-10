@@ -27,17 +27,18 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const supabase = createServiceClient();
-    if (!supabase) {
+    const supabaseOrNull = createServiceClient();
+    if (!supabaseOrNull) {
         return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
     }
+    const supabase = supabaseOrNull;
 
     const type = request.nextUrl.searchParams.get('type') || 'all';
     const q = (request.nextUrl.searchParams.get('q') || '').trim().toLowerCase();
     const status = request.nextUrl.searchParams.get('status') || 'all';
 
     try {
-        const accounts: Array<{
+        type AccountRow = {
             id: string;
             accountType: 'user' | 'agent' | 'originator';
             fullName: string;
@@ -49,7 +50,12 @@ export async function GET(request: NextRequest) {
             planStatus?: string;
             trialEndsAt?: string | null;
             planActivatedAt?: string | null;
-        }> = [];
+            consumerRole?: 'buyer' | 'seller' | 'both' | null;
+            lastLoginAt?: string | null;
+            lastLogoutAt?: string | null;
+        };
+
+        const accounts: AccountRow[] = [];
 
         if (type === 'all' || type === 'user') {
             let query = supabase
@@ -116,6 +122,148 @@ export async function GET(request: NextRequest) {
                     createdAt: row.created_at ? String(row.created_at) : null,
                     meta: [row.organization_id, row.staff_number].filter(Boolean).join(' · ') || undefined,
                 });
+            }
+        }
+
+        // Enrich with auth timestamps + buyer/seller intent
+        if (accounts.length > 0) {
+            const emails = [...new Set(accounts.map((a) => a.email.toLowerCase()).filter(Boolean))];
+            const profileIds = [...new Set(accounts.map((a) => a.id).filter(Boolean))];
+
+            const authByKey = new Map<
+                string,
+                {
+                    onboarding_intent: string | null;
+                    last_login_at: string | null;
+                    last_logout_at: string | null;
+                    created_at: string | null;
+                    account_id: string;
+                }
+            >();
+
+            const ingestAuthRows = (
+                rows: Array<Record<string, unknown>> | null
+            ) => {
+                for (const row of rows || []) {
+                    const payload = {
+                        onboarding_intent: row.onboarding_intent
+                            ? String(row.onboarding_intent)
+                            : null,
+                        last_login_at: row.last_login_at ? String(row.last_login_at) : null,
+                        last_logout_at: row.last_logout_at ? String(row.last_logout_at) : null,
+                        created_at: row.created_at ? String(row.created_at) : null,
+                        account_id: String(row.id),
+                    };
+                    const typeKey = String(row.account_type || '');
+                    authByKey.set(`${typeKey}:${String(row.profile_id || '')}`, payload);
+                    authByKey.set(`${typeKey}:${String(row.email || '').toLowerCase()}`, payload);
+                }
+            };
+
+            const AUTH_SELECT_FULL =
+                'id, profile_id, email, account_type, onboarding_intent, last_login_at, last_logout_at, created_at';
+            const AUTH_SELECT_BASIC =
+                'id, profile_id, email, account_type, onboarding_intent, created_at';
+
+            async function fetchAuthBy(
+                column: 'email' | 'profile_id',
+                values: string[]
+            ): Promise<Array<Record<string, unknown>>> {
+                if (values.length === 0) return [];
+                const full = await supabase
+                    .from('auth_accounts')
+                    .select(AUTH_SELECT_FULL)
+                    .in(column, values)
+                    .in('account_type', ['user', 'agent', 'originator'])
+                    .limit(500);
+                if (!full.error) {
+                    return (full.data || []) as Array<Record<string, unknown>>;
+                }
+
+                const basic = await supabase
+                    .from('auth_accounts')
+                    .select(AUTH_SELECT_BASIC)
+                    .in(column, values)
+                    .in('account_type', ['user', 'agent', 'originator'])
+                    .limit(500);
+                return (basic.data || []) as Array<Record<string, unknown>>;
+            }
+
+            ingestAuthRows(await fetchAuthBy('email', emails));
+            ingestAuthRows(await fetchAuthBy('profile_id', profileIds));
+
+            // Fallback last login/logout from sessions when account columns are still null
+            const accountIds = [...new Set([...authByKey.values()].map((v) => v.account_id))];
+            const sessionAgg = new Map<string, { lastLogin: string | null; lastLogout: string | null }>();
+            if (accountIds.length > 0) {
+                const { data: sessions } = await supabase
+                    .from('auth_sessions')
+                    .select('account_id, created_at, revoked_at')
+                    .in('account_id', accountIds)
+                    .order('created_at', { ascending: false })
+                    .limit(2000);
+
+                for (const s of sessions || []) {
+                    const id = String(s.account_id);
+                    const cur = sessionAgg.get(id) || { lastLogin: null, lastLogout: null };
+                    const created = s.created_at ? String(s.created_at) : null;
+                    const revoked = s.revoked_at ? String(s.revoked_at) : null;
+                    if (created && (!cur.lastLogin || created > cur.lastLogin)) {
+                        cur.lastLogin = created;
+                    }
+                    if (revoked && (!cur.lastLogout || revoked > cur.lastLogout)) {
+                        cur.lastLogout = revoked;
+                    }
+                    sessionAgg.set(id, cur);
+                }
+            }
+
+            // Lead-based buyer/seller fallback for consumer users
+            const userEmails = accounts
+                .filter((a) => a.accountType === 'user')
+                .map((a) => a.email.toLowerCase())
+                .filter(Boolean);
+            const leadRoles = new Map<string, { buyer: boolean; seller: boolean }>();
+            if (userEmails.length > 0) {
+                const { data: leads } = await supabase
+                    .from('leads')
+                    .select('email, lead_type')
+                    .in('email', userEmails)
+                    .limit(500);
+                for (const lead of leads || []) {
+                    const email = String(lead.email || '').toLowerCase();
+                    if (!email) continue;
+                    const cur = leadRoles.get(email) || { buyer: false, seller: false };
+                    const lt = String(lead.lead_type || 'buyer');
+                    if (lt === 'buyer') cur.buyer = true;
+                    if (lt === 'seller' || lt === 'investor') cur.seller = true;
+                    leadRoles.set(email, cur);
+                }
+            }
+
+            for (const account of accounts) {
+                const authMeta =
+                    authByKey.get(`${account.accountType}:${account.id}`) ||
+                    authByKey.get(`${account.accountType}:${account.email.toLowerCase()}`);
+                if (authMeta) {
+                    const sessions = sessionAgg.get(authMeta.account_id);
+                    account.lastLoginAt = authMeta.last_login_at || sessions?.lastLogin || null;
+                    account.lastLogoutAt = authMeta.last_logout_at || sessions?.lastLogout || null;
+                    if (!account.createdAt && authMeta.created_at) {
+                        account.createdAt = authMeta.created_at;
+                    }
+                }
+
+                if (account.accountType === 'user') {
+                    const intent = authMeta?.onboarding_intent;
+                    const leads = leadRoles.get(account.email.toLowerCase());
+                    const isBuyer = intent === 'buyer' || Boolean(leads?.buyer);
+                    const isSeller = intent === 'seller' || Boolean(leads?.seller);
+                    if (isBuyer && isSeller) account.consumerRole = 'both';
+                    else if (isBuyer) account.consumerRole = 'buyer';
+                    else if (isSeller) account.consumerRole = 'seller';
+                    else account.consumerRole = null;
+                }
             }
         }
 

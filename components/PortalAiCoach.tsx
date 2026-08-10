@@ -3,8 +3,9 @@
 import React, { useEffect, useMemo, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Calculator, Clock, MessageSquare, Newspaper, Sparkles } from 'lucide-react';
+import { Calculator, Clock, MessageSquare, Newspaper, Sparkles, X } from 'lucide-react';
 import '@/app/dashboard/portal-ai-coach.css';
+import { useAiAssistantVisibility } from '@/hooks/useAiAssistantVisibility';
 
 /** Soft-fail dynamic import — Turbopack/extension chunk fetch failures must not crash the portal. */
 const AiTutorFab = dynamic(
@@ -215,12 +216,29 @@ class CoachRailErrorBoundary extends React.Component<
 export default function PortalAiCoachRail({ role, activePage, pageTitle }: PortalAiCoachProps) {
     const [aiOpen, setAiOpen] = useState(false);
     const [chatMounted, setChatMounted] = useState(false);
+    const { hidden, ready, hide, show } = useAiAssistantVisibility();
     const copy = ROLE_COPY[role];
     const goal = useMemo(() => goalForPage(role, activePage), [role, activePage]);
 
     function openChat() {
         setChatMounted(true);
         setAiOpen(true);
+    }
+
+    if (!ready) return null;
+
+    if (hidden) {
+        return (
+            <button
+                type="button"
+                onClick={show}
+                className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal shadow-[0_8px_28px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 hover:border-gold/35"
+                aria-label="Show PropReady AI Assistant"
+                title="Show AI Assistant"
+            >
+                <Sparkles className="h-4 w-4 text-gold" />
+            </button>
+        );
     }
 
     return (
@@ -238,6 +256,15 @@ export default function PortalAiCoachRail({ role, activePage, pageTitle }: Porta
                             <h3 className="pac-title">AI Assistant</h3>
                             <p className="pac-sub">{copy.subtitle}</p>
                         </div>
+                        <button
+                            type="button"
+                            onClick={hide}
+                            className="ml-auto rounded-lg p-1.5 text-charcoal/40 transition hover:bg-charcoal/[0.06] hover:text-charcoal"
+                            aria-label="Turn off AI Assistant"
+                            title="Turn off"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </header>
 
                     <section className="pac-goal" aria-label="Today's goal">
@@ -297,6 +324,7 @@ export default function PortalAiCoachRail({ role, activePage, pageTitle }: Porta
                     hubBasePath={copy.hubBasePath}
                     open={aiOpen}
                     onOpenChange={setAiOpen}
+                    onHide={hide}
                     fabClassName="bottom-6 right-5"
                 />
             )}

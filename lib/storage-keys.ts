@@ -32,6 +32,8 @@ export const STORAGE_KEYS = {
     buyerLearn: 'propReady_buyerLearn_v1',
     /** Return path after quiz registration from a gated lesson */
     postQuizNext: 'propReady_postQuizNext',
+    /** User dismissed the floating PropReady AI Assistant */
+    aiAssistantHidden: 'propReady_aiAssistantHidden',
     /** Saved bond calculator scenarios (local + account-linked label) */
     bondCalculatorSaves: 'propReady_bondCalculatorSaves_v1',
     /** Property Companion™ portfolio workspace */

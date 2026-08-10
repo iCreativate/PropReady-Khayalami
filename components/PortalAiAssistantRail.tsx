@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calculator, Clock, MessageSquare, Newspaper, Sparkles } from 'lucide-react';
+import { Calculator, Clock, MessageSquare, Newspaper, Sparkles, X } from 'lucide-react';
 import AiTutorFab from '@/components/buyer-learn/course/AiTutorFab';
+import { useAiAssistantVisibility } from '@/hooks/useAiAssistantVisibility';
 import './portal-ai-assistant.css';
 
 export type PortalAiRole = 'buyer' | 'seller' | 'agent' | 'originator' | 'conveyancer';
@@ -147,15 +148,32 @@ export default function PortalAiAssistantRail({
 }: PortalAiAssistantRailProps) {
     const pathname = usePathname();
     const [aiOpen, setAiOpen] = useState(false);
+    const { hidden, ready, hide, show } = useAiAssistantVisibility();
     const copy = ROLE_COPY[role];
     const goal = useMemo(() => goalForPage(role, page, pathname), [role, page, pathname]);
 
     const lessonOnPage =
         Boolean(pathname?.match(/\/learn\/[^/]+/)) ||
         Boolean(pathname?.match(/\/agents\/learn\/[^/]+/));
-    const showFab = !hideFab && !lessonOnPage;
+    const showFab = !hideFab && !lessonOnPage && !hidden;
 
     const firstName = userName?.trim().split(/\s+/)[0];
+
+    if (!ready) return null;
+
+    if (hidden) {
+        return (
+            <button
+                type="button"
+                onClick={show}
+                className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal shadow-[0_8px_28px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
+                aria-label="Show PropReady AI Assistant"
+                title="Show AI Assistant"
+            >
+                <Sparkles className="h-4 w-4 text-gold" />
+            </button>
+        );
+    }
 
     return (
         <>
@@ -164,6 +182,15 @@ export default function PortalAiAssistantRail({
                     <div className="portal-ai-card-head">
                         <Sparkles className="h-4 w-4 text-[#e53935]" />
                         <h3 className="portal-ai-title">AI assistant</h3>
+                        <button
+                            type="button"
+                            onClick={hide}
+                            className="ml-auto rounded-lg p-1 text-charcoal/40 transition hover:bg-charcoal/[0.06] hover:text-charcoal"
+                            aria-label="Turn off AI Assistant"
+                            title="Turn off"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
                     <p className="portal-ai-sub">{copy.subtitle}</p>
                     {firstName ? (
@@ -219,6 +246,7 @@ export default function PortalAiAssistantRail({
                 hubBasePath={copy.hubBasePath}
                 open={aiOpen}
                 onOpenChange={setAiOpen}
+                onHide={hide}
                 fabClassName={showFab ? 'bottom-6 right-5' : 'sr-only pointer-events-none'}
             />
         </>

@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { Sparkles } from 'lucide-react';
 import AiTutorFab from '@/components/buyer-learn/course/AiTutorFab';
+import { useAiAssistantVisibility } from '@/hooks/useAiAssistantVisibility';
 
 export type PortalAiKind = 'buyer' | 'seller' | 'agent' | 'originator' | 'conveyancer';
 
@@ -59,8 +61,23 @@ export default function PortalAiAssistant({
 }) {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
+    const { hidden, ready, hide, show } = useAiAssistantVisibility();
 
-    if (!enabled || shouldSuppressForPath(pathname)) return null;
+    if (!enabled || shouldSuppressForPath(pathname) || !ready) return null;
+
+    if (hidden) {
+        return (
+            <button
+                type="button"
+                onClick={show}
+                className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal shadow-[0_8px_28px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 hover:border-gold/35"
+                aria-label="Show PropReady AI Assistant"
+                title="Show AI Assistant"
+            >
+                <Sparkles className="h-4 w-4 text-gold" />
+            </button>
+        );
+    }
 
     const ctx = CONTEXT[portal];
 
@@ -72,6 +89,7 @@ export default function PortalAiAssistant({
             hubBasePath={ctx.hubBasePath}
             open={open}
             onOpenChange={setOpen}
+            onHide={hide}
             fabClassName="bottom-6 right-5"
         />
     );

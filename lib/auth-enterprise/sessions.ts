@@ -289,6 +289,15 @@ export async function createSession(
 
     if (error || !session) throw error ?? new Error('Failed to create session');
 
+    const loginAt = new Date().toISOString();
+    const { error: loginStampError } = await db()
+        .from('auth_accounts')
+        .update({ last_login_at: loginAt, updated_at: loginAt })
+        .eq('id', account.id);
+    if (loginStampError) {
+        console.warn('auth last_login_at update skipped:', loginStampError.message);
+    }
+
     const user = await loadSessionUser(account);
     user.sessionId = session.id;
     user.passwordOk = passwordOk;
@@ -426,11 +435,28 @@ export async function touchSession(sessionId: string) {
         .is('revoked_at', null);
 }
 
-export async function revokeSession(sessionId: string) {
+export async function revokeSession(sessionId: string, options?: { recordLogout?: boolean }) {
+    const now = new Date().toISOString();
+    const { data: session } = await db()
+        .from('auth_sessions')
+        .select('account_id')
+        .eq('id', sessionId)
+        .maybeSingle();
+
     await db()
         .from('auth_sessions')
-        .update({ revoked_at: new Date().toISOString() })
+        .update({ revoked_at: now })
         .eq('id', sessionId);
+
+    if (options?.recordLogout && session?.account_id) {
+        const { error: logoutStampError } = await db()
+            .from('auth_accounts')
+            .update({ last_logout_at: now, updated_at: now })
+            .eq('id', session.account_id);
+        if (logoutStampError) {
+            console.warn('auth last_logout_at update skipped:', logoutStampError.message);
+        }
+    }
 }
 
 export async function revokeAllSessions(accountId: string, exceptSessionId?: string) {
@@ -445,12 +471,32 @@ export async function revokeAllSessions(accountId: string, exceptSessionId?: str
     await q;
 }
 
-export async function revokeSessionByRefreshToken(refreshToken: string) {
+export async function revokeSessionByRefreshToken(
+    refreshToken: string,
+    options?: { recordLogout?: boolean }
+) {
     const refreshHash = hashToken(refreshToken);
+    const now = new Date().toISOString();
+    const { data: session } = await db()
+        .from('auth_sessions')
+        .select('account_id')
+        .eq('refresh_token_hash', refreshHash)
+        .maybeSingle();
+
     await db()
         .from('auth_sessions')
-        .update({ revoked_at: new Date().toISOString() })
+        .update({ revoked_at: now })
         .eq('refresh_token_hash', refreshHash);
+
+    if (options?.recordLogout && session?.account_id) {
+        const { error: logoutStampError } = await db()
+            .from('auth_accounts')
+            .update({ last_logout_at: now, updated_at: now })
+            .eq('id', session.account_id);
+        if (logoutStampError) {
+            console.warn('auth last_logout_at update skipped:', logoutStampError.message);
+        }
+    }
 }
 
 export async function completeVerifiedProfile(

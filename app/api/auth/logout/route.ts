@@ -7,10 +7,10 @@ export async function POST(request: NextRequest) {
     const { access, refresh } = getTokensFromRequest(request);
 
     if (refresh) {
-        await revokeSessionByRefreshToken(refresh);
+        await revokeSessionByRefreshToken(refresh, { recordLogout: true });
     } else if (access) {
         const payload = await verifyAccessToken(access);
-        if (payload?.sessionId) await revokeSession(payload.sessionId);
+        if (payload?.sessionId) await revokeSession(payload.sessionId, { recordLogout: true });
     }
 
     const response = NextResponse.json({ success: true });

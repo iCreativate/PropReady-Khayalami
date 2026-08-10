@@ -31,6 +31,7 @@ import {
 import FloatingDashboard from '@/components/marketing/home/FloatingDashboard';
 import AiTutorFab from '@/components/buyer-learn/course/AiTutorFab';
 import { LEARNING_HUBS } from '@/lib/learning-hubs';
+import { useAiAssistantVisibility } from '@/hooks/useAiAssistantVisibility';
 
 function Reveal({
     children,
@@ -183,6 +184,8 @@ export default function HomeLanding() {
     const [activeFeature, setActiveFeature] = useState(0);
     const [featureDir, setFeatureDir] = useState(1);
     const [aiOpen, setAiOpen] = useState(false);
+    const { hidden: aiHidden, ready: aiReady, hide: hideAi, show: showAi } =
+        useAiAssistantVisibility();
     const featurePause = useRef(false);
 
     const goFeature = (next: number, dir: number) => {
@@ -792,14 +795,28 @@ export default function HomeLanding() {
                 </div>
             </section>
 
-            <AiTutorFab
-                variant="assistant"
-                lessonTitle="PropReady"
-                lessonSubtitle="Your Home. Ready. — South African property learning and tools"
-                hubBasePath="/learn"
-                open={aiOpen}
-                onOpenChange={setAiOpen}
-            />
+            {aiReady && aiHidden ? (
+                <button
+                    type="button"
+                    onClick={showAi}
+                    className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-charcoal text-white shadow-[0_8px_28px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
+                    aria-label="Show PropReady AI Assistant"
+                    title="Show AI Assistant"
+                >
+                    <Sparkles className="h-4 w-4 text-gold" />
+                </button>
+            ) : null}
+            {aiReady && !aiHidden ? (
+                <AiTutorFab
+                    variant="assistant"
+                    lessonTitle="PropReady"
+                    lessonSubtitle="Your Home. Ready. — South African property learning and tools"
+                    hubBasePath="/learn"
+                    open={aiOpen}
+                    onOpenChange={setAiOpen}
+                    onHide={hideAi}
+                />
+            ) : null}
         </div>
     );
 }

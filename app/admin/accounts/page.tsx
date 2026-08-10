@@ -43,6 +43,9 @@ type Account = {
     planStatus?: string;
     trialEndsAt?: string | null;
     planActivatedAt?: string | null;
+    consumerRole?: 'buyer' | 'seller' | 'both' | null;
+    lastLoginAt?: string | null;
+    lastLogoutAt?: string | null;
 };
 
 type SortKey = 'newest' | 'oldest' | 'name-asc' | 'name-desc' | 'email-asc';
@@ -50,11 +53,14 @@ type SubscriptionFilter = 'all' | 'trialing' | 'active' | 'unpaid' | 'none';
 
 const PAGE_SIZE = 12;
 
-const TYPE_LABEL: Record<Account['accountType'], string> = {
-    user: 'Buyer / Seller',
-    agent: 'Agent',
-    originator: 'Originator',
-};
+function accountTypeLabel(account: Account): string {
+    if (account.accountType === 'agent') return 'Agent';
+    if (account.accountType === 'originator') return 'Originator';
+    if (account.consumerRole === 'buyer') return 'Buyer';
+    if (account.consumerRole === 'seller') return 'Seller';
+    if (account.consumerRole === 'both') return 'Buyer & Seller';
+    return 'Buyer / Seller';
+}
 
 function initials(name: string, email: string) {
     const source = (name || email || '?').trim();
@@ -71,6 +77,19 @@ function formatDate(value: string | null | undefined) {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+    });
+}
+
+function formatDateTime(value: string | null | undefined) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('en-ZA', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     });
 }
 
@@ -440,9 +459,23 @@ export default function AdminAccountsPage() {
 
     function exportCsv() {
         const rows = [
-            ['Type', 'Name', 'Email', 'Company', 'Status', 'Plan', 'Plan Status', 'Trial Ends', 'Created'],
+            [
+                'Type',
+                'Role',
+                'Name',
+                'Email',
+                'Company',
+                'Status',
+                'Plan',
+                'Plan Status',
+                'Trial Ends',
+                'Registered',
+                'Last login',
+                'Last logout',
+            ],
             ...filtered.map((a) => [
                 a.accountType,
+                accountTypeLabel(a),
                 a.fullName,
                 a.email,
                 a.meta || '',
@@ -451,6 +484,8 @@ export default function AdminAccountsPage() {
                 a.planStatus || '',
                 a.trialEndsAt || '',
                 a.createdAt || '',
+                a.lastLoginAt || '',
+                a.lastLogoutAt || '',
             ]),
         ];
         const csv = rows
@@ -1111,7 +1146,7 @@ export default function AdminAccountsPage() {
                                                         </p>
                                                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#6B7280]">
                                                             <span className="font-medium text-[#111827]">
-                                                                {TYPE_LABEL[account.accountType]}
+                                                                {accountTypeLabel(account)}
                                                             </span>
                                                             {account.meta ? (
                                                                 <span>Company · {account.meta}</span>
@@ -1123,9 +1158,17 @@ export default function AdminAccountsPage() {
                                                                 </span>
                                                             ) : null}
                                                             <span>
-                                                                Created {formatDate(account.createdAt)}
+                                                                Registered{' '}
+                                                                {formatDateTime(account.createdAt)}
                                                             </span>
-                                                            <span>Last login · Not available</span>
+                                                            <span>
+                                                                Last login{' '}
+                                                                {formatDateTime(account.lastLoginAt)}
+                                                            </span>
+                                                            <span>
+                                                                Last logout{' '}
+                                                                {formatDateTime(account.lastLogoutAt)}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </button>
@@ -1298,7 +1341,7 @@ export default function AdminAccountsPage() {
                                             Account type
                                         </dt>
                                         <dd className="mt-1 font-medium">
-                                            {TYPE_LABEL[drawerAccount.accountType]}
+                                            {accountTypeLabel(drawerAccount)}
                                         </dd>
                                     </div>
                                     <div>
@@ -1311,17 +1354,27 @@ export default function AdminAccountsPage() {
                                     </div>
                                     <div>
                                         <dt className="text-xs uppercase tracking-wide text-[#6B7280]">
-                                            Created
+                                            Registered
                                         </dt>
                                         <dd className="mt-1 font-medium">
-                                            {formatDate(drawerAccount.createdAt)}
+                                            {formatDateTime(drawerAccount.createdAt)}
                                         </dd>
                                     </div>
                                     <div>
                                         <dt className="text-xs uppercase tracking-wide text-[#6B7280]">
                                             Last login
                                         </dt>
-                                        <dd className="mt-1 font-medium">Not available</dd>
+                                        <dd className="mt-1 font-medium">
+                                            {formatDateTime(drawerAccount.lastLoginAt)}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-xs uppercase tracking-wide text-[#6B7280]">
+                                            Last logout
+                                        </dt>
+                                        <dd className="mt-1 font-medium">
+                                            {formatDateTime(drawerAccount.lastLogoutAt)}
+                                        </dd>
                                     </div>
                                 </dl>
                             </section>

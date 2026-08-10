@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import AffordabilityLab from '@/components/buyer-learn/AffordabilityLab';
 import AiTutorFab from '@/components/buyer-learn/course/AiTutorFab';
 import CourseChapter from '@/components/buyer-learn/course/CourseChapter';
@@ -21,6 +21,7 @@ import { PORTAL_HERO_SECONDARY_BTN } from '@/components/PortalHero';
 import LearningLandingShell from '@/components/marketing/learn/LearningLandingShell';
 import LearningSignupGateModal from '@/components/buyer-learn/LearningSignupGateModal';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import { useAiAssistantVisibility } from '@/hooks/useAiAssistantVisibility';
 import type { LessonDifficulty } from '@/lib/buyer-learn/types';
 import {
     canAccessLessonAnonymously,
@@ -69,6 +70,8 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
     const [completedChapterIds, setCompletedChapterIds] = useState<string[]>([]);
     const [openChapterId, setOpenChapterId] = useState<string | null>(null);
     const [aiOpen, setAiOpen] = useState(false);
+    const { hidden: aiHidden, ready: aiReady, hide: hideAi, show: showAi } =
+        useAiAssistantVisibility();
     const [signupGateOpen, setSignupGateOpen] = useState(false);
     const [signupGateCompleting, setSignupGateCompleting] = useState(false);
     const [guestAccessTick, setGuestAccessTick] = useState(0);
@@ -502,16 +505,27 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
             </div>
         );
 
-    const tutor = (
+    const tutor = aiReady && aiHidden ? (
+        <button
+            type="button"
+            onClick={showAi}
+            className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal shadow-[0_8px_28px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5"
+            aria-label="Show PropReady AI Tutor"
+            title="Show AI Tutor"
+        >
+            <Sparkles className="h-4 w-4 text-gold" />
+        </button>
+    ) : aiReady ? (
         <AiTutorFab
             lessonTitle={lesson.meta.title}
             lessonSubtitle={lesson.meta.subtitle}
             hubBasePath={hubBasePath}
             open={aiOpen}
             onOpenChange={setAiOpen}
+            onHide={hideAi}
             fabClassName="bottom-6 right-5"
         />
-    );
+    ) : null;
 
     const gateModal = (
         <LearningSignupGateModal open={signupGateOpen} completing={signupGateCompleting} />
