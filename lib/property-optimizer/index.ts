@@ -7,3 +7,4 @@ export * from './locations';
 export * from './suburb-market';
 export * from './custom-improvements';
 export * from './coach';
+export * from './storage';

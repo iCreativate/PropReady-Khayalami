@@ -45,7 +45,7 @@ import {
 } from '@/lib/bond-calculator';
 import {
     deleteSavedBondCalculation,
-    readSavedBondCalculations,
+    hydrateBondCalculatorFromCloud,
     saveBondCalculation,
 } from '@/lib/bond-calculator-storage';
 import PortalHero from '@/components/PortalHero';
@@ -177,7 +177,14 @@ export default function BondCalculatorStudio({ embedded = false }: BondCalculato
     const [stickyVisible, setStickyVisible] = useState(false);
 
     useEffect(() => {
-        setSaved(readSavedBondCalculations());
+        let cancelled = false;
+        void (async () => {
+            const saves = await hydrateBondCalculatorFromCloud();
+            if (!cancelled) setSaved(saves);
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {

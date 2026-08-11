@@ -26,7 +26,7 @@ import {
     getGuidanceScenario,
     type GuidanceScenarioId,
 } from '@/lib/conveyancer-connect/guidance-scenarios';
-import { loadCcState } from '@/lib/conveyancer-connect/storage';
+import { hydrateCcStateFromCloud } from '@/lib/conveyancer-connect/storage';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
 const DEFAULT: MatchAnswers = {
@@ -63,24 +63,32 @@ function MatchPageContent() {
 
     useEffect(() => {
         if (guidanceLoaded) return;
-        const fromGuidance = searchParams.get('from') === 'guidance';
-        const scenarioId = searchParams.get('scenario') as GuidanceScenarioId | null;
-        const saved = loadCcState().matchAnswers;
+        let cancelled = false;
+        void (async () => {
+            const state = await hydrateCcStateFromCloud();
+            if (cancelled) return;
+            const fromGuidance = searchParams.get('from') === 'guidance';
+            const scenarioId = searchParams.get('scenario') as GuidanceScenarioId | null;
+            const saved = state.matchAnswers;
 
-        if (fromGuidance && scenarioId) {
-            const scenario = getGuidanceScenario(scenarioId);
-            if (scenario) {
-                setAnswers(buildMatchAnswersFromScenario(scenario, saved ?? DEFAULT));
-                setStep(2);
-                setGuidanceLoaded(true);
-                return;
+            if (fromGuidance && scenarioId) {
+                const scenario = getGuidanceScenario(scenarioId);
+                if (scenario) {
+                    setAnswers(buildMatchAnswersFromScenario(scenario, saved ?? DEFAULT));
+                    setStep(2);
+                    setGuidanceLoaded(true);
+                    return;
+                }
             }
-        }
 
-        if (saved) {
-            setAnswers(saved);
-        }
-        setGuidanceLoaded(true);
+            if (saved) {
+                setAnswers(saved);
+            }
+            setGuidanceLoaded(true);
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, [searchParams, guidanceLoaded]);
 
     const results = useMemo(

@@ -2,6 +2,7 @@ export * from './types';
 export * from './defaults';
 export * from './engine';
 export * from './storage';
+export * from './cloud-sync';
 export * from './spreadsheet';
 export * from './sa-prime-rates';
 export * from './fetch-sa-prime';

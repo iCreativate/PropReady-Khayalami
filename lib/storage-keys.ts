@@ -38,5 +38,7 @@ export const STORAGE_KEYS = {
     bondCalculatorSaves: 'propReady_bondCalculatorSaves_v1',
     /** Property Companion™ portfolio workspace */
     propertyCompanion: 'propReady_propertyCompanion_v1',
+    /** Property Value Optimizer form workspace */
+    propertyValueOptimizer: 'propReady_propertyValueOptimizer_v1',
     selectedAgent: (userId: string) => `propReady_selectedAgent_${userId}`,
 } as const;

@@ -7,9 +7,9 @@ import CcPageShell from '@/components/conveyancer-connect/CcPageShell';
 import { CC_CARD_FLAT, CC_MUTED } from '@/components/conveyancer-connect/cc-ui';
 import {
     findInProfiles,
-    loadCcState,
     useConveyancerDirectory,
 } from '@/lib/conveyancer-connect';
+import { hydrateCcStateFromCloud } from '@/lib/conveyancer-connect/storage';
 import { hydrateSessionFromCookies } from '@/lib/auth-session-bridge';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
@@ -28,12 +28,15 @@ export default function UserDashboardPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const s = loadCcState();
-        setSavedIds(s.savedIds);
-        setRecentSearches(s.recentSearches);
-
+        let cancelled = false;
         void (async () => {
+            const s = await hydrateCcStateFromCloud();
+            if (cancelled) return;
+            setSavedIds(s.savedIds);
+            setRecentSearches(s.recentSearches);
+
             const session = await hydrateSessionFromCookies({ force: true });
+            if (cancelled) return;
             setSignedIn(Boolean(session));
             if (!session) {
                 setLoading(false);
@@ -41,6 +44,7 @@ export default function UserDashboardPage() {
             }
             const res = await fetch('/api/conveyancers/my/activity', { credentials: 'include' });
             const data = await res.json().catch(() => ({}));
+            if (cancelled) return;
             if (res.ok) {
                 setActivity({
                     quotes: data.quotes || [],
@@ -50,6 +54,9 @@ export default function UserDashboardPage() {
             }
             setLoading(false);
         })();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const saved = useMemo(

@@ -14,6 +14,7 @@ export function createEmptyCompanionState(): CompanionState {
         goals: [],
         alerts: [],
         activePropertyId: null,
+        updatedAt: new Date().toISOString(),
     };
 }
 

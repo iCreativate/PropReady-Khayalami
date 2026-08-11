@@ -42,6 +42,7 @@ import SellerPropertyOnboardingForm from '@/components/onboarding/SellerProperty
 import {
     deleteSellerProperty,
     getActiveSellerProperty,
+    hydrateSellerPropertiesFromCloud,
     listSellerProperties,
     setActiveSellerProperty,
     type SellerProperty,
@@ -107,6 +108,7 @@ export default function SellerDashboardPage() {
             const user = JSON.parse(userData);
             setCurrentUser(user);
 
+            await hydrateSellerPropertiesFromCloud(user.id);
             const properties = listSellerProperties(user.id);
             setSellerProperties(properties);
             const active = getActiveSellerProperty(user.id);

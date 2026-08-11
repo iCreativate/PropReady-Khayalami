@@ -8,7 +8,7 @@ import MapView from '@/components/conveyancer-connect/MapView';
 import { CC_CARD_FLAT, PricePips, Stars } from '@/components/conveyancer-connect/cc-ui';
 import {
     findInProfiles,
-    loadCcState,
+    hydrateCcStateFromCloud,
     toggleCompare,
     useConveyancerDirectory,
     type ConveyancerProfile,
@@ -45,7 +45,13 @@ export default function ComparePage() {
     const [ids, setIds] = useState<string[]>([]);
 
     useEffect(() => {
-        setIds(loadCcState().compareIds);
+        let cancelled = false;
+        void hydrateCcStateFromCloud().then((s) => {
+            if (!cancelled) setIds(s.compareIds);
+        });
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const profiles = useMemo(

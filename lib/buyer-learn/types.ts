@@ -222,4 +222,5 @@ export interface BuyerLearnStore {
     totalXp: number;
     streakDays: number;
     lastActiveDate: string | null;
+    updatedAt?: string;
 }

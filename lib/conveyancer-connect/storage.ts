@@ -7,6 +7,11 @@ import type {
     MessageThreadStub,
     QuoteRequest,
 } from '@/lib/conveyancer-connect/types';
+import {
+    fetchUserWorkspace,
+    reconcileWorkspaceState,
+    scheduleWorkspacePush,
+} from '@/lib/user-workspace-sync';
 
 const MAX_COMPARE = 4;
 
@@ -22,6 +27,22 @@ export function defaultCcState(): CcUserState {
         matchAnswers: null,
         tracker: null,
         darkMode: false,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
+function coerceCcState(raw: Partial<CcUserState> | null | undefined): CcUserState {
+    return {
+        ...defaultCcState(),
+        ...(raw || {}),
+        savedIds: Array.isArray(raw?.savedIds) ? raw.savedIds : [],
+        compareIds: Array.isArray(raw?.compareIds) ? raw.compareIds : [],
+        notes: raw?.notes && typeof raw.notes === 'object' ? raw.notes : {},
+        recentSearches: Array.isArray(raw?.recentSearches) ? raw.recentSearches : [],
+        quotes: Array.isArray(raw?.quotes) ? raw.quotes : [],
+        bookings: Array.isArray(raw?.bookings) ? raw.bookings : [],
+        threads: Array.isArray(raw?.threads) ? raw.threads : [],
+        updatedAt: raw?.updatedAt || new Date().toISOString(),
     };
 }
 
@@ -30,7 +51,7 @@ export function loadCcState(): CcUserState {
     try {
         const raw = localStorage.getItem(STORAGE_KEYS.conveyancerConnect);
         if (!raw) return defaultCcState();
-        return { ...defaultCcState(), ...JSON.parse(raw) } as CcUserState;
+        return coerceCcState(JSON.parse(raw) as Partial<CcUserState>);
     } catch {
         return defaultCcState();
     }
@@ -38,7 +59,43 @@ export function loadCcState(): CcUserState {
 
 export function saveCcState(state: CcUserState): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(STORAGE_KEYS.conveyancerConnect, JSON.stringify(state));
+    const next = { ...state, updatedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEYS.conveyancerConnect, JSON.stringify(next));
+    scheduleWorkspacePush('conveyancer-connect', next);
+}
+
+export async function hydrateCcStateFromCloud(): Promise<CcUserState> {
+    const local = loadCcState();
+    const cloud = await fetchUserWorkspace<CcUserState>('conveyancer-connect');
+    if (!cloud?.state) return local;
+    const remote = coerceCcState({
+        ...cloud.state,
+        updatedAt: cloud.updatedAt || cloud.state.updatedAt,
+    });
+    const savedIds = [...new Set([...(local.savedIds || []), ...(remote.savedIds || [])])];
+    const compareIds = [...new Set([...(local.compareIds || []), ...(remote.compareIds || [])])].slice(
+        0,
+        MAX_COMPARE
+    );
+    const notes = { ...(local.notes || {}), ...(remote.notes || {}) };
+    const recentSearches = [
+        ...new Set([...(local.recentSearches || []), ...(remote.recentSearches || [])]),
+    ].slice(0, 8);
+    const base = reconcileWorkspaceState('conveyancer-connect', local, remote, {
+        mergeArraysById: ['quotes', 'bookings', 'threads'],
+    });
+    const merged: CcUserState = {
+        ...base,
+        savedIds,
+        compareIds,
+        notes,
+        recentSearches,
+        matchAnswers: base.matchAnswers ?? local.matchAnswers ?? remote.matchAnswers,
+        tracker: base.tracker ?? local.tracker ?? remote.tracker,
+    };
+    localStorage.setItem(STORAGE_KEYS.conveyancerConnect, JSON.stringify(merged));
+    scheduleWorkspacePush('conveyancer-connect', merged);
+    return merged;
 }
 
 export function toggleSaved(id: string): CcUserState {

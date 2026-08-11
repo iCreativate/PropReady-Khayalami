@@ -59,6 +59,7 @@ import {
     daysUntil,
     deleteCompanionProperty,
     equityOf,
+    fetchCompanionFromCloud,
     formatPct,
     formatZar,
     grossYield,
@@ -84,6 +85,8 @@ import {
     BUILD_FUNDING_OPTIONS,
     RENOVATION_CATEGORIES,
     estimateCurrentValue,
+    pushCompanionToCloud,
+    reconcileCompanionWithCloud,
     refineCompanionState,
     resolveCompanionSuburb,
     searchCompanionSuburbs,
@@ -527,18 +530,41 @@ export default function PropertyIQDashboard({ embedded = false }: Props) {
 
     useEffect(() => {
         let cancelled = false;
-        void loadCompanionStateAsync()
-            .then((loaded) => {
+        void (async () => {
+            try {
+                const loaded = await loadCompanionStateAsync();
                 if (cancelled) return;
+
+                const cloud = await fetchCompanionFromCloud();
+                const reconciled = reconcileCompanionWithCloud(
+                    loaded,
+                    cloud?.state
+                        ? {
+                              ...cloud.state,
+                              updatedAt: cloud.updatedAt || cloud.state.updatedAt,
+                          }
+                        : null
+                );
+
                 skipNextSave.current = true;
-                setState(loaded);
+                setState(reconciled);
                 setHydrated(true);
 
-                // Refine bond figures after first paint so load never blocks on schedules.
+                // Persist merge locally; push to cloud if we recovered local-only data.
+                if (reconciled !== loaded) {
+                    void saveCompanionStateAsync(reconciled);
+                }
+                if (
+                    (reconciled.properties?.length || 0) > 0 ||
+                    (reconciled.goals?.length || 0) > 0
+                ) {
+                    void pushCompanionToCloud(reconciled);
+                }
+
                 const refine = () => {
                     if (cancelled) return;
                     try {
-                        const refined = refineCompanionState(loaded);
+                        const refined = refineCompanionState(reconciled);
                         skipNextSave.current = true;
                         setState(refined);
                     } catch (err) {
@@ -550,14 +576,14 @@ export default function PropertyIQDashboard({ embedded = false }: Props) {
                 } else {
                     setTimeout(refine, 100);
                 }
-            })
-            .catch((err) => {
+            } catch (err) {
                 console.warn('[Property Companion] Hydrate failed — empty workspace', err);
                 if (cancelled) return;
                 skipNextSave.current = true;
                 setState(createEmptyCompanionState());
                 setHydrated(true);
-            });
+            }
+        })();
         return () => {
             cancelled = true;
         };
@@ -572,6 +598,7 @@ export default function PropertyIQDashboard({ embedded = false }: Props) {
         }
         const timer = window.setTimeout(() => {
             void saveCompanionStateAsync(state);
+            void pushCompanionToCloud(state);
         }, 450);
         return () => window.clearTimeout(timer);
     }, [state, hydrated]);

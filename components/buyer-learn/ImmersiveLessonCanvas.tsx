@@ -33,7 +33,10 @@ import {
     updateLessonProgress,
     type LessonModule,
 } from '@/lib/buyer-learn';
-import { BUYER_LEARN_CHANGED_EVENT } from '@/lib/buyer-learn/progress';
+import {
+    BUYER_LEARN_CHANGED_EVENT,
+    hydrateBuyerLearnFromCloud,
+} from '@/lib/buyer-learn/progress';
 import {
     LEARN_COURSE_GRID,
     LEARN_COURSE_SHELL,
@@ -87,33 +90,44 @@ export default function ImmersiveLessonCanvas({ lesson }: { lesson: LessonModule
         useCourse && chapterTotal > 0 && completedChapterIds.length >= chapterTotal;
 
     useEffect(() => {
-        const p = getLessonProgress(progressId);
-        const store = readBuyerLearnStore();
-        setBookmarked(p.bookmarked);
-        setStreakDays(store.streakDays);
-        setTotalXp(store.totalXp);
-        if (p.quizScore != null) setKnowledgeScore(p.quizScore);
+        let cancelled = false;
+        void (async () => {
+            if (user) {
+                await hydrateBuyerLearnFromCloud();
+                if (cancelled) return;
+            }
+            const p = getLessonProgress(progressId);
+            const store = readBuyerLearnStore();
+            if (cancelled) return;
+            setBookmarked(p.bookmarked);
+            setStreakDays(store.streakDays);
+            setTotalXp(store.totalXp);
+            if (p.quizScore != null) setKnowledgeScore(p.quizScore);
 
-        if (useCourse && chapters) {
-            const saved = (p.completedChapterIds || []).filter((id) =>
-                chapters.some((c) => c.id === id)
-            );
-            setCompletedChapterIds(saved);
-            const nextOpen =
-                chapters.find((c) => !saved.includes(c.id))?.id ||
-                chapters[chapters.length - 1]?.id ||
-                null;
-            setOpenChapterId(nextOpen);
-            const pct =
-                chapters.length === 0
-                    ? 0
-                    : Math.round((saved.length / chapters.length) * 100);
-            setProgressPct(Math.max(p.percent, pct));
-            if (nextOpen) setActiveChapterId(nextOpen);
-        } else {
-            setProgressPct(p.percent);
-        }
-    }, [progressId, useCourse, chapters]);
+            if (useCourse && chapters) {
+                const saved = (p.completedChapterIds || []).filter((id) =>
+                    chapters.some((c) => c.id === id)
+                );
+                setCompletedChapterIds(saved);
+                const nextOpen =
+                    chapters.find((c) => !saved.includes(c.id))?.id ||
+                    chapters[chapters.length - 1]?.id ||
+                    null;
+                setOpenChapterId(nextOpen);
+                const pct =
+                    chapters.length === 0
+                        ? 0
+                        : Math.round((saved.length / chapters.length) * 100);
+                setProgressPct(Math.max(p.percent, pct));
+                if (nextOpen) setActiveChapterId(nextOpen);
+            } else {
+                setProgressPct(p.percent);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [progressId, useCourse, chapters, user]);
 
     useEffect(() => {
         if (!isHydrated || user) return;

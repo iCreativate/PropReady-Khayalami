@@ -58,6 +58,8 @@ import {
     buildSaleProceedsBreakdown,
     buildSnapshotForLocation,
     formatZAR,
+    hydratePvoWorkspaceFromCloud,
+    savePvoWorkspace,
     type ForecastScenario,
     type LocationInput,
     type OptimizerSnapshot,
@@ -195,6 +197,7 @@ const inputClass =
  * Premium Property Value Optimizer — everything below the portal hero.
  */
 export default function PropertyValueOptimizerDashboard() {
+    const [hydrated, setHydrated] = useState(false);
     const [snapshot, setSnapshot] = useState<OptimizerSnapshot | null>(null);
     const [suburb, setSuburb] = useState('');
     const [municipality, setMunicipality] = useState('');
@@ -226,6 +229,101 @@ export default function PropertyValueOptimizerDashboard() {
     >([]);
     const [activeScenario, setActiveScenario] = useState<(typeof SCENARIOS)[number]['id']>('today');
     const [exporting, setExporting] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            const s = await hydratePvoWorkspaceFromCloud();
+            if (cancelled) return;
+            setSuburb(s.suburb);
+            setMunicipality(s.municipality);
+            setProvince(s.province);
+            setStreetAddress(s.streetAddress);
+            setPropertyType(s.propertyType);
+            setBedrooms(s.bedrooms);
+            setBathrooms(s.bathrooms);
+            setParking(s.parking);
+            setFloorSize(s.floorSize);
+            setLandSize(s.landSize);
+            setPurchasePrice(s.purchasePrice);
+            setPurchaseDate(s.purchaseDate);
+            setUnderBond(s.underBond);
+            setBondBalance(s.bondBalance);
+            setCompletedIds(s.completedIds);
+            setSpendById(s.spendById);
+            setAgentPct(s.agentPct || String(DEFAULT_AGENT_COMMISSION_PCT));
+            setCostAmounts(s.costAmounts);
+            setExpectedSale(s.expectedSale);
+            setIsPrimaryResidence(s.isPrimaryResidence);
+            setForecastScenario(s.forecastScenario);
+            setTimelineYear(s.timelineYear);
+            if (SCENARIOS.some((x) => x.id === s.activeScenario)) {
+                setActiveScenario(s.activeScenario as (typeof SCENARIOS)[number]['id']);
+            }
+            setHydrated(true);
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!hydrated) return;
+        const t = window.setTimeout(() => {
+            savePvoWorkspace({
+                suburb,
+                municipality,
+                province,
+                streetAddress,
+                propertyType,
+                bedrooms,
+                bathrooms,
+                parking,
+                floorSize,
+                landSize,
+                purchasePrice,
+                purchaseDate,
+                underBond,
+                bondBalance,
+                completedIds,
+                spendById,
+                agentPct,
+                costAmounts,
+                expectedSale,
+                isPrimaryResidence,
+                forecastScenario,
+                timelineYear,
+                activeScenario,
+                updatedAt: new Date().toISOString(),
+            });
+        }, 450);
+        return () => window.clearTimeout(t);
+    }, [
+        hydrated,
+        suburb,
+        municipality,
+        province,
+        streetAddress,
+        propertyType,
+        bedrooms,
+        bathrooms,
+        parking,
+        floorSize,
+        landSize,
+        purchasePrice,
+        purchaseDate,
+        underBond,
+        bondBalance,
+        completedIds,
+        spendById,
+        agentPct,
+        costAmounts,
+        expectedSale,
+        isPrimaryResidence,
+        forecastScenario,
+        timelineYear,
+        activeScenario,
+    ]);
 
     const hasPropertyBrief = Boolean(
         suburb.trim() ||

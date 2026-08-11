@@ -267,6 +267,7 @@ export interface CcUserState {
     matchAnswers: MatchAnswers | null;
     tracker: TransferTrackerState | null;
     darkMode: boolean;
+    updatedAt?: string;
 }
 
 export const SPECIALTY_LABELS: Record<Specialty, string> = {

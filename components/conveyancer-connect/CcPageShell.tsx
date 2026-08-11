@@ -1,9 +1,10 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import BuyerPortalShell from '@/components/BuyerPortalShell';
 import PublicSiteHeader from '@/components/PublicSiteHeader';
 import { useHydratedBuyerPortalUser } from '@/hooks/useHydratedPortalUser';
+import { hydrateCcStateFromCloud } from '@/lib/conveyancer-connect/storage';
 import { PORTAL_PAGE_CONTAINER } from '@/lib/portal-ui';
 
 export default function CcPageShell({
@@ -16,6 +17,10 @@ export default function CcPageShell({
     pageHeader?: ReactNode;
 }) {
     const { user } = useHydratedBuyerPortalUser();
+
+    useEffect(() => {
+        void hydrateCcStateFromCloud();
+    }, []);
 
     return (
         <BuyerPortalShell

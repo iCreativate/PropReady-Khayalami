@@ -623,6 +623,8 @@ export type CompanionState = {
     goals: PortfolioGoal[];
     alerts: CompanionAlert[];
     activePropertyId: string | null;
+    /** ISO timestamp of last meaningful save — used for cloud / device merge. */
+    updatedAt?: string;
 };
 
 export type ChartRange = '1m' | '6m' | '1y' | '5y' | 'life';

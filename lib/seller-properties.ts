@@ -1,6 +1,11 @@
 /** Multi-property store for seller portal (not marketplace listings). */
 
 import { STORAGE_KEYS } from '@/lib/storage-keys';
+import {
+    fetchUserWorkspace,
+    reconcileWorkspaceState,
+    scheduleWorkspacePush,
+} from '@/lib/user-workspace-sync';
 
 export type SellerProperty = {
     id: string;
@@ -33,6 +38,12 @@ export type SellerProperty = {
 export type SellerPropertyInput = Partial<SellerProperty> & {
     propertyAddress: string;
     userId: string;
+};
+
+export type SellerPropertiesWorkspace = {
+    properties: SellerProperty[];
+    activePropertyId: string | null;
+    updatedAt: string;
 };
 
 function safeParseArray(raw: string | null): unknown[] {
@@ -116,7 +127,19 @@ export function syncActiveSellerInfo(property: SellerProperty | null) {
     localStorage.setItem(STORAGE_KEYS.sellerInfo, JSON.stringify(sellerInfo));
 }
 
-function writeList(list: SellerProperty[]) {
+function readWorkspaceBlob(): SellerPropertiesWorkspace {
+    const properties = safeParseArray(localStorage.getItem(STORAGE_KEYS.sellerProperties))
+        .map((row) => asSellerProperty(row as Record<string, unknown>))
+        .filter((p): p is SellerProperty => Boolean(p));
+    const activePropertyId = localStorage.getItem(STORAGE_KEYS.activeSellerPropertyId);
+    return {
+        properties,
+        activePropertyId,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
+function writeList(list: SellerProperty[], options?: { skipCloud?: boolean }) {
     localStorage.setItem(STORAGE_KEYS.sellerProperties, JSON.stringify(list));
     const activeId = localStorage.getItem(STORAGE_KEYS.activeSellerPropertyId);
     const active =
@@ -127,6 +150,14 @@ function writeList(list: SellerProperty[]) {
         localStorage.removeItem(STORAGE_KEYS.activeSellerPropertyId);
     }
     syncActiveSellerInfo(active);
+    if (!options?.skipCloud) {
+        const workspace: SellerPropertiesWorkspace = {
+            properties: list,
+            activePropertyId: active?.id || null,
+            updatedAt: new Date().toISOString(),
+        };
+        scheduleWorkspacePush('seller-properties', workspace);
+    }
 }
 
 /** Migrate legacy sellerInfo + quizzes into the multi-property array once. */
@@ -139,7 +170,7 @@ export function migrateSellerProperties(userId: string): SellerProperty[] {
         .filter((p) => !userId || p.userId === userId || !p.userId);
 
     if (existing.length > 0) {
-        writeList(existing);
+        writeList(existing, { skipCloud: true });
         return existing;
     }
 
@@ -211,6 +242,11 @@ export function setActiveSellerProperty(userId: string, propertyId: string): Sel
     if (!found) return null;
     localStorage.setItem(STORAGE_KEYS.activeSellerPropertyId, found.id);
     syncActiveSellerInfo(found);
+    scheduleWorkspacePush('seller-properties', {
+        properties: list,
+        activePropertyId: found.id,
+        updatedAt: new Date().toISOString(),
+    });
     return found;
 }
 
@@ -248,6 +284,60 @@ export function deleteSellerProperty(userId: string, propertyId: string): Seller
     const list = listSellerProperties(userId).filter((p) => p.id !== propertyId);
     writeList(list);
     return list;
+}
+
+/** Merge account-backed seller portfolio into local storage. */
+export async function hydrateSellerPropertiesFromCloud(userId: string): Promise<SellerProperty[]> {
+    const localList = listSellerProperties(userId);
+    const local: SellerPropertiesWorkspace = {
+        properties: localList,
+        activePropertyId: localStorage.getItem(STORAGE_KEYS.activeSellerPropertyId),
+        updatedAt: readWorkspaceBlob().updatedAt,
+    };
+    const cloud = await fetchUserWorkspace<SellerPropertiesWorkspace>('seller-properties');
+    if (!cloud?.state) return localList;
+
+    const remoteProps = (Array.isArray(cloud.state.properties) ? cloud.state.properties : [])
+        .map((row) => asSellerProperty(row as unknown as Record<string, unknown>, userId))
+        .filter((p): p is SellerProperty => Boolean(p));
+
+    const remote: SellerPropertiesWorkspace = {
+        properties: remoteProps,
+        activePropertyId: cloud.state.activePropertyId || null,
+        updatedAt: cloud.updatedAt || cloud.state.updatedAt || new Date().toISOString(),
+    };
+
+    const merged = reconcileWorkspaceState('seller-properties', local, remote, {
+        mergeArraysById: ['properties'],
+    });
+
+    // Prefer newer property row when ids collide.
+    const byId = new Map<string, SellerProperty>();
+    for (const p of [...local.properties, ...remote.properties]) {
+        const prev = byId.get(p.id);
+        if (!prev) {
+            byId.set(p.id, p);
+            continue;
+        }
+        const a = Date.parse(prev.updatedAt) || 0;
+        const b = Date.parse(p.updatedAt) || 0;
+        byId.set(p.id, b >= a ? { ...prev, ...p } : { ...p, ...prev });
+    }
+    const properties = [...byId.values()].filter(
+        (p) => !userId || p.userId === userId || !p.userId
+    );
+    const activePropertyId =
+        (merged.activePropertyId && properties.some((p) => p.id === merged.activePropertyId)
+            ? merged.activePropertyId
+            : properties[0]?.id) || null;
+
+    if (activePropertyId) {
+        localStorage.setItem(STORAGE_KEYS.activeSellerPropertyId, activePropertyId);
+    } else {
+        localStorage.removeItem(STORAGE_KEYS.activeSellerPropertyId);
+    }
+    writeList(properties);
+    return properties;
 }
 
 export function sellerPropertyToFormDefaults(property?: SellerProperty | null) {

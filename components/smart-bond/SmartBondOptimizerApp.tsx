@@ -57,6 +57,7 @@ import {
     formatZar,
     investmentScore,
     KNOWLEDGE_ARTICLES,
+    hydrateSmartBondStateFromCloud,
     loadSmartBondState,
     ltvPct,
     portfolioSummary,
@@ -159,18 +160,25 @@ export default function SmartBondOptimizerApp() {
     const [knowledgeId, setKnowledgeId] = useState(KNOWLEDGE_ARTICLES[0].id);
 
     useEffect(() => {
-        const s = loadSmartBondState();
-        setProfile(withDerivedRepayment(s.profile));
-        setScenario(s.scenario);
-        setPortfolio(s.portfolio);
-        setTab(normalizeTab(s.activeTab));
-        setInvest((prev) => ({
-            ...prev,
-            existingBondRepayment: withDerivedRepayment(s.profile).monthlyRepayment,
-            monthlyIncome: s.profile.monthlyIncome,
-            monthlyExpenses: s.profile.monthlyExpenses,
-        }));
-        setHydrated(true);
+        let cancelled = false;
+        void (async () => {
+            const s = await hydrateSmartBondStateFromCloud();
+            if (cancelled) return;
+            setProfile(withDerivedRepayment(s.profile));
+            setScenario(s.scenario);
+            setPortfolio(s.portfolio);
+            setTab(normalizeTab(s.activeTab));
+            setInvest((prev) => ({
+                ...prev,
+                existingBondRepayment: withDerivedRepayment(s.profile).monthlyRepayment,
+                monthlyIncome: s.profile.monthlyIncome,
+                monthlyExpenses: s.profile.monthlyExpenses,
+            }));
+            setHydrated(true);
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {

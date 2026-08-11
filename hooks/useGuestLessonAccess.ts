@@ -5,7 +5,11 @@ import {
     anonymousLessonsRemaining,
     isLessonLockedForGuest,
 } from '@/lib/buyer-learn/anonymous-lesson-limit';
-import { getLessonProgress, readBuyerLearnStore, BUYER_LEARN_CHANGED_EVENT } from '@/lib/buyer-learn/progress';
+import {
+    getLessonProgress,
+    hydrateBuyerLearnFromCloud,
+    BUYER_LEARN_CHANGED_EVENT,
+} from '@/lib/buyer-learn/progress';
 import { fetchAuthSession } from '@/lib/auth-session-bridge';
 
 export function useGuestLessonAccess(
@@ -38,6 +42,17 @@ export function useGuestLessonAccess(
             cancelled = true;
         };
     }, [options?.authenticated]);
+
+    useEffect(() => {
+        if (!authReady || !authenticated) return;
+        let cancelled = false;
+        void hydrateBuyerLearnFromCloud().then(() => {
+            if (!cancelled) bumpStore();
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [authReady, authenticated, bumpStore]);
 
     useEffect(() => {
         bumpStore();

@@ -155,6 +155,106 @@ function coerceState(raw: unknown): CompanionState | null {
         goals: Array.isArray(parsed.goals) ? parsed.goals : [],
         alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
         activePropertyId: parsed.activePropertyId ?? null,
+        updatedAt:
+            typeof parsed.updatedAt === 'string' && parsed.updatedAt
+                ? parsed.updatedAt
+                : undefined,
+    };
+}
+
+function workspaceWeight(state: CompanionState | null | undefined): number {
+    if (!state) return 0;
+    return (
+        (state.properties?.length || 0) * 10 +
+        (state.goals?.length || 0) * 2 +
+        (state.alerts?.length || 0)
+    );
+}
+
+function stampUpdated(state: CompanionState): CompanionState {
+    return {
+        ...state,
+        version: 1,
+        updatedAt: new Date().toISOString(),
+    };
+}
+
+/**
+ * Merge two workspaces without dropping user data.
+ * Properties / goals / alerts are unioned by id; conflicts prefer the newer workspace,
+ * while photos are kept from whichever side still has them.
+ */
+export function mergeCompanionStates(
+    local: CompanionState,
+    remote: CompanionState
+): CompanionState {
+    const localTs = Date.parse(local.updatedAt || '') || 0;
+    const remoteTs = Date.parse(remote.updatedAt || '') || 0;
+    const preferRemote = remoteTs > localTs;
+
+    function mergeProperty(a: IqProperty, b: IqProperty): IqProperty {
+        const primary = preferRemote ? b : a;
+        const secondary = preferRemote ? a : b;
+        const images =
+            Array.isArray(primary.images) && primary.images.length > 0
+                ? primary.images
+                : Array.isArray(secondary.images)
+                  ? secondary.images
+                  : [];
+        return {
+            ...secondary,
+            ...primary,
+            image: primary.image || secondary.image || '',
+            images,
+        };
+    }
+
+    const propMap = new Map<string, IqProperty>();
+    for (const p of local.properties) {
+        if (p?.id) propMap.set(p.id, p);
+    }
+    for (const p of remote.properties) {
+        if (!p?.id) continue;
+        const existing = propMap.get(p.id);
+        propMap.set(p.id, existing ? mergeProperty(existing, p) : p);
+    }
+
+    const goalMap = new Map<string, CompanionState['goals'][number]>();
+    for (const g of [...local.goals, ...remote.goals]) {
+        if (!g?.id) continue;
+        const existing = goalMap.get(g.id);
+        if (!existing || preferRemote) goalMap.set(g.id, g);
+    }
+
+    const alertMap = new Map<string, CompanionState['alerts'][number]>();
+    for (const a of [...local.alerts, ...remote.alerts]) {
+        if (!a?.id) continue;
+        const existing = alertMap.get(a.id);
+        if (!existing || preferRemote) alertMap.set(a.id, a);
+    }
+
+    const properties = [...propMap.values()];
+    const preferred = preferRemote ? remote : local;
+    const activeStillValid =
+        preferred.activePropertyId &&
+        properties.some((p) => p.id === preferred.activePropertyId)
+            ? preferred.activePropertyId
+            : properties[0]?.id ?? null;
+
+    return stampUpdated({
+        version: 1,
+        properties,
+        goals: [...goalMap.values()],
+        alerts: [...alertMap.values()],
+        activePropertyId: activeStillValid,
+    });
+}
+
+/** Cloud payload — drop heavy photo data URLs so sync stays reliable. */
+export function slimCompanionForCloud(state: CompanionState): CompanionState {
+    return {
+        ...slimForLocalStorage(state),
+        updatedAt: state.updatedAt || new Date().toISOString(),
     };
 }
 
@@ -184,6 +284,7 @@ function stripDemoData(state: CompanionState, mode: 'fast' | 'full' = 'fast'): C
         goals,
         alerts,
         activePropertyId: activeStillValid,
+        updatedAt: state.updatedAt,
     };
 }
 
@@ -265,16 +366,34 @@ export function refineCompanionState(state: CompanionState): CompanionState {
 
 /**
  * Persist Companion workspace. IndexedDB is durable; localStorage is a slim mirror.
- * Never clears existing storage on failure.
+ * Never clears existing storage on failure, and refuses to wipe a non-empty workspace
+ * with an empty one (protects against hydrate races / timeouts).
  */
 export async function saveCompanionStateAsync(state: CompanionState): Promise<void> {
     if (typeof window === 'undefined') return;
-    // Persist as-is — callers keep bond/value fields in sync via withBondFinance / etc.
-    // Re-normalising here re-ran full bond schedules and made every edit feel slow.
+
+    const stamped = stampUpdated(state);
     const payload: CompanionState = {
-        ...state,
+        ...stamped,
         version: 1,
     };
+
+    try {
+        const existingRaw = await idbGetState();
+        const existing = coerceState(existingRaw);
+        if (
+            workspaceWeight(payload) === 0 &&
+            existing &&
+            workspaceWeight(existing) > 0
+        ) {
+            console.warn(
+                '[Property Companion] Refusing to overwrite non-empty workspace with empty state.'
+            );
+            return;
+        }
+    } catch {
+        /* continue — still attempt write */
+    }
 
     let idbOk = false;
     try {
