@@ -24,13 +24,6 @@
   align-items: start;
 }
 
-@media (min-width: 1280px) {
-  .biw-shell {
-    grid-template-columns: minmax(0, 1fr) 292px;
-    gap: 24px;
-  }
-}
-
 .biw-main {
   display: flex;
   flex-direction: column;

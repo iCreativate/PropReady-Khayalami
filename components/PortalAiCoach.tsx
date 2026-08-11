@@ -3,9 +3,11 @@
 import React, { useEffect, useMemo, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Calculator, Clock, MessageSquare, Newspaper, Sparkles, X } from 'lucide-react';
+import { Calculator, Clock, MessageSquare, Newspaper, Sparkles } from 'lucide-react';
 import '@/app/dashboard/portal-ai-coach.css';
 import { useAiAssistantVisibility } from '@/hooks/useAiAssistantVisibility';
+import { formatCurrency } from '@/lib/currency';
+import { STORAGE_KEYS } from '@/lib/storage-keys';
 
 /** Soft-fail dynamic import — Turbopack/extension chunk fetch failures must not crash the portal. */
 const AiTutorFab = dynamic(
@@ -40,24 +42,29 @@ const ROLE_COPY: Record<
         pulseTitle: string;
         pulseBody: string;
         calculatorHref: string;
+        calculatorLabel: string;
         lessonTitle: string;
         lessonSubtitle: string;
         hubBasePath: string;
+        signalTitle: string;
+        signalHint: string;
     }
 > = {
     buyer: {
         subtitle: "Sticky coach for today's buy path",
         tipTitle: 'Mortgage tip',
         tipBody:
-            'Repo is the SARB policy rate; prime usually tracks repo + 3.5pp. A bigger deposit often helps more than chasing a tiny rate cut — model both.',
+            'A larger deposit can shrink instalments faster than chasing a tiny rate cut — model both in the calculator.',
         pulseTitle: 'Rate pulse',
-        pulseBody:
-            'Use the live repo/prime banner, then stress-test affordability if rates rise 1–2 percentage points.',
+        pulseBody: 'Watch repo-rate moves — your monthly target updates with affordability.',
         calculatorHref: '/calculator',
+        calculatorLabel: 'Quick calculator',
         lessonTitle: 'Buyer portal',
         lessonSubtitle:
             'Bond readiness, Property Companion™, affordability, documents, viewings and next steps on PropReady',
         hubBasePath: '/dashboard',
+        signalTitle: 'Estimated savings',
+        signalHint: 'Rate / fee optimisation signal',
     },
     seller: {
         subtitle: "Sticky coach for today's sell path",
@@ -67,9 +74,12 @@ const ROLE_COPY: Record<
         pulseTitle: 'Market pulse',
         pulseBody: 'Track demand signals in your suburb before adjusting list price or incentives.',
         calculatorHref: '/sellers/valuation',
+        calculatorLabel: 'Open valuation',
         lessonTitle: 'Seller portal',
         lessonSubtitle: 'Valuations, listing readiness, viewings and conveyancing on PropReady',
         hubBasePath: '/sellers/dashboard',
+        signalTitle: 'Listing focus',
+        signalHint: 'Keep buyer-ready details current',
     },
     agent: {
         subtitle: 'Sticky coach for listings & leads',
@@ -79,9 +89,12 @@ const ROLE_COPY: Record<
         pulseTitle: 'Pipeline pulse',
         pulseBody: 'Keep viewings, follow-ups and listing updates moving so nothing stalls mid-journey.',
         calculatorHref: '/agents/dashboard',
+        calculatorLabel: 'Open workspace',
         lessonTitle: 'Agent portal',
         lessonSubtitle: 'Leads, listings, viewings and client readiness coaching on PropReady',
         hubBasePath: '/agents/dashboard',
+        signalTitle: 'Pipeline focus',
+        signalHint: 'Prioritise hottest leads today',
     },
     originator: {
         subtitle: 'Sticky coach for bond applications',
@@ -91,9 +104,12 @@ const ROLE_COPY: Record<
         pulseTitle: 'Case pulse',
         pulseBody: 'Prioritise incomplete files and follow up pending bank responses same day when possible.',
         calculatorHref: '/originators/dashboard',
+        calculatorLabel: 'Open cases',
         lessonTitle: 'Originator portal',
         lessonSubtitle: 'Bond applications, document readiness and bank progress on PropReady',
         hubBasePath: '/originators/dashboard',
+        signalTitle: 'Case focus',
+        signalHint: 'Clear incomplete packs first',
     },
     conveyancer: {
         subtitle: 'Sticky coach for matters & transfers',
@@ -103,15 +119,19 @@ const ROLE_COPY: Record<
         pulseTitle: 'Transfer pulse',
         pulseBody: 'Keep parties aligned on conditions, guarantees and registration milestones.',
         calculatorHref: '/conveyancers/portal',
+        calculatorLabel: 'Open portal',
         lessonTitle: 'Conveyancer portal',
         lessonSubtitle: 'Matters, quotes, deeds and client communication on PropReady',
         hubBasePath: '/conveyancers/portal',
+        signalTitle: 'Matter focus',
+        signalHint: 'Unblock the nearest registration',
     },
 };
 
 function goalForPage(role: PortalAiCoachRole, activePage?: string): string {
     const page = (activePage || '').toLowerCase();
     if (role === 'buyer') {
+        if (page === 'dashboard' || !page) return 'Upload ID and proof of income';
         if (page === 'documents' || page.includes('prequal')) return 'Complete your document vault for full prequal';
         if (page === 'viewings') return 'Confirm upcoming viewings and follow up with your agent';
         if (page === 'messages') return 'Reply to open threads with your agent or originator';
@@ -123,13 +143,14 @@ function goalForPage(role: PortalAiCoachRole, activePage?: string): string {
         return 'Keep momentum on your next buying milestone';
     }
     if (role === 'seller') {
+        if (page === 'dashboard' || !page) return 'Refresh your valuation and listing readiness';
         if (page === 'valuation') return 'Refresh your valuation inputs for a sharper guide price';
         if (page === 'property-quiz') return 'Complete seller readiness details for better matches';
         if (page === 'messages') return 'Respond to buyer or agent messages promptly';
         return 'Advance listing readiness and buyer engagement';
     }
     if (role === 'agent') {
-        if (page === 'viewings') return 'Confirm today’s viewing schedule and follow-ups';
+        if (page === 'viewings') return "Confirm today's viewing schedule and follow-ups";
         if (page === 'my-leads' || page === 'messages') return 'Clear unread lead and client messages';
         if (page === 'properties') return 'Keep listing details and status current';
         return 'Move your hottest leads one step closer to offer';
@@ -143,6 +164,20 @@ function goalForPage(role: PortalAiCoachRole, activePage?: string): string {
     if (page === 'quotes') return 'Issue or follow up outstanding fee quotes';
     if (page === 'messages') return 'Clear client and attorney message queues';
     return 'Keep active transfers moving without silent delays';
+}
+
+function readBuyerEstimatedSavings(): number | null {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.quizResult);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as { preQualAmount?: number; pre_qual_amount?: number };
+        const amount = Number(parsed.preQualAmount ?? parsed.pre_qual_amount ?? 0);
+        if (!Number.isFinite(amount) || amount <= 0) return null;
+        return Math.round(amount * 0.018);
+    } catch {
+        return null;
+    }
 }
 
 export function PortalAiCoachShell({
@@ -216,97 +251,99 @@ class CoachRailErrorBoundary extends React.Component<
 export default function PortalAiCoachRail({ role, activePage, pageTitle }: PortalAiCoachProps) {
     const [aiOpen, setAiOpen] = useState(false);
     const [chatMounted, setChatMounted] = useState(false);
+    const [buyerSavings, setBuyerSavings] = useState<number | null>(null);
     const { hidden, ready, hide, show } = useAiAssistantVisibility();
     const copy = ROLE_COPY[role];
     const goal = useMemo(() => goalForPage(role, activePage), [role, activePage]);
 
+    useEffect(() => {
+        if (role !== 'buyer') return;
+        setBuyerSavings(readBuyerEstimatedSavings());
+    }, [role, activePage]);
+
     function openChat() {
+        show();
         setChatMounted(true);
         setAiOpen(true);
     }
 
     if (!ready) return null;
 
-    if (hidden) {
-        return (
-            <button
-                type="button"
-                onClick={show}
-                className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal shadow-[0_8px_28px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 hover:border-gold/35"
-                aria-label="Show PropReady AI Assistant"
-                title="Show AI Assistant"
-            >
-                <Sparkles className="h-4 w-4 text-gold" />
-            </button>
-        );
-    }
-
     return (
         <>
             <aside className="pac-rail" aria-label="PropReady AI assistant rail">
-                <div className="pac-card">
-                    <div className="pac-card-aura" aria-hidden />
-
-                    <header className="pac-card-head">
-                        <div className="pac-mark" aria-hidden>
-                            <Sparkles />
+                <div className="pac-panel">
+                    <header className="pac-panel-head">
+                        <div className="flex min-w-0 items-center gap-2">
+                            <Sparkles className="h-4 w-4 shrink-0 text-[#e53935]" />
+                            <h3 className="pac-panel-title">AI assistant</h3>
                         </div>
-                        <div className="pac-card-brand">
-                            <p className="pac-brand-line">PropReady</p>
-                            <h3 className="pac-title">AI Assistant</h3>
-                            <p className="pac-sub">{copy.subtitle}</p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={hide}
-                            className="ml-auto rounded-lg p-1.5 text-charcoal/40 transition hover:bg-charcoal/[0.06] hover:text-charcoal"
-                            aria-label="Turn off AI Assistant"
-                            title="Turn off"
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
                     </header>
+                    <p className="pac-panel-sub">{copy.subtitle}</p>
 
-                    <section className="pac-goal" aria-label="Today's goal">
-                        <span className="pac-kicker pac-kicker--accent">Today&apos;s goal</span>
-                        <p className="pac-goal-text">{goal}</p>
-                    </section>
-
-                    <section className="pac-tip" aria-label={copy.tipTitle}>
-                        <span className="pac-kicker">{copy.tipTitle}</span>
-                        <p className="pac-tip-text">{copy.tipBody}</p>
-                    </section>
-
-                    <section className="pac-pulse" aria-label={copy.pulseTitle}>
-                        <div className="pac-pulse-mark" aria-hidden>
-                            <Newspaper />
+                    <div className="pac-panel-body">
+                        <div className="pac-goal-box">
+                            <p className="pac-label pac-label--red">Today&apos;s goal</p>
+                            <p className="pac-goal-copy">{goal}</p>
                         </div>
+
                         <div>
-                            <span className="pac-kicker">{copy.pulseTitle}</span>
-                            <p className="pac-pulse-text">{copy.pulseBody}</p>
+                            <p className="pac-label">{copy.signalTitle}</p>
+                            {role === 'buyer' ? (
+                                <>
+                                    <p className="pac-savings">
+                                        {buyerSavings != null ? formatCurrency(buyerSavings) : '—'}
+                                    </p>
+                                    <p className="pac-hint">{copy.signalHint}</p>
+                                </>
+                            ) : (
+                                <p className="pac-hint mt-1">{copy.signalHint}</p>
+                            )}
                         </div>
-                    </section>
 
-                    <div className="pac-actions">
-                        <Link href={copy.calculatorHref} className="pac-cta pac-cta--ghost">
-                            <Calculator />
-                            {role === 'buyer' ? 'Quick calculator' : 'Open workspace'}
+                        <div>
+                            <p className="pac-label">{copy.tipTitle}</p>
+                            <p className="pac-copy">{copy.tipBody}</p>
+                        </div>
+
+                        <div className="pac-pulse-box">
+                            <Newspaper className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#2563eb]" />
+                            <div>
+                                <p className="pac-label">{copy.pulseTitle}</p>
+                                <p className="pac-copy">{copy.pulseBody}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pac-panel-actions">
+                        <Link href={copy.calculatorHref} className="pac-btn pac-btn--ghost">
+                            <Calculator className="h-3.5 w-3.5" />
+                            {copy.calculatorLabel}
                         </Link>
-                        <button type="button" className="pac-cta pac-cta--primary" onClick={openChat}>
-                            <MessageSquare />
+                        <button type="button" className="pac-btn pac-btn--primary" onClick={openChat}>
+                            <MessageSquare className="h-3.5 w-3.5" />
                             Chat with AI
                         </button>
                     </div>
+                </div>
 
-                    <p className="pac-disclaimer">
-                        <Clock aria-hidden />
-                        Educational only · not bank advice
-                    </p>
+                <div className="pac-disclaimer-bar">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    Educational only · not bank advice
                 </div>
             </aside>
 
-            {/* Lightweight FAB until chat chunk is needed */}
-            {!chatMounted ? (
+            {hidden ? (
+                <button
+                    type="button"
+                    onClick={show}
+                    className="fixed bottom-6 right-5 z-50 inline-flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/10 bg-white text-charcoal shadow-[0_8px_28px_rgba(0,0,0,0.12)] transition hover:-translate-y-0.5 hover:border-gold/35"
+                    aria-label="Show PropReady AI Assistant chat"
+                    title="Show AI chat"
+                >
+                    <Sparkles className="h-4 w-4 text-gold" />
+                </button>
+            ) : !chatMounted ? (
                 <button
                     type="button"
                     onClick={openChat}

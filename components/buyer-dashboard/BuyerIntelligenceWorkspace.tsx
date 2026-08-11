@@ -23,7 +23,6 @@ import {
     LineChart,
     MapPin,
     MessageSquare,
-    Newspaper,
     Phone,
     Scale,
     Search,
@@ -36,7 +35,6 @@ import {
 } from 'lucide-react';
 import BuyerDocumentPreviewModal from '@/components/BuyerDocumentPreviewModal';
 import RepoRateBanner from '@/components/market/RepoRateBanner';
-import dynamic from 'next/dynamic';
 import { formatCurrency } from '@/lib/currency';
 import { useLiveBondOriginators } from '@/hooks/useLiveBondOriginators';
 import type { BondOriginator } from '@/lib/bond-originators';
@@ -53,19 +51,6 @@ import {
     type BuyerQuizResult,
 } from '@/lib/quiz-result';
 import '@/app/dashboard/buyer-intelligence.css';
-
-const AiTutorFab = dynamic(
-    () =>
-        import('@/components/buyer-learn/course/AiTutorFab').catch((err) => {
-            console.warn('[BuyerIntelligence] AiTutorFab chunk failed to load', err);
-            return {
-                default: function AiTutorFabUnavailable() {
-                    return null;
-                },
-            };
-        }),
-    { ssr: false, loading: () => null }
-);
 
 type MatchedListing = ListedProperty & { matchScore: number };
 
@@ -296,8 +281,6 @@ export default function BuyerIntelligenceWorkspace({
 }: BuyerIntelligenceWorkspaceProps) {
     const [previewDoc, setPreviewDoc] = useState<BuyerDocument | null>(null);
     const [selectedOriginator, setSelectedOriginator] = useState<BondOriginator | null>(null);
-    const [aiOpen, setAiOpen] = useState(false);
-    const [chatMounted, setChatMounted] = useState(false);
     const { originators: liveOriginators, loading: liveOriginatorsLoading } = useLiveBondOriginators();
 
     const insights = useMemo(
@@ -1597,106 +1580,7 @@ export default function BuyerIntelligenceWorkspace({
                         </ol>
                     </section>
                 </div>
-
-                {/* Sticky AI rail — dashboard only (other portal pages use PortalAiCoachShell) */}
-                <aside className="biw-rail" aria-label="PropReady AI assistant rail">
-                    <div className="biw-panel biw-panel--glass biw-panel--static p-5">
-                        <div className="flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 text-[#e53935]" />
-                            <h3 className="biw-sec-title">AI assistant</h3>
-                        </div>
-                        <p className="biw-sec-sub mt-1">Sticky coach for today&apos;s buy path</p>
-
-                        <div className="mt-4 space-y-3">
-                            <div className="rounded-[16px] bg-[#e53935]/[0.07] p-3.5">
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#e53935]">
-                                    Today&apos;s goal
-                                </p>
-                                <p className="mt-1 text-sm font-semibold leading-snug">{nextMilestone}</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-black/40">
-                                    Estimated savings
-                                </p>
-                                <p className="text-lg font-bold tabular-nums text-[#22c55e]">
-                                    {preQual ? formatCurrency(Math.round(preQual * 0.018)) : '—'}
-                                </p>
-                                <p className="text-[11px] text-black/40">Rate / fee optimisation signal</p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-wide text-black/40">
-                                    Mortgage tip
-                                </p>
-                                <p className="mt-1 text-xs leading-relaxed text-black/55">
-                                    A larger deposit can shrink instalments faster than chasing a tiny rate cut —
-                                    model both in the calculator.
-                                </p>
-                            </div>
-                            <div className="flex items-start gap-2 rounded-[16px] bg-black/[0.03] p-3.5">
-                                <Newspaper className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#2563eb]" />
-                                <div>
-                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-black/40">
-                                        Rate pulse
-                                    </p>
-                                    <p className="text-xs text-black/55">
-                                        Watch repo-rate moves — your monthly target updates with affordability.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-2">
-                            <Link href="/calculator" className="biw-cta biw-cta--ghost w-full">
-                                <Calculator className="h-3.5 w-3.5" />
-                                Quick calculator
-                            </Link>
-                            <button
-                                type="button"
-                                className="biw-cta biw-cta--primary w-full"
-                                onClick={() => {
-                                    setChatMounted(true);
-                                    setAiOpen(true);
-                                }}
-                            >
-                                <MessageSquare className="h-3.5 w-3.5" />
-                                Chat with AI
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="biw-panel biw-panel--static p-4">
-                        <div className="flex items-center gap-2 text-xs text-black/45">
-                            <Clock className="h-3.5 w-3.5" />
-                            Educational only · not bank advice
-                        </div>
-                    </div>
-                </aside>
             </div>
-
-            {chatMounted ? (
-                <AiTutorFab
-                    variant="assistant"
-                    lessonTitle="Buyer dashboard"
-                    lessonSubtitle="Bond readiness, affordability, documents, viewings and next steps on PropReady"
-                    hubBasePath="/dashboard"
-                    open={aiOpen}
-                    onOpenChange={setAiOpen}
-                    fabClassName="bottom-6 right-5"
-                />
-            ) : (
-                <button
-                    type="button"
-                    onClick={() => {
-                        setChatMounted(true);
-                        setAiOpen(true);
-                    }}
-                    className="fixed bottom-6 right-5 z-50 inline-flex items-center gap-2 rounded-full bg-charcoal px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_40px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
-                    aria-label="Open PropReady AI Assistant"
-                >
-                    <Sparkles className="h-4 w-4 text-gold" />
-                    PropReady AI Assistant
-                </button>
-            )}
 
             <BuyerDocumentPreviewModal
                 doc={previewDoc}
