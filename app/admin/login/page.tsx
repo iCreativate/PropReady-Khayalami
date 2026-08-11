@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertCircle, Mail } from 'lucide-react';
 import LoginOtpStep from '@/components/auth/LoginOtpStep';
 
@@ -17,6 +17,16 @@ export default function AdminLoginPage() {
         email: string;
         devOtp?: string;
     } | null>(null);
+
+    useEffect(() => {
+        try {
+            if (new URLSearchParams(window.location.search).get('timeout') === '1') {
+                setError('You were signed out after 15 minutes of inactivity.');
+            }
+        } catch {
+            /* ignore */
+        }
+    }, []);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();

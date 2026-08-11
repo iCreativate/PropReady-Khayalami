@@ -1,5 +1,6 @@
 import { hydrateDemoUserSession } from '@/lib/demo-user-session';
 import { invalidateLeadsMineCache } from '@/lib/leads-mine-client';
+import { clearSessionActivity } from '@/lib/idle-session';
 import { STORAGE_KEYS } from '@/lib/storage-keys';
 import type { AccountType } from '@/lib/auth-enterprise/config';
 
@@ -54,6 +55,7 @@ export function clearLegacyAuthStorage() {
     localStorage.removeItem(STORAGE_KEYS.currentAgent);
     localStorage.removeItem('propReady_currentOriginator');
     localStorage.removeItem('propReady_currentConveyancer');
+    clearSessionActivity();
     sessionCache = null;
     sessionInflight = null;
     authSessionCache = null;

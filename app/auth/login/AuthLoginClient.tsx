@@ -35,6 +35,7 @@ export default function AuthLoginClient() {
     const requestedType = parseAccountType(searchParams.get('type'));
     const requestedRole = parseLoginRole(searchParams.get('role'));
     const nextParam = searchParams.get('next');
+    const timeoutParam = searchParams.get('timeout');
     const errorParam = searchParams.get('error');
 
     const [role, setRole] = useState<LoginRole | null>(null);
@@ -50,7 +51,11 @@ export default function AuthLoginClient() {
                 ? 'Authentication error. Please try again.'
                 : ''
     );
-    const [info, setInfo] = useState('');
+    const [info, setInfo] = useState(
+        timeoutParam === '1'
+            ? 'You were signed out after 15 minutes of inactivity. Please sign in again.'
+            : ''
+    );
     const [loading, setLoading] = useState(false);
     const [devMagicLink, setDevMagicLink] = useState('');
     const [otpChallenge, setOtpChallenge] = useState<{
