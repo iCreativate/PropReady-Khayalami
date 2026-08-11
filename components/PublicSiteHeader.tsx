@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import BrandLogo from '@/components/BrandLogo';
 import MobileNav from '@/components/MobileNav';
-import LearningCenterDropdown from '@/components/LearningCenterDropdown';
 import { PROFESSIONALS_LOGIN_HREF } from '@/lib/auth-login-roles';
 import { PORTAL_PRIMARY_BTN, PORTAL_SECONDARY_BTN } from '@/lib/portal-ui';
 
@@ -60,7 +59,6 @@ export default function PublicSiteHeader({
                 <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                     {showDesktopNav ? (
                         <div className="hidden md:flex items-center gap-6 lg:gap-8">
-                            <LearningCenterDropdown />
                             <Link href="/learning-center" className={PORTAL_PRIMARY_BTN}>
                                 Learning Center
                             </Link>
