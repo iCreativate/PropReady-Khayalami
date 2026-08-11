@@ -3,18 +3,23 @@
 import Link from 'next/link';
 import {
     ArrowRight,
+    Bath,
+    BedDouble,
     Building2,
     Calendar,
     CheckCircle,
     Clock,
     FileText,
     Home,
+    Landmark,
     Mail,
     MapPin,
     Pencil,
     Phone,
     Plus,
+    Ruler,
     Search,
+    Sparkles,
     Star,
     Trash2,
     Users,
@@ -36,6 +41,28 @@ import {
 } from '@/lib/portal-ui';
 import type { SellerProperty } from '@/lib/seller-properties';
 import '@/app/dashboard/buyer-intelligence.css';
+
+function propertySizeLabel(property: SellerProperty): string {
+    const size = property.propertySize || property.buildingSize || property.landSize;
+    return size ? `${size} m²` : '—';
+}
+
+function propertyTypeLabel(property: SellerProperty): string {
+    const raw = (property.propertyType || '').trim();
+    if (!raw) return 'Property';
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+function formatUpdatedLabel(iso?: string): string {
+    if (!iso) return '';
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return '';
+    return new Date(t).toLocaleDateString('en-ZA', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    });
+}
 
 export type SellerDashboardAgent = {
     id: string;
@@ -256,134 +283,267 @@ export default function SellerDashboardWorkspace({
                     </section>
 
                     <section className="biw-split biw-split--65-35">
-                        <article className="biw-panel biw-panel--static p-5 sm:p-6">
-                            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                    <h3 className="biw-sec-title">My properties</h3>
-                                    <p className="biw-sec-sub">
-                                        Seller records for valuation and agent matching — not marketplace
-                                        listings.
-                                    </p>
-                                </div>
-                                <button type="button" onClick={onAddProperty} className={`${PORTAL_PRIMARY_BTN} shrink-0`}>
-                                    <Plus className="h-4 w-4" />
-                                    Add property
-                                </button>
-                            </div>
-
-                            {sellerProperties.length === 0 ? (
-                                <div className="rounded-2xl border border-dashed border-black/[0.1] bg-black/[0.015] px-6 py-12 text-center">
-                                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e53935]/10 text-[#e53935]">
-                                        <Building2 className="h-5 w-5" />
+                        <article className="biw-panel biw-panel--static overflow-hidden p-0">
+                            <div className="border-b border-black/[0.06] bg-gradient-to-br from-[#fff8f7] via-white to-[#f7f8fa] px-5 py-5 sm:px-6 sm:py-6">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div className="min-w-0">
+                                        <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[#e53935]/15 bg-[#e53935]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#e53935]">
+                                            <Sparkles className="h-3 w-3" />
+                                            Portfolio
+                                        </div>
+                                        <h3 className="biw-sec-title">My properties</h3>
+                                        <p className="biw-sec-sub mt-1 max-w-xl">
+                                            Private seller records for valuation and agent matching — not public
+                                            marketplace listings.
+                                        </p>
+                                        {sellerProperties.length > 0 ? (
+                                            <p className="mt-3 text-xs font-medium text-black/45">
+                                                {sellerProperties.length} propert
+                                                {sellerProperties.length === 1 ? 'y' : 'ies'} on file
+                                                {activePropertyId
+                                                    ? ' · one marked active for matching'
+                                                    : ''}
+                                            </p>
+                                        ) : null}
                                     </div>
-                                    <p className="biw-sec-title text-base">No properties yet</p>
-                                    <p className="biw-sec-sub mx-auto mt-1 max-w-sm">
-                                        Add the first property you want to sell to unlock your seller workspace.
-                                    </p>
-                                    <button type="button" onClick={onAddProperty} className="biw-cta biw-cta--primary mx-auto mt-5">
+                                    <button
+                                        type="button"
+                                        onClick={onAddProperty}
+                                        className={`${PORTAL_PRIMARY_BTN} shrink-0`}
+                                    >
+                                        <Plus className="h-4 w-4" />
                                         Add property
-                                        <ArrowRight className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="grid gap-3">
-                                    {sellerProperties.map((property) => {
-                                        const isActive = property.id === activePropertyId;
-                                        const value = property.currentValue || property.askingPrice;
-                                        return (
-                                            <div
-                                                key={property.id}
-                                                className={`rounded-2xl border p-4 sm:p-5 transition ${
-                                                    isActive
-                                                        ? 'border-[#e53935]/25 bg-[#e53935]/[0.04] shadow-sm'
-                                                        : 'border-black/[0.08] bg-white hover:border-[#e53935]/20'
-                                                }`}
-                                            >
-                                                <div className="mb-3 flex items-start justify-between gap-3">
-                                                    <div className="min-w-0">
-                                                        <div className="mb-1 flex flex-wrap items-center gap-2">
-                                                            <h4 className="truncate text-base font-semibold tracking-tight text-[#1b1b1b]">
-                                                                {property.propertyAddress}
-                                                            </h4>
-                                                            {isActive ? (
-                                                                <span className="rounded-full border border-[#e53935]/20 bg-[#e53935]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#e53935]">
-                                                                    Active
+                            </div>
+
+                            <div className="p-5 sm:p-6">
+                                {sellerProperties.length === 0 ? (
+                                    <div className="rounded-2xl border border-dashed border-black/[0.1] bg-black/[0.015] px-6 py-12 text-center">
+                                        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e53935]/10 text-[#e53935]">
+                                            <Building2 className="h-5 w-5" />
+                                        </div>
+                                        <p className="biw-sec-title text-base">No properties yet</p>
+                                        <p className="biw-sec-sub mx-auto mt-1 max-w-sm">
+                                            Add the first property you want to sell to unlock valuation, agent
+                                            matching, and your seller workspace.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={onAddProperty}
+                                            className="biw-cta biw-cta--primary mx-auto mt-5"
+                                        >
+                                            Add property
+                                            <ArrowRight className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="grid gap-4">
+                                        {sellerProperties.map((property) => {
+                                            const isActive = property.id === activePropertyId;
+                                            const asking = property.askingPrice;
+                                            const estimate = property.currentValue;
+                                            const primaryValue = asking || estimate;
+                                            const suburb =
+                                                property.propertySuburb || property.suburb || '';
+                                            const updated = formatUpdatedLabel(
+                                                property.updatedAt || property.createdAt
+                                            );
+                                            const chips = [
+                                                propertyTypeLabel(property),
+                                                property.propertyCondition
+                                                    ? `${property.propertyCondition} condition`
+                                                    : null,
+                                                property.timeline ? `Timeline · ${property.timeline}` : null,
+                                                property.hasBond ? 'Under bond' : null,
+                                            ].filter(Boolean) as string[];
+
+                                            return (
+                                                <div
+                                                    key={property.id}
+                                                    className={`group relative overflow-hidden rounded-2xl border transition ${
+                                                        isActive
+                                                            ? 'border-[#e53935]/30 bg-gradient-to-br from-[#fff7f6] via-white to-white shadow-[0_10px_28px_rgba(229,57,53,0.08)]'
+                                                            : 'border-black/[0.08] bg-white hover:border-[#e53935]/22 hover:shadow-[0_10px_28px_rgba(27,27,27,0.06)]'
+                                                    }`}
+                                                >
+                                                    <div
+                                                        className={`absolute inset-y-0 left-0 w-1 ${
+                                                            isActive ? 'bg-[#e53935]' : 'bg-transparent group-hover:bg-[#e53935]/35'
+                                                        }`}
+                                                        aria-hidden
+                                                    />
+
+                                                    <div className="p-4 pl-5 sm:p-5 sm:pl-6">
+                                                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                                    {isActive ? (
+                                                                        <span className="inline-flex items-center gap-1 rounded-full border border-[#e53935]/20 bg-[#e53935]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#e53935]">
+                                                                            <CheckCircle className="h-3 w-3" />
+                                                                            Active
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="rounded-full border border-black/[0.08] bg-black/[0.03] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-black/45">
+                                                                            On file
+                                                                        </span>
+                                                                    )}
+                                                                    {chips.map((chip) => (
+                                                                        <span
+                                                                            key={chip}
+                                                                            className="rounded-full border border-black/[0.06] bg-black/[0.025] px-2 py-0.5 text-[10px] font-medium capitalize text-black/55"
+                                                                        >
+                                                                            {chip}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+
+                                                                <h4 className="text-lg font-semibold tracking-tight text-[#1b1b1b] sm:text-xl">
+                                                                    {property.propertyAddress}
+                                                                </h4>
+                                                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-black/50">
+                                                                    <span className="inline-flex items-center gap-1.5">
+                                                                        <MapPin className="h-3.5 w-3.5 shrink-0 text-[#e53935]/70" />
+                                                                        {suburb || 'Suburb not set'}
+                                                                    </span>
+                                                                    {updated ? (
+                                                                        <span className="inline-flex items-center gap-1.5">
+                                                                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                                                                            Updated {updated}
+                                                                        </span>
+                                                                    ) : null}
+                                                                </div>
+
+                                                                {property.propertyDescription ? (
+                                                                    <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-black/55">
+                                                                        {property.propertyDescription}
+                                                                    </p>
+                                                                ) : null}
+
+                                                                {property.reasonForSelling ? (
+                                                                    <p className="mt-2 text-xs text-black/45">
+                                                                        <span className="font-semibold text-black/55">
+                                                                            Reason for selling:
+                                                                        </span>{' '}
+                                                                        {property.reasonForSelling}
+                                                                    </p>
+                                                                ) : null}
+                                                            </div>
+
+                                                            <div className="shrink-0 rounded-2xl border border-black/[0.06] bg-black/[0.02] px-4 py-3 lg:min-w-[11.5rem] lg:text-right">
+                                                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-black/40">
+                                                                    {asking ? 'Asking price' : 'Estimated value'}
+                                                                </p>
+                                                                <p className="mt-1 text-xl font-semibold tabular-nums tracking-tight text-[#e53935]">
+                                                                    {formatCurrency(
+                                                                        parseAmountForDisplay(primaryValue)
+                                                                    )}
+                                                                </p>
+                                                                {asking &&
+                                                                estimate &&
+                                                                String(asking) !== String(estimate) ? (
+                                                                    <p className="mt-1 text-xs text-black/45">
+                                                                        Est.{' '}
+                                                                        {formatCurrency(
+                                                                            parseAmountForDisplay(estimate)
+                                                                        )}
+                                                                    </p>
+                                                                ) : null}
+                                                                {property.hasBond && property.bondBalance ? (
+                                                                    <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-black/50 lg:justify-end">
+                                                                        <Landmark className="h-3 w-3" />
+                                                                        Bond{' '}
+                                                                        {formatCurrency(
+                                                                            parseAmountForDisplay(
+                                                                                property.bondBalance
+                                                                            )
+                                                                        )}
+                                                                    </p>
+                                                                ) : null}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                                            {[
+                                                                {
+                                                                    label: 'Bedrooms',
+                                                                    value: property.bedrooms || '—',
+                                                                    icon: BedDouble,
+                                                                },
+                                                                {
+                                                                    label: 'Bathrooms',
+                                                                    value: property.bathrooms || '—',
+                                                                    icon: Bath,
+                                                                },
+                                                                {
+                                                                    label: 'Size',
+                                                                    value: propertySizeLabel(property),
+                                                                    icon: Ruler,
+                                                                },
+                                                                {
+                                                                    label: 'Type',
+                                                                    value: propertyTypeLabel(property),
+                                                                    icon: Building2,
+                                                                },
+                                                            ].map((cell) => {
+                                                                const Icon = cell.icon;
+                                                                return (
+                                                                    <div
+                                                                        key={cell.label}
+                                                                        className="rounded-xl border border-black/[0.05] bg-black/[0.02] px-3 py-2.5"
+                                                                    >
+                                                                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-black/40">
+                                                                            <Icon className="h-3 w-3 text-[#e53935]/65" />
+                                                                            {cell.label}
+                                                                        </div>
+                                                                        <p className="truncate text-sm font-semibold capitalize text-[#1b1b1b]">
+                                                                            {cell.value}
+                                                                        </p>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+
+                                                        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-black/[0.06] pt-4">
+                                                            {!isActive ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => onSetActiveProperty(property)}
+                                                                    className={PORTAL_SECONDARY_BTN}
+                                                                >
+                                                                    <CheckCircle className="h-3.5 w-3.5" />
+                                                                    Set as active
+                                                                </button>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                                                                    <CheckCircle className="h-3.5 w-3.5" />
+                                                                    Used for matching
                                                                 </span>
-                                                            ) : null}
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => onEditProperty(property)}
+                                                                className={PORTAL_SECONDARY_BTN}
+                                                            >
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                                Edit details
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => onDeleteProperty(property)}
+                                                                className={`${PORTAL_DANGER_BTN} ml-auto`}
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                                Delete
+                                                            </button>
                                                         </div>
-                                                        <p className="text-sm text-black/50">
-                                                            {property.propertySuburb || property.suburb || '—'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="text-right shrink-0">
-                                                        <p className="text-base font-semibold tabular-nums text-[#e53935]">
-                                                            {formatCurrency(parseAmountForDisplay(value))}
-                                                        </p>
-                                                        <p className="text-[10px] uppercase tracking-wide text-black/40">
-                                                            Asking / estimate
-                                                        </p>
                                                     </div>
                                                 </div>
-
-                                                <div className="mb-4 grid grid-cols-3 gap-2 text-center text-xs">
-                                                    {[
-                                                        { label: 'Beds', value: property.bedrooms || '—' },
-                                                        { label: 'Baths', value: property.bathrooms || '—' },
-                                                        {
-                                                            label: 'Size',
-                                                            value: property.propertySize ||
-                                                                property.buildingSize ||
-                                                                property.landSize
-                                                                ? `${property.propertySize || property.buildingSize || property.landSize} m²`
-                                                                : '—',
-                                                        },
-                                                    ].map((cell) => (
-                                                        <div
-                                                            key={cell.label}
-                                                            className="rounded-xl bg-black/[0.03] px-2 py-2.5"
-                                                        >
-                                                            <p className="text-[10px] uppercase tracking-wide text-black/40">
-                                                                {cell.label}
-                                                            </p>
-                                                            <p className="mt-0.5 font-semibold text-[#1b1b1b]">
-                                                                {cell.value}
-                                                            </p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                <div className="flex flex-wrap gap-2">
-                                                    {!isActive ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => onSetActiveProperty(property)}
-                                                            className={PORTAL_SECONDARY_BTN}
-                                                        >
-                                                            Set active
-                                                        </button>
-                                                    ) : null}
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onEditProperty(property)}
-                                                        className={PORTAL_SECONDARY_BTN}
-                                                    >
-                                                        <Pencil className="h-3.5 w-3.5" />
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => onDeleteProperty(property)}
-                                                        className={PORTAL_DANGER_BTN}
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                        Delete
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
                         </article>
 
                         <div className="flex flex-col gap-4">
