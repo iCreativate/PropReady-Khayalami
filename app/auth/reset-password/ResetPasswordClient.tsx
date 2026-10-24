@@ -8,6 +8,7 @@ import {
     loginPathForAccountType,
     parseAccountType,
 } from '@/lib/auth-enterprise/account-profile';
+import { clearLegacyAuthStorage } from '@/lib/auth-session-bridge';
 import { validatePassword, getPasswordRequirementsText } from '@/lib/password';
 
 export default function ResetPasswordClient() {
@@ -31,12 +32,18 @@ export default function ResetPasswordClient() {
             const res = await fetch('/api/auth/reset-password', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ token, password, type: accountType }),
             });
             const data = await res.json();
             if (!res.ok) {
                 setError(data.error || 'Reset failed');
                 return;
+            }
+            try {
+                clearLegacyAuthStorage();
+            } catch {
+                /* cookies are already cleared by the reset response */
             }
             setDone(true);
         } catch {
@@ -56,7 +63,7 @@ export default function ResetPasswordClient() {
             )}
             {done ? (
                 <p className="text-sm text-charcoal/70 mb-4">
-                    Password updated. All other sessions were signed out.
+                    Password updated. Sign in with your new password.
                 </p>
             ) : (
                 <form onSubmit={handleSubmit}>
