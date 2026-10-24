@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
                 {
                     success: false,
                     error:
-                        'Database not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on Netlify, then redeploy.',
+                        'Database not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your hosting environment variables, then redeploy.',
                 },
                 { status: 503 }
             );

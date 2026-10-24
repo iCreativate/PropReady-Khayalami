@@ -121,7 +121,7 @@ export default function AgentListedPropertiesWorkspace({
                             if (!res.ok) {
                                 const err = await res.json().catch(() => ({}));
                                 const msg = res.status === 503
-                                    ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify, then redeploy.'
+                                    ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your hosting environment variables, then redeploy.'
                                     : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
                                         ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table.'
                                         : err?.error || `Sync failed (${res.status})`;
@@ -366,7 +366,7 @@ export default function AgentListedPropertiesWorkspace({
                     const err = await res.json().catch(() => ({}));
                     console.warn('Property save to database failed:', res.status, err);
                     const msg = res.status === 503
-                        ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify environment variables, then redeploy.'
+                        ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your hosting environment variables, then redeploy.'
                         : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
                             ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table. See DATABASE_SETUP.md.'
                             : err?.error || `Save failed (${res.status})`;
@@ -374,7 +374,7 @@ export default function AgentListedPropertiesWorkspace({
                 }
             } catch (e) {
                 console.warn('Property API sync failed', e);
-                alert('Property saved locally but could not sync to database. Check your connection and Netlify environment variables. Properties will only appear on this browser.');
+                alert('Property saved locally but could not sync to database. Check your connection and hosting environment variables. Properties will only appear on this browser.');
             }
         }
 

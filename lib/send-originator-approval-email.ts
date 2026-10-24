@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { getAppUrl } from '@/lib/auth-enterprise/config';
 
 function getResend() {
     const key = process.env.RESEND_API_KEY?.trim();
@@ -31,7 +32,7 @@ export async function sendOriginatorApprovalEmail(params: {
     const fromEmail =
         process.env.RESEND_FROM_EMAIL?.trim() || 'PropReady <onboarding@resend.dev>';
     const greeting = params.fullName ? `Hi ${params.fullName},` : 'Hi there,';
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://prop-ready.co.za').replace(/\/$/, '');
+    const appUrl = getAppUrl().replace(/\/$/, '');
     const loginUrl = `${appUrl}/originators/login`;
 
     const html = `

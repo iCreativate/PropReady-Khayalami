@@ -57,7 +57,7 @@ export async function saveVerificationCode(
 
     return {
         ok: false,
-        error: 'Database not configured. Set SUPABASE_SERVICE_ROLE_KEY on Netlify.',
+        error: 'Database not configured. Set SUPABASE_SERVICE_ROLE_KEY in your hosting environment variables.',
     };
 }
 

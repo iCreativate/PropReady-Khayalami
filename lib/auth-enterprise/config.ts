@@ -25,8 +25,12 @@ export const AUTH_CONFIG = {
 export type AccountType = 'user' | 'agent' | 'originator' | 'conveyancer';
 export type OAuthProvider = 'google' | 'apple';
 
-/** Production canonical URL — never fall back to localhost in deployed builds. */
-export const PRODUCTION_APP_URL = 'https://propready.live';
+/**
+ * Production canonical URL — never fall back to localhost in deployed builds.
+ * Primary public site is www.propready.co.za (Railway). Older domains stay
+ * allowlisted so a still-configured host is not rewritten.
+ */
+export const PRODUCTION_APP_URL = 'https://www.propready.co.za';
 
 export function getAuthSecret(): string {
     const secret = process.env.AUTH_JWT_SECRET || process.env.NEXTAUTH_SECRET;
@@ -51,8 +55,10 @@ function isLocalhostUrl(url: string): boolean {
     }
 }
 
-/** Stable public hosts only — never ephemeral Netlify deploy IDs (`abc123--site.netlify.app`). */
+/** Stable public hosts only — never ephemeral preview / per-deploy hosts. */
 const CANONICAL_APP_HOSTS = new Set([
+    'www.propready.co.za',
+    'propready.co.za',
     'propready.live',
     'www.propready.live',
     'prop-ready.co.za',
@@ -67,13 +73,34 @@ function hostnameOf(url: string): string | null {
     }
 }
 
-/** True for deploy-preview / per-deploy Netlify URLs that break Google OAuth allowlists. */
-function isEphemeralDeployUrl(url: string): boolean {
+/**
+ * True for preview / per-deploy hosts that break Google OAuth allowlists.
+ * Netlify deploy and branch URLs look like `abc123--site.netlify.app`.
+ * Railway PR environments are separate services whose public host includes
+ * `-pr-<number>` (for example `web-pr-42.up.railway.app`). A stable service
+ * host such as `propready-khayalami-production.up.railway.app` is not ephemeral.
+ */
+export function isEphemeralDeployUrl(url: string): boolean {
     const host = hostnameOf(url);
     if (!host) return true;
-    // e.g. 6a7348b5dcb8da000851386d--stunning-crepe-c51be4.netlify.app
     if (host.includes('--') && host.endsWith('.netlify.app')) return true;
     if (host.endsWith('.vercel.app')) return true;
+    if (host.endsWith('.up.railway.app') && isEphemeralRailwayHost(host)) return true;
+    return false;
+}
+
+/** Railway PR / preview service labels, not the long-lived production service host. */
+function isEphemeralRailwayHost(host: string): boolean {
+    const label = host.slice(0, -'.up.railway.app'.length);
+    if (label.includes('--')) return true;
+    return /(^|-)pr-\d+($|-)/i.test(label);
+}
+
+function isStablePlatformHost(host: string): boolean {
+    // Primary Netlify site subdomain (no deploy-id prefix).
+    if (/^[a-z0-9-]+\.netlify\.app$/i.test(host) && !host.includes('--')) return true;
+    // Stable Railway service host, same role as the Netlify primary subdomain.
+    if (/^[a-z0-9-]+\.up\.railway\.app$/i.test(host) && !isEphemeralRailwayHost(host)) return true;
     return false;
 }
 
@@ -82,15 +109,17 @@ function isAllowedPublicAppUrl(url: string): boolean {
     const host = hostnameOf(url);
     if (!host) return false;
     if (CANONICAL_APP_HOSTS.has(host)) return true;
-    // Primary Netlify site subdomain (no deploy-id prefix) is acceptable as a fallback.
-    if (/^[a-z0-9-]+\.netlify\.app$/i.test(host) && !host.includes('--')) return true;
+    if (isStablePlatformHost(host)) return true;
     return false;
 }
 
 /**
  * Public site origin for OAuth redirects, magic links, etc.
- * In production, never trust ephemeral Netlify deploy hosts — they cause Google
- * `redirect_uri_mismatch` even when Console lists https://propready.live/.../callback.
+ * In production, never trust ephemeral preview hosts — they cause Google
+ * `redirect_uri_mismatch` even when Console lists the canonical callback.
+ * Configured NEXT_PUBLIC_APP_URL / NEXTAUTH_URL wins when it is an allowed host,
+ * so sign-in on www, the apex, or the Railway service URL still redirects to the
+ * URI registered for that env value.
  * In development, never use a production NEXTAUTH_URL — that causes the same mismatch on localhost.
  */
 export function getAppUrl(requestOrigin?: string | null): string {
