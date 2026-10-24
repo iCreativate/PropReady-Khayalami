@@ -31,12 +31,21 @@ const PROTECTED_PREFIXES = [
     '/conveyancers/portal',
 ];
 
-const AUTH_PAGES = [
-    '/auth/login',
-    '/auth/register',
+/**
+ * Public token pages. Stay reachable with a session cookie so email links
+ * (password reset, forgot-password, magic-link verify) are not bounced
+ * to the dashboard or login. Role variants use the same paths with ?type=.
+ */
+const ALWAYS_ALLOWED_AUTH_PAGES = [
     '/auth/forgot-password',
     '/auth/reset-password',
     '/auth/magic-link',
+];
+
+const AUTH_PAGES = [
+    '/auth/login',
+    '/auth/register',
+    ...ALWAYS_ALLOWED_AUTH_PAGES,
     '/login',
     '/agents/login',
     '/agents/register',
@@ -113,6 +122,9 @@ export async function middleware(request: NextRequest) {
 
         const isProtected = PROTECTED_PREFIXES.some(
             (p) => pathname === p || pathname.startsWith(`${p}/`)
+        );
+        const isAlwaysAllowedAuthPage = ALWAYS_ALLOWED_AUTH_PAGES.some((p) =>
+            pathname.startsWith(p)
         );
         const isAuthPage = AUTH_PAGES.some((p) => pathname.startsWith(p));
         const isCompleteProfile = pathname.startsWith('/auth/complete-profile');
@@ -194,7 +206,7 @@ export async function middleware(request: NextRequest) {
             );
         }
 
-        if (isAuthPage && auth?.payload.sub) {
+        if (isAuthPage && !isAlwaysAllowedAuthPage && auth?.payload.sub) {
             if (auth.payload.passwordOk === false) {
                 return NextResponse.redirect(new URL(edgePasswordGatePath(auth.payload), request.url));
             }
