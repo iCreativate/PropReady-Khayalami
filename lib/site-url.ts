@@ -1,12 +1,8 @@
-import { PRODUCTION_APP_URL } from '@/lib/auth-enterprise/config';
+import { isEphemeralDeployUrl, PRODUCTION_APP_URL } from '@/lib/auth-enterprise/config';
 
 function isEphemeralHost(url: string): boolean {
-    try {
-        const host = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.toLowerCase();
-        return (host.includes('--') && host.endsWith('.netlify.app')) || host.endsWith('.vercel.app');
-    } catch {
-        return true;
-    }
+    const absolute = url.startsWith('http') ? url : `https://${url}`;
+    return isEphemeralDeployUrl(absolute);
 }
 
 /** Canonical absolute site origin for Open Graph / share previews. */

@@ -245,7 +245,7 @@ export default function AgentsDashboardPage() {
                     if (!res.ok) {
                         const err = await res.json().catch(() => ({}));
                         const msg = res.status === 503
-                            ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to Netlify, then redeploy.'
+                            ? 'Database not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your hosting environment variables, then redeploy.'
                             : err?.code === '42P01' || (err?.error && String(err.error).includes('listed_properties'))
                                 ? 'Run supabase-migration-properties.sql in Supabase SQL Editor to create the listed_properties table.'
                                 : err?.error || `Sync failed (${res.status})`;

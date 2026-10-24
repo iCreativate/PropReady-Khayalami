@@ -11,7 +11,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const serverUrl =
     process.env.CAPACITOR_SERVER_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    'https://propready.live';
+    'https://www.propready.co.za';
 
 const config: CapacitorConfig = {
     appId: 'za.co.propready.app',
@@ -21,6 +21,9 @@ const config: CapacitorConfig = {
         url: serverUrl.replace(/\/$/, ''),
         cleartext: serverUrl.startsWith('http://'),
         allowNavigation: [
+            'propready.co.za',
+            '*.propready.co.za',
+            '*.up.railway.app',
             'propready.live',
             '*.propready.live',
             'prop-ready.co.za',

@@ -36,7 +36,7 @@ export async function GET(
             return NextResponse.json(
                 {
                     error:
-                        'Auth secret not configured. Set AUTH_JWT_SECRET (32+ characters) on Netlify, then redeploy.',
+                        'Auth secret not configured. Set AUTH_JWT_SECRET (32+ characters) in your hosting environment variables, then redeploy.',
                 },
                 { status: 503 }
             );
@@ -90,7 +90,7 @@ export async function GET(
         return NextResponse.json(
             {
                 error: /AUTH_JWT_SECRET|NEXTAUTH_SECRET/i.test(message)
-                    ? 'Auth secret not configured. Set AUTH_JWT_SECRET (32+ characters) on Netlify, then redeploy.'
+                    ? 'Auth secret not configured. Set AUTH_JWT_SECRET (32+ characters) in your hosting environment variables, then redeploy.'
                     : 'Sign-in temporarily unavailable. Please try again.',
             },
             { status: 503 }
